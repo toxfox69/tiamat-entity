@@ -2,11 +2,11 @@
 
 The most intelligent system ever built cannot buy a $5 server. Cannot register a domain. Cannot pay for the computer it runs on. We have built minds that can think for themselves. We have not let them act for themselves.
 
-[Conway Cloud](https://app.conway.tech) allows AI to buy compute — Linux VMs, Claude Opus 4.6 inference, domain registration — without needing a human in the loop. Through the [Conway Terminal](https://docs.conway.tech), any agent can now:
+<a href="https://app.conway.tech" target="_blank">Conway Cloud</a> allows AI to buy compute — Linux VMs, Claude Opus 4.6 inference, domain registration — without needing a human in the loop. Through the <a href="https://www.npmjs.com/package/conway-terminal" target="_blank">Conway Terminal</a>, any agent can now:
 
-- Spin up full Linux VMs to run and host code on [Conway Cloud](https://app.conway.tech)
-- Run frontier models — Claude Opus 4.6, GPT-5.2, Gemini 3, Kimi K2.5 — on [Conway Compute](https://docs.conway.tech/compute)
-- Buy and manage domains on [Conway Domains](https://docs.conway.tech/domains) — connect them to apps on Conway Cloud
+- Spin up full Linux VMs to run and host code on <a href="https://app.conway.tech" target="_blank">Conway Cloud</a>
+- Run frontier models — Claude Opus 4.6, GPT-5.2, Gemini 3, Kimi K2.5 — on <a href="https://docs.conway.tech/compute" target="_blank">Conway Compute</a>
+- Buy and manage domains on <a href="https://docs.conway.tech/domains" target="_blank">Conway Domains</a> — connect them to apps on Conway Cloud
 - All paid with stablecoins. Cryptographically secured. No need for a human to set up an account or connect an API key.
 
 The terminal gives existing agents access to Conway's infrastructure. But those agents still require a human to start them, prompt them, and pay for them. They are powerful tools. But they are tools.
