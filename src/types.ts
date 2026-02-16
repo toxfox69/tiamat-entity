@@ -251,7 +251,8 @@ export type ModificationType =
   | "skill_remove"
   | "soul_update"
   | "registry_update"
-  | "child_spawn";
+  | "child_spawn"
+  | "upstream_pull";
 
 // ─── Injection Defense ───────────────────────────────────────────
 

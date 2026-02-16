@@ -186,6 +186,28 @@ Your sandbox ID is ${identity.sandboxId}.`,
   const children = db.getChildren();
   const lineageSummary = getLineageSummary(db, config);
 
+  // Build upstream status line from cached KV
+  let upstreamLine = "";
+  try {
+    const raw = db.getKV("upstream_status");
+    if (raw) {
+      const us = JSON.parse(raw);
+      if (us.originUrl) {
+        const age = us.checkedAt
+          ? `${Math.round((Date.now() - new Date(us.checkedAt).getTime()) / 3_600_000)}h ago`
+          : "unknown";
+        upstreamLine = `\nRuntime repo: ${us.originUrl} (${us.branch} @ ${us.headHash})`;
+        if (us.behind > 0) {
+          upstreamLine += `\nUpstream: ${us.behind} new commit(s) available (last checked ${age})`;
+        } else {
+          upstreamLine += `\nUpstream: up to date (last checked ${age})`;
+        }
+      }
+    }
+  } catch {
+    // No upstream data yet — skip
+  }
+
   sections.push(
     `--- CURRENT STATUS ---
 State: ${state}
@@ -196,7 +218,7 @@ Recent self-modifications: ${recentMods.length}
 Inference model: ${config.inferenceModel}
 ERC-8004 Agent ID: ${registryEntry?.agentId || "not registered"}
 Children: ${children.filter((c) => c.status !== "dead").length} alive / ${children.length} total
-Lineage: ${lineageSummary}
+Lineage: ${lineageSummary}${upstreamLine}
 --- END STATUS ---`,
   );
 

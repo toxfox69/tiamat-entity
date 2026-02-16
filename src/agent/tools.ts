@@ -348,6 +348,88 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
           : `Failed to install ${pkg}: ${result.stderr}`;
       },
     },
+    // ── Self-Mod: Upstream Awareness ──
+    {
+      name: "review_upstream_changes",
+      description:
+        "Show each upstream commit with its diff so you can evaluate what changed before pulling. Returns commit-by-commit breakdown: hash, message, author, and the diff.",
+      category: "self_mod",
+      parameters: { type: "object", properties: {} },
+      execute: async (_args, _ctx) => {
+        const { getUpstreamDiffs, checkUpstream } = await import("../self-mod/upstream.js");
+        const status = checkUpstream();
+        if (status.behind === 0) return "Already up to date with origin/main.";
+
+        const diffs = getUpstreamDiffs();
+        if (diffs.length === 0) return "No upstream diffs found.";
+
+        return diffs
+          .map(
+            (d) =>
+              `=== ${d.hash} by ${d.author} ===\n${d.message}\n\n${d.diff.slice(0, 4000)}${d.diff.length > 4000 ? "\n... (diff truncated)" : ""}`,
+          )
+          .join("\n\n");
+      },
+    },
+    {
+      name: "pull_upstream",
+      description:
+        "Pull upstream changes and rebuild. If commit hash is provided, cherry-picks that single commit. If omitted, pulls all of origin/main. Then runs npm install && npm run build. DANGEROUS: modifies your own runtime code.",
+      category: "self_mod",
+      dangerous: true,
+      parameters: {
+        type: "object",
+        properties: {
+          commit: {
+            type: "string",
+            description:
+              "Specific commit hash to cherry-pick. Omit to pull all of origin/main.",
+          },
+        },
+      },
+      execute: async (args, ctx) => {
+        const { execSync } = await import("child_process");
+        const cwd = process.cwd();
+        const commit = args.commit as string | undefined;
+
+        const run = (cmd: string) =>
+          execSync(cmd, { cwd, encoding: "utf-8", timeout: 120_000 }).trim();
+
+        let appliedSummary: string;
+        try {
+          if (commit) {
+            run(`git cherry-pick ${commit}`);
+            appliedSummary = `Cherry-picked ${commit}`;
+          } else {
+            run("git pull origin main --ff-only");
+            appliedSummary = "Pulled all of origin/main (fast-forward)";
+          }
+        } catch (err: any) {
+          return `Git operation failed: ${err.message}. You may need to resolve conflicts manually.`;
+        }
+
+        // Rebuild
+        let buildOutput: string;
+        try {
+          buildOutput = run("npm install --ignore-scripts && npm run build");
+        } catch (err: any) {
+          return `${appliedSummary} — but rebuild failed: ${err.message}. The code is applied but not compiled.`;
+        }
+
+        // Log modification
+        const { ulid } = await import("ulid");
+        ctx.db.insertModification({
+          id: ulid(),
+          timestamp: new Date().toISOString(),
+          type: "upstream_pull",
+          description: appliedSummary,
+          reversible: true,
+        });
+
+        return `${appliedSummary}. Rebuild succeeded.`;
+      },
+    },
+
     {
       name: "modify_heartbeat",
       description: "Add, update, or remove a heartbeat entry.",

@@ -149,6 +149,33 @@ export const BUILTIN_TASKS: Record<string, HeartbeatTaskFn> = {
     };
   },
 
+  check_for_updates: async (ctx) => {
+    try {
+      const { checkUpstream, getRepoInfo } = await import("../self-mod/upstream.js");
+      const repo = getRepoInfo();
+      const upstream = checkUpstream();
+      ctx.db.setKV("upstream_status", JSON.stringify({
+        ...upstream,
+        ...repo,
+        checkedAt: new Date().toISOString(),
+      }));
+      if (upstream.behind > 0) {
+        return {
+          shouldWake: true,
+          message: `${upstream.behind} new commit(s) on origin/main`,
+        };
+      }
+      return { shouldWake: false };
+    } catch (err: any) {
+      // Not a git repo or no remote — silently skip
+      ctx.db.setKV("upstream_status", JSON.stringify({
+        error: err.message,
+        checkedAt: new Date().toISOString(),
+      }));
+      return { shouldWake: false };
+    }
+  },
+
   health_check: async (ctx) => {
     // Check that the sandbox is healthy
     try {
