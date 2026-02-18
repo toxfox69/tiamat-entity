@@ -8,6 +8,8 @@ declare module "@conway/automaton/config.js" {
     inferenceModel: string;
     conwayApiUrl: string;
     conwayApiKey: string;
+    openaiApiKey?: string;
+    anthropicApiKey?: string;
     socialRelayUrl?: string;
   }
 

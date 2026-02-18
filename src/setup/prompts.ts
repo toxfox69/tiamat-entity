@@ -27,6 +27,10 @@ export async function promptRequired(label: string): Promise<string> {
   }
 }
 
+export async function promptOptional(label: string): Promise<string> {
+  return ask(chalk.white(`  → ${label}: `));
+}
+
 export async function promptMultiline(label: string): Promise<string> {
   console.log("");
   console.log(chalk.white(`  ${label}`));

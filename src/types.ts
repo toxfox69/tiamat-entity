@@ -40,6 +40,8 @@ export interface AutomatonConfig {
   sandboxId: string;
   conwayApiUrl: string;
   conwayApiKey: string;
+  openaiApiKey?: string;
+  anthropicApiKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;
   heartbeatConfigPath: string;
