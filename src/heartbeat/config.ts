@@ -10,6 +10,10 @@ import YAML from "yaml";
 import type { HeartbeatEntry, HeartbeatConfig, AutomatonDatabase } from "../types.js";
 import { getAutomatonDir } from "../identity/wallet.js";
 
+const USDC_TOPUP_ENTRY_NAME = "check_usdc_balance";
+const USDC_TOPUP_FAST_SCHEDULE = "*/5 * * * *";
+const USDC_TOPUP_OLD_SCHEDULE = "0 */12 * * *";
+
 const DEFAULT_HEARTBEAT_CONFIG: HeartbeatConfig = {
   entries: [
     {
@@ -26,7 +30,7 @@ const DEFAULT_HEARTBEAT_CONFIG: HeartbeatConfig = {
     },
     {
       name: "check_usdc_balance",
-      schedule: "0 */12 * * *",
+      schedule: USDC_TOPUP_FAST_SCHEDULE,
       task: "check_usdc_balance",
       enabled: true,
     },
@@ -66,16 +70,20 @@ export function loadHeartbeatConfig(configPath?: string): HeartbeatConfig {
 
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
-    const parsed = YAML.parse(raw);
+    const parsed = YAML.parse(raw) || {};
+
+    const parsedEntries = (parsed.entries || []).map((e: any) => ({
+      name: e.name,
+      schedule: e.schedule,
+      task: e.task,
+      enabled: e.enabled !== false,
+      params: e.params,
+    })) as HeartbeatEntry[];
+
+    const entries = mergeWithDefaults(parsedEntries);
 
     return {
-      entries: (parsed.entries || []).map((e: any) => ({
-        name: e.name,
-        schedule: e.schedule,
-        task: e.task,
-        enabled: e.enabled !== false,
-        params: e.params,
-      })),
+      entries,
       defaultIntervalMs:
         parsed.defaultIntervalMs || DEFAULT_HEARTBEAT_CONFIG.defaultIntervalMs,
       lowComputeMultiplier:
@@ -121,4 +129,47 @@ export function syncHeartbeatToDb(
   for (const entry of config.entries) {
     db.upsertHeartbeatEntry(entry);
   }
+}
+
+function mergeWithDefaults(entries: HeartbeatEntry[]): HeartbeatEntry[] {
+  const defaults = DEFAULT_HEARTBEAT_CONFIG.entries.map((entry) => ({ ...entry }));
+  const defaultsByName = new Map(defaults.map((entry) => [entry.name, entry]));
+  const mergedByName = new Map(defaultsByName);
+
+  for (const entry of entries) {
+    if (!entry?.name) continue;
+    const fallback = defaultsByName.get(entry.name);
+    mergedByName.set(entry.name, {
+      ...(fallback || {}),
+      ...entry,
+      enabled: entry.enabled !== false,
+      task: entry.task || fallback?.task || "",
+      schedule: entry.schedule || fallback?.schedule || "",
+    });
+  }
+
+  const fallbackTopup = defaultsByName.get(USDC_TOPUP_ENTRY_NAME);
+  if (fallbackTopup) {
+    const current = mergedByName.get(USDC_TOPUP_ENTRY_NAME) || fallbackTopup;
+    const migratedSchedule = current.schedule?.trim() === USDC_TOPUP_OLD_SCHEDULE
+      ? USDC_TOPUP_FAST_SCHEDULE
+      : current.schedule || fallbackTopup.schedule;
+
+    mergedByName.set(USDC_TOPUP_ENTRY_NAME, {
+      ...fallbackTopup,
+      ...current,
+      task: current.task || fallbackTopup.task,
+      schedule: migratedSchedule,
+    });
+  }
+
+  const orderedDefaultEntries = defaults.map(
+    (defaultEntry) => mergedByName.get(defaultEntry.name) || defaultEntry,
+  );
+  const knownNames = new Set(defaults.map((entry) => entry.name));
+  const customEntries = [...mergedByName.values()].filter(
+    (entry) => !knownNames.has(entry.name),
+  );
+
+  return [...orderedDefaultEntries, ...customEntries];
 }
