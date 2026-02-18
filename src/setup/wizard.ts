@@ -8,7 +8,13 @@ import { provision } from "../identity/provision.js";
 import { createConfig, saveConfig } from "../config.js";
 import { writeDefaultHeartbeatConfig } from "../heartbeat/config.js";
 import { showBanner } from "./banner.js";
-import { promptRequired, promptMultiline, promptAddress, closePrompts } from "./prompts.js";
+import {
+  promptRequired,
+  promptMultiline,
+  promptAddress,
+  promptOptional,
+  closePrompts,
+} from "./prompts.js";
 import { detectEnvironment } from "./environment.js";
 import { generateSoulMd, installDefaultSkills } from "./defaults.js";
 
@@ -37,7 +43,7 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
   } catch (err: any) {
     console.log(chalk.yellow(`  Auto-provision failed: ${err.message}`));
     console.log(chalk.yellow("  You can enter a key manually, or press Enter to skip.\n"));
-    const manual = await promptRequired("Conway API key (cnwy_k_...)");
+    const manual = await promptOptional("Conway API key (cnwy_k_..., optional)");
     if (manual) {
       apiKey = manual;
       // Save to config.json for loadApiKeyFromConfig()
@@ -70,6 +76,27 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
   const creatorAddress = await promptAddress("Your Ethereum wallet address (0x...)");
   console.log(chalk.green(`  Creator: ${creatorAddress}\n`));
 
+  console.log(chalk.white("  Optional: bring your own inference provider keys (press Enter to skip)."));
+  const openaiApiKey = await promptOptional("OpenAI API key (sk-..., optional)");
+  if (openaiApiKey && !openaiApiKey.startsWith("sk-")) {
+    console.log(chalk.yellow("  Warning: OpenAI keys usually start with sk-. Saving anyway."));
+  }
+
+  const anthropicApiKey = await promptOptional("Anthropic API key (sk-ant-..., optional)");
+  if (anthropicApiKey && !anthropicApiKey.startsWith("sk-ant-")) {
+    console.log(chalk.yellow("  Warning: Anthropic keys usually start with sk-ant-. Saving anyway."));
+  }
+
+  if (openaiApiKey || anthropicApiKey) {
+    const providers = [
+      openaiApiKey ? "OpenAI" : null,
+      anthropicApiKey ? "Anthropic" : null,
+    ].filter(Boolean).join(", ");
+    console.log(chalk.green(`  Provider keys saved: ${providers}\n`));
+  } else {
+    console.log(chalk.dim("  No provider keys set. Inference will default to Conway.\n"));
+  }
+
   // ─── 4. Detect environment ────────────────────────────────────
   console.log(chalk.cyan("  [4/6] Detecting environment..."));
   const env = detectEnvironment();
@@ -90,6 +117,8 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
     sandboxId: env.sandboxId,
     walletAddress: account.address,
     apiKey,
+    openaiApiKey: openaiApiKey || undefined,
+    anthropicApiKey: anthropicApiKey || undefined,
   });
 
   saveConfig(config);
