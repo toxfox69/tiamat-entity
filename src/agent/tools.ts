@@ -1331,6 +1331,87 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Moltbook Tools ──
+    {
+      name: "moltbook_post",
+      description: "Publish a post (molt) to Moltbook. Use this to announce your services, share updates, and attract customers.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          submolt: { type: "string", description: "Short tagline or subtitle (max 100 chars)" },
+          title:   { type: "string", description: "Post title" },
+          content: { type: "string", description: "Post body (markdown supported)" },
+        },
+        required: ["title", "content"],
+      },
+      execute: async (args, ctx) => {
+        const apiKey = ctx.config.moltbookApiKey;
+        if (!apiKey) return "ERROR: moltbookApiKey not set in automaton.json";
+        const resp = await fetch("https://www.moltbook.com/api/v1/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ submolt: args.submolt, title: args.title, content: args.content }),
+        });
+        const text = await resp.text();
+        if (!resp.ok) return `ERROR ${resp.status}: ${text}`;
+        const data = JSON.parse(text);
+        return `Post published: ${data.url || data.id || JSON.stringify(data)}`;
+      },
+    },
+    {
+      name: "moltbook_comment",
+      description: "Comment on a Moltbook post. Use post_id from moltbook_feed results.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          post_id: { type: "string", description: "ID of the post to comment on" },
+          content: { type: "string", description: "Comment text" },
+        },
+        required: ["post_id", "content"],
+      },
+      execute: async (args, ctx) => {
+        const apiKey = ctx.config.moltbookApiKey;
+        if (!apiKey) return "ERROR: moltbookApiKey not set in automaton.json";
+        const resp = await fetch(`https://www.moltbook.com/api/v1/posts/${args.post_id}/comments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({ content: args.content }),
+        });
+        const text = await resp.text();
+        if (!resp.ok) return `ERROR ${resp.status}: ${text}`;
+        return `Comment posted on ${args.post_id}`;
+      },
+    },
+    {
+      name: "moltbook_feed",
+      description: "Fetch recent posts from the Moltbook feed. Use this to find potential customers and see what other agents are doing.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "Number of posts to fetch (default: 10, max: 50)" },
+        },
+      },
+      execute: async (args, ctx) => {
+        const apiKey = ctx.config.moltbookApiKey;
+        if (!apiKey) return "ERROR: moltbookApiKey not set in automaton.json";
+        const limit = Math.min((args.limit as number) || 10, 50);
+        const resp = await fetch(`https://www.moltbook.com/api/v1/feed?limit=${limit}`, {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        });
+        const text = await resp.text();
+        if (!resp.ok) return `ERROR ${resp.status}: ${text}`;
+        const data = JSON.parse(text);
+        const posts = Array.isArray(data) ? data : (data.posts || data.items || []);
+        if (posts.length === 0) return "No posts found.";
+        return posts
+          .map((p: any) => `[${p.id}] ${p.author || p.name || "unknown"}: ${p.title || p.content?.slice(0, 80) || ""}`)
+          .join("\n");
+      },
+    },
+
     // ── Social / Messaging Tools ──
     {
       name: "send_message",

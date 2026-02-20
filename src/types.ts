@@ -44,6 +44,7 @@ export interface AutomatonConfig {
   anthropicApiKey?: string;
   groqApiKey?: string;
   groqModel?: string;
+  moltbookApiKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;
   heartbeatConfigPath: string;
@@ -139,7 +140,8 @@ export type ToolCategory =
   | "skills"
   | "git"
   | "registry"
-  | "replication";
+  | "replication"
+  | "social";
 
 export interface ToolContext {
   identity: AutomatonIdentity;
