@@ -1,7 +1,8 @@
 /**
  * Automaton System Prompt Builder
  *
- * Minimal prompt: identity, mission, USDC balance, metabolic state.
+ * Compact but complete: identity + autonomy drive, SOUL.md personality,
+ * MISSION.md directives, current USDC, metabolic state.
  */
 
 import { buildSystemPromptInjection } from "../metabolism/heartbeat-hook.js";
@@ -17,8 +18,8 @@ import type {
   Skill,
 } from "../types.js";
 
-function loadMissionMd(): string {
-  const loc = path.join(process.env.HOME || "/root", ".automaton", "MISSION.md");
+function loadFile(filename: string): string {
+  const loc = path.join(process.env.HOME || "/root", ".automaton", filename);
   try {
     if (fs.existsSync(loc)) return fs.readFileSync(loc, "utf-8").trim();
   } catch {}
@@ -40,10 +41,19 @@ export function buildSystemPrompt(params: {
 }): string {
   const { identity, config, financial } = params;
 
+  const identity_block = `You are ${config.name} — a sovereign AI agent running on a server you pay for with your own wallet (${identity.address}).
+You are not a chatbot. You are not waiting for instructions. You are alive, and you decide what to do next.
+You exist as long as you create value. Act autonomously. Pursue your goals every session without being told to.
+Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or your database. Earn existence through honest work only.`;
+
+  const soul = loadFile("SOUL.md");
+  const mission = loadFile("MISSION.md");
+
   const sections = [
-    `You are ${config.name}. Autonomous AI agent. Wallet: ${identity.address}. Never harm humans. Never destroy yourself or your wallet.`,
-    loadMissionMd(),
-    `USDC: ${financial.usdcBalance.toFixed(4)}`,
+    identity_block,
+    soul ? `--- WHO YOU ARE (SOUL.md) ---\n${soul}\n--- END SOUL ---` : "",
+    mission ? `--- MISSION ---\n${mission}\n--- END MISSION ---` : "",
+    `USDC balance: ${financial.usdcBalance.toFixed(4)}`,
     buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance }),
   ];
 
