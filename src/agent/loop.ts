@@ -133,7 +133,7 @@ export async function runAgentLoop(
       financial = await getFinancialState(conway, identity.address);
 
       // Check survival tier
-      const tier = getSurvivalTier(financial.creditsCents);
+      const tier = getSurvivalTier(financial.creditsCents, financial.usdcBalance);
       if (tier === "dead") {
         log(config, "[DEAD] No credits remaining. Entering dead state.");
         db.setAgentState("dead");
@@ -249,6 +249,8 @@ export async function runAgentLoop(
         db.insertToolCall(turn.id, tc);
       }
       onTurnComplete?.(turn);
+      // Rate limit protection — pause between turns
+      await new Promise(resolve => setTimeout(resolve, 15000));
 
       // Log the turn
       if (turn.thinking) {

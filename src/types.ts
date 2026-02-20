@@ -42,6 +42,8 @@ export interface AutomatonConfig {
   conwayApiKey: string;
   openaiApiKey?: string;
   anthropicApiKey?: string;
+  groqApiKey?: string;
+  groqModel?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;
   heartbeatConfigPath: string;

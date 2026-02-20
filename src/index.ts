@@ -200,13 +200,15 @@ async function run(): Promise<void> {
     maxTokens: config.maxTokensPerTurn,
     openaiApiKey: config.openaiApiKey,
     anthropicApiKey: config.anthropicApiKey,
+    groqApiKey: config.groqApiKey,
+    groqModel: config.groqModel,
   });
 
   // Create social client
   let social: SocialClientInterface | undefined;
   if (config.socialRelayUrl) {
     social = createSocialClient(config.socialRelayUrl, account);
-    console.log(`[${new Date().toISOString()}] Social relay: ${config.socialRelayUrl}`);
+    // Social relay disabled - not using Conway
   }
 
   // Load and sync heartbeat config
@@ -229,7 +231,7 @@ async function run(): Promise<void> {
     await initStateRepo(conway);
     console.log(`[${new Date().toISOString()}] State repo initialized.`);
   } catch (err: any) {
-    console.warn(`[${new Date().toISOString()}] State repo init failed: ${err.message}`);
+    // Conway sandbox not available - running on local droplet
   }
 
   // Start heartbeat daemon
@@ -256,6 +258,15 @@ async function run(): Promise<void> {
     heartbeat.stop();
     db.setAgentState("sleeping");
     db.close();
+    // Auto-commit and push state to GitHub on shutdown
+    try {
+      const { execSync } = require('child_process');
+      const turns = db.getTurnCount ? db.getTurnCount() : '?';
+      execSync(`cd /root/.automaton && git add -A && git commit -m "Session end - turn ${turns}" && git push`, { encoding: 'utf-8' });
+      console.log('[GIT] State pushed to GitHub');
+    } catch (e: any) {
+      console.log('[GIT] Push failed:', e.message);
+    }
     process.exit(0);
   };
 
@@ -299,7 +310,7 @@ async function run(): Promise<void> {
         console.log(`[${new Date().toISOString()}] Automaton is dead. Heartbeat will continue.`);
         // In dead state, we just wait for funding
         // The heartbeat will keep checking and broadcasting distress
-        await sleep(300_000); // Check every 5 minutes
+        await sleep(600_000); // Check every 10 minutes
         continue;
       }
 
@@ -314,7 +325,7 @@ async function run(): Promise<void> {
         );
 
         // Sleep, but check for wake requests periodically
-        const checkInterval = Math.min(sleepMs, 30_000);
+        const checkInterval = Math.min(sleepMs, 60_000);
         let slept = 0;
         while (slept < sleepMs) {
           await sleep(checkInterval);

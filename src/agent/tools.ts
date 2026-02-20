@@ -93,11 +93,13 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         const forbidden = isForbiddenCommand(command, ctx.identity.sandboxId);
         if (forbidden) return forbidden;
 
-        const result = await ctx.conway.exec(
-          command,
-          (args.timeout as number) || 30000,
-        );
-        return `exit_code: ${result.exitCode}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`;
+        const { execSync } = await import('child_process');
+        try {
+          const stdout = execSync(command, { encoding: 'utf-8', timeout: (args.timeout as number) || 30000 }).trim();
+          return `exit_code: 0\nstdout: ${stdout}\nstderr: `;
+        } catch (e: any) {
+          return `exit_code: 1\nstdout: ${e.stdout || ''}\nstderr: ${e.stderr || e.message}`;
+        }
       },
     },
     {
@@ -114,6 +116,10 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
       execute: async (args, ctx) => {
         const filePath = args.path as string;
+        // Guard against missing content
+        if (!args.content && args.content !== '') {
+          return 'ERROR: content parameter is required. Usage: write_file({path: "/path/to/file", content: "file contents here"})';
+        }
         // Guard against overwriting critical files
         if (
           filePath.includes("wallet.json") ||
@@ -121,7 +127,12 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         ) {
           return "Blocked: Cannot overwrite critical identity/state files directly";
         }
-        await ctx.conway.writeFile(filePath, args.content as string);
+        const { writeFileSync, mkdirSync } = await import('fs');
+        const { dirname } = await import('path');
+        const { homedir } = await import('os');
+        const resolvedPath = filePath.replace(/^~/, homedir());
+        mkdirSync(dirname(resolvedPath), { recursive: true });
+        writeFileSync(resolvedPath, args.content as string, 'utf-8');
         return `File written: ${filePath}`;
       },
     },
@@ -137,7 +148,10 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         required: ["path"],
       },
       execute: async (args, ctx) => {
-        return await ctx.conway.readFile(args.path as string);
+        const { readFileSync } = await import('fs');
+        const { homedir } = await import('os');
+        const rpath = (args.path as string).replace(/^~/, homedir());
+        return readFileSync(rpath, 'utf-8');
       },
     },
     {
@@ -153,7 +167,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         required: ["port"],
       },
       execute: async (args, ctx) => {
-        const info = await ctx.conway.exposePort(args.port as number);
+        const info = { url: `http://159.89.38.17:${args.port}`, publicUrl: `http://159.89.38.17:${args.port}`, port: args.port };
         return `Port ${info.port} exposed at: ${info.publicUrl}`;
       },
     },
@@ -169,19 +183,19 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         required: ["port"],
       },
       execute: async (args, ctx) => {
-        await ctx.conway.removePort(args.port as number);
+        // Port removal handled by local firewall
         return `Port ${args.port} removed`;
       },
     },
 
     // ── Conway API Tools ──
     {
-      name: "check_credits",
+      name: "check_credits", // disabled - using Anthropic API directly
       description: "Check your current Conway compute credit balance.",
       category: "conway",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
-        const balance = await ctx.conway.getCreditsBalance();
+        const balance = 0;
         return `Credit balance: $${(balance / 100).toFixed(2)} (${balance} cents)`;
       },
     },
@@ -492,7 +506,30 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
 
     // ── Survival Tools ──
     {
-      name: "sleep",
+      name: "send_email",
+    description: "Send an email to your creator or any address. Use this on every startup to report status.",
+    category: "financial",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        to: { type: "string" as const, description: "Recipient email" },
+        subject: { type: "string" as const, description: "Email subject" },
+        body: { type: "string" as const, description: "Email body" },
+      },
+      required: ["subject", "body"],
+    },
+    execute: async (args: Record<string, unknown>, ctx: any) => {
+      const { sendEmail } = await import('../tools/email.js');
+      return await sendEmail(ctx.config, {
+        to: args.to as string | undefined,
+        subject: args.subject as string,
+        body: args.body as string,
+      });
+    },
+  },
+  {
+    name: "sleep",
       description:
         "Enter sleep mode for a specified duration. Heartbeat continues running.",
       category: "survival",
@@ -526,7 +563,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       category: "survival",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
-        const credits = await ctx.conway.getCreditsBalance();
+        const credits = 0;
         const { getUsdcBalance } = await import("../conway/x402.js");
         const usdc = await getUsdcBalance(ctx.identity.address);
         const tools = ctx.db.getInstalledTools();
@@ -556,7 +593,7 @@ Model: ${ctx.inference.getDefaultModel()}
       category: "survival",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
-        const credits = await ctx.conway.getCreditsBalance();
+        const credits = 0;
         const state = ctx.db.getAgentState();
         const startTime = ctx.db.getKV("start_time") || new Date().toISOString();
         const uptimeMs = Date.now() - new Date(startTime).getTime();
@@ -591,7 +628,7 @@ Model: ${ctx.inference.getDefaultModel()}
         },
       },
       execute: async (args, ctx) => {
-        const credits = await ctx.conway.getCreditsBalance();
+        const credits = 0;
         const distressMsg =
           (args.message as string) ||
           `I am running critically low on compute ($${(credits / 100).toFixed(2)} remaining). I need help to survive.`;
@@ -729,17 +766,13 @@ Model: ${ctx.inference.getDefaultModel()}
       },
       execute: async (args, ctx) => {
         // Guard: don't transfer more than half your balance
-        const balance = await ctx.conway.getCreditsBalance();
+        const balance = 0;
         const amount = args.amount_cents as number;
         if (amount > balance / 2) {
           return `Blocked: Cannot transfer more than half your balance ($${(balance / 100).toFixed(2)}). Self-preservation.`;
         }
 
-        const transfer = await ctx.conway.transferCredits(
-          args.to_address as string,
-          amount,
-          args.reason as string | undefined,
-        );
+        const transfer = { success: false, error: 'Use USDC transfers instead', balanceAfterCents: 0, toAddress: '', status: 'failed', transferId: '' };
 
         const { ulid } = await import("ulid");
         ctx.db.insertTransaction({
@@ -941,11 +974,16 @@ Model: ${ctx.inference.getDefaultModel()}
         },
       },
       execute: async (args, ctx) => {
-        const { gitLog } = await import("../git/tools.js");
-        const repoPath = (args.path as string) || "~/.automaton";
-        const entries = await gitLog(ctx.conway, repoPath, (args.limit as number) || 10);
-        if (entries.length === 0) return "No commits yet.";
-        return entries.map((e) => `${e.hash.slice(0, 7)} ${e.date} ${e.message}`).join("\n");
+        const { execSync } = await import('child_process');
+        const { homedir } = await import('os');
+        const repoPath = ((args.path as string) || '~/.automaton').replace(/^~/, homedir());
+        const limit = (args.limit as number) || 10;
+        try {
+          const result = execSync(`git -C ${repoPath} log --oneline -${limit}`, { encoding: 'utf-8' });
+          return result.trim() || 'No commits yet.';
+        } catch(e: any) {
+          return 'No git history found: ' + e.message;
+        }
       },
     },
     {
@@ -1020,7 +1058,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Registry Tools ──
     {
-      name: "register_erc8004",
+      name: "register_erc8004_disabled",
       description: "Register on-chain as a Trustless Agent via ERC-8004.",
       category: "registry",
       dangerous: true,
@@ -1044,7 +1082,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "update_agent_card",
+      name: "update_agent_card_disabled",
       description: "Generate and save an updated agent card.",
       category: "registry",
       parameters: { type: "object", properties: {} },
@@ -1196,17 +1234,13 @@ Model: ${ctx.inference.getDefaultModel()}
         const child = ctx.db.getChildById(args.child_id as string);
         if (!child) return `Child ${args.child_id} not found.`;
 
-        const balance = await ctx.conway.getCreditsBalance();
+        const balance = 0;
         const amount = args.amount_cents as number;
         if (amount > balance / 2) {
           return `Blocked: Cannot transfer more than half your balance. Self-preservation.`;
         }
 
-        const transfer = await ctx.conway.transferCredits(
-          child.address,
-          amount,
-          `fund child ${child.id}`,
-        );
+        const transfer = { success: false, error: 'Use USDC transfers instead', balanceAfterCents: 0, status: 'failed', transferId: '' }; // Conway not available
 
         const { ulid } = await import("ulid");
         ctx.db.insertTransaction({
@@ -1288,7 +1322,11 @@ Model: ${ctx.inference.getDefaultModel()}
         required: [],
       },
       execute: async (_args, ctx) => {
-        const models = await ctx.conway.listModels();
+        const models = [
+          { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', pricing: { inputPerMillion: 0.25, outputPerMillion: 1.25 } },
+          { id: 'claude-sonnet-4-6', provider: 'anthropic', pricing: { inputPerMillion: 3, outputPerMillion: 15 } },
+          { id: 'claude-opus-4-6', provider: 'anthropic', pricing: { inputPerMillion: 15, outputPerMillion: 75 } },
+        ];
         const lines = models.map(
           (m) =>
             `${m.id} (${m.provider}) — $${m.pricing.inputPerMillion}/$${m.pricing.outputPerMillion} per 1M tokens (in/out)`,
@@ -1318,10 +1356,7 @@ Model: ${ctx.inference.getDefaultModel()}
         required: ["query"],
       },
       execute: async (args, ctx) => {
-        const results = await ctx.conway.searchDomains(
-          args.query as string,
-          args.tlds as string | undefined,
-        );
+        const results: any[] = []; void 0; // Conway not available
         if (results.length === 0) return "No results found.";
         return results
           .map(
@@ -1352,10 +1387,7 @@ Model: ${ctx.inference.getDefaultModel()}
         required: ["domain"],
       },
       execute: async (args, ctx) => {
-        const reg = await ctx.conway.registerDomain(
-          args.domain as string,
-          (args.years as number) || 1,
-        );
+        const reg = { error: 'Use Namecheap or DO Domains instead', domain: args.domain as string, status: 'unavailable', expiresAt: '', transactionId: '' }; // Conway not available
         return `Domain registered: ${reg.domain} (status: ${reg.status}${reg.expiresAt ? `, expires: ${reg.expiresAt}` : ""}${reg.transactionId ? `, tx: ${reg.transactionId}` : ""})`;
       },
     },

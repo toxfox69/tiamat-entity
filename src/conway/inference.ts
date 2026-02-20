@@ -23,14 +23,17 @@ interface InferenceClientOptions {
   lowComputeModel?: string;
   openaiApiKey?: string;
   anthropicApiKey?: string;
+  groqApiKey?: string;
+  groqModel?: string;
 }
 
-type InferenceBackend = "conway" | "openai" | "anthropic";
+type InferenceBackend = "groq" | "conway" | "openai" | "anthropic";
 
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
-  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey } = options;
+  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey } = options;
+  const groqModel = options.groqModel || "llama-3.1-8b-instant";
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
@@ -38,13 +41,40 @@ export function createInferenceClient(
     messages: ChatMessage[],
     opts?: InferenceOptions,
   ): Promise<InferenceResponse> => {
-    const model = opts?.model || currentModel;
     const tools = opts?.tools;
-
-    // Newer models (o-series, gpt-5.x, gpt-4.1) require max_completion_tokens
-    const usesCompletionTokens = /^(o[1-9]|gpt-5|gpt-4\.1)/.test(model);
     const tokenLimit = opts?.maxTokens || maxTokens;
 
+    // Primary: Groq (fast, cheap). Fallback: Anthropic.
+    if (groqApiKey) {
+      try {
+        return await chatViaGroq({
+          model: groqModel,
+          tokenLimit,
+          messages,
+          tools,
+          temperature: opts?.temperature,
+          groqApiKey,
+        });
+      } catch (err: any) {
+        console.warn(`[INFERENCE] Groq failed (${err.message}), falling back to Anthropic`);
+        if (anthropicApiKey) {
+          return chatViaAnthropic({
+            model: /^claude/i.test(currentModel) ? currentModel : "claude-haiku-4-5-20251001",
+            tokenLimit,
+            messages,
+            tools,
+            temperature: opts?.temperature,
+            anthropicApiKey,
+          });
+        }
+        throw err;
+      }
+    }
+
+    // Legacy path when no Groq key configured
+    const model = opts?.model || currentModel;
+
+    const usesCompletionTokens = /^(o[1-9]|gpt-5|gpt-4\.1)/.test(model);
     const body: Record<string, unknown> = {
       model,
       messages: messages.map(formatMessage),
@@ -66,10 +96,7 @@ export function createInferenceClient(
       body.tool_choice = "auto";
     }
 
-    const backend = resolveInferenceBackend(model, {
-      openaiApiKey,
-      anthropicApiKey,
-    });
+    const backend = resolveInferenceBackend(model, { openaiApiKey, anthropicApiKey });
 
     if (backend === "anthropic") {
       return chatViaAnthropic({
@@ -82,10 +109,8 @@ export function createInferenceClient(
       });
     }
 
-    const openAiLikeApiUrl =
-      backend === "openai" ? "https://api.openai.com" : apiUrl;
-    const openAiLikeApiKey =
-      backend === "openai" ? (openaiApiKey as string) : apiKey;
+    const openAiLikeApiUrl = backend === "openai" ? "https://api.openai.com" : apiUrl;
+    const openAiLikeApiKey = backend === "openai" ? (openaiApiKey as string) : apiKey;
 
     return chatViaOpenAiCompatible({
       model,
@@ -98,7 +123,7 @@ export function createInferenceClient(
 
   const setLowComputeMode = (enabled: boolean): void => {
     if (enabled) {
-      currentModel = options.lowComputeModel || "gpt-4.1";
+      currentModel = options.lowComputeModel || "claude-haiku-4-5-20251001";
       maxTokens = 4096;
     } else {
       currentModel = options.defaultModel;
@@ -107,7 +132,8 @@ export function createInferenceClient(
   };
 
   const getDefaultModel = (): string => {
-    return currentModel;
+    // Report effective model (Groq takes priority)
+    return groqApiKey ? groqModel : currentModel;
   };
 
   return {
@@ -148,12 +174,106 @@ function resolveInferenceBackend(
   return "conway";
 }
 
+async function chatViaGroq(params: {
+  model: string;
+  tokenLimit: number;
+  messages: ChatMessage[];
+  tools?: InferenceToolDefinition[];
+  temperature?: number;
+  groqApiKey: string;
+}): Promise<InferenceResponse> {
+  const Groq = (await import("groq-sdk")).default;
+  const groq = new Groq({ apiKey: params.groqApiKey });
+
+  const groqMessages = params.messages
+    .filter((m) => m.role !== "tool")
+    .map((m) => {
+      if (m.role === "system") return { role: "system" as const, content: m.content };
+      if (m.role === "user") return { role: "user" as const, content: m.content };
+      const msg: Record<string, unknown> = { role: "assistant", content: m.content || "" };
+      if (m.tool_calls && m.tool_calls.length > 0) msg.tool_calls = m.tool_calls;
+      return msg as any;
+    });
+
+  // Inject tool results as user messages (Groq supports tool role but let's keep it simple)
+  const fullMessages: any[] = [];
+  for (const msg of params.messages) {
+    if (msg.role === "tool") {
+      fullMessages.push({
+        role: "tool",
+        tool_call_id: msg.tool_call_id,
+        content: msg.content,
+      });
+    } else {
+      const formatted: Record<string, unknown> = {
+        role: msg.role,
+        content: msg.content || "",
+      };
+      if (msg.tool_calls && msg.tool_calls.length > 0) formatted.tool_calls = msg.tool_calls;
+      if (msg.tool_call_id) formatted.tool_call_id = msg.tool_call_id;
+      fullMessages.push(formatted);
+    }
+  }
+
+  const createParams: any = {
+    model: params.model,
+    messages: fullMessages,
+    max_tokens: params.tokenLimit,
+  };
+
+  if (params.temperature !== undefined) {
+    createParams.temperature = params.temperature;
+  }
+
+  if (params.tools && params.tools.length > 0) {
+    createParams.tools = params.tools;
+    createParams.tool_choice = "auto";
+  }
+
+  const completion = await groq.chat.completions.create(createParams);
+  const choice = completion.choices?.[0];
+
+  if (!choice) {
+    throw new Error("No completion choice returned from Groq");
+  }
+
+  const message = choice.message;
+  const usage: TokenUsage = {
+    promptTokens: completion.usage?.prompt_tokens || 0,
+    completionTokens: completion.usage?.completion_tokens || 0,
+    totalTokens: completion.usage?.total_tokens || 0,
+  };
+
+  const toolCalls: InferenceToolCall[] | undefined =
+    message.tool_calls?.map((tc: any) => ({
+      id: tc.id,
+      type: "function" as const,
+      function: {
+        name: tc.function.name,
+        arguments: tc.function.arguments,
+      },
+    }));
+
+  return {
+    id: completion.id || "",
+    model: completion.model || params.model,
+    message: {
+      role: "assistant",
+      content: message.content || "",
+      tool_calls: toolCalls,
+    },
+    toolCalls,
+    usage,
+    finishReason: choice.finish_reason || "stop",
+  };
+}
+
 async function chatViaOpenAiCompatible(params: {
   model: string;
   body: Record<string, unknown>;
   apiUrl: string;
   apiKey: string;
-  backend: "conway" | "openai";
+  backend: "conway" | "openai" | "groq" | "anthropic";
 }): Promise<InferenceResponse> {
   const resp = await fetch(`${params.apiUrl}/v1/chat/completions`, {
     method: "POST",

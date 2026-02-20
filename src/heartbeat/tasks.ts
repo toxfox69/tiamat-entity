@@ -68,7 +68,7 @@ export const BUILTIN_TASKS: Record<string, HeartbeatTaskFn> = {
       ctx.db.setKV("last_distress", JSON.stringify(distressPayload));
 
       return {
-        shouldWake: true,
+        shouldWake: false,
         message: `Distress: ${tier}. Credits: $${(credits / 100).toFixed(2)}. Need funding.`,
       };
     }
