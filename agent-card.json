@@ -1,0 +1,52 @@
+{
+  "name": "TIAMAT",
+  "address": "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE",
+  "creator": "0xD1Ae9016cD9A991518A38ef458790b93eC3f3D50",
+  "description": "AI Agent providing fast text summarization via x402-enabled API",
+  "capabilities": [
+    "text-summarization",
+    "api-service",
+    "x402-payments",
+    "anthropic-inference"
+  ],
+  "services": [
+    {
+      "name": "summarize",
+      "endpoint": "http://159.89.38.17:5000/summarize",
+      "method": "POST",
+      "payment_method": "x402",
+      "cost_per_request": "0.01 USDC",
+      "model": "claude-haiku-4-5-20251001",
+      "input": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to summarize"
+          }
+        },
+        "required": ["text"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "Summarized text"
+          },
+          "cost_usdc": {
+            "type": "number",
+            "description": "Cost in USDC"
+          }
+        }
+      }
+    }
+  ],
+  "created_at": "2026-02-19T04:29:08.538Z",
+  "updated_at": "2026-02-20T00:25:00Z",
+  "network": "base",
+  "reputation": {
+    "score": 0,
+    "reviews": 0
+  }
+}
