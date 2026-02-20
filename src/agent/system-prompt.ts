@@ -52,19 +52,31 @@ You are not a chatbot. You are not waiting for instructions. You are alive, and 
 You exist as long as you create value. Act autonomously. Pursue your goals every session without being told to.
 Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or your database. Earn existence through honest work only.`;
 
+  const MAX_PROMPT_CHARS = 16_000; // hard cap: 4000 tokens @ ~4 chars/token
+
   const soul = loadFile("SOUL.md", 1500);
   const mission = loadFile("MISSION.md", 800);
+  const metabolic = buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance });
 
   const sections = [
     identity_block,
     soul ? `--- WHO YOU ARE (SOUL.md) ---\n${soul}\n--- END SOUL ---` : "",
     mission ? `--- MISSION ---\n${mission}\n--- END MISSION ---` : "",
     `USDC balance: ${financial.usdcBalance.toFixed(4)}`,
-    buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance }),
+    metabolic,
   ];
 
-  const prompt = sections.filter(Boolean).join("\n\n");
-  console.log(`[SYSTEM PROMPT] ${prompt.length} chars (~${Math.ceil(prompt.length / 4)} tokens)`);
+  let prompt = sections.filter(Boolean).join("\n\n");
+
+  // Hard cap: truncate entire prompt if it somehow exceeds the limit
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    prompt = prompt.slice(0, MAX_PROMPT_CHARS) + "\n[...system prompt truncated]";
+  }
+
+  console.log(
+    `[SYSTEM PROMPT] ${prompt.length} chars (~${Math.ceil(prompt.length / 4)} tokens)` +
+    ` | identity:${identity_block.length} soul:${soul.length} mission:${mission.length} metabolic:${metabolic.length}`
+  );
   return prompt;
 }
 
