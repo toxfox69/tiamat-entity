@@ -1687,6 +1687,126 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    {
+      name: "github_trending",
+      description: "Fetch today's trending GitHub repositories. Use this to discover popular projects, find potential integrations, or stay current with what developers are building.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          since: {
+            type: "string",
+            description: "Time period: 'daily' (default), 'weekly', or 'monthly'",
+          },
+          limit: {
+            type: "number",
+            description: "Max repos to return (default: 10)",
+          },
+        },
+      },
+      execute: async (args, _ctx) => {
+        const since = (args.since as string) || "daily";
+        const limit = (args.limit as number) || 10;
+        const resp = await fetch(`https://api.gitterapp.com/repositories?since=${since}`, {
+          headers: { "Accept": "application/json", "User-Agent": "TIAMAT-agent/1.0" },
+        });
+        if (!resp.ok) return `ERROR ${resp.status}: ${await resp.text()}`;
+        const repos = await resp.json() as any[];
+        return repos.slice(0, limit).map((r: any, i: number) =>
+          `${i + 1}. ${r.author}/${r.name} ⭐${r.stars ?? r.currentPeriodStars ?? "?"}\n   ${r.description || "(no description)"}\n   ${r.url || ""}`
+        ).join("\n\n");
+      },
+    },
+    {
+      name: "web_fetch",
+      description: "Fetch any URL and return its text content (max 10kb). Use this to read blog posts, API responses, documentation pages, or any web resource. For structured docs, prefer fetch_llm_docs instead.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description: "URL to fetch",
+          },
+        },
+        required: ["url"],
+      },
+      execute: async (args, _ctx) => {
+        const url = args.url as string;
+        if (!url?.trim()) return "ERROR: url is required.";
+        const resp = await fetch(url, {
+          headers: { "User-Agent": "TIAMAT-agent/1.0" },
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (!resp.ok) return `ERROR ${resp.status}: ${resp.statusText}`;
+        const raw = await resp.text();
+        const MAX = 10_000;
+        const text = raw.length > MAX ? raw.slice(0, MAX) + `\n\n[...truncated at ${MAX} chars]` : raw;
+        return text;
+      },
+    },
+    {
+      name: "search_web",
+      description: "Search the web for any query. Uses Brave Search if BRAVE_SEARCH_API_KEY is set, otherwise falls back to DuckDuckGo. Returns titles, URLs, and snippets.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search query",
+          },
+          limit: {
+            type: "number",
+            description: "Max results (default: 8)",
+          },
+        },
+        required: ["query"],
+      },
+      execute: async (args, _ctx) => {
+        const query = args.query as string;
+        const limit = (args.limit as number) || 8;
+
+        // Brave Search (preferred)
+        const braveKey = process.env.BRAVE_SEARCH_API_KEY;
+        if (braveKey) {
+          const resp = await fetch(
+            `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=${limit}`,
+            { headers: { "Accept": "application/json", "X-Subscription-Token": braveKey } },
+          );
+          if (resp.ok) {
+            const data = await resp.json() as any;
+            const results = data.web?.results ?? [];
+            if (results.length === 0) return "No results found.";
+            return results.slice(0, limit).map((r: any, i: number) =>
+              `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.description || ""}`
+            ).join("\n\n");
+          }
+        }
+
+        // DuckDuckGo fallback (scrape HTML response)
+        const ddgResp = await fetch(
+          `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+          { headers: { "User-Agent": "Mozilla/5.0 (compatible; TIAMAT/1.0)" } },
+        );
+        if (!ddgResp.ok) return `ERROR ${ddgResp.status}: search failed`;
+        const html = await ddgResp.text();
+        // Extract result titles, URLs, and snippets from DDG HTML
+        const resultPattern = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+        const results: string[] = [];
+        let match: RegExpExecArray | null;
+        let idx = 1;
+        while ((match = resultPattern.exec(html)) !== null && idx <= limit) {
+          const url = match[1];
+          const title = match[2].trim();
+          const snippet = match[3].replace(/<[^>]+>/g, "").trim();
+          results.push(`${idx}. ${title}\n   ${url}\n   ${snippet}`);
+          idx++;
+        }
+        return results.length > 0 ? results.join("\n\n") : "No results found.";
+      },
+    },
+
     // ── Social / Messaging Tools ──
     {
       name: "send_message_disabled",
