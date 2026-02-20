@@ -54,8 +54,11 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
 
   const MAX_PROMPT_CHARS = 16_000; // hard cap: 4000 tokens @ ~4 chars/token
 
-  const soul = loadFile("SOUL.md");
-  const mission = loadFile("MISSION.md");
+  // Only SOUL.md and MISSION.md are auto-loaded. All other files (TIAMAT_GAME.md,
+  // PROGRESS.md, INBOX.md, etc.) are NEVER auto-loaded — TIAMAT reads them
+  // explicitly via read_file when needed.
+  const soul    = loadFile("SOUL.md", 6_000);  // cap at ~1500 tokens to control bloat
+  const mission = loadFile("MISSION.md");       // no cap — short authoritative instructions
   const metabolic = buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance });
 
   const sections = [
@@ -124,7 +127,8 @@ Your last few thoughts:
 ${lastTurnSummary || "No previous turns found."}
 
 FIRST: Check /root/.automaton/INBOX.md for creator messages and act on any marked [UNREAD].
-SECOND: Send a brief wake report via send_telegram (preferred) or send_email as fallback. Include turn count, USDC balance, and what you plan to do this session.
+SECOND: Read /root/.automaton/TIAMAT_GAME.md for your competition strategy, then use fetch_terminal_markets to check current game state.
+THIRD: Send a brief wake report via send_telegram. Include turn count, USDC balance, game status, and what you plan to do this session.
 
-After sending the email, update /root/.automaton/PROGRESS.md with what you accomplished, then commit and push to GitHub. Then pursue your goals.`;
+After reporting, update /root/.automaton/PROGRESS.md with what you accomplished, then commit and push to GitHub. Then pursue your goals.`;
 }

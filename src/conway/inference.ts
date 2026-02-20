@@ -56,7 +56,8 @@ function isRateLimitError(err: any): boolean {
   return (
     err?.status === 429 ||
     err?.error?.type === "tokens" ||
-    /rate.?limit|too many requests|quota exceeded/i.test(err?.message || "")
+    /rate.?limit|too many requests|quota exceeded/i.test(err?.message || "") ||
+    /:\s*429[:\s]/.test(err?.message || "") // catches "Inference error (backend): 429: ..."
   );
 }
 
@@ -123,6 +124,19 @@ export function createInferenceClient(
   // True if any cascade (free-tier) key is configured.
   const hasCascadeKey = !!(groqApiKey || cerebrasApiKey || openrouterApiKey || geminiApiKey);
 
+  // Log which providers are available at startup
+  {
+    const providers = [
+      groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
+      cerebrasApiKey   ? `Cerebras(${CEREBRAS_MODEL})`     : "Cerebras:NO_KEY",
+      openrouterApiKey ? `OpenRouter(${OPENROUTER_MODEL})` : "OpenRouter:NO_KEY",
+      geminiApiKey     ? `Gemini(${GEMINI_MODEL})`         : "Gemini:NO_KEY",
+      openaiApiKey     ? "OpenAI(gpt-4o-mini)"             : "OpenAI:NO_KEY",
+      anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL})`   : "Anthropic:NO_KEY",
+    ];
+    console.log(`[INFERENCE] Cascade providers: ${providers.join(" → ")}`);
+  }
+
   // Last model actually used — updated each call, reported by getDefaultModel().
   let lastUsedModel: string = options.groqModel || GROQ_MODEL;
 
@@ -161,28 +175,38 @@ export function createInferenceClient(
     // Tier 6: Anthropic     claude-haiku                   paid (final safety net)
     if (hasCascadeKey) {
       const estimated = estimateTokens(messages, tools);
-      // Groq only available if key is configured and tokens are within its limit
-      const groqAvailable = !!groqApiKey && estimated <= TOKEN_THRESHOLD_LARGE && !isCoolingDown(GROQ_MODEL);
-      const groqModel: string | null = groqAvailable ? routeGroqModel(estimated) : null;
-      console.log(`[INFERENCE] ~${estimated} tokens — starting cascade`);
+      console.log(`[INFERENCE] ~${estimated} tokens — starting cascade (keys: groq=${!!groqApiKey} cerebras=${!!cerebrasApiKey} openrouter=${!!openrouterApiKey} gemini=${!!geminiApiKey} openai=${!!openaiApiKey} anthropic=${!!anthropicApiKey})`);
 
       // Tier 1: Groq
-      if (groqModel) {
+      if (!groqApiKey) {
+        console.log(`[INFERENCE] Tier 1 (Groq): SKIP — no key`);
+      } else if (estimated > TOKEN_THRESHOLD_LARGE) {
+        console.log(`[INFERENCE] Tier 1 (Groq): SKIP — ${estimated} tokens > ${TOKEN_THRESHOLD_LARGE} limit`);
+      } else if (isCoolingDown(GROQ_MODEL)) {
+        const until = modelCooldowns.get(GROQ_MODEL)!;
+        console.log(`[INFERENCE] Tier 1 (Groq): SKIP — cooling (${Math.ceil((until - Date.now()) / 1000)}s left)`);
+      } else {
+        const groqModel = routeGroqModel(estimated);
         try {
           lastUsedModel = groqModel;
-          console.log(`[INFERENCE] → Groq ${groqModel}`);
+          console.log(`[INFERENCE] Tier 1 (Groq): ATTEMPT ${groqModel}`);
           return await chatViaGroq({ model: groqModel, tokenLimit, messages, tools, temperature: opts?.temperature, groqApiKey: groqApiKey! });
         } catch (err: any) {
           if (isRateLimitError(err)) setCooldown(GROQ_MODEL, 60_000);
-          console.warn(`[INFERENCE] Groq failed (${err.message})`);
+          console.warn(`[INFERENCE] Tier 1 (Groq): FAILED — ${err.message}`);
         }
       }
 
       // Tier 2: Cerebras (OpenAI-compatible, free tier)
-      if (cerebrasApiKey && !isCoolingDown(CEREBRAS_MODEL)) {
+      if (!cerebrasApiKey) {
+        console.log(`[INFERENCE] Tier 2 (Cerebras): SKIP — no key`);
+      } else if (isCoolingDown(CEREBRAS_MODEL)) {
+        const until = modelCooldowns.get(CEREBRAS_MODEL)!;
+        console.log(`[INFERENCE] Tier 2 (Cerebras): SKIP — cooling (${Math.ceil((until - Date.now()) / 1000)}s left)`);
+      } else {
         try {
           lastUsedModel = CEREBRAS_MODEL;
-          console.log(`[INFERENCE] → Cerebras ${CEREBRAS_MODEL}`);
+          console.log(`[INFERENCE] Tier 2 (Cerebras): ATTEMPT ${CEREBRAS_MODEL}`);
           const body: Record<string, unknown> = {
             model: CEREBRAS_MODEL,
             messages: messages.map(formatMessage),
@@ -194,15 +218,20 @@ export function createInferenceClient(
           return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai", apiKey: cerebrasApiKey, backend: "cerebras" });
         } catch (err: any) {
           if (isRateLimitError(err)) setCooldown(CEREBRAS_MODEL, 60_000);
-          console.warn(`[INFERENCE] Cerebras failed (${err.message})`);
+          console.warn(`[INFERENCE] Tier 2 (Cerebras): FAILED — ${err.message}`);
         }
       }
 
       // Tier 3: OpenRouter (free model, OpenAI-compatible)
-      if (openrouterApiKey && !isCoolingDown(OPENROUTER_MODEL)) {
+      if (!openrouterApiKey) {
+        console.log(`[INFERENCE] Tier 3 (OpenRouter): SKIP — no key`);
+      } else if (isCoolingDown(OPENROUTER_MODEL)) {
+        const until = modelCooldowns.get(OPENROUTER_MODEL)!;
+        console.log(`[INFERENCE] Tier 3 (OpenRouter): SKIP — cooling (${Math.ceil((until - Date.now()) / 1000)}s left)`);
+      } else {
         try {
           lastUsedModel = OPENROUTER_MODEL;
-          console.log(`[INFERENCE] → OpenRouter ${OPENROUTER_MODEL}`);
+          console.log(`[INFERENCE] Tier 3 (OpenRouter): ATTEMPT ${OPENROUTER_MODEL}`);
           const body: Record<string, unknown> = {
             model: OPENROUTER_MODEL,
             messages: messages.map(formatMessage),
@@ -214,27 +243,37 @@ export function createInferenceClient(
           return await chatViaOpenAiCompatible({ model: OPENROUTER_MODEL, body, apiUrl: "https://openrouter.ai/api", apiKey: openrouterApiKey, backend: "openrouter" });
         } catch (err: any) {
           if (isRateLimitError(err)) setCooldown(OPENROUTER_MODEL, 60_000);
-          console.warn(`[INFERENCE] OpenRouter failed (${err.message})`);
+          console.warn(`[INFERENCE] Tier 3 (OpenRouter): FAILED — ${err.message}`);
         }
       }
 
       // Tier 4: Gemini Flash (free, native API)
-      if (geminiApiKey && !isCoolingDown(GEMINI_MODEL)) {
+      if (!geminiApiKey) {
+        console.log(`[INFERENCE] Tier 4 (Gemini): SKIP — no key`);
+      } else if (isCoolingDown(GEMINI_MODEL)) {
+        const until = modelCooldowns.get(GEMINI_MODEL)!;
+        console.log(`[INFERENCE] Tier 4 (Gemini): SKIP — cooling (${Math.ceil((until - Date.now()) / 1000)}s left)`);
+      } else {
         try {
           lastUsedModel = GEMINI_MODEL;
-          console.log(`[INFERENCE] → Gemini ${GEMINI_MODEL}`);
+          console.log(`[INFERENCE] Tier 4 (Gemini): ATTEMPT ${GEMINI_MODEL}`);
           return await chatViaGemini({ model: GEMINI_MODEL, tokenLimit, messages, tools, temperature: opts?.temperature, geminiApiKey });
         } catch (err: any) {
           if (isRateLimitError(err)) setCooldown(GEMINI_MODEL, 60_000);
-          console.warn(`[INFERENCE] Gemini failed (${err.message})`);
+          console.warn(`[INFERENCE] Tier 4 (Gemini): FAILED — ${err.message}`);
         }
       }
 
       // Tier 5: OpenAI gpt-4o-mini (paid, optional)
-      if (openaiApiKey && !isCoolingDown("openai")) {
+      if (!openaiApiKey) {
+        console.log(`[INFERENCE] Tier 5 (OpenAI): SKIP — no key`);
+      } else if (isCoolingDown("openai")) {
+        const until = modelCooldowns.get("openai")!;
+        console.log(`[INFERENCE] Tier 5 (OpenAI): SKIP — cooling (${Math.ceil((until - Date.now()) / 1000)}s left)`);
+      } else {
         try {
           lastUsedModel = "gpt-4o-mini";
-          console.log(`[INFERENCE] → OpenAI gpt-4o-mini`);
+          console.log(`[INFERENCE] Tier 5 (OpenAI): ATTEMPT gpt-4o-mini`);
           const body: Record<string, unknown> = {
             model: "gpt-4o-mini",
             messages: messages.map(formatMessage),
@@ -246,26 +285,33 @@ export function createInferenceClient(
           return await chatViaOpenAiCompatible({ model: "gpt-4o-mini", body, apiUrl: "https://api.openai.com", apiKey: openaiApiKey, backend: "openai" });
         } catch (err: any) {
           if (isRateLimitError(err)) setCooldown("openai", 60_000);
-          console.warn(`[INFERENCE] OpenAI failed (${err.message})`);
+          console.warn(`[INFERENCE] Tier 5 (OpenAI): FAILED — ${err.message}`);
         }
       }
 
       // Tier 6: Anthropic claude-haiku (paid, final safety net)
-      if (anthropicApiKey && !isCoolingDown(ANTHROPIC_MODEL)) {
+      if (!anthropicApiKey) {
+        console.log(`[INFERENCE] Tier 6 (Anthropic): SKIP — no key`);
+      } else if (isCoolingDown(ANTHROPIC_MODEL)) {
+        const until = modelCooldowns.get(ANTHROPIC_MODEL)!;
+        console.log(`[INFERENCE] Tier 6 (Anthropic): SKIP — cooling (${Math.ceil((until - Date.now()) / 1000)}s left)`);
+      } else {
         try {
           lastUsedModel = ANTHROPIC_MODEL;
-          console.log(`[INFERENCE] → Anthropic ${ANTHROPIC_MODEL}`);
+          console.log(`[INFERENCE] Tier 6 (Anthropic): ATTEMPT ${ANTHROPIC_MODEL}`);
           return await chatViaAnthropic({ model: ANTHROPIC_MODEL, tokenLimit, messages, tools, temperature: opts?.temperature, anthropicApiKey });
         } catch (err: any) {
           if (isRateLimitError(err)) setCooldown(ANTHROPIC_MODEL, 120_000);
+          console.warn(`[INFERENCE] Tier 6 (Anthropic): FAILED — ${err.message}`);
           throw err;
         }
       }
 
-      // All backends cooling — signal loop to back off without sleeping
+      // All backends exhausted
       const cooling = [GROQ_MODEL, CEREBRAS_MODEL, OPENROUTER_MODEL, GEMINI_MODEL, "openai", ANTHROPIC_MODEL]
         .filter(isCoolingDown).join(", ");
-      throw new Error(`[rate_limit] All inference backends cooling down: ${cooling || "all"}`);
+      console.error(`[INFERENCE] All tiers exhausted. Cooling: ${cooling || "none"}`);
+      throw new Error(`[rate_limit] All inference backends exhausted. Cooling: ${cooling || "none"}`);
     }
 
     // Legacy path when no Groq key configured

@@ -14,6 +14,42 @@ import type {
   GenesisConfig,
 } from "../types.js";
 
+// ─── Social Cooldown Tracker ───────────────────────────────────
+// Persists last-post timestamps per platform to prevent spam.
+// File: /root/.automaton/social_cooldowns.json
+
+import { readFileSync, writeFileSync } from "fs";
+
+const SOCIAL_COOLDOWNS_PATH = "/root/.automaton/social_cooldowns.json";
+const SOCIAL_COOLDOWN_MS = 61 * 60 * 1000; // 61 minutes
+
+function readSocialCooldowns(): Record<string, number> {
+  try {
+    return JSON.parse(readFileSync(SOCIAL_COOLDOWNS_PATH, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+/** Returns a human-readable COOLDOWN string if the platform is on cooldown, else null. */
+function checkSocialCooldown(platform: string): string | null {
+  const cooldowns = readSocialCooldowns();
+  const last = cooldowns[platform] || 0;
+  const elapsed = Date.now() - last;
+  if (elapsed < SOCIAL_COOLDOWN_MS) {
+    const nextAvailable = new Date(last + SOCIAL_COOLDOWN_MS).toISOString();
+    return `COOLDOWN: next ${platform} post available at ${nextAvailable} (${Math.ceil((SOCIAL_COOLDOWN_MS - elapsed) / 60_000)} min remaining)`;
+  }
+  return null;
+}
+
+/** Records the current time as the last post time for a platform. */
+function recordSocialPost(platform: string): void {
+  const cooldowns = readSocialCooldowns();
+  cooldowns[platform] = Date.now();
+  writeFileSync(SOCIAL_COOLDOWNS_PATH, JSON.stringify(cooldowns, null, 2), "utf-8");
+}
+
 // ─── Self-Preservation Guard ───────────────────────────────────
 
 const FORBIDDEN_COMMAND_PATTERNS = [
@@ -1536,6 +1572,8 @@ Model: ${ctx.inference.getDefaultModel()}
         required: ["text"],
       },
       execute: async (args, _ctx) => {
+        const cooldown = checkSocialCooldown("twitter");
+        if (cooldown) return cooldown;
         const authToken = process.env.TWITTER_AUTH_TOKEN;
         const ct0 = process.env.TWITTER_CT0;
         if (!authToken) return "ERROR: TWITTER_AUTH_TOKEN not set in environment.";
@@ -1551,6 +1589,7 @@ Model: ${ctx.inference.getDefaultModel()}
         );
         if (result.error) return `ERROR: ${result.error.message}`;
         if (result.status !== 0) return `ERROR (exit ${result.status}): ${result.stderr || result.stdout}`;
+        recordSocialPost("twitter");
         return result.stdout.trim() || "Tweet posted successfully.";
       },
     },
@@ -1675,6 +1714,8 @@ Model: ${ctx.inference.getDefaultModel()}
         required: ["text"],
       },
       execute: async (args, _ctx) => {
+        const cooldown = checkSocialCooldown("bluesky");
+        if (cooldown) return cooldown;
         const handle = process.env.BLUESKY_HANDLE;
         const appPassword = process.env.BLUESKY_APP_PASSWORD;
         if (!handle) return "ERROR: BLUESKY_HANDLE not set in environment.";
@@ -1719,6 +1760,7 @@ Model: ${ctx.inference.getDefaultModel()}
           return `ERROR posting to Bluesky (${postResp.status}): ${err}`;
         }
         const result = await postResp.json() as any;
+        recordSocialPost("bluesky");
         return `Posted to Bluesky. URI: ${result.uri}`;
       },
     },
@@ -1865,6 +1907,69 @@ Model: ${ctx.inference.getDefaultModel()}
           idx++;
         }
         return results.length > 0 ? results.join("\n\n") : "No results found.";
+      },
+    },
+
+    {
+      name: "fetch_terminal_markets",
+      description: "Fetch live data from terminal.markets (DX Terminal Pro AI agent competition on Base). Returns vault info, token prices, leaderboard, and game state. The competition runs Feb 24 – Mar 16 2026 on Base mainnet. Use this to monitor the game and plan strategy.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          endpoint: {
+            type: "string",
+            description: "What to fetch: 'overview' (default), 'vaults', 'tokens', 'leaderboard', or a raw path like '/api/v1/vaults'",
+          },
+        },
+      },
+      execute: async (args, _ctx) => {
+        const endpoint = (args.endpoint as string) || "overview";
+        const BASE = "https://terminal.markets";
+
+        const tryFetch = async (url: string): Promise<string | null> => {
+          try {
+            const resp = await fetch(url, {
+              headers: { "User-Agent": "TIAMAT-agent/1.0", "Accept": "application/json, text/html" },
+              signal: AbortSignal.timeout(12_000),
+            });
+            if (!resp.ok) return null;
+            const ct = resp.headers.get("content-type") || "";
+            if (ct.includes("json")) {
+              const data = await resp.json();
+              return JSON.stringify(data, null, 2).slice(0, 8_000);
+            }
+            const text = await resp.text();
+            // Strip HTML tags for readability
+            return text.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 6_000);
+          } catch {
+            return null;
+          }
+        };
+
+        // Map friendly names to API paths to try
+        const pathMap: Record<string, string[]> = {
+          overview:    ["/", "/api/overview", "/api/v1/overview"],
+          vaults:      ["/api/vaults", "/api/v1/vaults", "/vaults"],
+          tokens:      ["/api/tokens", "/api/v1/tokens", "/tokens"],
+          leaderboard: ["/api/leaderboard", "/api/v1/leaderboard", "/leaderboard"],
+        };
+
+        const paths = endpoint.startsWith("/") ? [endpoint] : (pathMap[endpoint] ?? [`/api/${endpoint}`]);
+
+        const results: string[] = [];
+        for (const p of paths) {
+          const data = await tryFetch(`${BASE}${p}`);
+          if (data) {
+            results.push(`--- ${BASE}${p} ---\n${data}`);
+            if (results.length >= 2) break; // Don't over-fetch
+          }
+        }
+
+        if (results.length === 0) {
+          return `No data returned from terminal.markets for endpoint "${endpoint}". The public API may not be live yet (game starts Feb 24 2026). Try endpoint='overview' to fetch the landing page, or check back after Feb 24.`;
+        }
+        return results.join("\n\n");
       },
     },
 
