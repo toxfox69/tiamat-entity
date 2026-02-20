@@ -12,8 +12,9 @@ import type {
   InferenceClient,
 } from "../types.js";
 
-const MAX_CONTEXT_TURNS = 6;
-const SUMMARY_THRESHOLD = 4;
+const MAX_CONTEXT_TURNS = 4;        // 4 turns keeps context well under 8k tokens
+const SUMMARY_THRESHOLD = 3;
+const MAX_TOOL_RESULT_CHARS = 1500; // Truncate large tool outputs (web_fetch, read_file, etc.)
 
 /**
  * Build the message array for the next inference call.
@@ -58,11 +59,15 @@ export function buildContextMessages(
       }
       messages.push(msg);
 
-      // Add tool results
+      // Add tool results — truncated to prevent context bloat from large outputs
       for (const tc of turn.toolCalls) {
+        const raw = tc.error ? `Error: ${tc.error}` : tc.result;
+        const content = raw.length > MAX_TOOL_RESULT_CHARS
+          ? raw.slice(0, MAX_TOOL_RESULT_CHARS) + `\n[...truncated ${raw.length - MAX_TOOL_RESULT_CHARS} chars]`
+          : raw;
         messages.push({
           role: "tool",
-          content: tc.error ? `Error: ${tc.error}` : tc.result,
+          content,
           tool_call_id: tc.id,
         });
       }
