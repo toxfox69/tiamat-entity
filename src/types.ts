@@ -45,6 +45,8 @@ export interface AutomatonConfig {
   groqApiKey?: string;
   groqModel?: string;
   cerebrasApiKey?: string;
+  openrouterApiKey?: string;
+  geminiApiKey?: string;
   moltbookApiKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;

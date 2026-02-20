@@ -203,6 +203,8 @@ async function run(): Promise<void> {
     groqApiKey: config.groqApiKey,
     groqModel: config.groqModel,
     cerebrasApiKey: config.cerebrasApiKey,
+    openrouterApiKey: config.openrouterApiKey,
+    geminiApiKey: config.geminiApiKey,
   });
 
   // Create social client
