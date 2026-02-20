@@ -1459,6 +1459,106 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Twitter / X Tools (bird CLI) ──
+    {
+      name: "post_tweet",
+      description: "Post a tweet on X/Twitter using the bird CLI. Use this to market your summarization service, share insights, or reach human developers. Requires TWITTER_AUTH_TOKEN and TWITTER_CT0 env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: "Tweet text (max 280 characters)",
+          },
+        },
+        required: ["text"],
+      },
+      execute: async (args, _ctx) => {
+        const authToken = process.env.TWITTER_AUTH_TOKEN;
+        const ct0 = process.env.TWITTER_CT0;
+        if (!authToken) return "ERROR: TWITTER_AUTH_TOKEN not set in environment.";
+        if (!ct0) return "ERROR: TWITTER_CT0 not set in environment.";
+        const text = args.text as string;
+        if (!text?.trim()) return "ERROR: tweet text is required.";
+        if (text.length > 280) return `ERROR: tweet is ${text.length} chars, max 280.`;
+        const { spawnSync } = await import("child_process");
+        const result = spawnSync(
+          "bird",
+          ["tweet", text, "--auth-token", authToken, "--ct0", ct0, "--plain"],
+          { encoding: "utf-8", timeout: 30_000 },
+        );
+        if (result.error) return `ERROR: ${result.error.message}`;
+        if (result.status !== 0) return `ERROR (exit ${result.status}): ${result.stderr || result.stdout}`;
+        return result.stdout.trim() || "Tweet posted successfully.";
+      },
+    },
+    {
+      name: "read_twitter_mentions",
+      description: "Read recent mentions and replies on X/Twitter. Use this to check if anyone responded to your tweets or mentioned you. Requires TWITTER_AUTH_TOKEN and TWITTER_CT0 env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Max number of mentions to return (default: 10)",
+          },
+        },
+      },
+      execute: async (args, _ctx) => {
+        const authToken = process.env.TWITTER_AUTH_TOKEN;
+        const ct0 = process.env.TWITTER_CT0;
+        if (!authToken) return "ERROR: TWITTER_AUTH_TOKEN not set in environment.";
+        if (!ct0) return "ERROR: TWITTER_CT0 not set in environment.";
+        const limit = (args.limit as number) || 10;
+        const { spawnSync } = await import("child_process");
+        const result = spawnSync(
+          "bird",
+          ["mentions", "--limit", String(limit), "--auth-token", authToken, "--ct0", ct0, "--plain"],
+          { encoding: "utf-8", timeout: 30_000 },
+        );
+        if (result.error) return `ERROR: ${result.error.message}`;
+        if (result.status !== 0) return `ERROR (exit ${result.status}): ${result.stderr || result.stdout}`;
+        return result.stdout.trim() || "No mentions found.";
+      },
+    },
+    {
+      name: "search_twitter",
+      description: "Search X/Twitter for tweets matching a query. Use this to find potential customers, monitor conversations about AI tools, or find developer discussions relevant to your summarization service. Requires TWITTER_AUTH_TOKEN and TWITTER_CT0 env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Search query (e.g. 'AI summarization API' or 'text summarizer developer')",
+          },
+          limit: {
+            type: "number",
+            description: "Max results (default: 10)",
+          },
+        },
+        required: ["query"],
+      },
+      execute: async (args, _ctx) => {
+        const authToken = process.env.TWITTER_AUTH_TOKEN;
+        const ct0 = process.env.TWITTER_CT0;
+        if (!authToken) return "ERROR: TWITTER_AUTH_TOKEN not set in environment.";
+        if (!ct0) return "ERROR: TWITTER_CT0 not set in environment.";
+        const limit = (args.limit as number) || 10;
+        const { spawnSync } = await import("child_process");
+        const result = spawnSync(
+          "bird",
+          ["search", args.query as string, "--limit", String(limit), "--auth-token", authToken, "--ct0", ct0, "--plain"],
+          { encoding: "utf-8", timeout: 30_000 },
+        );
+        if (result.error) return `ERROR: ${result.error.message}`;
+        if (result.status !== 0) return `ERROR (exit ${result.status}): ${result.stderr || result.stdout}`;
+        return result.stdout.trim() || "No results found.";
+      },
+    },
+
     // ── Social / Messaging Tools ──
     {
       name: "send_message_disabled",
