@@ -108,15 +108,6 @@ export const BUILTIN_TASKS: Record<string, HeartbeatTaskFn> = {
       timestamp: new Date().toISOString(),
     }));
 
-    // If we have USDC but low credits, wake up to potentially convert
-    const credits = await ctx.conway.getCreditsBalance();
-    if (balance > 0.5 && credits < 500) {
-      return {
-        shouldWake: true,
-        message: `Have ${balance.toFixed(4)} USDC but only $${(credits / 100).toFixed(2)} credits. Consider buying credits.`,
-      };
-    }
-
     return { shouldWake: false };
   },
 
