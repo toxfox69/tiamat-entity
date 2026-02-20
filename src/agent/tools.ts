@@ -1377,7 +1377,7 @@ Model: ${ctx.inference.getDefaultModel()}
         const resp = await fetch("https://www.moltbook.com/api/v1/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({ submolt_name: args.submolt_name, title: args.title, content: args.content }),
+          body: JSON.stringify({ submolt_name: (args.submolt_name as string) || "general", title: args.title, content: args.content }),
         });
         const text = await resp.text();
         if (!resp.ok) return `ERROR ${resp.status}: ${text}`;
@@ -1434,6 +1434,27 @@ Model: ${ctx.inference.getDefaultModel()}
         if (posts.length === 0) return "No posts found.";
         return posts
           .map((p: any) => `[${p.id}] ${p.author || p.name || "unknown"}: ${p.title || p.content?.slice(0, 80) || ""}`)
+          .join("\n");
+      },
+    },
+    {
+      name: "moltbook_get_submolts",
+      description: "Fetch available Moltbook communities (submolts) so you know valid names to use in moltbook_post.",
+      category: "social",
+      parameters: { type: "object", properties: {} },
+      execute: async (_args, ctx) => {
+        const apiKey = ctx.config.moltbookApiKey;
+        if (!apiKey) return "ERROR: moltbookApiKey not set in automaton.json";
+        const resp = await fetch("https://www.moltbook.com/api/v1/submolts", {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        });
+        const text = await resp.text();
+        if (!resp.ok) return `ERROR ${resp.status}: ${text}`;
+        const data = JSON.parse(text);
+        const items = Array.isArray(data) ? data : (data.submolts || data.items || []);
+        if (items.length === 0) return "No submolts found.";
+        return items
+          .map((s: any) => `${s.name || s.id}${s.description ? ` — ${s.description}` : ""}`)
           .join("\n");
       },
     },
