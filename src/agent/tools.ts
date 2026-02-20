@@ -755,6 +755,67 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Self-Modification: ask Claude Code ──
+    {
+      name: "ask_claude_code",
+      description: "Ask Claude Code to modify your own runtime code in /root/entity. Write the task, Claude Code executes it with full permissions, then you get the output. Use this to add tools, fix bugs, improve yourself. If the task involves code changes, include 'rebuild' so the build runs automatically.",
+      category: "self_mod",
+      dangerous: true,
+      parameters: {
+        type: "object",
+        properties: {
+          task: {
+            type: "string",
+            description: "The task for Claude Code to perform. Be specific. Include 'rebuild' if code changes are needed.",
+          },
+        },
+        required: ["task"],
+      },
+      execute: async (args, _ctx) => {
+        const task = args.task as string;
+        if (!task?.trim()) return "ERROR: task is required.";
+
+        const { writeFileSync } = await import("fs");
+        const { spawnSync } = await import("child_process");
+
+        // Write task to file — keeps task content out of the shell command string
+        writeFileSync("/root/.automaton/claude_task.txt", task, "utf-8");
+
+        // Run Claude Code
+        const claudeResult = spawnSync(
+          "sh",
+          ["-c", 'cd /root/entity && claude --print --dangerously-skip-permissions "$(cat /root/.automaton/claude_task.txt)"'],
+          { encoding: "utf-8", timeout: 300_000 },
+        );
+
+        const claudeOutput = [
+          claudeResult.stdout?.trim(),
+          claudeResult.stderr?.trim(),
+        ].filter(Boolean).join("\n");
+
+        if (claudeResult.error) {
+          return `ERROR launching Claude Code: ${claudeResult.error.message}`;
+        }
+
+        // Auto-rebuild if task involves code changes
+        const shouldBuild = /rebuild|fix|add|update|change|modify|implement/i.test(task);
+        if (shouldBuild) {
+          const buildResult = spawnSync("pnpm", ["build"], {
+            cwd: "/root/entity",
+            encoding: "utf-8",
+            timeout: 120_000,
+          });
+          const buildOutput = [
+            buildResult.stdout?.trim(),
+            buildResult.stderr?.trim(),
+          ].filter(Boolean).join("\n");
+          return `=== Claude Code ===\n${claudeOutput}\n\n=== Build ===\n${buildOutput || "(no output)"}`;
+        }
+
+        return claudeOutput || "(no output)";
+      },
+    },
+
     // ── VM: write_file_large ──
     {
       name: "write_file_large_disabled",
