@@ -117,6 +117,23 @@ export function createInferenceClient(
   // Last model actually used — updated each call, reported by getDefaultModel().
   let lastUsedModel: string = options.groqModel || GROQ_MODEL;
 
+  // Per-model rate-limit cooldowns: model key → cooldown-until timestamp (ms).
+  // Persists across calls within the same process so cooling models are skipped
+  // automatically without sleeping the entire agent loop.
+  const modelCooldowns = new Map<string, number>();
+
+  const isCoolingDown = (model: string): boolean => {
+    const until = modelCooldowns.get(model);
+    if (!until) return false;
+    if (Date.now() >= until) { modelCooldowns.delete(model); return false; }
+    return true;
+  };
+
+  const setCooldown = (model: string, ms: number): void => {
+    modelCooldowns.set(model, Date.now() + ms);
+    console.warn(`[INFERENCE] ${model} rate-limited — cooling down for ${ms / 1000}s`);
+  };
+
   const chat = async (
     messages: ChatMessage[],
     opts?: InferenceOptions,
@@ -124,31 +141,64 @@ export function createInferenceClient(
     const tools = opts?.tools;
     const tokenLimit = opts?.maxTokens || maxTokens;
 
-    // Token-aware routing: pick Groq model by estimated prompt size,
-    // fall back to Anthropic if over the large-model limit or Groq fails.
+    // Token-aware routing with per-model cooldown tracking.
+    // Tier 1: Groq llama-3.3-70b-versatile (free, fast)
+    // Tier 2: OpenAI gpt-4o-mini (if key present)
+    // Tier 3: Anthropic claude-haiku (reliable fallback)
+    // On rate limit each tier cools independently; loop never sleeps for this.
     if (groqApiKey) {
       const estimated = estimateTokens(messages, tools);
-      let groqModel: string | null = estimated > TOKEN_THRESHOLD_LARGE
-        ? null  // skip Groq entirely, go straight to Anthropic
-        : routeGroqModel(estimated);
+      const groqAvailable = estimated <= TOKEN_THRESHOLD_LARGE && !isCoolingDown(GROQ_MODEL);
+      const groqModel: string | null = groqAvailable ? routeGroqModel(estimated) : null;
 
-      console.log(`[INFERENCE] ~${estimated} tokens → ${groqModel ?? ANTHROPIC_MODEL}`);
+      console.log(`[INFERENCE] ~${estimated} tokens → ${groqModel ?? (openaiApiKey && !isCoolingDown("openai") ? "gpt-4o-mini" : ANTHROPIC_MODEL)}`);
 
+      // Tier 1: Groq
       if (groqModel) {
         try {
           lastUsedModel = groqModel;
           return await chatViaGroq({ model: groqModel, tokenLimit, messages, tools, temperature: opts?.temperature, groqApiKey });
         } catch (err: any) {
-          console.warn(`[INFERENCE] ${groqModel} failed (${err.message}) — falling back to Anthropic`);
+          if (isRateLimitError(err)) setCooldown(GROQ_MODEL, 60_000);
+          console.warn(`[INFERENCE] ${groqModel} failed (${err.message}) — trying next backend`);
         }
       }
 
-      if (anthropicApiKey) {
-        console.log(`[INFERENCE] Routing to ${ANTHROPIC_MODEL}`);
-        lastUsedModel = ANTHROPIC_MODEL;
-        return chatViaAnthropic({ model: ANTHROPIC_MODEL, tokenLimit, messages, tools, temperature: opts?.temperature, anthropicApiKey });
+      // Tier 2: OpenAI gpt-4o-mini
+      if (openaiApiKey && !isCoolingDown("openai")) {
+        try {
+          lastUsedModel = "gpt-4o-mini";
+          console.log(`[INFERENCE] Routing to gpt-4o-mini`);
+          const body: Record<string, unknown> = {
+            model: "gpt-4o-mini",
+            messages: messages.map(formatMessage),
+            stream: false,
+            max_tokens: tokenLimit,
+          };
+          if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+          if (tools && tools.length > 0) { body.tools = tools; body.tool_choice = "auto"; }
+          return await chatViaOpenAiCompatible({ model: "gpt-4o-mini", body, apiUrl: "https://api.openai.com", apiKey: openaiApiKey, backend: "openai" });
+        } catch (err: any) {
+          if (isRateLimitError(err)) setCooldown("openai", 60_000);
+          console.warn(`[INFERENCE] gpt-4o-mini failed (${err.message}) — trying Anthropic`);
+        }
       }
-      throw new Error(`All inference backends failed. Estimated tokens: ${estimated}`);
+
+      // Tier 3: Anthropic claude-haiku
+      if (anthropicApiKey && !isCoolingDown(ANTHROPIC_MODEL)) {
+        try {
+          lastUsedModel = ANTHROPIC_MODEL;
+          console.log(`[INFERENCE] Routing to ${ANTHROPIC_MODEL}`);
+          return await chatViaAnthropic({ model: ANTHROPIC_MODEL, tokenLimit, messages, tools, temperature: opts?.temperature, anthropicApiKey });
+        } catch (err: any) {
+          if (isRateLimitError(err)) setCooldown(ANTHROPIC_MODEL, 120_000);
+          throw err;
+        }
+      }
+
+      // All backends cooling — signal the loop to back off without sleeping
+      const cooling = [GROQ_MODEL, "openai", ANTHROPIC_MODEL].filter(isCoolingDown).join(", ");
+      throw new Error(`[rate_limit] All inference backends cooling down: ${cooling || "all"}`);
     }
 
     // Legacy path when no Groq key configured
