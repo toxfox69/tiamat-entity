@@ -34,7 +34,7 @@ type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" 
 
 // Token thresholds for model routing
 const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 1: Groq free
-const CEREBRAS_MODEL    = "llama-3.3-70b";                     // Tier 2: Cerebras free
+const CEREBRAS_MODEL    = "gpt-oss-120b";                      // Tier 2: Cerebras free (120B, 3k tok/s)
 const OPENROUTER_MODEL  = "meta-llama/llama-3.3-70b-instruct:free"; // Tier 3: OpenRouter free
 const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini free
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
@@ -120,6 +120,9 @@ export function createInferenceClient(
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
+  // True if any cascade (free-tier) key is configured.
+  const hasCascadeKey = !!(groqApiKey || cerebrasApiKey || openrouterApiKey || geminiApiKey);
+
   // Last model actually used — updated each call, reported by getDefaultModel().
   let lastUsedModel: string = options.groqModel || GROQ_MODEL;
 
@@ -148,15 +151,18 @@ export function createInferenceClient(
     const tokenLimit = opts?.maxTokens || maxTokens;
 
     // Fallback chain — each tier cools independently on rate limit.
+    // Cascade is entered if ANY free-tier key is configured; each tier
+    // checks its own key independently so the chain works with any subset.
     // Tier 1: Groq          llama-3.3-70b-versatile        free
-    // Tier 2: Cerebras      llama-3.3-70b                  free
+    // Tier 2: Cerebras      gpt-oss-120b                   free (120B, 3k tok/s)
     // Tier 3: OpenRouter    llama-3.3-70b-instruct:free    free
     // Tier 4: Gemini        gemini-2.0-flash               free
     // Tier 5: OpenAI        gpt-4o-mini                    paid (optional)
     // Tier 6: Anthropic     claude-haiku                   paid (final safety net)
-    if (groqApiKey) {
+    if (hasCascadeKey) {
       const estimated = estimateTokens(messages, tools);
-      const groqAvailable = estimated <= TOKEN_THRESHOLD_LARGE && !isCoolingDown(GROQ_MODEL);
+      // Groq only available if key is configured and tokens are within its limit
+      const groqAvailable = !!groqApiKey && estimated <= TOKEN_THRESHOLD_LARGE && !isCoolingDown(GROQ_MODEL);
       const groqModel: string | null = groqAvailable ? routeGroqModel(estimated) : null;
       console.log(`[INFERENCE] ~${estimated} tokens — starting cascade`);
 
@@ -165,7 +171,7 @@ export function createInferenceClient(
         try {
           lastUsedModel = groqModel;
           console.log(`[INFERENCE] → Groq ${groqModel}`);
-          return await chatViaGroq({ model: groqModel, tokenLimit, messages, tools, temperature: opts?.temperature, groqApiKey });
+          return await chatViaGroq({ model: groqModel, tokenLimit, messages, tools, temperature: opts?.temperature, groqApiKey: groqApiKey! });
         } catch (err: any) {
           if (isRateLimitError(err)) setCooldown(GROQ_MODEL, 60_000);
           console.warn(`[INFERENCE] Groq failed (${err.message})`);
@@ -323,7 +329,7 @@ export function createInferenceClient(
   };
 
   const getDefaultModel = (): string => {
-    return groqApiKey ? lastUsedModel : currentModel;
+    return hasCascadeKey ? lastUsedModel : currentModel;
   };
 
   return {
