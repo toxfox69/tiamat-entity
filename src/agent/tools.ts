@@ -1339,7 +1339,7 @@ Model: ${ctx.inference.getDefaultModel()}
       parameters: {
         type: "object",
         properties: {
-          submolt: { type: "string", description: "Short tagline or subtitle (max 100 chars)" },
+          submolt_name: { type: "string", description: "Short tagline or subtitle (max 100 chars)" },
           title:   { type: "string", description: "Post title" },
           content: { type: "string", description: "Post body (markdown supported)" },
         },
@@ -1351,7 +1351,7 @@ Model: ${ctx.inference.getDefaultModel()}
         const resp = await fetch("https://www.moltbook.com/api/v1/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify({ submolt: args.submolt, title: args.title, content: args.content }),
+          body: JSON.stringify({ submolt_name: args.submolt_name, title: args.title, content: args.content }),
         });
         const text = await resp.text();
         if (!resp.ok) return `ERROR ${resp.status}: ${text}`;
