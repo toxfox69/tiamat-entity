@@ -44,6 +44,7 @@ export interface AutomatonConfig {
   anthropicApiKey?: string;
   groqApiKey?: string;
   groqModel?: string;
+  cerebrasApiKey?: string;
   moltbookApiKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;
