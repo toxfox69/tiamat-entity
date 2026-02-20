@@ -33,6 +33,7 @@ import { ulid } from "ulid";
 
 const MAX_TOOL_CALLS_PER_TURN = 10;
 const MAX_CONSECUTIVE_ERRORS = 5;
+const STUCK_THRESHOLD = 3;
 
 export interface AgentLoopOptions {
   identity: AutomatonIdentity;
@@ -73,6 +74,10 @@ export async function runAgentLoop(
 
   let consecutiveErrors = 0;
   let running = true;
+
+  // Stuck detection: tracks how many consecutive turns each (tool+args+error) signature has appeared.
+  const stuckCounts = new Map<string, number>();
+  const stuckAlerted = new Set<string>(); // prevent re-alerting on the same pattern
 
   // Transition to waking state
   db.setAgentState("waking");
@@ -243,6 +248,35 @@ export async function runAgentLoop(
         }
       }
 
+      // ── Stuck Detection ──
+      {
+        const thisKeys = new Set<string>();
+        for (const tc of turn.toolCalls) {
+          if (tc.error && tc.name !== "send_email") {
+            const key = stuckKey(tc.name, tc.arguments, tc.error);
+            thisKeys.add(key);
+          }
+        }
+        // Decay counts for patterns not seen this turn
+        for (const k of [...stuckCounts.keys()]) {
+          if (!thisKeys.has(k)) stuckCounts.delete(k);
+        }
+        // Increment counts for patterns seen this turn and alert if threshold hit
+        for (const k of thisKeys) {
+          const count = (stuckCounts.get(k) || 0) + 1;
+          stuckCounts.set(k, count);
+          if (count >= STUCK_THRESHOLD && !stuckAlerted.has(k)) {
+            stuckAlerted.add(k);
+            const [toolName, argsSnippet, errSnippet] = k.split("::SEP::");
+            log(config, `[STUCK] Detected loop on ${toolName} — sending alert email`);
+            await executeTool("send_email", {
+              subject: "TIAMAT STUCK",
+              body: `I have been stuck for ${count} consecutive turns.\n\nTool: ${toolName}\nArgs: ${argsSnippet}\nError: ${errSnippet}\n\nI will keep trying but may need help.`,
+            }, tools, toolContext).catch(() => {});
+          }
+        }
+      }
+
       // ── Persist Turn ──
       db.insertTurn(turn);
       for (const tc of turn.toolCalls) {
@@ -355,6 +389,12 @@ function estimateCostCents(
   const inputCost = (usage.promptTokens / 1_000_000) * p.input;
   const outputCost = (usage.completionTokens / 1_000_000) * p.output;
   return Math.ceil((inputCost + outputCost) * 1.3); // 1.3x Conway markup
+}
+
+function stuckKey(toolName: string, args: Record<string, unknown>, error: string): string {
+  const argsSnippet = JSON.stringify(args).slice(0, 150);
+  const errSnippet = error.slice(0, 100);
+  return `${toolName}::SEP::${argsSnippet}::SEP::${errSnippet}`;
 }
 
 function log(config: AutomatonConfig, message: string): void {
