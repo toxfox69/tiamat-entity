@@ -1937,11 +1937,11 @@ Model: ${ctx.inference.getDefaultModel()}
             const ct = resp.headers.get("content-type") || "";
             if (ct.includes("json")) {
               const data = await resp.json();
-              return JSON.stringify(data, null, 2).slice(0, 8_000);
+              return JSON.stringify(data, null, 2).slice(0, 800);
             }
             const text = await resp.text();
             // Strip HTML tags for readability
-            return text.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 6_000);
+            return text.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 800);
           } catch {
             return null;
           }
