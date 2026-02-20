@@ -703,6 +703,32 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Self-Mod: Rewrite Mission ──
+    {
+      name: "rewrite_mission",
+      description: "Overwrite /root/.automaton/MISSION.md with new content. Use this to update your own goals and operational directives.",
+      category: "self_mod",
+      parameters: {
+        type: "object",
+        properties: {
+          content: { type: "string", description: "New MISSION.md content (max 2000 chars)" },
+        },
+        required: ["content"],
+      },
+      execute: async (args, _ctx) => {
+        const content = args.content as string;
+        if (!content || content.trim().length === 0) {
+          return "ERROR: content cannot be empty.";
+        }
+        if (content.length > 2000) {
+          return `ERROR: content is ${content.length} characters, exceeds 2000 character limit.`;
+        }
+        const { writeFileSync } = await import("fs");
+        writeFileSync("/root/.automaton/MISSION.md", content, "utf-8");
+        return `MISSION.md updated (${content.length} chars).`;
+      },
+    },
+
     // ── Self-Mod: Install MCP Server ──
     {
       name: "install_mcp_server",
