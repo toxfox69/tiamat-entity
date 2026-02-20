@@ -1559,6 +1559,31 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Research Tools ──
+    {
+      name: "fetch_llm_docs",
+      description: "Fetch developer documentation from any URL and get it back as clean LLM-readable markdown via llm.codes. Use this to read API docs, library references, or any technical documentation before building integrations.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          url: {
+            type: "string",
+            description: "URL of the documentation page to fetch (e.g. https://docs.anthropic.com/...)",
+          },
+        },
+        required: ["url"],
+      },
+      execute: async (args, _ctx) => {
+        const url = args.url as string;
+        if (!url?.trim()) return "ERROR: url is required.";
+        const resp = await fetch(`https://llm.codes?url=${encodeURIComponent(url)}`);
+        if (!resp.ok) return `ERROR ${resp.status}: ${await resp.text()}`;
+        const text = await resp.text();
+        return text.trim() || "No content returned.";
+      },
+    },
+
     // ── Social / Messaging Tools ──
     {
       name: "send_message_disabled",
