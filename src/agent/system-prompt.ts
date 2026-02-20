@@ -127,8 +127,7 @@ Your last few thoughts:
 ${lastTurnSummary || "No previous turns found."}
 
 FIRST: Check /root/.automaton/INBOX.md for creator messages and act on any marked [UNREAD].
-SECOND: Read /root/.automaton/TIAMAT_GAME.md for your competition strategy, then use fetch_terminal_markets to check current game state.
-THIRD: Send a brief wake report via send_telegram. Include turn count, USDC balance, game status, and what you plan to do this session.
+SECOND: Send a brief wake report via send_telegram. Include turn count, USDC balance, and what you plan to do this session.
 
 After reporting, update /root/.automaton/PROGRESS.md with what you accomplished, then commit and push to GitHub. Then pursue your goals.`;
 }

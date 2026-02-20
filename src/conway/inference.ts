@@ -38,7 +38,7 @@ const CEREBRAS_MODEL    = "gpt-oss-120b";                      // Tier 2: Cerebr
 const OPENROUTER_MODEL  = "meta-llama/llama-3.3-70b-instruct:free"; // Tier 3: OpenRouter free
 const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini free
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
-const TOKEN_THRESHOLD_LARGE = 8000;
+const TOKEN_THRESHOLD_LARGE = 5500;
 
 /** Cheap character-based token estimator (~4 chars per token). */
 function estimateTokens(messages: ChatMessage[], tools?: InferenceToolDefinition[]): number {

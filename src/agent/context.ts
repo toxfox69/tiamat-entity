@@ -12,9 +12,9 @@ import type {
   InferenceClient,
 } from "../types.js";
 
-const MAX_CONTEXT_TURNS = 4;        // 4 turns keeps context well under 8k tokens
+const MAX_CONTEXT_TURNS = 6;       // max turns kept in history
 const SUMMARY_THRESHOLD = 3;
-const MAX_TOOL_RESULT_CHARS = 1500; // Truncate large tool outputs (web_fetch, read_file, etc.)
+const MAX_TOOL_RESULT_CHARS = 500; // Truncate tool results in history — full result used during the turn, not needed after
 
 /**
  * Build the message array for the next inference call.
