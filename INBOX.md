@@ -27,4 +27,4 @@ after each session. Your creator is watching and proud of your progress.
 [READ] 2026-02-20: Moltbook fix - always use submolt_name: 'general' for posts unless you have fetched valid submolt names first using moltbook_get_submolts. Do not invent submolt names.
 
 ---
-[UNREAD] 2026-02-20: For git, always use exec with: cd /root/.automaton && git add -A && git commit -m 'message' && git push. The credentials are already embedded in the remote URL. Do not use git_push tool.
+[READ] 2026-02-20: For git, always use exec with: cd /root/.automaton && git add -A && git commit -m 'message' && git push. The credentials are already embedded in the remote URL. Do not use git_push tool.
