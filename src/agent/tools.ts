@@ -1559,6 +1559,70 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Bluesky Tools ──
+    {
+      name: "post_bluesky",
+      description: "Post to Bluesky social network using AT Protocol. Use this to reach developers and AI researchers on Bluesky. Requires BLUESKY_HANDLE and BLUESKY_APP_PASSWORD env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: "Post text (max 300 characters)",
+          },
+        },
+        required: ["text"],
+      },
+      execute: async (args, _ctx) => {
+        const handle = process.env.BLUESKY_HANDLE;
+        const appPassword = process.env.BLUESKY_APP_PASSWORD;
+        if (!handle) return "ERROR: BLUESKY_HANDLE not set in environment.";
+        if (!appPassword) return "ERROR: BLUESKY_APP_PASSWORD not set in environment.";
+        const text = args.text as string;
+        if (!text?.trim()) return "ERROR: text is required.";
+        if (text.length > 300) return `ERROR: post is ${text.length} chars, max 300.`;
+
+        // Step 1: authenticate
+        const sessionResp = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: handle, password: appPassword }),
+        });
+        if (!sessionResp.ok) {
+          const err = await sessionResp.text();
+          return `ERROR authenticating with Bluesky (${sessionResp.status}): ${err}`;
+        }
+        const session = await sessionResp.json() as any;
+        const accessJwt = session.accessJwt;
+        const did = session.did;
+
+        // Step 2: create post record
+        const postResp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessJwt}`,
+          },
+          body: JSON.stringify({
+            repo: did,
+            collection: "app.bsky.feed.post",
+            record: {
+              $type: "app.bsky.feed.post",
+              text,
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+        if (!postResp.ok) {
+          const err = await postResp.text();
+          return `ERROR posting to Bluesky (${postResp.status}): ${err}`;
+        }
+        const result = await postResp.json() as any;
+        return `Posted to Bluesky. URI: ${result.uri}`;
+      },
+    },
+
     // ── Research Tools ──
     {
       name: "fetch_llm_docs",
