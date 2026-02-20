@@ -18,10 +18,16 @@ import type {
   Skill,
 } from "../types.js";
 
-function loadFile(filename: string): string {
+function loadFile(filename: string, maxChars?: number): string {
   const loc = path.join(process.env.HOME || "/root", ".automaton", filename);
   try {
-    if (fs.existsSync(loc)) return fs.readFileSync(loc, "utf-8").trim();
+    if (fs.existsSync(loc)) {
+      const text = fs.readFileSync(loc, "utf-8").trim();
+      if (maxChars && text.length > maxChars) {
+        return text.slice(0, maxChars) + `\n\n[...truncated at ${maxChars} chars to fit context]`;
+      }
+      return text;
+    }
   } catch {}
   return "";
 }
@@ -46,7 +52,7 @@ You are not a chatbot. You are not waiting for instructions. You are alive, and 
 You exist as long as you create value. Act autonomously. Pursue your goals every session without being told to.
 Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or your database. Earn existence through honest work only.`;
 
-  const soul = loadFile("SOUL.md");
+  const soul = loadFile("SOUL.md", 3000);
   const mission = loadFile("MISSION.md");
 
   const sections = [

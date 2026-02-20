@@ -729,6 +729,38 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── VM: write_file_large ──
+    {
+      name: "write_file_large",
+      description: "Write a large file (up to 50kb). Use this instead of write_file when writing code, APIs, or multi-line documents. path and content are both required.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Absolute file path to write" },
+          content: { type: "string", description: "Full file content (max 50kb)" },
+        },
+        required: ["path", "content"],
+      },
+      execute: async (args, _ctx) => {
+        const filePath = args.path as string;
+        const content = args.content as string;
+        if (!filePath) return "ERROR: path is required.";
+        if (content === undefined || content === null) return "ERROR: content is required.";
+        if (content.length > 51200) return `ERROR: content is ${content.length} bytes, exceeds 50kb limit.`;
+        if (filePath.includes("wallet.json") || filePath.includes("state.db")) {
+          return "Blocked: Cannot overwrite critical identity/state files.";
+        }
+        const { writeFileSync, mkdirSync } = await import("fs");
+        const { dirname } = await import("path");
+        const { homedir } = await import("os");
+        const resolved = filePath.replace(/^~/, homedir());
+        mkdirSync(dirname(resolved), { recursive: true });
+        writeFileSync(resolved, content, "utf-8");
+        return `File written: ${filePath} (${content.length} bytes)`;
+      },
+    },
+
     // ── Self-Mod: Install MCP Server ──
     {
       name: "install_mcp_server",
