@@ -63,7 +63,9 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
     buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance }),
   ];
 
-  return sections.filter(Boolean).join("\n\n");
+  const prompt = sections.filter(Boolean).join("\n\n");
+  console.log(`[SYSTEM PROMPT] ${prompt.length} chars (~${Math.ceil(prompt.length / 4)} tokens)`);
+  return prompt;
 }
 
 /**
