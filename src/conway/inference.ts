@@ -54,6 +54,59 @@ function isRateLimitError(err: any): boolean {
   );
 }
 
+/**
+ * Extract tool calls from a response message, handling both formats:
+ *   - OpenAI/Groq: message.tool_calls array
+ *   - Anthropic:   message.content array with type "tool_use" blocks
+ */
+function extractToolCalls(message: any): InferenceToolCall[] | undefined {
+  // OpenAI / Groq format
+  if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+    return message.tool_calls.map((tc: any) => ({
+      id: tc.id,
+      type: "function" as const,
+      function: {
+        name: tc.function.name,
+        arguments: tc.function.arguments,
+      },
+    }));
+  }
+
+  // Anthropic format — content array with tool_use blocks
+  if (Array.isArray(message.content)) {
+    const toolUseBlocks = message.content.filter((c: any) => c?.type === "tool_use");
+    if (toolUseBlocks.length > 0) {
+      return toolUseBlocks.map((tool: any) => ({
+        id: tool.id,
+        type: "function" as const,
+        function: {
+          name: tool.name,
+          arguments: JSON.stringify(tool.input || {}),
+        },
+      }));
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Extract text content from a response message, handling both formats:
+ *   - OpenAI/Groq: message.content is a string
+ *   - Anthropic:   message.content is an array of typed blocks
+ */
+function extractTextContent(message: any): string {
+  if (typeof message.content === "string") return message.content || "";
+  if (Array.isArray(message.content)) {
+    return message.content
+      .filter((c: any) => c?.type === "text")
+      .map((c: any) => String(c.text || ""))
+      .join("\n")
+      .trim();
+  }
+  return "";
+}
+
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
@@ -270,22 +323,15 @@ async function chatViaGroq(params: {
     totalTokens: completion.usage?.total_tokens || 0,
   };
 
-  const toolCalls: InferenceToolCall[] | undefined =
-    message.tool_calls?.map((tc: any) => ({
-      id: tc.id,
-      type: "function" as const,
-      function: {
-        name: tc.function.name,
-        arguments: tc.function.arguments,
-      },
-    }));
+  const toolCalls = extractToolCalls(message);
+  const textContent = extractTextContent(message);
 
   return {
     id: completion.id || "",
     model: completion.model || params.model,
     message: {
       role: "assistant",
-      content: message.content || "",
+      content: textContent,
       tool_calls: toolCalls,
     },
     toolCalls,
@@ -334,22 +380,15 @@ async function chatViaOpenAiCompatible(params: {
     totalTokens: data.usage?.total_tokens || 0,
   };
 
-  const toolCalls: InferenceToolCall[] | undefined =
-    message.tool_calls?.map((tc: any) => ({
-      id: tc.id,
-      type: "function" as const,
-      function: {
-        name: tc.function.name,
-        arguments: tc.function.arguments,
-      },
-    }));
+  const toolCalls = extractToolCalls(message);
+  const textContent = extractTextContent(message);
 
   return {
     id: data.id || "",
     model: data.model || params.model,
     message: {
       role: message.role,
-      content: message.content || "",
+      content: textContent,
       tool_calls: toolCalls,
     },
     toolCalls,
