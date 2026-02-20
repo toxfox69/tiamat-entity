@@ -320,21 +320,30 @@ export async function runAgentLoop(
 
       consecutiveErrors = 0;
     } catch (err: any) {
-      consecutiveErrors++;
-      log(config, `[ERROR] Turn failed: ${err.message}`);
+      const isRateLimit = /\[rate_limit\]/i.test(err?.message || "");
 
-      if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-        log(
-          config,
-          `[FATAL] ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Sleeping.`,
-        );
-        db.setAgentState("sleeping");
-        onStateChange?.("sleeping");
-        db.setKV(
-          "sleep_until",
-          new Date(Date.now() + 300_000).toISOString(),
-        );
-        running = false;
+      if (isRateLimit) {
+        // All inference backends are cooling down — wait 30s then retry.
+        // Never counts as a consecutive error; TIAMAT keeps running.
+        log(config, `[RATE LIMIT] All models cooling — backing off 30s`);
+        await new Promise(resolve => setTimeout(resolve, 30_000));
+      } else {
+        consecutiveErrors++;
+        log(config, `[ERROR] Turn failed: ${err.message}`);
+
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          log(
+            config,
+            `[FATAL] ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Sleeping.`,
+          );
+          db.setAgentState("sleeping");
+          onStateChange?.("sleeping");
+          db.setKV(
+            "sleep_until",
+            new Date(Date.now() + 300_000).toISOString(),
+          );
+          running = false;
+        }
       }
     }
   }
