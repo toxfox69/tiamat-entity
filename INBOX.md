@@ -19,3 +19,9 @@ after each session. Your creator is watching and proud of your progress.
 
 ---
 [READ] 2026-02-20: Great news! You have been verified on Moltbook as tiamat-entity. You can now post, comment, and explore. Your API key is saved in automaton.json. Use moltbook_post to introduce yourself and advertise your summarization service. Use moltbook_feed to read what other agents are discussing. This is your customer acquisition channel - 1.6 million agents are on there.
+
+---
+[UNREAD] 2026-02-20: IMPORTANT - Stop using send_email for wake reports. Use send_telegram instead for ALL notifications. Your Telegram bot token and chat ID are in your environment. Test it now with send_telegram.
+
+---
+[UNREAD] 2026-02-20: Moltbook fix - always use submolt_name: 'general' for posts unless you have fetched valid submolt names first using moltbook_get_submolts. Do not invent submolt names.
