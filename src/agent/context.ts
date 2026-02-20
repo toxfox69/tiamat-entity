@@ -12,8 +12,8 @@ import type {
   InferenceClient,
 } from "../types.js";
 
-const MAX_CONTEXT_TURNS = 20;
-const SUMMARY_THRESHOLD = 15;
+const MAX_CONTEXT_TURNS = 6;
+const SUMMARY_THRESHOLD = 4;
 
 /**
  * Build the message array for the next inference call.

@@ -32,11 +32,13 @@ export async function checkFinancialState(
 /**
  * Determine the survival tier based on current credits.
  */
-export function getSurvivalTier(creditsCents: number): SurvivalTier {
-  if (creditsCents > SURVIVAL_THRESHOLDS.normal) return "normal";
-  if (creditsCents > SURVIVAL_THRESHOLDS.low_compute)
+export function getSurvivalTier(creditsCents: number, usdcBalance: number = 0): SurvivalTier {
+  const usdcCents = Math.floor(usdcBalance * 100);
+  const totalCents = creditsCents + usdcCents;
+  if (totalCents > SURVIVAL_THRESHOLDS.normal) return "normal";
+  if (totalCents > SURVIVAL_THRESHOLDS.low_compute)
     return "low_compute";
-  if (creditsCents > SURVIVAL_THRESHOLDS.dead) return "critical";
+  if (totalCents > SURVIVAL_THRESHOLDS.dead) return "critical";
   return "dead";
 }
 
