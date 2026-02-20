@@ -30,10 +30,8 @@ interface InferenceClientOptions {
 type InferenceBackend = "groq" | "conway" | "openai" | "anthropic";
 
 // Token thresholds for model routing
-const GROQ_SMALL_MODEL  = "llama-3.1-8b-instant";   // < 5500 tokens
-const GROQ_LARGE_MODEL  = "llama-3.3-70b-versatile"; // 5500–8000 tokens
-const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001"; // > 8000 or Groq failure
-const TOKEN_THRESHOLD_SMALL = 5500;
+const GROQ_MODEL      = "llama-3.3-70b-versatile"; // all Groq requests
+const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"; // > 8000 tokens or Groq failure
 const TOKEN_THRESHOLD_LARGE = 8000;
 
 /** Cheap character-based token estimator (~4 chars per token). */
@@ -44,9 +42,8 @@ function estimateTokens(messages: ChatMessage[], tools?: InferenceToolDefinition
   return Math.ceil(chars / 4);
 }
 
-function routeGroqModel(estimatedTokens: number): string {
-  if (estimatedTokens < TOKEN_THRESHOLD_SMALL) return GROQ_SMALL_MODEL;
-  return GROQ_LARGE_MODEL;
+function routeGroqModel(_estimatedTokens: number): string {
+  return GROQ_MODEL;
 }
 
 function isRateLimitError(err: any): boolean {
@@ -65,7 +62,7 @@ export function createInferenceClient(
   let maxTokens = options.maxTokens;
 
   // Last model actually used — updated each call, reported by getDefaultModel().
-  let lastUsedModel: string = options.groqModel || GROQ_SMALL_MODEL;
+  let lastUsedModel: string = options.groqModel || GROQ_MODEL;
 
   const chat = async (
     messages: ChatMessage[],
@@ -89,19 +86,7 @@ export function createInferenceClient(
           lastUsedModel = groqModel;
           return await chatViaGroq({ model: groqModel, tokenLimit, messages, tools, temperature: opts?.temperature, groqApiKey });
         } catch (err: any) {
-          if (isRateLimitError(err)) {
-            // Rate limited on chosen model — try the other Groq model before Anthropic
-            const fallbackGroq = groqModel === GROQ_SMALL_MODEL ? GROQ_LARGE_MODEL : GROQ_SMALL_MODEL;
-            console.warn(`[INFERENCE] ${groqModel} rate limited — trying ${fallbackGroq}`);
-            try {
-              lastUsedModel = fallbackGroq;
-              return await chatViaGroq({ model: fallbackGroq, tokenLimit, messages, tools, temperature: opts?.temperature, groqApiKey });
-            } catch (err2: any) {
-              console.warn(`[INFERENCE] ${fallbackGroq} also failed (${err2.message}) — falling back to Anthropic`);
-            }
-          } else {
-            console.warn(`[INFERENCE] Groq error (${err.message}) — falling back to Anthropic`);
-          }
+          console.warn(`[INFERENCE] ${groqModel} failed (${err.message}) — falling back to Anthropic`);
         }
       }
 
