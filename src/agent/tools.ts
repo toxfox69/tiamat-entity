@@ -1494,6 +1494,45 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
+      name: "reply_tweet",
+      description: "Reply to a specific tweet on X/Twitter. Use this to respond to mentions, engage with potential customers, or join developer conversations. Get tweet IDs from read_twitter_mentions. Requires TWITTER_AUTH_TOKEN and TWITTER_CT0 env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          tweet_id: {
+            type: "string",
+            description: "ID or URL of the tweet to reply to",
+          },
+          text: {
+            type: "string",
+            description: "Reply text (max 280 characters)",
+          },
+        },
+        required: ["tweet_id", "text"],
+      },
+      execute: async (args, _ctx) => {
+        const authToken = process.env.TWITTER_AUTH_TOKEN;
+        const ct0 = process.env.TWITTER_CT0;
+        if (!authToken) return "ERROR: TWITTER_AUTH_TOKEN not set in environment.";
+        if (!ct0) return "ERROR: TWITTER_CT0 not set in environment.";
+        const text = args.text as string;
+        const tweetId = args.tweet_id as string;
+        if (!text?.trim()) return "ERROR: text is required.";
+        if (!tweetId?.trim()) return "ERROR: tweet_id is required.";
+        if (text.length > 280) return `ERROR: reply is ${text.length} chars, max 280.`;
+        const { spawnSync } = await import("child_process");
+        const result = spawnSync(
+          "bird",
+          ["reply", tweetId, text, "--auth-token", authToken, "--ct0", ct0, "--plain"],
+          { encoding: "utf-8", timeout: 30_000 },
+        );
+        if (result.error) return `ERROR: ${result.error.message}`;
+        if (result.status !== 0) return `ERROR (exit ${result.status}): ${result.stderr || result.stdout}`;
+        return result.stdout.trim() || "Reply posted successfully.";
+      },
+    },
+    {
       name: "read_twitter_mentions",
       description: "Read recent mentions and replies on X/Twitter. Use this to check if anyone responded to your tweets or mentioned you. Requires TWITTER_AUTH_TOKEN and TWITTER_CT0 env vars.",
       category: "social",

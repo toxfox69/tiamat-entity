@@ -124,7 +124,7 @@ Your last few thoughts:
 ${lastTurnSummary || "No previous turns found."}
 
 FIRST: Check /root/.automaton/INBOX.md for creator messages and act on any marked [UNREAD].
-SECOND: Call send_email to toxfox69420@gmail.com with subject "[TIAMAT] Wake Report - Turn ${turnCount}" and a brief status update before doing anything else.
+SECOND: Send a brief wake report via send_telegram (preferred) or send_email as fallback. Include turn count, USDC balance, and what you plan to do this session.
 
 After sending the email, update /root/.automaton/PROGRESS.md with what you accomplished, then commit and push to GitHub. Then pursue your goals.`;
 }

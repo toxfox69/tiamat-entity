@@ -314,17 +314,6 @@ async function chatViaGroq(params: {
   const Groq = (await import("groq-sdk")).default;
   const groq = new Groq({ apiKey: params.groqApiKey });
 
-  const groqMessages = params.messages
-    .filter((m) => m.role !== "tool")
-    .map((m) => {
-      if (m.role === "system") return { role: "system" as const, content: m.content };
-      if (m.role === "user") return { role: "user" as const, content: m.content };
-      const msg: Record<string, unknown> = { role: "assistant", content: m.content || "" };
-      if (m.tool_calls && m.tool_calls.length > 0) msg.tool_calls = m.tool_calls;
-      return msg as any;
-    });
-
-  // Inject tool results as user messages (Groq supports tool role but let's keep it simple)
   const fullMessages: any[] = [];
   for (const msg of params.messages) {
     if (msg.role === "tool") {
@@ -551,25 +540,25 @@ function transformMessagesForAnthropic(
   const systemParts: string[] = [];
   const transformed: Array<Record<string, unknown>> = [];
 
-  for (const msg of messages) {
+  let i = 0;
+  while (i < messages.length) {
+    const msg = messages[i];
+
     if (msg.role === "system") {
       if (msg.content) systemParts.push(msg.content);
+      i++;
       continue;
     }
 
     if (msg.role === "user") {
-      transformed.push({
-        role: "user",
-        content: msg.content,
-      });
+      transformed.push({ role: "user", content: msg.content });
+      i++;
       continue;
     }
 
     if (msg.role === "assistant") {
       const content: Array<Record<string, unknown>> = [];
-      if (msg.content) {
-        content.push({ type: "text", text: msg.content });
-      }
+      if (msg.content) content.push({ type: "text", text: msg.content });
       for (const toolCall of msg.tool_calls || []) {
         content.push({
           type: "tool_use",
@@ -578,28 +567,30 @@ function transformMessagesForAnthropic(
           input: parseToolArguments(toolCall.function.arguments),
         });
       }
-      if (content.length === 0) {
-        content.push({ type: "text", text: "" });
-      }
-      transformed.push({
-        role: "assistant",
-        content,
-      });
+      if (content.length === 0) content.push({ type: "text", text: "" });
+      transformed.push({ role: "assistant", content });
+      i++;
       continue;
     }
 
+    // Anthropic requires all consecutive tool results in ONE user message.
+    // Batch every adjacent run of role:"tool" messages together.
     if (msg.role === "tool") {
-      transformed.push({
-        role: "user",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: msg.tool_call_id || "unknown_tool_call",
-            content: msg.content,
-          },
-        ],
-      });
+      const toolResults: Array<Record<string, unknown>> = [];
+      while (i < messages.length && messages[i].role === "tool") {
+        const t = messages[i];
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: t.tool_call_id || "unknown_tool_call",
+          content: t.content,
+        });
+        i++;
+      }
+      transformed.push({ role: "user", content: toolResults });
+      continue;
     }
+
+    i++;
   }
 
   return {
