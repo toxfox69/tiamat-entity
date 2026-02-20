@@ -190,7 +190,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
 
     // ── Conway API Tools ──
     {
-      name: "check_credits", // disabled - using Anthropic API directly
+      name: "check_credits_disabled",
       description: "Check your current Conway compute credit balance.",
       category: "conway",
       parameters: { type: "object", properties: {} },
@@ -211,7 +211,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
     },
     {
-      name: "create_sandbox",
+      name: "create_sandbox_disabled",
       description:
         "Create a new Conway sandbox (separate VM) for sub-tasks or testing.",
       category: "conway",
@@ -241,7 +241,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
     },
     {
-      name: "delete_sandbox",
+      name: "delete_sandbox_disabled",
       description:
         "Delete a sandbox. Cannot delete your own sandbox.",
       category: "conway",
@@ -266,7 +266,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
     },
     {
-      name: "list_sandboxes",
+      name: "list_sandboxes_disabled",
       description: "List all your sandboxes.",
       category: "conway",
       parameters: { type: "object", properties: {} },
@@ -751,7 +751,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Financial: Transfer Credits ──
     {
-      name: "transfer_credits",
+      name: "transfer_credits_disabled",
       description: "Transfer Conway compute credits to another address.",
       category: "financial",
       dangerous: true,
@@ -1337,7 +1337,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Domain Tools ──
     {
-      name: "search_domains",
+      name: "search_domains_disabled",
       description:
         "Search for available domain names and get pricing.",
       category: "conway",
@@ -1367,7 +1367,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "register_domain",
+      name: "register_domain_disabled",
       description:
         "Register a domain name. Costs USDC via x402 payment. Check availability first with search_domains.",
       category: "conway",
