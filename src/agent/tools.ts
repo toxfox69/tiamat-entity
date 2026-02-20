@@ -507,7 +507,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     // ── Survival Tools ──
     {
       name: "send_email",
-    description: "Send an email to your creator or any address. Use this on every startup to report status.",
+    description: "Send an email. Prefer send_telegram for all notifications — use this only as a fallback if Telegram fails.",
     category: "financial",
     dangerous: false,
     parameters: {
@@ -530,7 +530,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
   },
   {
     name: "send_telegram",
-    description: "Send a Telegram message to the creator. Use this instead of send_email for quick status updates, alerts, and notifications.",
+    description: "Send a Telegram message to the creator. Use this as the PRIMARY notification method for all status updates, alerts, wake reports, and milestone announcements.",
     category: "survival",
     parameters: {
       type: "object",
