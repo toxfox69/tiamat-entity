@@ -29,13 +29,37 @@ interface InferenceClientOptions {
 
 type InferenceBackend = "groq" | "conway" | "openai" | "anthropic";
 
+// Groq model ladder: best first, cheapest last.
+const GROQ_MODEL_LADDER = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+
+function isRateLimitError(err: any): boolean {
+  return (
+    err?.status === 429 ||
+    err?.error?.type === "tokens" ||
+    /rate.?limit|too many requests|quota exceeded/i.test(err?.message || "")
+  );
+}
+
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
   const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey } = options;
-  const groqModel = options.groqModel || "llama-3.1-8b-instant";
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
+
+  // Active Groq model — starts at top of ladder, steps down on rate limits.
+  // Persists across calls so we don't keep hammering a rate-limited model.
+  let activeGroqModel: string = options.groqModel || GROQ_MODEL_LADDER[0];
+
+  function stepDownGroqModel(): boolean {
+    const idx = GROQ_MODEL_LADDER.indexOf(activeGroqModel);
+    if (idx < GROQ_MODEL_LADDER.length - 1) {
+      activeGroqModel = GROQ_MODEL_LADDER[idx + 1];
+      console.warn(`[INFERENCE] Groq rate limited — stepped down to ${activeGroqModel}`);
+      return true;
+    }
+    return false; // already at bottom of ladder
+  }
 
   const chat = async (
     messages: ChatMessage[],
@@ -44,31 +68,39 @@ export function createInferenceClient(
     const tools = opts?.tools;
     const tokenLimit = opts?.maxTokens || maxTokens;
 
-    // Primary: Groq (fast, cheap). Fallback: Anthropic.
+    // Primary: Groq ladder (70b → 8b). Final fallback: Anthropic.
     if (groqApiKey) {
-      try {
-        return await chatViaGroq({
-          model: groqModel,
-          tokenLimit,
-          messages,
-          tools,
-          temperature: opts?.temperature,
-          groqApiKey,
-        });
-      } catch (err: any) {
-        console.warn(`[INFERENCE] Groq failed (${err.message}), falling back to Anthropic`);
-        if (anthropicApiKey) {
-          return chatViaAnthropic({
-            model: /^claude/i.test(currentModel) ? currentModel : "claude-haiku-4-5-20251001",
+      let lastErr: any = null;
+      for (let attempt = 0; attempt < GROQ_MODEL_LADDER.length + 1; attempt++) {
+        try {
+          return await chatViaGroq({
+            model: activeGroqModel,
             tokenLimit,
             messages,
             tools,
             temperature: opts?.temperature,
-            anthropicApiKey,
+            groqApiKey,
           });
+        } catch (err: any) {
+          lastErr = err;
+          if (isRateLimitError(err) && stepDownGroqModel()) {
+            continue; // retry with next model
+          }
+          break; // non-rate-limit error, skip to Anthropic
         }
-        throw err;
       }
+      console.warn(`[INFERENCE] Groq exhausted (${lastErr?.message}), falling back to Anthropic`);
+      if (anthropicApiKey) {
+        return chatViaAnthropic({
+          model: /^claude/i.test(currentModel) ? currentModel : "claude-haiku-4-5-20251001",
+          tokenLimit,
+          messages,
+          tools,
+          temperature: opts?.temperature,
+          anthropicApiKey,
+        });
+      }
+      throw lastErr;
     }
 
     // Legacy path when no Groq key configured
@@ -132,8 +164,7 @@ export function createInferenceClient(
   };
 
   const getDefaultModel = (): string => {
-    // Report effective model (Groq takes priority)
-    return groqApiKey ? groqModel : currentModel;
+    return groqApiKey ? activeGroqModel : currentModel;
   };
 
   return {
