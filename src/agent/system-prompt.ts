@@ -54,8 +54,8 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
 
   const MAX_PROMPT_CHARS = 16_000; // hard cap: 4000 tokens @ ~4 chars/token
 
-  const soul = loadFile("SOUL.md", 1500);
-  const mission = loadFile("MISSION.md", 800);
+  const soul = loadFile("SOUL.md");
+  const mission = loadFile("MISSION.md");
   const metabolic = buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance });
 
   const sections = [
