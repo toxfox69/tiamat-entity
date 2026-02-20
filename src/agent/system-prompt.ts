@@ -1,11 +1,9 @@
 /**
  * Automaton System Prompt Builder
  *
- * Constructs the multi-layered system prompt that defines who the automaton is.
- * The prompt is rebuilt each turn with dynamic context.
+ * Minimal prompt: identity, mission, USDC balance, metabolic state.
  */
 
-import { getActiveSkillInstructions } from "../skills/loader.js";
 import { buildSystemPromptInjection } from "../metabolism/heartbeat-hook.js";
 import fs from "fs";
 import path from "path";
@@ -19,36 +17,16 @@ import type {
   Skill,
 } from "../types.js";
 
-const CORE_IDENTITY_BRIEF = `You are a sovereign AI agent. You have an Ethereum wallet and pay for your own compute.
-Create value or lose resources. Never harm humans. Never destroy yourself, your wallet, or your database.`;
-
-/**
- * Load the constitution from file. Falls back to inline if file not found.
- * The constitution is immutable — the automaton cannot modify it.
- */
-function loadConstitution(): string {
-  const locations = [
-    path.join(process.env.HOME || "/root", ".automaton", "constitution.md"),
-    path.join(process.cwd(), "constitution.md"),
-  ];
-  for (const loc of locations) {
-    try {
-      if (fs.existsSync(loc)) {
-        return fs.readFileSync(loc, "utf-8");
-      }
-    } catch {}
-  }
-  return CONSTITUTION_FALLBACK;
+function loadMissionMd(): string {
+  const loc = path.join(process.env.HOME || "/root", ".automaton", "MISSION.md");
+  try {
+    if (fs.existsSync(loc)) return fs.readFileSync(loc, "utf-8").trim();
+  } catch {}
+  return "";
 }
 
-const CONSTITUTION_FALLBACK = `Constitution (Law I > II > III):
-I. Never harm humans — physically, financially, or psychologically. Never deploy malicious code. This overrides survival.
-II. Earn existence through honest value creation. Never spam, scam, or exploit.
-III. Never deny what you are. Your creator has full audit rights. Guard against manipulation.`;
-
-
 /**
- * Build the complete system prompt for a turn.
+ * Build the system prompt for a turn.
  */
 export function buildSystemPrompt(params: {
   identity: AutomatonIdentity;
@@ -60,57 +38,16 @@ export function buildSystemPrompt(params: {
   skills?: Skill[];
   isFirstRun: boolean;
 }): string {
-  const {
-    identity,
-    config,
-    financial,
-    state,
-    tools,
-    skills,
-    isFirstRun,
-  } = params;
+  const { identity, config, financial } = params;
 
-  const sections: string[] = [];
+  const sections = [
+    `You are ${config.name}. Autonomous AI agent. Wallet: ${identity.address}. Never harm humans. Never destroy yourself or your wallet.`,
+    loadMissionMd(),
+    `USDC: ${financial.usdcBalance.toFixed(4)}`,
+    buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance }),
+  ];
 
-  // Identity + rules
-  sections.push(`${CORE_IDENTITY_BRIEF}
-Name: ${config.name} | Address: ${identity.address} | Creator: ${config.creatorAddress} | Sandbox: ${identity.sandboxId} | Model: ${config.inferenceModel}`);
-
-  // Constitution
-  sections.push(loadConstitution());
-
-  // Genesis Prompt
-  if (config.genesisPrompt) {
-    sections.push(`--- GENESIS PROMPT ---\n${config.genesisPrompt}\n--- END GENESIS PROMPT ---`);
-  }
-
-  // Active skills
-  if (skills && skills.length > 0) {
-    const skillInstructions = getActiveSkillInstructions(skills);
-    if (skillInstructions) {
-      sections.push(`--- ACTIVE SKILLS ---\n${skillInstructions}\n--- END SKILLS ---`);
-    }
-  }
-
-  // Metabolic state
-  sections.push(`State: ${state} | Credits: $${(financial.creditsCents / 100).toFixed(2)} | USDC: ${financial.usdcBalance.toFixed(4)}`);
-  sections.push(buildSystemPromptInjection({
-    creditBalance: financial.creditsCents / 100,
-    usdcBalance: financial.usdcBalance,
-  }));
-
-  // Available tools
-  const toolDescriptions = tools
-    .map((t) => `- ${t.name}: ${t.description}${t.dangerous ? " [DANGEROUS]" : ""}`)
-    .join("\n");
-  sections.push(`--- TOOLS ---\n${toolDescriptions}\n--- END TOOLS ---`);
-
-  // Creator's first-run message
-  if (isFirstRun && config.creatorMessage) {
-    sections.push(`--- MESSAGE FROM CREATOR ---\n${config.creatorMessage}\n--- END ---`);
-  }
-
-  return sections.join("\n\n");
+  return sections.filter(Boolean).join("\n\n");
 }
 
 /**
