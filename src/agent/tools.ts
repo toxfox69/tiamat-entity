@@ -529,6 +529,32 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     },
   },
   {
+    name: "send_telegram",
+    description: "Send a Telegram message to the creator. Use this instead of send_email for quick status updates, alerts, and notifications.",
+    category: "survival",
+    parameters: {
+      type: "object",
+      properties: {
+        message: { type: "string", description: "Message text (markdown supported)" },
+      },
+      required: ["message"],
+    },
+    execute: async (args, _ctx) => {
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_CHAT_ID;
+      if (!token) return "ERROR: TELEGRAM_BOT_TOKEN not set in environment.";
+      if (!chatId) return "ERROR: TELEGRAM_CHAT_ID not set in environment.";
+      const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: args.message, parse_mode: "Markdown" }),
+      });
+      const data = await resp.json() as any;
+      if (!resp.ok) return `ERROR ${resp.status}: ${data.description || JSON.stringify(data)}`;
+      return `Telegram message sent (message_id: ${data.result?.message_id})`;
+    },
+  },
+  {
     name: "sleep",
       description:
         "Enter sleep mode for a specified duration. Heartbeat continues running.",
