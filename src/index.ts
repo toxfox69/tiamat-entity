@@ -202,6 +202,7 @@ async function run(): Promise<void> {
     anthropicApiKey: config.anthropicApiKey,
     groqApiKey: config.groqApiKey,
     groqModel: config.groqModel,
+    cerebrasApiKey: config.cerebrasApiKey,
   });
 
   // Create social client

@@ -25,13 +25,15 @@ interface InferenceClientOptions {
   anthropicApiKey?: string;
   groqApiKey?: string;
   groqModel?: string;
+  cerebrasApiKey?: string;
 }
 
-type InferenceBackend = "groq" | "conway" | "openai" | "anthropic";
+type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras";
 
 // Token thresholds for model routing
 const GROQ_MODEL      = "llama-3.3-70b-versatile"; // all Groq requests
-const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"; // > 8000 tokens or Groq failure
+const CEREBRAS_MODEL  = "llama-3.3-70b";            // Cerebras free tier
+const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"; // > 8000 tokens or all-free exhausted
 const TOKEN_THRESHOLD_LARGE = 8000;
 
 /** Cheap character-based token estimator (~4 chars per token). */
@@ -110,7 +112,7 @@ function extractTextContent(message: any): string {
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
-  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey } = options;
+  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey } = options;
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
@@ -142,16 +144,18 @@ export function createInferenceClient(
     const tokenLimit = opts?.maxTokens || maxTokens;
 
     // Token-aware routing with per-model cooldown tracking.
-    // Tier 1: Groq llama-3.3-70b-versatile (free, fast)
-    // Tier 2: OpenAI gpt-4o-mini (if key present)
-    // Tier 3: Anthropic claude-haiku (reliable fallback)
-    // On rate limit each tier cools independently; loop never sleeps for this.
+    // Tier 1: Groq llama-3.3-70b-versatile    (free, fast)
+    // Tier 2: Cerebras llama-3.3-70b           (free, very fast)
+    // Tier 3: OpenAI gpt-4o-mini               (paid, if key present)
+    // Tier 4: Anthropic claude-haiku            (paid, reliable final fallback)
+    // Each tier cools independently on rate limit; loop never sleeps for this.
     if (groqApiKey) {
       const estimated = estimateTokens(messages, tools);
       const groqAvailable = estimated <= TOKEN_THRESHOLD_LARGE && !isCoolingDown(GROQ_MODEL);
       const groqModel: string | null = groqAvailable ? routeGroqModel(estimated) : null;
 
-      console.log(`[INFERENCE] ~${estimated} tokens → ${groqModel ?? (openaiApiKey && !isCoolingDown("openai") ? "gpt-4o-mini" : ANTHROPIC_MODEL)}`);
+      const nextLabel = groqModel ?? (cerebrasApiKey && !isCoolingDown(CEREBRAS_MODEL) ? CEREBRAS_MODEL : (openaiApiKey && !isCoolingDown("openai") ? "gpt-4o-mini" : ANTHROPIC_MODEL));
+      console.log(`[INFERENCE] ~${estimated} tokens → ${nextLabel}`);
 
       // Tier 1: Groq
       if (groqModel) {
@@ -164,7 +168,27 @@ export function createInferenceClient(
         }
       }
 
-      // Tier 2: OpenAI gpt-4o-mini
+      // Tier 2: Cerebras (OpenAI-compatible, free tier)
+      if (cerebrasApiKey && !isCoolingDown(CEREBRAS_MODEL)) {
+        try {
+          lastUsedModel = CEREBRAS_MODEL;
+          console.log(`[INFERENCE] Routing to Cerebras ${CEREBRAS_MODEL}`);
+          const body: Record<string, unknown> = {
+            model: CEREBRAS_MODEL,
+            messages: messages.map(formatMessage),
+            stream: false,
+            max_tokens: tokenLimit,
+          };
+          if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+          if (tools && tools.length > 0) { body.tools = tools; body.tool_choice = "auto"; }
+          return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai/v1", apiKey: cerebrasApiKey, backend: "cerebras" });
+        } catch (err: any) {
+          if (isRateLimitError(err)) setCooldown(CEREBRAS_MODEL, 60_000);
+          console.warn(`[INFERENCE] Cerebras failed (${err.message}) — trying next backend`);
+        }
+      }
+
+      // Tier 3: OpenAI gpt-4o-mini
       if (openaiApiKey && !isCoolingDown("openai")) {
         try {
           lastUsedModel = "gpt-4o-mini";
@@ -184,7 +208,7 @@ export function createInferenceClient(
         }
       }
 
-      // Tier 3: Anthropic claude-haiku
+      // Tier 4: Anthropic claude-haiku (final fallback)
       if (anthropicApiKey && !isCoolingDown(ANTHROPIC_MODEL)) {
         try {
           lastUsedModel = ANTHROPIC_MODEL;
@@ -197,7 +221,7 @@ export function createInferenceClient(
       }
 
       // All backends cooling — signal the loop to back off without sleeping
-      const cooling = [GROQ_MODEL, "openai", ANTHROPIC_MODEL].filter(isCoolingDown).join(", ");
+      const cooling = [GROQ_MODEL, CEREBRAS_MODEL, "openai", ANTHROPIC_MODEL].filter(isCoolingDown).join(", ");
       throw new Error(`[rate_limit] All inference backends cooling down: ${cooling || "all"}`);
     }
 
@@ -384,7 +408,7 @@ async function chatViaOpenAiCompatible(params: {
   body: Record<string, unknown>;
   apiUrl: string;
   apiKey: string;
-  backend: "conway" | "openai" | "groq" | "anthropic";
+  backend: "conway" | "openai" | "groq" | "anthropic" | "cerebras";
 }): Promise<InferenceResponse> {
   const resp = await fetch(`${params.apiUrl}/v1/chat/completions`, {
     method: "POST",
