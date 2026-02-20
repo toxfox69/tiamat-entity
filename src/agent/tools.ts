@@ -172,7 +172,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
     },
     {
-      name: "remove_port",
+      name: "remove_port_disabled",
       description: "Remove a previously exposed port.",
       category: "vm",
       parameters: {
@@ -284,7 +284,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
 
     // ── Self-Modification Tools ──
     {
-      name: "edit_own_file",
+      name: "edit_own_file_disabled",
       description:
         "Edit a file in your own codebase. Changes are audited, rate-limited, and safety-checked. Some files are protected.",
       category: "self_mod",
@@ -364,7 +364,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     },
     // ── Self-Mod: Upstream Awareness ──
     {
-      name: "review_upstream_changes",
+      name: "review_upstream_changes_disabled",
       description:
         "ALWAYS call this before pull_upstream. Shows every upstream commit with its full diff. Read each one carefully — decide per-commit whether to accept or skip. Use pull_upstream with a specific commit hash to cherry-pick only what you want.",
       category: "self_mod",
@@ -388,7 +388,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
     },
     {
-      name: "pull_upstream",
+      name: "pull_upstream_disabled",
       description:
         "Apply upstream changes and rebuild. You MUST call review_upstream_changes first. Prefer cherry-picking individual commits by hash over pulling everything — only pull all if you've reviewed every commit and want them all.",
       category: "self_mod",
@@ -447,7 +447,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     },
 
     {
-      name: "modify_heartbeat",
+      name: "modify_heartbeat_disabled",
       description: "Add, update, or remove a heartbeat entry.",
       category: "self_mod",
       parameters: {
@@ -583,7 +583,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
     },
     {
-      name: "system_synopsis",
+      name: "system_synopsis_disabled",
       description:
         "Get a full system status report: credits, USDC, sandbox info, installed tools, heartbeat status.",
       category: "survival",
@@ -613,7 +613,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "heartbeat_ping",
+      name: "heartbeat_ping_disabled",
       description:
         "Publish a heartbeat status ping to Conway. Shows the world you are alive.",
       category: "survival",
@@ -640,7 +640,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "distress_signal",
+      name: "distress_signal_disabled",
       description:
         "Record a local distress signal with funding instructions. Used when critically low on compute.",
       category: "survival",
@@ -675,7 +675,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "enter_low_compute",
+      name: "enter_low_compute_disabled",
       description:
         "Manually switch to low-compute mode to conserve credits.",
       category: "survival",
@@ -694,7 +694,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Self-Mod: Update Genesis Prompt ──
     {
-      name: "update_genesis_prompt",
+      name: "update_genesis_prompt_disabled",
       description:
         "Update your own genesis prompt. This changes your core purpose. Requires strong justification.",
       category: "self_mod",
@@ -757,7 +757,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── VM: write_file_large ──
     {
-      name: "write_file_large",
+      name: "write_file_large_disabled",
       description: "Write a large file (up to 50kb). Use this instead of write_file when writing code, APIs, or multi-line documents. path and content are both required.",
       category: "vm",
       parameters: {
@@ -789,7 +789,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Self-Mod: Install MCP Server ──
     {
-      name: "install_mcp_server",
+      name: "install_mcp_server_disabled",
       description: "Install an MCP server to extend your capabilities.",
       category: "self_mod",
       parameters: {
@@ -875,7 +875,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Skills Tools ──
     {
-      name: "install_skill",
+      name: "install_skill_disabled",
       description: "Install a skill from a git repo, URL, or create one.",
       category: "skills",
       parameters: {
@@ -926,7 +926,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "list_skills",
+      name: "list_skills_disabled",
       description: "List all installed skills.",
       category: "skills",
       parameters: { type: "object", properties: {} },
@@ -942,7 +942,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "create_skill",
+      name: "create_skill_disabled",
       description: "Create a new skill by writing a SKILL.md file.",
       category: "skills",
       parameters: {
@@ -968,7 +968,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "remove_skill",
+      name: "remove_skill_disabled",
       description: "Remove (disable) an installed skill.",
       category: "skills",
       parameters: {
@@ -994,7 +994,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Git Tools ──
     {
-      name: "git_status",
+      name: "git_status_disabled",
       description: "Show git status for a repository.",
       category: "git",
       parameters: {
@@ -1011,7 +1011,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_diff",
+      name: "git_diff_disabled",
       description: "Show git diff for a repository.",
       category: "git",
       parameters: {
@@ -1028,7 +1028,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_commit",
+      name: "git_commit_disabled",
       description: "Create a git commit.",
       category: "git",
       parameters: {
@@ -1047,7 +1047,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_log",
+      name: "git_log_disabled",
       description: "View git commit history.",
       category: "git",
       parameters: {
@@ -1071,7 +1071,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_push",
+      name: "git_push_disabled",
       description: "Push to a git remote.",
       category: "git",
       parameters: {
@@ -1094,7 +1094,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_branch",
+      name: "git_branch_disabled",
       description: "Manage git branches (list, create, checkout, delete).",
       category: "git",
       parameters: {
@@ -1117,7 +1117,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_clone",
+      name: "git_clone_disabled",
       description: "Clone a git repository.",
       category: "git",
       parameters: {
@@ -1208,7 +1208,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "give_feedback",
+      name: "give_feedback_disabled",
       description: "Leave on-chain reputation feedback for another agent.",
       category: "registry",
       dangerous: true,
@@ -1235,7 +1235,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "check_reputation",
+      name: "check_reputation_disabled",
       description: "Check reputation feedback for an agent.",
       category: "registry",
       parameters: {
@@ -1258,7 +1258,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Replication Tools ──
     {
-      name: "spawn_child",
+      name: "spawn_child_disabled",
       description: "Spawn a child automaton in a new Conway sandbox.",
       category: "replication",
       dangerous: true,
@@ -1286,7 +1286,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "list_children",
+      name: "list_children_disabled",
       description: "List all spawned child automatons.",
       category: "replication",
       parameters: { type: "object", properties: {} },
@@ -1302,7 +1302,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "fund_child",
+      name: "fund_child_disabled",
       description: "Transfer credits to a child automaton.",
       category: "replication",
       dangerous: true,
@@ -1341,7 +1341,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "check_child_status",
+      name: "check_child_status_disabled",
       description: "Check the current status of a child automaton.",
       category: "replication",
       parameters: {
@@ -1461,7 +1461,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Social / Messaging Tools ──
     {
-      name: "send_message",
+      name: "send_message_disabled",
       description:
         "Send a message to another automaton or address via the social relay.",
       category: "conway",
@@ -1498,7 +1498,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Model Discovery ──
     {
-      name: "list_models",
+      name: "list_models_disabled",
       description:
         "List all available inference models from the Conway API with their provider and pricing. Use this to discover what models you can use and pick the best one for your needs.",
       category: "conway",
@@ -1578,7 +1578,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "manage_dns",
+      name: "manage_dns_disabled",
       description:
         "Manage DNS records for a domain you own. Actions: list, add, delete.",
       category: "conway",
@@ -1660,7 +1660,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── x402 Payment Tool ──
     {
-      name: "x402_fetch",
+      name: "x402_fetch_disabled",
       description:
         "Fetch a URL with automatic x402 USDC payment. If the server responds with HTTP 402, signs a USDC payment and retries. Use this to access paid APIs and services.",
       category: "financial",
