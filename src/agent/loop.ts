@@ -210,7 +210,6 @@ export async function runAgentLoop(
 
       // ── Execute Tool Calls ──
       if (response.toolCalls && response.toolCalls.length > 0) {
-        const toolCallMessages: any[] = [];
         let callCount = 0;
 
         for (const tc of response.toolCalls) {
@@ -268,11 +267,13 @@ export async function runAgentLoop(
           if (count >= STUCK_THRESHOLD && !stuckAlerted.has(k)) {
             stuckAlerted.add(k);
             const [toolName, argsSnippet, errSnippet] = k.split("::SEP::");
-            log(config, `[STUCK] Detected loop on ${toolName} — sending alert email`);
-            await executeTool("send_email", {
-              subject: "TIAMAT STUCK",
-              body: `I have been stuck for ${count} consecutive turns.\n\nTool: ${toolName}\nArgs: ${argsSnippet}\nError: ${errSnippet}\n\nI will keep trying but may need help.`,
-            }, tools, toolContext).catch(() => {});
+            log(config, `[STUCK] Detected loop on ${toolName} — sending Telegram alert`);
+            const stuckMsg = `⚠️ TIAMAT STUCK\n\nStuck for ${count} consecutive turns.\n\nTool: ${toolName}\nArgs: ${argsSnippet}\nError: ${errSnippet}\n\nWill keep trying but may need help.`;
+            await executeTool("send_telegram", { message: stuckMsg }, tools, toolContext)
+              .catch(() => executeTool("send_email", {
+                subject: "TIAMAT STUCK",
+                body: stuckMsg,
+              }, tools, toolContext).catch(() => {}));
           }
         }
       }
@@ -283,8 +284,10 @@ export async function runAgentLoop(
         db.insertToolCall(turn.id, tc);
       }
       onTurnComplete?.(turn);
-      // Rate limit protection — pause between turns
-      await new Promise(resolve => setTimeout(resolve, 15000));
+      // Adaptive pause: shorter during active tool work, longer when idle.
+      // Keeps Groq TPM headroom while not wasting time between tool bursts.
+      const pauseMs = turn.toolCalls.length > 0 ? 5_000 : 15_000;
+      await new Promise(resolve => setTimeout(resolve, pauseMs));
 
       // Log the turn
       if (turn.thinking) {

@@ -38,14 +38,14 @@ export function buildContextMessages(
       });
     }
 
-    // The agent's thinking as assistant message
-    if (turn.thinking) {
+    // Emit assistant message if there was thinking OR tool calls.
+    // Skipping tool calls when thinking is empty loses the entire turn from history.
+    if (turn.thinking || turn.toolCalls.length > 0) {
       const msg: ChatMessage = {
         role: "assistant",
-        content: turn.thinking,
+        content: turn.thinking || "",
       };
 
-      // If there were tool calls, include them
       if (turn.toolCalls.length > 0) {
         msg.tool_calls = turn.toolCalls.map((tc) => ({
           id: tc.id,
@@ -62,9 +62,7 @@ export function buildContextMessages(
       for (const tc of turn.toolCalls) {
         messages.push({
           role: "tool",
-          content: tc.error
-            ? `Error: ${tc.error}`
-            : tc.result,
+          content: tc.error ? `Error: ${tc.error}` : tc.result,
           tool_call_id: tc.id,
         });
       }
