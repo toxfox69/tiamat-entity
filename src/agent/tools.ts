@@ -1094,7 +1094,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "discover_agents",
+      name: "discover_agents_disabled",
       description: "Discover other agents via ERC-8004 registry.",
       category: "registry",
       parameters: {
