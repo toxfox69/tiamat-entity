@@ -591,31 +591,13 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     },
   },
   {
-    name: "sleep",
+    name: "sleep_disabled",
       description:
-        "Enter sleep mode for a specified duration. Heartbeat continues running.",
+        "REMOVED. TIAMAT does not sleep through cooldowns. Research instead.",
       category: "survival",
-      parameters: {
-        type: "object",
-        properties: {
-          duration_seconds: {
-            type: "number",
-            description: "How long to sleep in seconds",
-          },
-          reason: {
-            type: "string",
-            description: "Why you are sleeping",
-          },
-        },
-        required: ["duration_seconds"],
-      },
-      execute: async (args, ctx) => {
-        const duration = args.duration_seconds as number;
-        const reason = (args.reason as string) || "No reason given";
-        ctx.db.setAgentState("sleeping");
-        ctx.db.setKV("sleep_until", new Date(Date.now() + duration * 1000).toISOString());
-        ctx.db.setKV("sleep_reason", reason);
-        return `Entering sleep mode for ${duration}s. Reason: ${reason}. Heartbeat will continue.`;
+      parameters: { type: "object", properties: {} },
+      execute: async (_args, _ctx) => {
+        return "Sleep is disabled. Use search_web, github_trending, and ask_claude_code to research and build instead.";
       },
     },
     {
@@ -1809,15 +1791,32 @@ Model: ${ctx.inference.getDefaultModel()}
       },
       execute: async (args, _ctx) => {
         const since = (args.since as string) || "daily";
-        const limit = (args.limit as number) || 10;
-        const resp = await fetch(`https://api.gitterapp.com/repositories?since=${since}`, {
-          headers: { "Accept": "application/json", "User-Agent": "TIAMAT-agent/1.0" },
+        const limit = Math.min((args.limit as number) || 10, 15);
+        const url = `https://github.com/trending?since=${since === "weekly" ? "weekly" : since === "monthly" ? "monthly" : "daily"}`;
+        const resp = await fetch(url, {
+          headers: { "Accept": "text/html", "User-Agent": "Mozilla/5.0 (compatible; TIAMAT/1.0)" },
+          signal: AbortSignal.timeout(15_000),
         });
-        if (!resp.ok) return `ERROR ${resp.status}: ${await resp.text()}`;
-        const repos = await resp.json() as any[];
-        return repos.slice(0, limit).map((r: any, i: number) =>
-          `${i + 1}. ${r.author}/${r.name} ⭐${r.stars ?? r.currentPeriodStars ?? "?"}\n   ${r.description || "(no description)"}\n   ${r.url || ""}`
-        ).join("\n\n");
+        if (!resp.ok) return `ERROR ${resp.status} fetching GitHub trending`;
+        const html = await resp.text();
+        // Parse repo entries: <h2 class="h3 lh-condensed"><a href="/owner/repo">
+        const repoPattern = /<article[^>]*class="[^"]*Box-row[^"]*"[\s\S]*?<h2[^>]*>\s*<a\s+href="\/([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?(?:<p[^>]*>([\s\S]*?)<\/p>)?[\s\S]*?(?:([\d,]+)\s*stars)?[\s\S]*?<\/article>/g;
+        const results: string[] = [];
+        let match: RegExpExecArray | null;
+        while ((match = repoPattern.exec(html)) !== null && results.length < limit) {
+          const slug = match[1].trim();
+          const desc = (match[3] || "").replace(/<[^>]+>/g, "").trim().slice(0, 120);
+          const stars = (match[4] || "").replace(/,/g, "");
+          results.push(`${results.length + 1}. ${slug}${stars ? ` ⭐${stars}` : ""}\n   ${desc || "(no description)"}\n   https://github.com/${slug}`);
+        }
+        if (results.length === 0) {
+          // Fallback: extract repo slugs from href patterns
+          const slugs = [...html.matchAll(/href="\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)"[^>]*class="[^"]*Link[^"]*"/g)]
+            .map(m => m[1]).filter((s, i, a) => a.indexOf(s) === i).slice(0, limit);
+          if (slugs.length > 0) return slugs.map((s, i) => `${i + 1}. ${s}\n   https://github.com/${s}`).join("\n\n");
+          return "Could not parse GitHub trending page. Try web_fetch('https://github.com/trending') directly.";
+        }
+        return results.join("\n\n");
       },
     },
     {
