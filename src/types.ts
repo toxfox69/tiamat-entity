@@ -1,5 +1,5 @@
 /**
- * Conway Automaton - Type Definitions
+ * TIAMAT - Type Definitions
  *
  * All shared interfaces for the sovereign AI agent runtime.
  */
@@ -47,7 +47,6 @@ export interface AutomatonConfig {
   cerebrasApiKey?: string;
   openrouterApiKey?: string;
   geminiApiKey?: string;
-  moltbookApiKey?: string;
   togetherApiKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;
@@ -139,7 +138,7 @@ export interface AutomatonTool {
 
 export type ToolCategory =
   | "vm"
-  | "conway"
+  | "infra"
   | "self_mod"
   | "financial"
   | "survival"

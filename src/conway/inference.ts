@@ -1,8 +1,8 @@
 /**
- * Conway Inference Client
+ * TIAMAT Inference Client
  *
- * Wraps Conway's /v1/chat/completions endpoint (OpenAI-compatible).
- * The automaton pays for its own thinking through Conway credits.
+ * Multi-provider inference with cascade fallback.
+ * The automaton pays for its own thinking through compute credits.
  */
 
 import type {
