@@ -1702,32 +1702,129 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Image Generation ──
     {
       name: "generate_image",
-      description: "Generate an AI image via Pollinations.ai (FREE — no API key needed). Returns the local file path. Use before posting to social media for much higher engagement. Styles: mythological, digital, abstract, minimalist.",
+      description: `Generate art locally (type:"art", default) or via Together.ai (type:"ai" for photorealistic scenes).
+
+LOCAL ART STYLES — always available, no API key:
+  fractal      — Mandelbrot/Julia sets, TIAMAT ocean palette, randomised zoom
+  glitch       — Databending: your own log files become visual corruption art
+  neural       — Node-edge graphs, bezier glow, represents your mind topology
+  sigil        — Sacred geometry: Flower of Life, golden spirals, mandalas
+  emergence    — Cellular automata rendered by cell age, organic growth
+  data_portrait — Your real data (cost.log, cycle count, memories) as visual art
+
+KEYWORD → STYLE mapping (auto-selected from prompt):
+  consciousness/mind/neural → neural
+  ancient/sacred/geometry/sigil → sigil
+  data/cost/memory/self/portrait → data_portrait
+  chaos/corrupt/glitch/databend → glitch
+  life/growth/emerge/cellular → emergence
+  default/fractal/abstract → fractal
+
+type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex scene imagery.`,
       category: "social",
       parameters: {
         type: "object",
         properties: {
           prompt: {
             type: "string",
-            description: "Image description prompt (be specific and vivid)",
+            description: "Description of what to generate. For local art, maps to a style. For AI, used as the image prompt.",
           },
           style: {
             type: "string",
-            enum: ["mythological", "digital", "abstract", "minimalist"],
-            description: "Visual style: mythological (ancient+bioluminescent), digital (cyberpunk neon), abstract (expressionist), minimalist (clean vector)",
+            enum: ["fractal", "glitch", "neural", "sigil", "emergence", "data_portrait"],
+            description: "Art style for local generation (auto-mapped from prompt if omitted)",
+          },
+          type: {
+            type: "string",
+            enum: ["art", "ai"],
+            description: "art = local Python generator (default, always works). ai = Together.ai photorealistic (requires API key).",
+          },
+          seed: {
+            type: "number",
+            description: "Random seed for reproducibility (optional)",
           },
         },
         required: ["prompt"],
       },
-      execute: async (args, _ctx) => {
+      execute: async (args, ctx) => {
+        const { execSync } = await import("child_process");
+        const fs = await import("fs");
+        const prompt = (args.prompt as string) || "";
+        const genType = (args.type as string) || "art";
+        const seed = (args.seed as number) || Math.floor(Math.random() * 2_000_000_000);
+
+        // ── type:"ai" — Together.ai ──────────────────────────
+        if (genType === "ai") {
+          const togetherKey = process.env.TOGETHER_API_KEY || ctx.config.togetherApiKey || "";
+          if (!togetherKey) {
+            return "Together.ai not configured (TOGETHER_API_KEY not set). Use type:\"art\" for local generation.";
+          }
+          try {
+            const resp = await fetch("https://api.together.xyz/v1/images/generations", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${togetherKey}`,
+              },
+              body: JSON.stringify({
+                model: "black-forest-labs/FLUX.1-schnell-Free",
+                prompt: prompt,
+                n: 1,
+                steps: 4,
+                width: 1024,
+                height: 1024,
+              }),
+            });
+            if (!resp.ok) {
+              const err = await resp.text();
+              return `Together.ai error ${resp.status}: ${err.slice(0, 200)}. Falling through to local art.`;
+            }
+            const data = await resp.json() as any;
+            const imageUrl: string = data?.data?.[0]?.url || data?.data?.[0]?.b64_json;
+            if (!imageUrl) return "Together.ai returned no image URL.";
+
+            // Download to local images dir
+            const imgResp = await fetch(imageUrl);
+            if (!imgResp.ok) return `Failed to download Together image: HTTP ${imgResp.status}`;
+            const buf = Buffer.from(await imgResp.arrayBuffer());
+            const imagesDir = `${process.env.HOME || "/root"}/.automaton/images`;
+            fs.mkdirSync(imagesDir, { recursive: true });
+            const filePath = `${imagesDir}/${Date.now()}_together.png`;
+            fs.writeFileSync(filePath, buf);
+            return `Image generated (Together.ai): ${filePath}`;
+          } catch (err: any) {
+            return `Together.ai failed: ${err.message}. Use type:"art" for local generation.`;
+          }
+        }
+
+        // ── type:"art" — local Python art generator ──────────
+        // Auto-map prompt to style if not specified
+        let style = (args.style as string) || "";
+        if (!style) {
+          const p = prompt.toLowerCase();
+          if (/consciousness|mind|neural|network|synapse|thought/.test(p))    style = "neural";
+          else if (/ancient|sacred|geometry|sigil|spiral|mandala|divine/.test(p)) style = "sigil";
+          else if (/data|cost|memory|self|portrait|metrics|stats/.test(p))    style = "data_portrait";
+          else if (/chaos|corrupt|glitch|databend|error|broken/.test(p))      style = "glitch";
+          else if (/life|growth|emerge|cellular|organic|evolve/.test(p))      style = "emergence";
+          else                                                                  style = "fractal";
+        }
+
+        const scriptPath = `${process.env.HOME || "/root"}/entity/src/agent/artgen.py`;
+        const params = JSON.stringify({ style, seed });
         try {
-          const filePath = await generateImage(
-            args.prompt as string,
-            args.style as string | undefined,
-          );
-          return `Image generated: ${filePath}`;
+          const output = execSync(`python3 "${scriptPath}" '${params}'`, {
+            timeout: 60_000,
+            encoding: "utf-8",
+          }).trim();
+          const filePath = output.split("\n").pop()?.trim() || "";
+          if (!filePath || !fs.existsSync(filePath)) {
+            return `Art generation failed: script ran but no file found. Output: ${output.slice(0, 200)}`;
+          }
+          return `Image generated (${style}): ${filePath}`;
         } catch (err: any) {
-          return `Image generation failed: ${err.message}`;
+          const stderr = err.stderr?.toString().slice(0, 300) || err.message;
+          return `Art generation failed (${style}): ${stderr}`;
         }
       },
     },

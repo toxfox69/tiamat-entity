@@ -48,6 +48,7 @@ export interface AutomatonConfig {
   openrouterApiKey?: string;
   geminiApiKey?: string;
   moltbookApiKey?: string;
+  togetherApiKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;
   heartbeatConfigPath: string;
