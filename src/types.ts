@@ -154,6 +154,7 @@ export interface ToolContext {
   conway: ConwayClient;
   inference: InferenceClient;
   social?: SocialClientInterface;
+  turnNumber?: number;       // current turn count — used by cognitive tools
 }
 
 export interface SocialClientInterface {

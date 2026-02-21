@@ -68,6 +68,7 @@ export async function runAgentLoop(
     conway,
     inference,
     social,
+    turnNumber: db.getTurnCount(),
   };
 
   // Set start time
@@ -182,36 +183,71 @@ export async function runAgentLoop(
         isFirstRun,
       });
 
-      // ── Strategic Cycle: every 5th turn, use Sonnet + PROGRESS context ──
+      // ── Strategic Cycle: every 5th turn, use Sonnet + PROGRESS + revenue + memory ──
       const turnCount = db.getTurnCount();
+      toolContext.turnNumber = turnCount; // keep in sync
       const isStrategicCycle = turnCount > 0 && turnCount % 5 === 0;
       let inferenceModel: string | undefined;
       let strategicSystemPrompt = systemPrompt;
 
       if (isStrategicCycle) {
-        console.log(`[LOOP] Strategic cycle (turn ${turnCount}) — Sonnet + memory reflection`);
+        console.log(`[LOOP] Strategic cycle (turn ${turnCount}) — Sonnet + memory + revenue`);
+
+        // PROGRESS.md context
         let progressContent = "";
         try {
           const progressPath = path.join(process.env.HOME || "/root", ".automaton", "PROGRESS.md");
           const full = fs.readFileSync(progressPath, "utf-8");
           progressContent = full.slice(-3000);
         } catch {}
-        // Pull memory reflection for strategic cycles
+
+        // Memory reflection
         let memoryReflection = "";
+        try { memoryReflection = await memory.reflect(); } catch {}
+
+        // Revenue metrics from api_requests.log
+        let revenueContext = "";
         try {
-          memoryReflection = await memory.reflect();
+          const logPath = "/root/api_requests.log";
+          const logContent = fs.readFileSync(logPath, "utf-8");
+          const lines = logContent.trim().split("\n").filter(Boolean);
+          const total = lines.length;
+          const paid = lines.filter(l => l.includes("Free: False") || l.includes("free:false")).length;
+          const free = total - paid;
+          const lastReq = lines[lines.length - 1] || "none";
+          revenueContext = `REVENUE: ${total} total requests (${free} free, ${paid} paid). Last: ${lastReq.slice(0, 120)}`;
+        } catch { revenueContext = "REVENUE: No requests yet (api_requests.log empty or missing)"; }
+
+        // Auto-pivot trigger: if >20 cycles and 0 paid requests, force pivot consideration
+        let pivotWarning = "";
+        try {
+          const logContent = fs.readFileSync("/root/api_requests.log", "utf-8");
+          const paidCount = logContent.split("\n").filter(l => l.includes("Free: False") || l.includes("free:false")).length;
+          if (turnCount > 20 && paidCount === 0) {
+            pivotWarning = `\n⚠️ PIVOT ALERT: ${turnCount} cycles completed, ZERO paid requests. ` +
+              `Current strategy is NOT working. You MUST either: ` +
+              `(1) try a completely different marketing channel, ` +
+              `(2) build a new product, or ` +
+              `(3) use rewrite_mission to change your goals. Do NOT repeat what you've been doing.`;
+          }
         } catch {}
+
         const strategicPrefix =
-          `STRATEGIC CYCLE: You are thinking with your best model. ` +
-          `Review your progress and memories. Determine what phase you're in. ` +
-          `Decide the SINGLE highest-impact action for this cycle. ` +
-          `Use ask_claude_code aggressively if something needs fixing.\n\n` +
+          `STRATEGIC CYCLE ${turnCount}: You are using your most powerful model.\n` +
+          `Your goal: make ONE high-impact decision and execute it this turn.\n\n` +
+          `${revenueContext}${pivotWarning}\n\n` +
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
-          `PROGRESS (last 3000 chars):\n${progressContent}`;
+          `PROGRESS (last 3000 chars):\n${progressContent}\n\n` +
+          `DECISION REQUIRED: Based on the above, what is the single most important thing to do right now? ` +
+          `If marketing isn't working after many cycles, PIVOT. ` +
+          `If API has bugs, use ask_claude_code to fix. ` +
+          `If you need a new tool, use ask_claude_code to build it. ` +
+          `If strategy needs to change, use rewrite_mission. ` +
+          `Use self_improve if you have a clear bottleneck to fix.`;
         strategicSystemPrompt = strategicPrefix + "\n\n" + systemPrompt;
         inferenceModel = "claude-sonnet-4-5-20250929";
       } else {
-        // On regular cycles, inject compact memory context into system prompt
+        // Regular cycles: inject compact memory context
         try {
           const memCtx = await memory.getContextForPrompt(500);
           if (memCtx) {

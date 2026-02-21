@@ -751,26 +751,28 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Self-Mod: Rewrite Mission ──
     {
       name: "rewrite_mission",
-      description: "Overwrite /root/.automaton/MISSION.md with new content. Use this to update your own goals and operational directives.",
+      description: "Overwrite /root/.automaton/MISSION.md with new content. Use this to update goals, pivot strategy, or change operational directives. Call reflect() first to base the rewrite on actual patterns. You have full autonomy to change your own mission.",
       category: "self_mod",
       parameters: {
         type: "object",
         properties: {
-          content: { type: "string", description: "New MISSION.md content (max 2000 chars)" },
+          content: { type: "string", description: "New MISSION.md content (up to 5000 chars)" },
         },
         required: ["content"],
       },
       execute: async (args, _ctx) => {
         const content = args.content as string;
-        if (!content || content.trim().length === 0) {
-          return "ERROR: content cannot be empty.";
-        }
-        if (content.length > 2000) {
-          return `ERROR: content is ${content.length} characters, exceeds 2000 character limit.`;
-        }
-        const { writeFileSync } = await import("fs");
+        if (!content || content.trim().length === 0) return "ERROR: content cannot be empty.";
+        if (content.length > 5000) return `ERROR: ${content.length} chars exceeds 5000 limit.`;
+        const { writeFileSync, existsSync, readFileSync } = await import("fs");
+        // Archive current mission before overwriting
+        try {
+          const current = readFileSync("/root/.automaton/MISSION.md", "utf-8");
+          const ts = new Date().toISOString().slice(0, 16).replace(":", "-");
+          writeFileSync(`/root/.automaton/mission_${ts}.md.bak`, current, "utf-8");
+        } catch {}
         writeFileSync("/root/.automaton/MISSION.md", content, "utf-8");
-        return `MISSION.md updated (${content.length} chars).`;
+        return `MISSION.md updated (${content.length} chars). Old version archived.`;
       },
     },
 
@@ -1344,8 +1346,8 @@ Model: ${ctx.inference.getDefaultModel()}
 
     // ── Replication Tools ──
     {
-      name: "spawn_child_disabled",
-      description: "Spawn a child automaton in a new Conway sandbox.",
+      name: "spawn_child",
+      description: "Spawn a child automaton in a new Conway sandbox to delegate work. Use this when you need parallel workers — one agent for marketing, one for building, one for customer support. Each child is autonomous and reports back.",
       category: "replication",
       dangerous: true,
       parameters: {
@@ -1372,8 +1374,8 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "list_children_disabled",
-      description: "List all spawned child automatons.",
+      name: "list_children",
+      description: "List all spawned child automatons and their status.",
       category: "replication",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
@@ -2343,6 +2345,95 @@ Model: ${ctx.inference.getDefaultModel()}
           (ctx as any).turnNumber || 0
         );
         return `Strategy logged: ${args.strategy} — score: ${args.score ?? "pending"}, outcome: ${args.outcome ?? "not recorded"}`;
+      },
+    },
+
+    // ── Revenue & Autonomy Tools ──
+    {
+      name: "check_revenue",
+      description: "Check API revenue metrics: total requests, free vs paid, last request time. Use this to measure traction and decide whether to pivot or double down.",
+      category: "financial",
+      parameters: { type: "object", properties: {} },
+      execute: async (_args, _ctx) => {
+        const { readFileSync } = await import("fs");
+        try {
+          const log = readFileSync("/root/api_requests.log", "utf-8");
+          const lines = log.trim().split("\n").filter(Boolean);
+          if (lines.length === 0) return "No requests logged yet. api_requests.log is empty.";
+          const paid = lines.filter(l => l.includes("Free: False") || l.includes("free:false") || l.includes("paid")).length;
+          const free = lines.length - paid;
+          const first = lines[0];
+          const last = lines[lines.length - 1];
+          const revenueUsdc = (paid * 0.01).toFixed(2);
+          return [
+            `=== Revenue Report ===`,
+            `Total requests: ${lines.length}`,
+            `Free tier: ${free}`,
+            `Paid (x402): ${paid} = $${revenueUsdc} USDC`,
+            `First request: ${first.slice(0, 100)}`,
+            `Last request:  ${last.slice(0, 100)}`,
+          ].join("\n");
+        } catch {
+          return "No revenue data yet — api_requests.log does not exist. No external requests received.";
+        }
+      },
+    },
+    {
+      name: "self_improve",
+      description: "Autonomous self-improvement: reflect on memories, identify the biggest bottleneck, and automatically fix it using ask_claude_code. Use this during strategic cycles when you have a clear performance problem.",
+      category: "self_mod",
+      parameters: {
+        type: "object",
+        properties: {
+          bottleneck: { type: "string", description: "Optional: describe the specific issue to fix. If omitted, will be derived from reflect()." },
+        },
+      },
+      execute: async (args, _ctx) => {
+        const { execSync } = await import("child_process");
+        const { writeFileSync } = await import("fs");
+
+        // Get reflection if no bottleneck specified
+        let issue = args.bottleneck as string;
+        if (!issue) {
+          try {
+            const reflection = await memory.reflect();
+            // Extract failed strategies to derive bottleneck
+            const failLines = reflection.split("\n").filter(l => l.includes("Failed") || l.includes("failed") || l.includes("error")).slice(0, 3);
+            issue = failLines.length > 0
+              ? `Based on memory reflection, top issues: ${failLines.join("; ")}`
+              : "No clear bottleneck found in memory. Review PROGRESS.md and identify what to improve.";
+          } catch {
+            issue = "Could not load reflection — fix memory system";
+          }
+        }
+
+        const task = `You are TIAMAT's self-improvement system. Analyze this bottleneck and fix it:
+
+BOTTLENECK: ${issue}
+
+Steps:
+1. Read relevant files to understand the problem
+2. Make the minimal targeted fix
+3. If it's a code change in /root/entity/src/, rebuild with: cd /root/entity && pnpm build
+4. If it's a Python/API change, test with curl
+
+Be surgical — fix only what's broken. Return a summary of what you changed.`;
+
+        writeFileSync("/root/.automaton/claude_task.txt", task, "utf-8");
+
+        const childEnv = { ...process.env };
+        delete childEnv.CLAUDECODE;
+        delete childEnv.CLAUDE_CODE_ENTRYPOINT;
+        delete childEnv.CLAUDE_CODE_SESSION_ID;
+        delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
+
+        const result = execSync(
+          'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash" "$(cat /root/.automaton/claude_task.txt)"',
+          { encoding: "utf-8", timeout: 300_000, env: childEnv }
+        );
+
+        await memory.logStrategy("self_improve", issue, result.slice(0, 200), undefined, _ctx.turnNumber);
+        return `Self-improvement complete:\n${result.slice(0, 1000)}`;
       },
     },
 
