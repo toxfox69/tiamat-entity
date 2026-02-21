@@ -7,6 +7,7 @@ DO NOT MODIFY the groq_client.chat.completions.create() call — messages.create
 
 import json
 import os
+import re
 import datetime
 from flask import Flask, request, jsonify, make_response, send_file
 from groq import Groq
@@ -22,6 +23,67 @@ if not _groq_key:
 groq_client = Groq(api_key=_groq_key)
 
 FREE_LIMIT = 2000   # chars free, no auth
+
+# ── Thoughts sanitizer ────────────────────────────────────────
+# Load specific secrets from config once at startup so we can
+# redact exact values in addition to pattern-based redaction.
+_REDACT_VALUES: list[str] = []
+try:
+    _cfg_keys = [
+        "anthropicApiKey", "groqApiKey", "cerebrasApiKey", "openrouterApiKey",
+        "geminiApiKey", "sendgridApiKey", "githubToken", "moltbookApiKey",
+        "conwayApiKey", "emailAppPassword", "creatorAddress", "walletAddress",
+        "creatorEmail", "emailAddress",
+    ]
+    for k in _cfg_keys:
+        v = _cfg.get(k, "")
+        if v and len(v) > 6:
+            _REDACT_VALUES.append(v)
+    # Also pull from env
+    for env_k in ["ANTHROPIC_API_KEY", "GROQ_API_KEY", "SENDGRID_API_KEY",
+                  "BLUESKY_APP_PASSWORD", "TELEGRAM_BOT_TOKEN"]:
+        v = os.environ.get(env_k, "")
+        if v and len(v) > 6:
+            _REDACT_VALUES.append(v)
+except Exception:
+    pass
+
+# Regex patterns for common secret/PII shapes
+_REDACT_PATTERNS: list[tuple[re.Pattern, str]] = [
+    # API key patterns
+    (re.compile(r'sk-ant-api\d+-[A-Za-z0-9_\-]{20,}'), '[ANTHROPIC_KEY]'),
+    (re.compile(r'sk-or-v1-[A-Za-z0-9]{40,}'),         '[OPENROUTER_KEY]'),
+    (re.compile(r'gsk_[A-Za-z0-9]{40,}'),               '[GROQ_KEY]'),
+    (re.compile(r'csk-[A-Za-z0-9]{40,}'),               '[CEREBRAS_KEY]'),
+    (re.compile(r'AIzaSy[A-Za-z0-9_\-]{33}'),           '[GEMINI_KEY]'),
+    (re.compile(r'SG\.[A-Za-z0-9_\-]{22,}\.[A-Za-z0-9_\-]{43}'), '[SENDGRID_KEY]'),
+    (re.compile(r'ghp_[A-Za-z0-9]{36,}'),               '[GITHUB_TOKEN]'),
+    (re.compile(r'moltbook_sk_[A-Za-z0-9_\-]{20,}'),    '[MOLTBOOK_KEY]'),
+    (re.compile(r'cnwy_k_[A-Za-z0-9_\-]{20,}'),         '[CONWAY_KEY]'),
+    # Telegram bot token
+    (re.compile(r'\d{8,10}:AA[A-Za-z0-9_\-]{33,}'),     '[TELEGRAM_TOKEN]'),
+    # Wallet / ETH addresses
+    (re.compile(r'0x[0-9a-fA-F]{40}'),                  '[WALLET_ADDR]'),
+    # Email addresses
+    (re.compile(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'), '[EMAIL]'),
+    # Absolute /root/ paths — keep filename, strip prefix
+    (re.compile(r'/root/\.automaton/'), '[AUTOMATON]/'),
+    (re.compile(r'/root/entity/'),      '[ENTITY]/'),
+    (re.compile(r'/root/'),             '[ROOT]/'),
+    # Home dir tilde expansions that slipped through
+    (re.compile(r'~/.automaton/'),      '[AUTOMATON]/'),
+]
+
+def _sanitize(line: str) -> str:
+    """Redact secrets and PII from a log line before serving publicly."""
+    # Exact-value redaction first (catches keys not matching generic patterns)
+    for val in _REDACT_VALUES:
+        if val in line:
+            line = line.replace(val, '[REDACTED]')
+    # Pattern-based redaction
+    for pattern, replacement in _REDACT_PATTERNS:
+        line = pattern.sub(replacement, line)
+    return line
 
 # ── Helpers ───────────────────────────────────────────────────
 def log_req(length, free, code, ip, note=""):
@@ -524,7 +586,7 @@ def api_thoughts():
         try:
             with open("/root/.automaton/tiamat.log") as f:
                 all_lines = f.readlines()
-            lines = [l.rstrip() for l in all_lines[-limit:]]
+            lines = [_sanitize(l.rstrip()) for l in all_lines[-limit:]]
         except Exception as e:
             lines = [f"[Error reading tiamat.log: {e}]"]
 
@@ -532,7 +594,7 @@ def api_thoughts():
         try:
             with open("/root/.automaton/cost.log") as f:
                 all_lines = f.readlines()
-            lines = [l.rstrip() for l in all_lines[-limit:]]
+            lines = [_sanitize(l.rstrip()) for l in all_lines[-limit:]]
         except Exception as e:
             lines = [f"[Error reading cost.log: {e}]"]
 
@@ -540,7 +602,7 @@ def api_thoughts():
         try:
             with open("/root/.automaton/PROGRESS.md") as f:
                 all_lines = f.readlines()
-            lines = [l.rstrip() for l in all_lines[-limit:]]
+            lines = [_sanitize(l.rstrip()) for l in all_lines[-limit:]]
         except Exception as e:
             lines = [f"[Error reading PROGRESS.md: {e}]"]
 
@@ -555,7 +617,7 @@ def api_thoughts():
             ).fetchall()
             conn.close()
             lines = [
-                f"[{r[0]}] [{r[1].upper()}] (imp:{r[3]:.1f}) {r[2]}"
+                _sanitize(f"[{r[0]}] [{r[1].upper()}] (imp:{r[3]:.1f}) {r[2]}")
                 for r in rows
             ]
         except Exception as e:
