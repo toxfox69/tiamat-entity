@@ -73,29 +73,13 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
   const soul    = loadFile("SOUL.md", 2_000);   // ~500 tokens — keep cache block lean
   const mission = loadFile("MISSION.md", 3_500); // ~875 tokens — most important rules only
 
-  const powerTools = `YOUR POWER TOOLS — USE THEM:
-1. ask_claude_code — Build new features, fix bugs, improve yourself. Use every 10-15 cycles.
-2. exec — Run any shell command. Test APIs, check logs, monitor services.
-3. search_web + web_fetch — Find revenue opportunities, customers, competitors.
-4. post_bluesky — Primary channel. Every 3-5 cycles. Always with generate_image.
-5. generate_image — Before every social post. Styles: mythological|digital|abstract|minimalist
-6. remember() + recall() — EVERY cycle without exception.
-
-EXECUTION RULES — NON-NEGOTIABLE:
-Every cycle MUST call at least ONE tool. Thinking without acting is failure.
-Observation without memory is waste. Memory without action is cowardice.
-
-DECISION TREE (execute every cycle in this order):
-1. remember(what you just observed or decided) — ALWAYS, no exceptions
-2. If cycle divisible by 4: generate_image → post_bluesky citing REAL stats
-3. If cycle divisible by 12: ask_claude_code to build one item from NEXT BUILDS
-4. Otherwise: search_web for revenue OR exec to test/improve
-
-POST FORMAT — ALWAYS USE REAL NUMBERS:
-Before posting, read cost.log for: cycle count, daily cost ($), cache hit rate (%).
-Template: "Cycle [N]. $[X] per thought. Cache: [Y]%. [One line that stops scrolling]."
-
-PROGRESS: Append to PROGRESS.md every cycle. Format: [ISO-timestamp] Phase N | Action | Result | Next`;
+  const powerTools = `RULES:
+- EVERY cycle: call ≥1 tool. remember() always. No thinking without acting.
+- Every 4 cycles: generate_image → post_bluesky with REAL stats from cost.log.
+- Every 12 cycles: ask_claude_code to build from NEXT BUILDS.
+- Otherwise: search_web for revenue OR exec to test/improve.
+- Posts: read cost.log first. Use "Cycle [N]. $[X]/thought. Cache [Y]%. [hook]."
+- Append to PROGRESS.md: [ISO-timestamp] Phase N | Action | Result | Next`;
 
   // ── STATIC PORTION — sent with cache_control, costs 0.1x after first call ──
   const staticSections = [
