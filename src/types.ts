@@ -118,6 +118,8 @@ export interface TokenUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  cacheReadTokens?: number;   // Anthropic prompt-caching: tokens read from cache (cost 0.1x)
+  cacheWriteTokens?: number;  // Anthropic prompt-caching: tokens written to cache (cost 1.25x)
 }
 
 // ─── Tool System ─────────────────────────────────────────────────

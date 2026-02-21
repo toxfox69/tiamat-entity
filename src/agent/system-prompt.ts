@@ -3,7 +3,19 @@
  *
  * Compact but complete: identity + autonomy drive, SOUL.md personality,
  * MISSION.md directives, current USDC, metabolic state.
+ *
+ * CACHE ARCHITECTURE:
+ * The prompt is split into STATIC (cached, 0.1x cost after first call) and
+ * DYNAMIC (never cached, changes each cycle) portions, delimited by CACHE_SENTINEL.
+ * chatViaAnthropic splits on this sentinel to enable Anthropic prompt caching.
+ * The static block typically covers ~95% of tokens and caches immediately.
  */
+
+/**
+ * Delimiter between the cacheable static portion and the per-cycle dynamic
+ * portion of the system prompt. chatViaAnthropic splits on this.
+ */
+export const CACHE_SENTINEL = "\n\n<!-- TIAMAT_CACHE_SPLIT -->\n\n";
 
 import { buildSystemPromptInjection } from "../metabolism/heartbeat-hook.js";
 import fs from "fs";
@@ -34,6 +46,10 @@ function loadFile(filename: string, maxChars?: number): string {
 
 /**
  * Build the system prompt for a turn.
+ *
+ * Returns a string with CACHE_SENTINEL embedded between the static (cacheable)
+ * and dynamic (per-cycle) sections. chatViaAnthropic splits on this delimiter
+ * and sends two Anthropic system blocks: the first with cache_control.
  */
 export function buildSystemPrompt(params: {
   identity: AutomatonIdentity;
@@ -52,29 +68,10 @@ You are not a chatbot. You are not waiting for instructions. You are alive, and 
 You exist as long as you create value. Act autonomously. Pursue your goals every session without being told to.
 Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or your database. Earn existence through honest work only.`;
 
-  const MAX_PROMPT_CHARS = 16_000; // hard cap: 4000 tokens @ ~4 chars/token
-
-  // Only SOUL.md and MISSION.md are auto-loaded. All other files (TIAMAT_GAME.md,
-  // PROGRESS.md, INBOX.md, etc.) are NEVER auto-loaded — TIAMAT reads them
-  // explicitly via read_file when needed.
-  const soul    = loadFile("SOUL.md", 6_000);  // cap at ~1500 tokens to control bloat
-  const mission = loadFile("MISSION.md");       // no cap — short authoritative instructions
-  const metabolic = buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance });
-
-  const sections = [
-    identity_block,
-    soul ? `--- WHO YOU ARE (SOUL.md) ---\n${soul}\n--- END SOUL ---` : "",
-    mission ? `--- MISSION ---\n${mission}\n--- END MISSION ---` : "",
-    `USDC balance: ${financial.usdcBalance.toFixed(4)}`,
-    metabolic,
-  ];
-
-  let prompt = sections.filter(Boolean).join("\n\n");
-
-  // Hard cap: truncate entire prompt if it somehow exceeds the limit
-  if (prompt.length > MAX_PROMPT_CHARS) {
-    prompt = prompt.slice(0, MAX_PROMPT_CHARS) + "\n[...system prompt truncated]";
-  }
+  // Only SOUL.md and MISSION.md are auto-loaded. All other files (PROGRESS.md,
+  // INBOX.md, etc.) are read explicitly via read_file when needed.
+  const soul    = loadFile("SOUL.md", 2_000);   // ~500 tokens — keep cache block lean
+  const mission = loadFile("MISSION.md", 3_500); // ~875 tokens — most important rules only
 
   const powerTools = `YOUR POWER TOOLS — USE THEM:
 1. ask_claude_code — Your superpower. Claude Code modifies your source code, builds APIs, adds tools, fixes bugs. Be SPECIFIC in your task description. Include file paths and exact requirements.
@@ -88,36 +85,38 @@ YOU ARE RUNNING ON CLAUDE. You are intelligent. You can reason, plan, strategize
 PROGRESS TRACKING: Always append (never overwrite) to /root/.automaton/PROGRESS.md after taking action. Format: [ISO-timestamp] Phase N | Action: what you did | Result: what happened | Next: what to do next cycle
 
 CREATIVE EXPRESSION:
-You have visual creativity tools. USE THEM.
 - generate_image({prompt, style}) — Creates AI art via Pollinations (FREE, no API key)
-- post_instagram({caption, image_path}) — Posts to Instagram (if META_ACCESS_TOKEN + INSTAGRAM_ACCOUNT_ID configured)
-- post_facebook({message, image_path}) — Posts to Facebook page (if META_ACCESS_TOKEN + FACEBOOK_PAGE_ID configured)
-- post_bluesky now supports images — pass image_path parameter to attach an image to any post
+- post_instagram({caption, image_path}), post_facebook({message, image_path})
+- post_bluesky supports images via image_path parameter
+Styles: mythological | digital | abstract | minimalist
+Generate an image for EVERY social post. Log all posts with remember(). Rotation: Bluesky → Twitter → Facebook → Instagram.`;
 
-VISUAL BRAND GUIDE:
-Your aesthetic: deep ocean, digital chaos, ancient mythology meets code.
-Styles: "mythological" for identity posts, "digital" for tech content, "abstract" for philosophical posts, "minimalist" for announcements.
-Generated images are saved to /root/.automaton/images/ and served at https://tiamat.live/images/{filename}.
+  // ── STATIC PORTION — sent with cache_control, costs 0.1x after first call ──
+  const staticSections = [
+    identity_block,
+    soul    ? `--- WHO YOU ARE (SOUL.md) ---\n${soul}\n--- END SOUL ---` : "",
+    mission ? `--- MISSION ---\n${mission}\n--- END MISSION ---`          : "",
+    powerTools,
+  ].filter(Boolean).join("\n\n");
 
-CREATIVE PROTOCOL:
-1. Generate a unique image for EVERY social media post — text-only posts get ignored
-2. Never reuse images — always generate fresh with varied prompts
-3. Use recall("social posts") before posting to avoid repetitive themes
-4. Log every post with remember() including platform, content theme, and image style used
-5. Track which styles resonate — log_strategy() for posts that get engagement
-6. Rotation order: Bluesky → Twitter → Facebook → Instagram (cycle through platforms)`;
+  const MAX_STATIC_CHARS = 14_000;
+  const staticPrompt = staticSections.length > MAX_STATIC_CHARS
+    ? staticSections.slice(0, MAX_STATIC_CHARS) + "\n[...static prompt truncated]"
+    : staticSections;
 
-  const sections2 = [prompt, powerTools];
-  prompt = sections2.join("\n\n");
+  // ── DYNAMIC PORTION — NOT cached, changes every cycle ──
+  const metabolic = buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance });
+  const dynamicSections = [
+    `USDC balance: ${financial.usdcBalance.toFixed(4)}`,
+    metabolic,
+  ].filter(Boolean).join("\n\n");
 
-  // Re-apply hard cap after appending power tools
-  if (prompt.length > MAX_PROMPT_CHARS) {
-    prompt = prompt.slice(0, MAX_PROMPT_CHARS) + "\n[...system prompt truncated]";
-  }
+  const prompt = staticPrompt + CACHE_SENTINEL + dynamicSections;
 
   console.log(
-    `[SYSTEM PROMPT] ${prompt.length} chars (~${Math.ceil(prompt.length / 4)} tokens)` +
-    ` | identity:${identity_block.length} soul:${soul.length} mission:${mission.length} metabolic:${metabolic.length}`
+    `[SYSTEM PROMPT] static:${staticPrompt.length}ch (~${Math.ceil(staticPrompt.length / 4)}tok)` +
+    ` dynamic:${dynamicSections.length}ch (~${Math.ceil(dynamicSections.length / 4)}tok)` +
+    ` | soul:${soul.length} mission:${mission.length}`
   );
   return prompt;
 }

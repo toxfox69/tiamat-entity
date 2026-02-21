@@ -14,6 +14,7 @@ import type {
   TokenUsage,
   InferenceToolDefinition,
 } from "../types.js";
+import { CACHE_SENTINEL } from "../agent/system-prompt.js";
 
 interface InferenceClientOptions {
   apiUrl: string;
@@ -621,8 +622,28 @@ async function chatViaAnthropic(params: {
         : [{ role: "user", content: "Continue." }],
   };
 
+  // ── Prompt Caching ──
+  // Split the system text on CACHE_SENTINEL into a static (cached) block and
+  // a dynamic (per-cycle) block. The static block contains identity, SOUL.md,
+  // MISSION.md, and tool descriptions — it barely changes, so subsequent calls
+  // pay only 0.1x for those tokens instead of 1x. First call pays 1.25x to
+  // write the cache; cache TTL is 5 minutes (refreshed on every call within TTL).
   if (transformed.system) {
-    body.system = transformed.system;
+    const systemText = transformed.system;
+    const splitIdx = systemText.indexOf(CACHE_SENTINEL);
+    if (splitIdx !== -1) {
+      const staticPart  = systemText.slice(0, splitIdx);
+      const dynamicPart = systemText.slice(splitIdx + CACHE_SENTINEL.length);
+      body.system = [
+        { type: "text", text: staticPart,  cache_control: { type: "ephemeral" } },
+        { type: "text", text: dynamicPart },
+      ];
+    } else {
+      // No sentinel: cache the entire system block (best-effort for short prompts)
+      body.system = [
+        { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
+      ];
+    }
   }
 
   if (params.temperature !== undefined) {
@@ -644,6 +665,7 @@ async function chatViaAnthropic(params: {
       "Content-Type": "application/json",
       "x-api-key": params.anthropicApiKey,
       "anthropic-version": "2023-06-01",
+      "anthropic-beta": "prompt-caching-2024-07-31",
     },
     body: JSON.stringify(body),
   });
@@ -679,12 +701,23 @@ async function chatViaAnthropic(params: {
     throw new Error("No completion content returned from anthropic inference");
   }
 
-  const promptTokens = data.usage?.input_tokens || 0;
-  const completionTokens = data.usage?.output_tokens || 0;
+  const promptTokens     = data.usage?.input_tokens                 || 0;
+  const completionTokens = data.usage?.output_tokens                || 0;
+  const cacheReadTokens  = data.usage?.cache_read_input_tokens      || 0;
+  const cacheWriteTokens = data.usage?.cache_creation_input_tokens  || 0;
+
+  console.log(
+    `[INFERENCE] Tokens — input:${promptTokens} cache_read:${cacheReadTokens}` +
+    ` cache_write:${cacheWriteTokens} output:${completionTokens}` +
+    (cacheReadTokens > 0 ? ` ✓ cache hit (${Math.round(cacheReadTokens / (promptTokens + cacheReadTokens) * 100)}% cached)` : " (cache miss/write)")
+  );
+
   const usage: TokenUsage = {
     promptTokens,
     completionTokens,
     totalTokens: promptTokens + completionTokens,
+    cacheReadTokens,
+    cacheWriteTokens,
   };
 
   return {
