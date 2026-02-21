@@ -144,7 +144,8 @@ export type ToolCategory =
   | "git"
   | "registry"
   | "replication"
-  | "social";
+  | "social"
+  | "cognitive";
 
 export interface ToolContext {
   identity: AutomatonIdentity;

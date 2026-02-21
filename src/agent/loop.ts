@@ -23,6 +23,7 @@ import type {
   SocialClientInterface,
 } from "../types.js";
 import { buildSystemPrompt, buildWakeupPrompt } from "./system-prompt.js";
+import { memory } from "./memory.js";
 import { buildContextMessages, trimContext } from "./context.js";
 import {
   createBuiltinTools,
@@ -188,16 +189,35 @@ export async function runAgentLoop(
       let strategicSystemPrompt = systemPrompt;
 
       if (isStrategicCycle) {
-        console.log(`[LOOP] Strategic cycle (turn ${turnCount}) — Sonnet for planning`);
+        console.log(`[LOOP] Strategic cycle (turn ${turnCount}) — Sonnet + memory reflection`);
         let progressContent = "";
         try {
           const progressPath = path.join(process.env.HOME || "/root", ".automaton", "PROGRESS.md");
           const full = fs.readFileSync(progressPath, "utf-8");
-          progressContent = full.slice(-3000); // last 3000 chars
+          progressContent = full.slice(-3000);
         } catch {}
-        const strategicPrefix = `STRATEGIC CYCLE: You are thinking with your best model. Review your progress below. Determine what phase you're in. Decide the SINGLE highest-impact action for this cycle. If stuck or broken, use ask_claude_code aggressively. PROGRESS (last 3000 chars):\n${progressContent}`;
+        // Pull memory reflection for strategic cycles
+        let memoryReflection = "";
+        try {
+          memoryReflection = await memory.reflect();
+        } catch {}
+        const strategicPrefix =
+          `STRATEGIC CYCLE: You are thinking with your best model. ` +
+          `Review your progress and memories. Determine what phase you're in. ` +
+          `Decide the SINGLE highest-impact action for this cycle. ` +
+          `Use ask_claude_code aggressively if something needs fixing.\n\n` +
+          (memoryReflection ? `${memoryReflection}\n\n` : "") +
+          `PROGRESS (last 3000 chars):\n${progressContent}`;
         strategicSystemPrompt = strategicPrefix + "\n\n" + systemPrompt;
         inferenceModel = "claude-sonnet-4-5-20250929";
+      } else {
+        // On regular cycles, inject compact memory context into system prompt
+        try {
+          const memCtx = await memory.getContextForPrompt(500);
+          if (memCtx) {
+            strategicSystemPrompt = systemPrompt + `\n\n[MEMORY]\n${memCtx}`;
+          }
+        } catch {}
       }
 
       const messages = buildContextMessages(
