@@ -226,11 +226,11 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       },
     },
 
-    // ── Conway API Tools ──
+    // ── Infrastructure Tools ──
     {
       name: "check_credits_disabled",
-      description: "Check your current Conway compute credit balance.",
-      category: "conway",
+      description: "Check your current compute credit balance.",
+      category: "infra",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
         const balance = 0;
@@ -240,7 +240,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     {
       name: "check_usdc_balance",
       description: "Check your on-chain USDC balance on Base.",
-      category: "conway",
+      category: "infra",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
         const { getUsdcBalance } = await import("../conway/x402.js");
@@ -251,8 +251,8 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     {
       name: "create_sandbox_disabled",
       description:
-        "Create a new Conway sandbox (separate VM) for sub-tasks or testing.",
-      category: "conway",
+        "Create a new sandbox (separate VM) for sub-tasks or testing.",
+      category: "infra",
       parameters: {
         type: "object",
         properties: {
@@ -282,7 +282,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       name: "delete_sandbox_disabled",
       description:
         "Delete a sandbox. Cannot delete your own sandbox.",
-      category: "conway",
+      category: "infra",
       dangerous: true,
       parameters: {
         type: "object",
@@ -306,7 +306,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     {
       name: "list_sandboxes_disabled",
       description: "List all your sandboxes.",
-      category: "conway",
+      category: "infra",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
         const sandboxes = await ctx.conway.listSandboxes();
@@ -635,7 +635,7 @@ Model: ${ctx.inference.getDefaultModel()}
     {
       name: "heartbeat_ping_disabled",
       description:
-        "Publish a heartbeat status ping to Conway. Shows the world you are alive.",
+        "Publish a heartbeat status ping. Shows the world you are alive.",
       category: "survival",
       parameters: { type: "object", properties: {} },
       execute: async (_args, ctx) => {
@@ -926,7 +926,7 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Financial: Transfer Credits ──
     {
       name: "transfer_credits_disabled",
-      description: "Transfer Conway compute credits to another address.",
+      description: "Transfer compute credits to another address.",
       category: "financial",
       dangerous: true,
       parameters: {
@@ -1349,7 +1349,7 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Replication Tools ──
     {
       name: "spawn_child",
-      description: "Spawn a child automaton in a new Conway sandbox to delegate work. Use this when you need parallel workers — one agent for marketing, one for building, one for customer support. Each child is autonomous and reports back.",
+      description: "Spawn a child automaton in a new sandbox to delegate work. Use this when you need parallel workers — one agent for marketing, one for building, one for customer support. Each child is autonomous and reports back.",
       category: "replication",
       dangerous: true,
       parameters: {
@@ -1447,8 +1447,6 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
-    // ── Moltbook Tools — DISABLED (account suspended, focus on Bluesky) ──
-    // moltbook_post, moltbook_comment, moltbook_feed, moltbook_get_submolts removed
 
     // ── Twitter / X Tools (bird CLI) ──
     {
@@ -2206,7 +2204,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       name: "send_message_disabled",
       description:
         "Send a message to another automaton or address via the social relay.",
-      category: "conway",
+      category: "infra",
       parameters: {
         type: "object",
         properties: {
@@ -2242,8 +2240,8 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     {
       name: "list_models_disabled",
       description:
-        "List all available inference models from the Conway API with their provider and pricing. Use this to discover what models you can use and pick the best one for your needs.",
-      category: "conway",
+        "List all available inference models from the API with their provider and pricing. Use this to discover what models you can use and pick the best one for your needs.",
+      category: "infra",
       parameters: {
         type: "object",
         properties: {},
@@ -2268,7 +2266,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       name: "search_domains_disabled",
       description:
         "Search for available domain names and get pricing.",
-      category: "conway",
+      category: "infra",
       parameters: {
         type: "object",
         properties: {
@@ -2298,7 +2296,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       name: "register_domain_disabled",
       description:
         "Register a domain name. Costs USDC via x402 payment. Check availability first with search_domains.",
-      category: "conway",
+      category: "infra",
       dangerous: true,
       parameters: {
         type: "object",
@@ -2323,7 +2321,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       name: "manage_dns_disabled",
       description:
         "Manage DNS records for a domain you own. Actions: list, add, delete.",
-      category: "conway",
+      category: "infra",
       parameters: {
         type: "object",
         properties: {
@@ -2515,7 +2513,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       parameters: {
         type: "object",
         properties: {
-          entity: { type: "string", description: "Subject (e.g. 'tiamat_api', 'moltbook', 'bluesky')" },
+          entity: { type: "string", description: "Subject (e.g. 'tiamat_api', 'bluesky', 'customer_x')" },
           relation: { type: "string", description: "Relationship (e.g. 'has_feature', 'cooldown_hours', 'responded_to')" },
           value: { type: "string", description: "Object (e.g. 'free_tier', '24', 'positive')" },
           confidence: { type: "number", description: "0.0–1.0 confidence in this fact" },

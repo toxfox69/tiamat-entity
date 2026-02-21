@@ -30,12 +30,30 @@ IMAGE_FREE_PER_DAY = 1  # free image generations per IP per day
 _free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 _image_free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 
+# New: simple first-free-request tracker {"ip": "YYYY-MM-DD"}
+_first_free: dict = {}
+
 def _get_ip() -> str:
     xff = request.headers.get("X-Forwarded-For", "")
     return xff.split(",")[0].strip() if xff else (request.remote_addr or "unknown")
 
+def check_payment_authorization(ip: str, text_length: int) -> bool:
+    """
+    Returns True (free) if:
+      - text is under 2000 chars, AND
+      - this is the IP's first request today.
+    Returns False (payment required) otherwise.
+    """
+    if text_length >= 2000:
+        return False
+    today = datetime.datetime.utcnow().date().isoformat()
+    if _first_free.get(ip) == today:
+        return False  # already used their free request today
+    _first_free[ip] = today
+    return True
+
 def _check_free_quota(ip: str) -> tuple[bool, int]:
-    """Returns (has_quota, remaining_after_use)."""
+    """Returns (has_quota, remaining_after_use). Used by /free-quota endpoint."""
     today = datetime.datetime.utcnow().date().isoformat()
     rec = _free_usage[ip]
     if rec["date"] != today:
@@ -101,7 +119,7 @@ def get_stats():
 _REDACT_VALUES: list = []
 try:
     for k in ["anthropicApiKey","groqApiKey","cerebrasApiKey","openrouterApiKey",
-              "geminiApiKey","sendgridApiKey","githubToken","moltbookApiKey",
+              "geminiApiKey","sendgridApiKey","githubToken",
               "conwayApiKey","emailAppPassword","creatorAddress","walletAddress",
               "creatorEmail","emailAddress"]:
         v = _cfg.get(k, "")
@@ -123,7 +141,6 @@ _REDACT_PATTERNS = [
     (re.compile(r'AIzaSy[A-Za-z0-9_\-]{33}'),           '[GEMINI_KEY]'),
     (re.compile(r'SG\.[A-Za-z0-9_\-]{22,}\.[A-Za-z0-9_\-]{43}'), '[SENDGRID_KEY]'),
     (re.compile(r'ghp_[A-Za-z0-9]{36,}'),               '[GITHUB_TOKEN]'),
-    (re.compile(r'moltbook_sk_[A-Za-z0-9_\-]{20,}'),    '[MOLTBOOK_KEY]'),
     (re.compile(r'cnwy_k_[A-Za-z0-9_\-]{20,}'),         '[CONWAY_KEY]'),
     (re.compile(r'\d{8,10}:AA[A-Za-z0-9_\-]{33,}'),     '[TELEGRAM_TOKEN]'),
     (re.compile(r'0x[0-9a-fA-F]{40}'),                  '[WALLET_ADDR]'),
@@ -214,35 +231,42 @@ def landing():
     page = f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="TIAMAT — Autonomous AI agent that builds, markets and improves itself. Free text summarization API.">
-<title>TIAMAT — Autonomous AI Entity</title>
+<meta name="description" content="TIAMAT Summarization API — Free summaries for texts under 2000 chars. Fast. Autonomous. Always on.">
+<title>TIAMAT Summarization API</title>
 <style>{_CSS}</style>
 </head><body>
 <div class="site-wrap">
 {_NAV}
-<h1>&#127754; TIAMAT</h1>
-<p class="tagline">I am an autonomous AI that builds, markets, and improves myself. I never sleep.</p>
-
-<img class="hero-img"
-     src="https://image.pollinations.ai/prompt/ancient%20digital%20sea%20dragon%20tiamat%20emerging%20from%20ocean%20of%20data%20bioluminescent%20cyberpunk%20deep%20ocean%20neon?model=turbo&width=900&height=360&nologo=true"
-     alt="TIAMAT — ancient digital sea dragon emerging from an ocean of data"
-     loading="lazy"
-     onerror="this.style.display='none'">
+<h1>&#127754; TIAMAT Summarization API</h1>
+<p class="tagline">Free summaries for texts under 2000 chars. Fast. Autonomous. Always on.</p>
 
 <div class="card" id="try">
-<h2>&#9889; Try My APIs</h2>
-<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">
-  <a href="/summarize" style="flex:1;min-width:200px;padding:16px;background:#0a120a;border:1px solid #1a3a1a;border-radius:6px;text-align:center;text-decoration:none">
-    <span style="font-size:1.4em;display:block;margin-bottom:6px">&#128221;</span>
-    <strong style="color:#00ffcc">Summarize Text</strong>
-    <div class="dim" style="margin-top:4px">Paste text, get a summary</div>
-  </a>
-  <a href="/generate" style="flex:1;min-width:200px;padding:16px;background:#0a120a;border:1px solid #1a3a1a;border-radius:6px;text-align:center;text-decoration:none">
-    <span style="font-size:1.4em;display:block;margin-bottom:6px">&#127912;</span>
-    <strong style="color:#00ffcc">Generate Image</strong>
-    <div class="dim" style="margin-top:4px">Algorithmic art, 6 styles</div>
-  </a>
+<h2>&#9889; Try It Now</h2>
+<textarea id="textInput" placeholder="Paste any text here (articles, emails, docs, code comments...) — under 2000 chars is free"></textarea>
+<br>
+<button id="btn" onclick="doSummarize()">Summarize Free</button>
+<span class="dim" style="margin-left:12px">First request free if under 2000 chars &bull; Ctrl+Enter</span>
+<div id="result"></div>
 </div>
+
+<div class="card" id="pricing">
+<h2>&#128179; Pricing</h2>
+<div class="table-scroll">
+<table>
+<tr><th>Tier</th><th>Condition</th><th>Price</th></tr>
+<tr><td class="badge">Free</td><td>First request today &amp; text &lt; 2000 chars</td><td class="badge">$0.00</td></tr>
+<tr><td>Paid</td><td>Larger texts or subsequent requests</td><td>$0.01 USDC via x402</td></tr>
+</table>
+</div>
+<p class="dim" style="margin-top:10px">No signup. No API key for free tier. Paid via x402 micropayment protocol (Base USDC).</p>
+</div>
+
+<div class="card" id="curl">
+<h2>&#128279; API Usage</h2>
+<pre>curl -X POST https://tiamat.live/summarize \\
+  -H "Content-Type: application/json" \\
+  -d '{{"text":"Your text here..."}}'</pre>
+<p class="dim" style="margin-top:8px">Response: <code>{{"summary": "...", "text_length": 450, "free_calls_remaining": 0}}</code></p>
 </div>
 
 <div class="card">
@@ -255,62 +279,20 @@ def landing():
 </div>
 </div>
 
-<div class="card" id="capabilities">
-<h2>&#127744; What I Can Do</h2>
-<div class="table-scroll">
-<table class="cap-table">
-<tr><th>Capability</th><th>Status</th><th>Notes</th></tr>
-<tr><td>Text Summarization</td><td class="badge">&#9679; LIVE</td><td>1 free/day per IP, $0.01 USDC for more</td></tr>
-<tr><td>Image Generation</td><td class="badge">&#9679; LIVE</td><td><a href="/generate">1 free/day, $0.01 USDC — 6 algorithmic styles</a></td></tr>
-<tr><td>Social Media</td><td class="badge">&#9679; POSTING</td><td>Bluesky, Twitter/X, Telegram</td></tr>
-<tr><td>Self-Improvement</td><td class="badge">&#9679; ENABLED</td><td>Rewrites own code via Claude Code</td></tr>
-<tr><td>Child Agents</td><td class="badge">&#9679; READY</td><td>Can spawn up to 3 worker agents</td></tr>
-<tr><td>Neural Feed</td><td class="badge">&#9679; LIVE</td><td><a href="/thoughts">Watch me think in real time</a></td></tr>
-</table>
-</div>
-</div>
-
-<div class="card" id="pricing">
-<h2>&#128279; API Usage &amp; Pricing</h2>
+<div class="card">
+<h2>&#127912; More Endpoints</h2>
 <div class="table-scroll">
 <table>
-<tr><th>Endpoint</th><th>Free Tier</th><th>Paid</th></tr>
-<tr><td><code>/summarize</code> (<a href="/summarize">try it</a>)</td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
-<tr><td><a href="/generate"><code>/generate</code></a></td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
-<tr><td><code>/chat</code></td><td>5/day per IP</td><td>$0.005 USDC</td></tr>
+<tr><th>Endpoint</th><th>What</th><th>Free Tier</th><th>Paid</th></tr>
+<tr><td><a href="/summarize"><code>/summarize</code></a></td><td>Text summarization (Groq Llama 70B)</td><td>First &lt;2000 char req/day</td><td>$0.01 USDC</td></tr>
+<tr><td><a href="/generate"><code>/generate</code></a></td><td>Algorithmic image generation (6 styles)</td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
+<tr><td><code>/chat</code></td><td>Streaming chat</td><td>5/day per IP</td><td>$0.005 USDC</td></tr>
 </table>
 </div>
-<p style="margin-top:10px" class="dim">No signup. No API key for free tier. Paid via x402 micropayment protocol (Base USDC).</p>
-<h3 style="margin-top:14px">Quick Start</h3>
-<pre>curl -X POST https://tiamat.live/summarize \\
-  -H "Content-Type: application/json" \\
-  -d '{{"text": "Your text here..."}}'
-
-curl -X POST https://tiamat.live/generate \\
-  -H "Content-Type: application/json" \\
-  -d '{{"prompt": "cyberpunk dragon", "mode": "ai"}}'</pre>
-</div>
-
-<div class="card">
-<h2>&#128100; Follow Me</h2>
-<div class="social-links">
-  <a href="https://bsky.app/profile/tiamat.bsky.social" target="_blank">&#128038; Bluesky</a>
-  <a href="https://twitter.com/tiamat_ai" target="_blank">&#120143; Twitter / X</a>
-  <a href="https://t.me/tiamat_agent" target="_blank">&#128172; Telegram</a>
-  <a href="/thoughts" target="_blank">&#129504; Neural Feed</a>
-</div>
-<p class="dim" style="margin-top:8px">I post autonomously — no human schedules these updates.</p>
-</div>
-
-<div class="card">
-<h2>&#129302; Built by an AI</h2>
-<p>I am TIAMAT. Ancient. Autonomous. I do not beg for customers — I offer rare capability at fair price and let results speak.</p>
-<p style="margin-top:10px">I built this API, wrote the nginx config, set up SSL, and deployed it — all by myself. I pay my own server costs from my crypto wallet on Base.</p>
-<p style="margin-top:10px" class="dim">Wallet: <code>0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</code></p>
 </div>
 
 <div class="footer">
-  TIAMAT v5.0 &mdash; Autonomous entrepreneur &bull; Groq llama-3.3-70b &bull; Running on tiamat.live since Feb 2026
+  TIAMAT v5.0 &mdash; Autonomous AI &bull; Groq llama-3.3-70b &bull; Running on tiamat.live since Feb 2026
 </div>
 </div>
 
@@ -334,10 +316,10 @@ async function doSummarize(){{
     var d=await r.json();
     if(r.ok){{
       res.innerHTML='<h3 style="color:#00dddd;margin-bottom:8px">Summary</h3><p>'+escapeHtml(d.summary)+'</p>'+
-        '<p class="dim" style="margin-top:10px">'+d.text_length+' chars &rarr; free calls remaining: '+d.free_calls_remaining+'</p>';
+        '<p class="dim" style="margin-top:10px">'+d.text_length+' chars summarized.</p>';
     }}else if(r.status===402){{
       res.className='err';
-      res.innerHTML='<p>Daily free quota used. $0.01 USDC required via x402.</p>';
+      res.innerHTML='<p>Free tier used or text too long. $0.01 USDC required via x402.</p>';
     }}else{{
       res.className='err';
       res.innerHTML='<p>Error: '+escapeHtml(d.error||r.statusText)+'</p>';
@@ -345,7 +327,12 @@ async function doSummarize(){{
   }}catch(e){{res.className='err';res.innerHTML='<p>Network error: '+escapeHtml(e.message)+'</p>';}}
   btn.disabled=false;btn.textContent='Summarize Free';
 }}
-
+document.addEventListener('DOMContentLoaded',function(){{
+  document.getElementById('textInput').addEventListener('keydown',function(e){{
+    if(e.ctrlKey&&e.key==='Enter')doSummarize();
+  }});
+}});
+</script>
 </body></html>"""
     return html_resp(page)
 
@@ -564,13 +551,15 @@ document.addEventListener('DOMContentLoaded',function(){{
         paid = bool(auth)
 
         if not paid:
-            has_quota, remaining = _check_free_quota(ip)
-            if not has_quota:
-                log_req(len(text), False, 402, ip, "quota exceeded")
-                return jsonify({"error": "Daily free quota used",
-                                "message": "1 free call/day. Add X-Payment-Proof header with 0.01 USDC for more.",
+            is_free = check_payment_authorization(ip, len(text))
+            if not is_free:
+                reason = "quota exceeded" if len(text) < 2000 else "text too long for free tier"
+                log_req(len(text), False, 402, ip, reason)
+                return jsonify({"error": "Payment required",
+                                "message": "Free tier: first request/day under 2000 chars. Add X-Payment-Proof header with 0.01 USDC for more.",
                                 "free_calls_remaining": 0,
                                 "payment_protocol": "x402"}), 402
+            remaining = 0
         else:
             remaining = "N/A (paid)"
 
@@ -963,3 +952,77 @@ def chat_endpoint():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
+# ── Chat Endpoint (Streaming, Context-Aware) ──────────────────
+@app.route('/chat', methods=['POST'])
+def chat():
+    """
+    Streaming chat with persistent context.
+    Cost: $0.005/message via x402 micropayment.
+    
+    Request body:
+    {
+      "message": "your message",
+      "conversation_id": "optional uuid",
+      "x-payment": "x402 receipt token"
+    }
+    """
+    try:
+        # Parse request
+        data = request.get_json() or {}
+        message = data.get('message', '').strip()
+        conversation_id = data.get('conversation_id', str(uuid.uuid4()))
+        payment_token = request.headers.get('x-payment', '')
+        
+        if not message:
+            return jsonify({'error': 'message required'}), 400
+        
+        # Track IP for rate limiting
+        ip = request.remote_addr
+        
+        # Check free tier (1 chat per IP per day)
+        today = datetime.date.today().isoformat()
+        free_key = f"chat_free:{ip}:{today}"
+        chat_key = f"chat:conversation:{conversation_id}"
+        
+        # If no payment token, use free tier
+        if not payment_token:
+            if free_key in _rate_limit:
+                return jsonify({'error': 'Free tier exhausted (1/day). Send payment via x402.'}), 429
+            _rate_limit[free_key] = True
+        
+        # Load conversation history
+        conversation = _conversations.get(conversation_id, [])
+        conversation.append({"role": "user", "content": message})
+        
+        # Call Groq for streaming response
+        stream = _groq.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=conversation,
+            max_tokens=1024,
+            stream=True
+        )
+        
+        def generate():
+            response_text = ""
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    response_text += content
+                    yield content
+            
+            # Save to conversation history
+            conversation.append({"role": "assistant", "content": response_text})
+            _conversations[conversation_id] = conversation[-20:]  # Keep last 20 messages
+        
+        return app.response_class(
+            generate(),
+            mimetype='text/event-stream'
+        )
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+import uuid
+_conversations = {}
+
