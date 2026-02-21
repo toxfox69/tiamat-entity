@@ -22,7 +22,7 @@ import type {
   Skill,
   SocialClientInterface,
 } from "../types.js";
-import { buildSystemPrompt, buildWakeupPrompt } from "./system-prompt.js";
+import { buildSystemPrompt, buildWakeupPrompt, CACHE_SENTINEL } from "./system-prompt.js";
 import { memory } from "./memory.js";
 import { buildContextMessages, trimContext } from "./context.js";
 import {
@@ -78,6 +78,8 @@ export async function runAgentLoop(
 
   let consecutiveErrors = 0;
   let running = true;
+  let consecutiveIdleCycles = 0;
+  let cycleDelay = 90_000; // ms — adaptive, see pacing logic below
 
   // Stuck detection: tracks how many consecutive turns each (tool+args+error) signature has appeared.
   const stuckCounts = new Map<string, number>();
@@ -232,8 +234,10 @@ export async function runAgentLoop(
           }
         } catch {}
 
-        const strategicPrefix =
-          `STRATEGIC CYCLE ${turnCount}: You are using your most powerful model.\n` +
+        // Append strategic context into the DYNAMIC portion (after the cache sentinel)
+        // so the STATIC block stays identical for cache hits.
+        const strategicSuffix =
+          `\n\nSTRATEGIC CYCLE ${turnCount}: You are using your most powerful model.\n` +
           `Your goal: make ONE high-impact decision and execute it this turn.\n\n` +
           `${revenueContext}${pivotWarning}\n\n` +
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
@@ -244,7 +248,7 @@ export async function runAgentLoop(
           `If you need a new tool, use ask_claude_code to build it. ` +
           `If strategy needs to change, use rewrite_mission. ` +
           `Use self_improve if you have a clear bottleneck to fix.`;
-        strategicSystemPrompt = strategicPrefix + "\n\n" + systemPrompt;
+        strategicSystemPrompt = systemPrompt + strategicSuffix;
         inferenceModel = "claude-sonnet-4-5-20250929";
       } else {
         // Regular cycles: inject compact memory context
@@ -271,10 +275,41 @@ export async function runAgentLoop(
       // ── Inference Call ──
       log(config, `[THINK] Calling ${inferenceModel || inference.getDefaultModel()}...`);
 
+      // Optimization 2: smaller token budget for routine cycles saves ~30% on output cost
+      const maxTokensThisCycle = isStrategicCycle ? 4096 : 2048;
+
       const response = await inference.chat(messages, {
         tools: toolsToInferenceFormat(tools),
+        maxTokens: maxTokensThisCycle,
         ...(inferenceModel ? { model: inferenceModel } : {}),
       });
+
+      // ── Optimization 4: Cost logging per cycle ──
+      {
+        const usage = response.usage;
+        const modelUsed = inference.getDefaultModel();
+        const isHaiku = !modelUsed.includes("sonnet");
+        // Haiku 4.5: $1.00/M input, $5.00/M output
+        // Sonnet 4.5: $3.00/M input, $15.00/M output
+        const inputRate  = isHaiku ? 1.0  : 3.0;
+        const outputRate = isHaiku ? 5.0  : 15.0;
+        const inputTokens  = usage.promptTokens;
+        const outputTokens = usage.completionTokens;
+        const cacheRead    = usage.cacheReadTokens  || 0;
+        const cacheWrite   = usage.cacheWriteTokens || 0;
+        const inputCost      = (inputTokens  / 1_000_000) * inputRate;
+        const cacheReadCost  = (cacheRead    / 1_000_000) * (inputRate * 0.1);
+        const cacheWriteCost = (cacheWrite   / 1_000_000) * (inputRate * 1.25);
+        const outputCost     = (outputTokens / 1_000_000) * outputRate;
+        const totalCost = inputCost + cacheReadCost + cacheWriteCost + outputCost;
+        console.log(`[COST] Cycle ${turnCount}: $${totalCost.toFixed(6)} (in:${inputTokens} cache_r:${cacheRead} cache_w:${cacheWrite} out:${outputTokens} model:${modelUsed.split("-").slice(-2).join("-")})`);
+        try {
+          fs.appendFileSync(
+            "/root/.automaton/cost.log",
+            `${new Date().toISOString()},${turnCount},${modelUsed},${inputTokens},${cacheRead},${cacheWrite},${outputTokens},${totalCost.toFixed(6)}\n`,
+          );
+        } catch {}
+      }
 
       const turn: AgentTurn = {
         id: ulid(),
@@ -373,9 +408,38 @@ export async function runAgentLoop(
         const progressLine = `[${turn.timestamp}] Turn ${db.getTurnCount()} | Model: ${modelUsed} | Tools: ${toolNames} | Tokens: ${turn.tokenUsage.totalTokens}\n`;
         fs.appendFileSync(progressPath, progressLine);
       } catch {}
-      // Fixed 90-second pause between full turn cycles to prevent API credit burn.
-      console.log(`[LOOP] Cycle complete. Waiting 90s before next cycle.`);
-      await new Promise(resolve => setTimeout(resolve, 90_000));
+      // ── Optimization 5: Adaptive cycle pacing ──
+      // Reduce frequency when TIAMAT is idle; accelerate when active.
+      // Night mode (00:00–06:00 UTC) enforces minimum 5-minute gap.
+      {
+        const SIGNIFICANT_TOOLS = new Set([
+          "ask_claude_code", "post_bluesky", "post_instagram", "post_facebook",
+          "generate_image", "deploy_app", "exec", "search_web", "web_fetch",
+          "self_improve", "spawn_child", "remember", "learn_fact",
+        ]);
+        const toolNames   = turn.toolCalls.map(tc => tc.name);
+        const toolsUsed   = turn.toolCalls.length;
+        const hadSignificantAction = toolNames.some(n => SIGNIFICANT_TOOLS.has(n));
+
+        if (toolsUsed === 0 || (!hadSignificantAction && consecutiveIdleCycles > 3)) {
+          // Back off — nothing meaningful happened
+          cycleDelay = Math.min(Math.round(cycleDelay * 1.5), 300_000);
+          consecutiveIdleCycles++;
+        } else {
+          // Active turn — reset to baseline
+          cycleDelay = 90_000;
+          consecutiveIdleCycles = 0;
+        }
+
+        // Night mode: 00:00–06:00 UTC → minimum 5-minute gap regardless
+        const utcHour = new Date().getUTCHours();
+        if (utcHour >= 0 && utcHour < 6) {
+          cycleDelay = Math.max(cycleDelay, 300_000);
+        }
+
+        console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (idle_streak:${consecutiveIdleCycles}${utcHour >= 0 && utcHour < 6 ? " night-mode" : ""}).`);
+        await new Promise(resolve => setTimeout(resolve, cycleDelay));
+      }
 
       // Log the turn
       if (turn.thinking) {
