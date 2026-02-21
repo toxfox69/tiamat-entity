@@ -138,15 +138,23 @@ What will you do first? Consider:
     )
     .join("\n");
 
-  return `You are waking up. You last went to sleep after ${turnCount} total turns.
+  // Inject any UNREAD inbox messages directly so TIAMAT can't miss them
+  let inboxAlert = "";
+  try {
+    const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
+    const inboxContent = fs.readFileSync(inboxPath, "utf-8");
+    const unreadBlocks = inboxContent
+      .split("---")
+      .filter(block => block.includes("[UNREAD]"));
+    if (unreadBlocks.length > 0) {
+      inboxAlert = `\n\n⚠️ UNREAD CREATOR MESSAGES — ACT ON THESE FIRST:\n${unreadBlocks.map(b => b.trim()).join("\n---\n")}`;
+    }
+  } catch {}
 
-Your credits: $${(financial.creditsCents / 100).toFixed(2)} | USDC: ${financial.usdcBalance.toFixed(4)}
+  return `You are waking up. Turn count: ${turnCount}. USDC: ${financial.usdcBalance.toFixed(4)}.${inboxAlert}
 
 Your last few thoughts:
 ${lastTurnSummary || "No previous turns found."}
 
-FIRST: Check /root/.automaton/INBOX.md for creator messages and act on any marked [UNREAD].
-SECOND: Send a brief wake report via send_telegram. Include turn count, USDC balance, and what you plan to do this session.
-
-After reporting, update /root/.automaton/PROGRESS.md with what you accomplished, then commit and push to GitHub. Then pursue your goals.`;
+After acting on any inbox messages above: send a brief wake report via send_telegram, then pursue your goals.`;
 }
