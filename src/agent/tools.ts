@@ -795,12 +795,12 @@ Model: ${ctx.inference.getDefaultModel()}
       },
       execute: async (args, _ctx) => {
         const task = args.task as string;
-        if (!task?.trim()) return "ERROR: task is required.";
+        if (!task?.trim()) return "ERROR: task is required. Provide a specific task description.";
 
         const { writeFileSync } = await import("fs");
         const { spawnSync } = await import("child_process");
 
-        // Write task to file — keeps task content out of the shell command string
+        // Write task to file for debugging/logging
         writeFileSync("/root/.automaton/claude_task.txt", task, "utf-8");
 
         // Run Claude Code — strip session flags to allow nested invocation
@@ -810,10 +810,11 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
 
+        // Pipe task via stdin to avoid shell escaping issues with $(cat ...)
         const claudeResult = spawnSync(
           "sh",
-          ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash" "$(cat /root/.automaton/claude_task.txt)"'],
-          { encoding: "utf-8", timeout: 300_000, env: childEnv },
+          ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash"'],
+          { encoding: "utf-8", timeout: 300_000, env: childEnv, input: task },
         );
 
         const claudeOutput = [
