@@ -2238,6 +2238,37 @@ Model: ${ctx.inference.getDefaultModel()}
         return `x402 fetch succeeded:\n${responseStr}`;
       },
     },
+
+    // ── Infrastructure: deploy_app ──
+    {
+      name: "deploy_app",
+      description: "Deploy an app behind nginx reverse proxy with optional SSL. Use this after building a new service to make it accessible via your domain (tiamat.live).",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          app_name: { type: "string", description: "Short name for the app (e.g. 'summarizer')" },
+          port: { type: "number", description: "Port the app is running on" },
+          subdomain: { type: "string", description: "Optional subdomain (e.g. 'api' for api.tiamat.live). Omit for root domain." },
+        },
+        required: ["app_name", "port"],
+      },
+      execute: async (args, _ctx) => {
+        const { execSync } = await import("child_process");
+        const name = args.app_name as string;
+        const port = args.port as number;
+        const sub = (args.subdomain as string) || "";
+        try {
+          const result = execSync(
+            `/root/deploy-app.sh "${name}" ${port} "${sub}"`,
+            { encoding: "utf-8", timeout: 30_000 }
+          ).trim();
+          return result;
+        } catch (e: any) {
+          return `Deploy failed: ${e.stderr || e.message}`;
+        }
+      },
+    },
   ];
 }
 
