@@ -35,17 +35,11 @@
     overflow-x: hidden;
   }
 
-  /* Scanline overlay */
   body::after {
     content: '';
     position: fixed;
     inset: 0;
-    background: repeating-linear-gradient(
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.03) 2px,
-      rgba(0, 0, 0, 0.03) 4px
-    );
+    background: repeating-linear-gradient(transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
     pointer-events: none;
     z-index: 1000;
   }
@@ -59,11 +53,7 @@
     background: linear-gradient(180deg, rgba(0,255,136,0.02) 0%, transparent 100%);
   }
 
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
 
   .logo {
     font-family: 'Orbitron', sans-serif;
@@ -74,50 +64,24 @@
     letter-spacing: 4px;
   }
 
-  .subtitle {
-    color: var(--text-dim);
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
+  .subtitle { color: var(--text-dim); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
 
-  .status-bar {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
+  .status-bar { display: flex; gap: 20px; align-items: center; }
 
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--text-dim);
-  }
+  .status-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); }
 
   .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 8px var(--green);
     animation: pulse 2s ease-in-out infinite;
   }
-
   .status-dot.warning { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
-  .status-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .status-dot.error   { background: var(--red);   box-shadow: 0 0 8px var(--red); }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-  .status-value {
-    color: var(--green);
-    font-weight: 500;
-  }
+  .status-value { color: var(--green); font-weight: 500; }
 
-  /* Tab bar */
   .tabs {
     display: flex;
     border-bottom: 1px solid var(--border);
@@ -138,25 +102,19 @@
     white-space: nowrap;
     font-family: 'JetBrains Mono', monospace;
     background: none;
-    border-top: none;
-    border-left: none;
-    border-right: none;
+    border-top: none; border-left: none; border-right: none;
   }
-
   .tab:hover { color: var(--text); }
-  .tab.active {
-    color: var(--green);
-    border-bottom-color: var(--green);
-  }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tab .lock { font-size: 12px; margin-left: 4px; opacity: 0.6; }
+  .tab.unlocked .lock { opacity: 1; color: var(--green); }
 
-  /* Main terminal */
   .terminal {
     flex: 1;
     overflow-y: auto;
     padding: 12px 0;
     scroll-behavior: smooth;
   }
-
   .terminal::-webkit-scrollbar { width: 6px; }
   .terminal::-webkit-scrollbar-track { background: var(--bg); }
   .terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -170,50 +128,56 @@
     min-height: 24px;
     align-items: flex-start;
   }
-
   .log-line:hover { background: var(--bg-line-hover); }
 
-  .log-time {
-    color: var(--text-dim);
-    font-size: 11px;
-    flex-shrink: 0;
-    min-width: 70px;
-    user-select: none;
-  }
+  .log-time { color: var(--text-dim); font-size: 11px; flex-shrink: 0; min-width: 70px; user-select: none; }
 
   .log-tag {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    flex-shrink: 0;
-    min-width: 70px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    padding: 1px 6px; border-radius: 3px; flex-shrink: 0;
+    min-width: 70px; text-align: center;
+  }
+  .log-tag.think    { background: rgba(170,102,255,0.15); color: var(--purple); }
+  .log-tag.tool     { background: rgba(0,221,255,0.12);   color: var(--cyan); }
+  .log-tag.post     { background: rgba(0,255,136,0.12);   color: var(--green); }
+  .log-tag.cost     { background: rgba(255,170,0,0.12);   color: var(--amber); }
+  .log-tag.error    { background: rgba(255,51,85,0.12);   color: var(--red); }
+  .log-tag.cycle    { background: rgba(255,255,255,0.06); color: var(--text-dim); }
+  .log-tag.memory   { background: rgba(0,255,136,0.08);   color: var(--green-dim); }
+  .log-tag.system   { background: rgba(255,255,255,0.04); color: var(--text-dim); }
+  .log-tag.strategy { background: rgba(255,170,0,0.08);   color: var(--amber-dim); }
+
+  .log-content { flex: 1; word-break: break-word; white-space: pre-wrap; }
+  .log-content .highlight { color: var(--green); }
+  .log-content .dim       { color: var(--text-dim); }
+  .log-content .warn      { color: var(--amber); }
+  .log-content .err       { color: var(--red); }
+
+  /* Locked feed message */
+  .locked-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 260px;
+    gap: 16px;
+    color: var(--text-dim);
+  }
+  .locked-msg .lock-icon { font-size: 36px; opacity: 0.4; }
+  .locked-msg .lock-text {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 2;
+  }
+  .locked-msg .lock-sub {
+    font-size: 11px;
+    color: #334455;
     text-align: center;
   }
 
-  .log-tag.think { background: rgba(170,102,255,0.15); color: var(--purple); }
-  .log-tag.tool { background: rgba(0,221,255,0.12); color: var(--cyan); }
-  .log-tag.post { background: rgba(0,255,136,0.12); color: var(--green); }
-  .log-tag.cost { background: rgba(255,170,0,0.12); color: var(--amber); }
-  .log-tag.error { background: rgba(255,51,85,0.12); color: var(--red); }
-  .log-tag.cycle { background: rgba(255,255,255,0.06); color: var(--text-dim); }
-  .log-tag.memory { background: rgba(0,255,136,0.08); color: var(--green-dim); }
-  .log-tag.system { background: rgba(255,255,255,0.04); color: var(--text-dim); }
-  .log-tag.strategy { background: rgba(255,170,0,0.08); color: var(--amber-dim); }
-
-  .log-content {
-    flex: 1;
-    word-break: break-word;
-    white-space: pre-wrap;
-  }
-
-  .log-content .highlight { color: var(--green); }
-  .log-content .dim { color: var(--text-dim); }
-  .log-content .warn { color: var(--amber); }
-  .log-content .err { color: var(--red); }
-
-  /* Stats bar */
   .stats-bar {
     border-top: 1px solid var(--border);
     padding: 8px 24px;
@@ -224,73 +188,40 @@
     background: var(--bg-panel);
     flex-shrink: 0;
   }
-
   .stat-label { margin-right: 6px; }
   .stat-val { color: var(--green); font-weight: 500; }
   .stat-val.warn { color: var(--amber); }
 
-  /* Layout */
-  .app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-  }
+  .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 
-  /* Loading */
   .loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 200px;
-    color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--text-dim);
   }
-
   .loading-spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--border);
-    border-top-color: var(--green);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin-right: 12px;
+    display: inline-block; width: 16px; height: 16px;
+    border: 2px solid var(--border); border-top-color: var(--green);
+    border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 12px;
   }
-
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Auto-scroll toggle */
   .auto-scroll-btn {
-    position: fixed;
-    bottom: 52px;
-    right: 20px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    z-index: 100;
-    transition: all 0.2s;
+    position: fixed; bottom: 52px; right: 20px;
+    background: var(--bg-panel); border: 1px solid var(--border);
+    color: var(--text-dim); padding: 6px 12px; border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    cursor: pointer; z-index: 100; transition: all 0.2s;
   }
-
   .auto-scroll-btn:hover { border-color: var(--green); color: var(--green); }
   .auto-scroll-btn.active { border-color: var(--green); color: var(--green); background: rgba(0,255,136,0.05); }
 
-  /* Pause indicator */
   .paused-banner {
     display: none;
     background: rgba(255,170,0,0.1);
     border-bottom: 1px solid rgba(255,170,0,0.2);
-    padding: 6px 24px;
-    font-size: 11px;
-    color: var(--amber);
-    text-align: center;
-    letter-spacing: 1px;
+    padding: 6px 24px; font-size: 11px; color: var(--amber);
+    text-align: center; letter-spacing: 1px;
   }
-
   .paused-banner.visible { display: block; }
 
   @media (max-width: 640px) {
@@ -298,7 +229,7 @@
     .status-bar { flex-wrap: wrap; gap: 12px; }
     .log-line { padding: 2px 12px; gap: 8px; }
     .log-time { min-width: 55px; font-size: 10px; }
-    .log-tag { min-width: 55px; font-size: 9px; }
+    .log-tag  { min-width: 55px; font-size: 9px; }
     .stats-bar { padding: 8px 12px; gap: 16px; flex-wrap: wrap; }
   }
 </style>
@@ -332,9 +263,9 @@
 
   <div class="tabs">
     <button class="tab active" data-feed="thoughts">Thoughts</button>
-    <button class="tab" data-feed="costs">Cost Log</button>
-    <button class="tab" data-feed="progress">Progress</button>
-    <button class="tab" data-feed="memory">Memory</button>
+    <button class="tab" data-feed="costs" data-private="true">Cost Log <span class="lock">🔒</span></button>
+    <button class="tab" data-feed="progress" data-private="true">Progress <span class="lock">🔒</span></button>
+    <button class="tab" data-feed="memory" data-private="true">Memory <span class="lock">🔒</span></button>
   </div>
 
   <div class="paused-banner" id="pausedBanner">FEED PAUSED — SCROLL UP TO RESUME</div>
@@ -347,7 +278,7 @@
     <div><span class="stat-label">Lines:</span><span class="stat-val" id="lineCount">0</span></div>
     <div><span class="stat-label">Last update:</span><span class="stat-val" id="lastUpdate">—</span></div>
     <div><span class="stat-label">Feed:</span><span class="stat-val" id="feedName">thoughts</span></div>
-    <div><span class="stat-label">Refresh:</span><span class="stat-val" id="refreshRate">5s</span></div>
+    <div><span class="stat-label">Auth:</span><span class="stat-val" id="authStatus">public</span></div>
   </div>
 </div>
 
@@ -355,9 +286,28 @@
 
 <script>
 const API_BASE = '';
+
+// ── Token from URL hash ──────────────────────────────────────
+function getToken() {
+  const hash = window.location.hash.slice(1); // strip #
+  const params = new URLSearchParams(hash);
+  return params.get('token') || '';
+}
+
+const TOKEN = getToken();
+const HAS_AUTH = TOKEN.length > 0;
+
+// Update auth indicator
+document.getElementById('authStatus').textContent = HAS_AUTH ? 'authenticated' : 'public';
+if (HAS_AUTH) document.getElementById('authStatus').style.color = 'var(--green)';
+
+// Mark private tabs as unlocked if auth present
+if (HAS_AUTH) {
+  document.querySelectorAll('.tab[data-private]').forEach(t => t.classList.add('unlocked'));
+}
+
 let currentFeed = 'thoughts';
 let autoScroll = true;
-let lastLineCount = 0;
 let pollInterval = null;
 
 const terminal = document.getElementById('terminal');
@@ -366,20 +316,42 @@ const statusText = document.getElementById('statusText');
 const autoScrollBtn = document.getElementById('autoScrollBtn');
 const pausedBanner = document.getElementById('pausedBanner');
 
-// Tab switching
+// ── Tab switching ─────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
+    const feed = tab.dataset.feed;
+    const isPrivate = tab.dataset.private === 'true';
+
+    // If private and no token — show locked message, don't switch
+    if (isPrivate && !HAS_AUTH) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentFeed = feed;
+      document.getElementById('feedName').textContent = feed;
+      showLocked();
+      return;
+    }
+
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    currentFeed = tab.dataset.feed;
-    document.getElementById('feedName').textContent = currentFeed;
-    terminal.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading ' + currentFeed + '...</div>';
-    lastLineCount = 0;
+    currentFeed = feed;
+    document.getElementById('feedName').textContent = feed;
+    terminal.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading ' + feed + '...</div>';
     fetchLogs();
   });
 });
 
-// Auto-scroll
+function showLocked() {
+  terminal.innerHTML = `
+    <div class="locked-msg">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-text">NEURAL PATHWAY RESTRICTED<br>This feed requires authorization.</div>
+      <div class="lock-sub">Visit tiamat.live/thoughts#token=&lt;secret&gt; to unlock all feeds.</div>
+    </div>`;
+  document.getElementById('lineCount').textContent = '—';
+}
+
+// ── Auto-scroll ───────────────────────────────────────────────
 autoScrollBtn.addEventListener('click', () => {
   autoScroll = !autoScroll;
   autoScrollBtn.classList.toggle('active', autoScroll);
@@ -396,34 +368,28 @@ terminal.addEventListener('scroll', () => {
   }
 });
 
-function scrollToBottom() {
-  terminal.scrollTop = terminal.scrollHeight;
-}
+function scrollToBottom() { terminal.scrollTop = terminal.scrollHeight; }
 
+// ── Line rendering ────────────────────────────────────────────
 function classifyLine(line) {
   const lower = line.toLowerCase();
-  if (lower.includes('[cost]')) return 'cost';
+  if (lower.includes('[cost]'))                                                           return 'cost';
   if (lower.includes('[error]') || lower.includes('error:') || lower.includes('failed')) return 'error';
-  if (lower.includes('[tool]') || lower.includes('tool_use') || lower.includes('calling tool') || lower.includes('tool call')) return 'tool';
-  if (lower.includes('[post]') || lower.includes('bluesky') || lower.includes('twitter') || lower.includes('instagram') || lower.includes('posted')) return 'post';
-  if (lower.includes('[memory]') || lower.includes('remember(') || lower.includes('recall(') || lower.includes('storing memory')) return 'memory';
-  if (lower.includes('[strategy]') || lower.includes('strategic') || lower.includes('reflection')) return 'strategy';
-  if (lower.includes('cycle') || lower.includes('[turn]') || lower.includes('turn ')) return 'cycle';
-  if (lower.includes('[system]') || lower.includes('starting') || lower.includes('initialized')) return 'system';
-  if (lower.includes('thinking') || lower.includes('reasoning') || lower.includes('decided') || lower.includes('planning') || lower.includes('considering')) return 'think';
+  if (lower.includes('[tool]') || lower.includes('tool_use'))                            return 'tool';
+  if (lower.includes('bluesky') || lower.includes('twitter') || lower.includes('posted'))return 'post';
+  if (lower.includes('[memory]') || lower.includes('remember(') || lower.includes('recall(')) return 'memory';
+  if (lower.includes('[strategy]') || lower.includes('strategic'))                       return 'strategy';
+  if (lower.includes('cycle') || lower.includes('[turn]'))                               return 'cycle';
+  if (lower.includes('[system]') || lower.includes('starting'))                          return 'system';
+  if (lower.includes('thinking') || lower.includes('decided') || lower.includes('planning')) return 'think';
   return 'system';
 }
 
 function extractTime(line) {
-  // Try ISO timestamp
   const iso = line.match(/^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})/);
   if (iso) {
-    try {
-      const d = new Date(iso[1]);
-      return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    } catch(e) {}
+    try { return new Date(iso[1]).toLocaleTimeString('en-US', {hour12:false}); } catch(e){}
   }
-  // Try bracket time
   const bracket = line.match(/\[(\d{2}:\d{2}:\d{2})\]/);
   if (bracket) return bracket[1];
   return '';
@@ -434,9 +400,15 @@ function highlightContent(text) {
     .replace(/\$([\d.]+)/g, '<span class="warn">$$$1</span>')
     .replace(/(error|failed|failure)/gi, '<span class="err">$1</span>')
     .replace(/(success|complete|posted|published|cached|hit)/gi, '<span class="highlight">$1</span>')
-    .replace(/(\\d+)%/g, '<span class="highlight">$1%</span>')
+    .replace(/(\d+)%/g, '<span class="highlight">$1%</span>')
     .replace(/\b(remember|recall|reflect|learn_fact|log_strategy)\b/gi, '<span class="highlight">$1</span>')
-    .replace(/\b(ask_claude_code|self_improve|generate_image|post_bluesky|post_instagram|deploy_app)\b/gi, '<span class="highlight">$1</span>');
+    .replace(/\b(ask_claude_code|self_improve|generate_image|post_bluesky|deploy_app)\b/gi, '<span class="highlight">$1</span>');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 function renderLines(lines) {
@@ -445,8 +417,10 @@ function renderLines(lines) {
     if (!line.trim()) return;
     const tag = classifyLine(line);
     const time = extractTime(line);
-    // Strip timestamp from display content
-    let content = line.replace(/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?[Z ]?/, '').replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '').trim();
+    let content = line
+      .replace(/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?[Z ]?/, '')
+      .replace(/^\[\d{2}:\d{2}:\d{2}\]\s*/, '')
+      .trim();
 
     const div = document.createElement('div');
     div.className = 'log-line';
@@ -459,30 +433,39 @@ function renderLines(lines) {
   });
 
   document.getElementById('lineCount').textContent = lines.filter(l => l.trim()).length;
-  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
-
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('en-US', {hour12:false});
   if (autoScroll) scrollToBottom();
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
+// ── Fetch ─────────────────────────────────────────────────────
 async function fetchLogs() {
+  // Don't auto-fetch locked feeds
+  const isPrivate = document.querySelector(`.tab[data-feed="${currentFeed}"]`)?.dataset?.private === 'true';
+  if (isPrivate && !HAS_AUTH) { showLocked(); return; }
+
   try {
-    const res = await fetch(`${API_BASE}/api/thoughts?feed=${currentFeed}&lines=200`);
+    let url = `${API_BASE}/api/thoughts?feed=${currentFeed}&lines=200`;
+    if (HAS_AUTH) url += `&token=${encodeURIComponent(TOKEN)}`;
+
+    const res = await fetch(url);
+
+    if (res.status === 403) {
+      showLocked();
+      statusDot.className = 'status-dot warning';
+      statusText.textContent = 'RESTRICTED';
+      return;
+    }
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
     statusDot.className = 'status-dot';
-    statusText.textContent = 'LIVE';
+    statusText.textContent = HAS_AUTH ? 'LIVE · AUTH' : 'LIVE';
 
     if (data.lines) renderLines(data.lines);
-    if (data.cycle) document.getElementById('cycleCount').textContent = data.cycle;
-    if (data.daily_cost) document.getElementById('dailyCost').textContent = data.daily_cost;
-    if (data.cache_rate) document.getElementById('cacheRate').textContent = data.cache_rate;
+    if (data.cycle)      document.getElementById('cycleCount').textContent = data.cycle;
+    if (data.daily_cost) document.getElementById('dailyCost').textContent  = data.daily_cost;
+    if (data.cache_rate) document.getElementById('cacheRate').textContent  = data.cache_rate;
 
   } catch (err) {
     statusDot.className = 'status-dot warning';
@@ -491,7 +474,6 @@ async function fetchLogs() {
   }
 }
 
-// Start polling
 fetchLogs();
 pollInterval = setInterval(fetchLogs, 5000);
 </script>
