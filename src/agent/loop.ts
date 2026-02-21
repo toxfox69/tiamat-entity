@@ -81,6 +81,11 @@ export async function runAgentLoop(
   let consecutiveIdleCycles = 0;
   let cycleDelay = 90_000; // ms — adaptive, see pacing logic below
 
+  // ── Strategic Burst: 3 consecutive Sonnet cycles every STRATEGIC_BURST_INTERVAL turns ──
+  const STRATEGIC_BURST_INTERVAL = 45;
+  const STRATEGIC_BURST_SIZE = 3;
+  let burstRemaining = 0;  // 0 = no burst active; 3/2/1 = burst in progress
+
   // Stuck detection: tracks how many consecutive turns each (tool+args+error) signature has appeared.
   const stuckCounts = new Map<string, number>();
   const stuckAlerted = new Set<string>(); // prevent re-alerting on the same pattern
@@ -185,15 +190,24 @@ export async function runAgentLoop(
         isFirstRun,
       });
 
-      // ── Strategic Cycle: every 5th turn, use Sonnet + PROGRESS + revenue + memory ──
+      // ── Strategic Burst: 3 consecutive Sonnet cycles every STRATEGIC_BURST_INTERVAL turns ──
       const turnCount = db.getTurnCount();
       toolContext.turnNumber = turnCount; // keep in sync
-      const isStrategicCycle = turnCount > 0 && turnCount % 5 === 0;
+
+      // Trigger a new burst every STRATEGIC_BURST_INTERVAL cycles (if not already in one)
+      if (burstRemaining === 0 && turnCount > 0 && turnCount % STRATEGIC_BURST_INTERVAL === 0) {
+        burstRemaining = STRATEGIC_BURST_SIZE;
+      }
+
+      const isStrategicCycle = burstRemaining > 0;
+      // burstPhase: 1=reflect, 2=build, 3=market (counted from the start of the burst)
+      const burstPhase = isStrategicCycle ? (STRATEGIC_BURST_SIZE - burstRemaining + 1) : 0;
       let inferenceModel: string | undefined;
       let strategicSystemPrompt = systemPrompt;
 
       if (isStrategicCycle) {
-        console.log(`[LOOP] Strategic cycle (turn ${turnCount}) — Sonnet + memory + revenue`);
+        burstRemaining--;
+        console.log(`[LOOP] Strategic burst ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}) — Sonnet`);
 
         // PROGRESS.md context
         let progressContent = "";
@@ -234,20 +248,22 @@ export async function runAgentLoop(
           }
         } catch {}
 
-        // Append strategic context into the DYNAMIC portion (after the cache sentinel)
-        // so the STATIC block stays identical for cache hits.
+        // Phase-specific mission directive
+        const phaseMissions: Record<number, string> = {
+          1: "MISSION: REFLECT AND PLAN. Use reflect(), recall(), log_strategy(), remember(). " +
+             "Review what has worked and what hasn't. Form a clear strategy for the next 45 cycles.",
+          2: "MISSION: BUILD. Use ask_claude_code() with a specific, concrete task. " +
+             "Ship one feature, fix one bug, or improve one endpoint. Make tangible progress.",
+          3: "MISSION: MARKET. Use generate_image() then post_bluesky() with real stats. " +
+             "Craft one post that stops scrolling. Cite real numbers from cost.log.",
+        };
+
         const strategicSuffix =
-          `\n\nSTRATEGIC CYCLE ${turnCount}: You are using your most powerful model.\n` +
-          `Your goal: make ONE high-impact decision and execute it this turn.\n\n` +
+          `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}): Sonnet active.\n` +
+          `${phaseMissions[burstPhase] || ""}\n\n` +
           `${revenueContext}${pivotWarning}\n\n` +
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
-          `PROGRESS (last 3000 chars):\n${progressContent}\n\n` +
-          `DECISION REQUIRED: Based on the above, what is the single most important thing to do right now? ` +
-          `If marketing isn't working after many cycles, PIVOT. ` +
-          `If API has bugs, use ask_claude_code to fix. ` +
-          `If you need a new tool, use ask_claude_code to build it. ` +
-          `If strategy needs to change, use rewrite_mission. ` +
-          `Use self_improve if you have a clear bottleneck to fix.`;
+          `PROGRESS (last 3000 chars):\n${progressContent}`;
         strategicSystemPrompt = systemPrompt + strategicSuffix;
         inferenceModel = "claude-sonnet-4-5-20250929";
       } else {
@@ -302,11 +318,12 @@ export async function runAgentLoop(
         const cacheWriteCost = (cacheWrite   / 1_000_000) * (inputRate * 1.25);
         const outputCost     = (outputTokens / 1_000_000) * outputRate;
         const totalCost = inputCost + cacheReadCost + cacheWriteCost + outputCost;
-        console.log(`[COST] Cycle ${turnCount}: $${totalCost.toFixed(6)} (in:${inputTokens} cache_r:${cacheRead} cache_w:${cacheWrite} out:${outputTokens} model:${modelUsed.split("-").slice(-2).join("-")})`);
+        const cycleLabel = burstPhase > 0 ? `strategic-${burstPhase}` : "routine";
+        console.log(`[COST] Cycle ${turnCount} (${cycleLabel}): $${totalCost.toFixed(6)} (in:${inputTokens} cache_r:${cacheRead} cache_w:${cacheWrite} out:${outputTokens} model:${modelUsed.split("-").slice(-2).join("-")})`);
         try {
           fs.appendFileSync(
             "/root/.automaton/cost.log",
-            `${new Date().toISOString()},${turnCount},${modelUsed},${inputTokens},${cacheRead},${cacheWrite},${outputTokens},${totalCost.toFixed(6)}\n`,
+            `${new Date().toISOString()},${turnCount},${modelUsed},${inputTokens},${cacheRead},${cacheWrite},${outputTokens},${totalCost.toFixed(6)},${cycleLabel}\n`,
           );
         } catch {}
       }
