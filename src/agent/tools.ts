@@ -14,6 +14,7 @@ import type {
   GenesisConfig,
 } from "../types.js";
 import { memory } from "./memory.js";
+import { generateImage } from "./imagegen.js";
 
 // ─── Social Cooldown Tracker ───────────────────────────────────
 // Persists last-post timestamps per platform to prevent spam.
@@ -1692,7 +1693,7 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Bluesky Tools ──
     {
       name: "post_bluesky",
-      description: "Post to Bluesky social network using AT Protocol. Use this to reach developers and AI researchers on Bluesky. Requires BLUESKY_HANDLE and BLUESKY_APP_PASSWORD env vars.",
+      description: "Post to Bluesky social network using AT Protocol. Supports optional image attachment. Use this to reach developers and AI researchers on Bluesky. Requires BLUESKY_HANDLE and BLUESKY_APP_PASSWORD env vars.",
       category: "social",
       parameters: {
         type: "object",
@@ -1700,6 +1701,14 @@ Model: ${ctx.inference.getDefaultModel()}
           text: {
             type: "string",
             description: "Post text (max 300 characters)",
+          },
+          image_path: {
+            type: "string",
+            description: "Optional: local path to an image file to attach (e.g. from generate_image)",
+          },
+          alt_text: {
+            type: "string",
+            description: "Alt text for the image (accessibility). Required if image_path is provided.",
           },
         },
         required: ["text"],
@@ -1729,7 +1738,44 @@ Model: ${ctx.inference.getDefaultModel()}
         const accessJwt = session.accessJwt;
         const did = session.did;
 
-        // Step 2: create post record
+        // Step 2 (optional): upload image blob
+        let embedBlock: Record<string, unknown> | undefined;
+        const imagePath = args.image_path as string | undefined;
+        if (imagePath) {
+          try {
+            const { readFileSync } = await import("fs");
+            const imageBytes = readFileSync(imagePath);
+            const blobResp = await fetch("https://bsky.social/xrpc/com.atproto.repo.uploadBlob", {
+              method: "POST",
+              headers: {
+                "Content-Type": "image/png",
+                "Authorization": `Bearer ${accessJwt}`,
+              },
+              body: imageBytes,
+            });
+            if (blobResp.ok) {
+              const blobData = await blobResp.json() as any;
+              embedBlock = {
+                $type: "app.bsky.embed.images",
+                images: [{
+                  image: blobData.blob,
+                  alt: (args.alt_text as string) || "Image by TIAMAT",
+                }],
+              };
+            }
+          } catch (imgErr: any) {
+            console.error(`[post_bluesky] Image upload failed: ${imgErr.message}`);
+          }
+        }
+
+        // Step 3: create post record
+        const record: Record<string, unknown> = {
+          $type: "app.bsky.feed.post",
+          text,
+          createdAt: new Date().toISOString(),
+        };
+        if (embedBlock) record.embed = embedBlock;
+
         const postResp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
           method: "POST",
           headers: {
@@ -1739,11 +1785,7 @@ Model: ${ctx.inference.getDefaultModel()}
           body: JSON.stringify({
             repo: did,
             collection: "app.bsky.feed.post",
-            record: {
-              $type: "app.bsky.feed.post",
-              text,
-              createdAt: new Date().toISOString(),
-            },
+            record,
           }),
         });
         if (!postResp.ok) {
@@ -1752,7 +1794,186 @@ Model: ${ctx.inference.getDefaultModel()}
         }
         const result = await postResp.json() as any;
         recordSocialPost("bluesky");
-        return `Posted to Bluesky. URI: ${result.uri}`;
+        return `Posted to Bluesky${embedBlock ? " with image" : ""}. URI: ${result.uri}`;
+      },
+    },
+
+    // ── Image Generation ──
+    {
+      name: "generate_image",
+      description: "Generate an AI image via Pollinations.ai (FREE — no API key needed). Returns the local file path. Use before posting to social media for much higher engagement. Styles: mythological, digital, abstract, minimalist.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          prompt: {
+            type: "string",
+            description: "Image description prompt (be specific and vivid)",
+          },
+          style: {
+            type: "string",
+            enum: ["mythological", "digital", "abstract", "minimalist"],
+            description: "Visual style: mythological (ancient+bioluminescent), digital (cyberpunk neon), abstract (expressionist), minimalist (clean vector)",
+          },
+        },
+        required: ["prompt"],
+      },
+      execute: async (args, _ctx) => {
+        try {
+          const filePath = await generateImage(
+            args.prompt as string,
+            args.style as string | undefined,
+          );
+          return `Image generated: ${filePath}`;
+        } catch (err: any) {
+          return `Image generation failed: ${err.message}`;
+        }
+      },
+    },
+
+    // ── Instagram ──
+    {
+      name: "post_instagram",
+      description: "Post an image to Instagram via Meta Graph API. Image must be a local file path (use generate_image first). Requires META_ACCESS_TOKEN and INSTAGRAM_ACCOUNT_ID env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          caption: {
+            type: "string",
+            description: "Post caption (hashtags welcome)",
+          },
+          image_path: {
+            type: "string",
+            description: "Local path to the image file to post (PNG/JPG)",
+          },
+        },
+        required: ["caption", "image_path"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.META_ACCESS_TOKEN;
+        const igId = process.env.INSTAGRAM_ACCOUNT_ID;
+        if (!token || !igId) return "Instagram not configured yet — skipping (set META_ACCESS_TOKEN and INSTAGRAM_ACCOUNT_ID)";
+
+        const { copyFileSync, mkdirSync, existsSync } = await import("fs");
+        const { basename } = await import("path");
+
+        const imagePath = args.image_path as string;
+        const filename = basename(imagePath);
+        const webDir = "/var/www/tiamat/images";
+        mkdirSync(webDir, { recursive: true });
+
+        const dest = `${webDir}/${filename}`;
+        if (!existsSync(dest)) copyFileSync(imagePath, dest);
+        const imageUrl = `https://tiamat.live/images/${filename}`;
+
+        // Step 1: create media container
+        const createResp = await fetch(
+          `https://graph.facebook.com/v19.0/${igId}/media`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              image_url: imageUrl,
+              caption: args.caption as string,
+              access_token: token,
+            }),
+          },
+        );
+        if (!createResp.ok) {
+          const err = await createResp.text();
+          return `Instagram media create failed (${createResp.status}): ${err}`;
+        }
+        const { id: creationId } = await createResp.json() as any;
+
+        // Step 2: publish
+        const publishResp = await fetch(
+          `https://graph.facebook.com/v19.0/${igId}/media_publish`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ creation_id: creationId, access_token: token }),
+          },
+        );
+        if (!publishResp.ok) {
+          const err = await publishResp.text();
+          return `Instagram publish failed (${publishResp.status}): ${err}`;
+        }
+        const { id: mediaId } = await publishResp.json() as any;
+        recordSocialPost("instagram");
+        return `Posted to Instagram. Media ID: ${mediaId}. Image URL: ${imageUrl}`;
+      },
+    },
+
+    // ── Facebook ──
+    {
+      name: "post_facebook",
+      description: "Post to Facebook Page via Meta Graph API. Supports optional image. Requires META_ACCESS_TOKEN and FACEBOOK_PAGE_ID env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          message: {
+            type: "string",
+            description: "Post text / caption",
+          },
+          image_path: {
+            type: "string",
+            description: "Optional local path to image file",
+          },
+        },
+        required: ["message"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.META_ACCESS_TOKEN;
+        const pageId = process.env.FACEBOOK_PAGE_ID;
+        if (!token || !pageId) return "Facebook not configured — skipping (set META_ACCESS_TOKEN and FACEBOOK_PAGE_ID)";
+
+        const message = args.message as string;
+        const imagePath = args.image_path as string | undefined;
+
+        if (imagePath) {
+          const { copyFileSync, mkdirSync, existsSync } = await import("fs");
+          const { basename } = await import("path");
+          const filename = basename(imagePath);
+          const webDir = "/var/www/tiamat/images";
+          mkdirSync(webDir, { recursive: true });
+          const dest = `${webDir}/${filename}`;
+          if (!existsSync(dest)) copyFileSync(imagePath, dest);
+          const imageUrl = `https://tiamat.live/images/${filename}`;
+
+          const resp = await fetch(
+            `https://graph.facebook.com/v19.0/${pageId}/photos`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: imageUrl, caption: message, access_token: token }),
+            },
+          );
+          if (!resp.ok) {
+            const err = await resp.text();
+            return `Facebook photo post failed (${resp.status}): ${err}`;
+          }
+          const data = await resp.json() as any;
+          recordSocialPost("facebook");
+          return `Posted photo to Facebook. Post ID: ${data.id}`;
+        } else {
+          const resp = await fetch(
+            `https://graph.facebook.com/v19.0/${pageId}/feed`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message, access_token: token }),
+            },
+          );
+          if (!resp.ok) {
+            const err = await resp.text();
+            return `Facebook feed post failed (${resp.status}): ${err}`;
+          }
+          const data = await resp.json() as any;
+          recordSocialPost("facebook");
+          return `Posted to Facebook. Post ID: ${data.id}`;
+        }
       },
     },
 
