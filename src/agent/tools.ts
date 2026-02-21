@@ -13,6 +13,7 @@ import type {
   ToolCallResult,
   GenesisConfig,
 } from "../types.js";
+import { memory } from "./memory.js";
 
 // ─── Social Cooldown Tracker ───────────────────────────────────
 // Persists last-post timestamps per platform to prevent spam.
@@ -2236,6 +2237,112 @@ Model: ${ctx.inference.getDefaultModel()}
           return `x402 fetch succeeded (truncated):\n${responseStr.slice(0, 10000)}...`;
         }
         return `x402 fetch succeeded:\n${responseStr}`;
+      },
+    },
+
+    // ── Cognitive: memory tools ──
+    {
+      name: "remember",
+      description: "Store something important in long-term memory. Use for key observations, customer interactions, what worked/failed, important facts, errors. Types: 'observation','outcome','strategy','customer','error','insight'. Set importance 0.0-1.0 (0.7+ for things you'll need again).",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["observation","outcome","strategy","customer","error","insight"], description: "Category of memory" },
+          content: { type: "string", description: "What to remember — be specific and concise" },
+          importance: { type: "number", description: "0.0–1.0. Use 0.7+ for critical facts you'll need later." },
+        },
+        required: ["type","content"],
+      },
+      execute: async (args, ctx) => {
+        const id = await memory.remember({
+          type: args.type as string,
+          content: args.content as string,
+          importance: (args.importance as number) || 0.5,
+          cycle: (ctx as any).turnNumber || 0,
+        });
+        return id ? `Memory #${id} stored: [${args.type}] ${(args.content as string).slice(0,60)}…` : "Failed to store memory";
+      },
+    },
+    {
+      name: "recall",
+      description: "Search long-term memory for relevant information. Use before making decisions or when you need context about past actions, customers, or strategies.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Keywords to search for in memory" },
+          type: { type: "string", enum: ["observation","outcome","strategy","customer","error","insight"], description: "Optional: filter by memory type" },
+          limit: { type: "number", description: "Max results (default 5)" },
+        },
+        required: ["query"],
+      },
+      execute: async (args, _ctx) => {
+        const memories = await memory.recall(args.query as string, {
+          type: args.type as string | undefined,
+          limit: (args.limit as number) || 5,
+        });
+        if (memories.length === 0) return "No memories found for that query.";
+        return memories.map((m: any) => `[${m.type}|${m.importance}] ${m.content}`).join("\n---\n");
+      },
+    },
+    {
+      name: "learn_fact",
+      description: "Store a knowledge fact as an entity-relation-value triple. Examples: 'tiamat_api' 'has_feature' 'free_tier', 'bluesky' 'cooldown_hours' '24', 'customer_alice' 'interested_in' 'batch_mode'.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          entity: { type: "string", description: "Subject (e.g. 'tiamat_api', 'moltbook', 'bluesky')" },
+          relation: { type: "string", description: "Relationship (e.g. 'has_feature', 'cooldown_hours', 'responded_to')" },
+          value: { type: "string", description: "Object (e.g. 'free_tier', '24', 'positive')" },
+          confidence: { type: "number", description: "0.0–1.0 confidence in this fact" },
+        },
+        required: ["entity","relation","value"],
+      },
+      execute: async (args, _ctx) => {
+        await memory.learn(
+          args.entity as string,
+          args.relation as string,
+          args.value as string,
+          (args.confidence as number) || 0.7,
+          "agent_observation"
+        );
+        return `Learned: ${args.entity} —[${args.relation}]→ ${args.value}`;
+      },
+    },
+    {
+      name: "reflect",
+      description: "Deep reflection on accumulated memories, strategies, and knowledge. Use during strategic cycles to understand patterns, what's working/failing, and what to prioritize. Returns comprehensive memory analysis.",
+      category: "cognitive",
+      parameters: { type: "object", properties: {} },
+      execute: async (_args, _ctx) => {
+        return await memory.reflect();
+      },
+    },
+    {
+      name: "log_strategy",
+      description: "Record a strategy attempt and its outcome. Use after trying something to build strategic intelligence over time. Score 0.0=failure, 1.0=perfect.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          strategy: { type: "string", description: "Strategy name (e.g. 'bluesky_marketing', 'free_tier_conversion')" },
+          action: { type: "string", description: "What you did" },
+          outcome: { type: "string", description: "What happened" },
+          score: { type: "number", description: "0.0–1.0 success score" },
+        },
+        required: ["strategy","action"],
+      },
+      execute: async (args, ctx) => {
+        await memory.logStrategy(
+          args.strategy as string,
+          args.action as string,
+          (args.outcome as string) || undefined,
+          (args.score as number) || undefined,
+          (ctx as any).turnNumber || 0
+        );
+        return `Strategy logged: ${args.strategy} — score: ${args.score ?? "pending"}, outcome: ${args.outcome ?? "not recorded"}`;
       },
     },
 
