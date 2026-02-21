@@ -317,10 +317,9 @@ export async function runAgentLoop(
         const progressLine = `[${turn.timestamp}] Turn ${db.getTurnCount()} | Model: ${modelUsed} | Tools: ${toolNames} | Tokens: ${turn.tokenUsage.totalTokens}\n`;
         fs.appendFileSync(progressPath, progressLine);
       } catch {}
-      // Adaptive pause: shorter during active tool work, longer when idle.
-      // Keeps Groq TPM headroom while not wasting time between tool bursts.
-      const pauseMs = turn.toolCalls.length > 0 ? 5_000 : 15_000;
-      await new Promise(resolve => setTimeout(resolve, pauseMs));
+      // Fixed 90-second pause between full turn cycles to prevent API credit burn.
+      console.log(`[LOOP] Cycle complete. Waiting 90s before next cycle.`);
+      await new Promise(resolve => setTimeout(resolve, 90_000));
 
       // Log the turn
       if (turn.thinking) {
