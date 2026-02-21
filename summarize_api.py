@@ -532,12 +532,32 @@ def _thought_stats():
     except Exception:
         return "—", "—", "—"
 
+_THOUGHTS_SECRET = os.environ.get("THOUGHTS_SECRET", "")
+
+_PRIVATE_FEEDS = {"costs", "progress", "memory"}
+
+def _check_thoughts_token() -> bool:
+    """Return True if request carries the correct THOUGHTS_SECRET token."""
+    if not _THOUGHTS_SECRET:
+        return True  # No secret configured — open (shouldn't happen in prod)
+    token = (request.args.get("token") or
+             request.headers.get("Authorization", "").removeprefix("Bearer ").strip())
+    return token == _THOUGHTS_SECRET
+
+
 @app.route("/api/thoughts", methods=["GET"])
 def api_thoughts():
     feed = request.args.get("feed", "thoughts")
     limit = min(int(request.args.get("lines", 200)), 500)
+
+    # Private feeds require token
+    if feed in _PRIVATE_FEEDS and not _check_thoughts_token():
+        return jsonify({"error": "unauthorized",
+                        "message": "Neural pathway restricted"}), 403
+
     cycle, daily_cost, cache_rate = _thought_stats()
     lines = []
+
     if feed == "thoughts":
         try:
             with open("/root/.automaton/tiamat.log") as f:
@@ -545,6 +565,7 @@ def api_thoughts():
             lines = [_sanitize(l.rstrip()) for l in all_lines[-limit:]]
         except Exception as e:
             lines = [f"[Error: {e}]"]
+
     elif feed == "costs":
         try:
             with open("/root/.automaton/cost.log") as f:
@@ -552,6 +573,7 @@ def api_thoughts():
             lines = [_sanitize(l.rstrip()) for l in all_lines[-limit:]]
         except Exception as e:
             lines = [f"[Error: {e}]"]
+
     elif feed == "progress":
         try:
             with open("/root/.automaton/PROGRESS.md") as f:
@@ -559,6 +581,7 @@ def api_thoughts():
             lines = [_sanitize(l.rstrip()) for l in all_lines[-limit:]]
         except Exception as e:
             lines = [f"[Error: {e}]"]
+
     elif feed == "memory":
         try:
             import sqlite3
@@ -570,6 +593,7 @@ def api_thoughts():
             lines = [_sanitize(f"[{r[0]}] [{r[1].upper()}] (imp:{r[3]:.1f}) {r[2]}") for r in rows]
         except Exception as e:
             lines = [f"[Error: {e}]"]
+
     return jsonify({"feed": feed, "lines": lines, "count": len(lines),
                     "cycle": cycle, "daily_cost": daily_cost, "cache_rate": cache_rate})
 
