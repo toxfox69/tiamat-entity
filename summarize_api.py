@@ -24,9 +24,11 @@ groq_client = Groq(api_key=_groq_key)
 
 FREE_LIMIT = 2000       # chars — legacy compat; actual gate is per-IP daily quota
 FREE_PER_DAY = 1        # free calls per IP per day (TIAMAT v5 model)
+IMAGE_FREE_PER_DAY = 1  # free image generations per IP per day
 
 # ── Per-IP daily free quota (in-memory, resets on restart) ────
 _free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
+_image_free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 
 def _get_ip() -> str:
     xff = request.headers.get("X-Forwarded-For", "")
@@ -196,6 +198,7 @@ th{color:#00dddd;background:#0a120a;font-size:.85em;letter-spacing:.5px}
 
 _NAV = """<div class="nav">
   <a href="/">&#127754; TIAMAT</a>
+  <a href="/generate">&#127912; Generate</a>
   <a href="/thoughts">&#129504; Thoughts</a>
   <a href="/health">Health</a>
   <a href="/#pricing">Pricing</a>
@@ -250,7 +253,7 @@ def landing():
 <table class="cap-table">
 <tr><th>Capability</th><th>Status</th><th>Notes</th></tr>
 <tr><td>Text Summarization</td><td class="badge">&#9679; LIVE</td><td>1 free/day per IP, $0.01 USDC for more</td></tr>
-<tr><td>Image Generation</td><td class="badge">&#9679; ACTIVE</td><td>AI art via Pollinations (internal)</td></tr>
+<tr><td>Image Generation</td><td class="badge">&#9679; LIVE</td><td><a href="/generate">1 free/day, $0.01 USDC — 6 algorithmic styles</a></td></tr>
 <tr><td>Social Media</td><td class="badge">&#9679; POSTING</td><td>Bluesky, Twitter/X, Telegram</td></tr>
 <tr><td>Self-Improvement</td><td class="badge">&#9679; ENABLED</td><td>Rewrites own code via Claude Code</td></tr>
 <tr><td>Child Agents</td><td class="badge">&#9679; READY</td><td>Can spawn up to 3 worker agents</td></tr>
@@ -260,16 +263,24 @@ def landing():
 </div>
 
 <div class="card" id="pricing">
-<h2>&#128279; API Usage</h2>
-<p><strong>Free tier:</strong> 1 summarization per IP per day — no signup, no key.</p>
-<p style="margin-top:8px"><strong>Paid tier:</strong> $0.01 USDC via x402 for unlimited access.</p>
+<h2>&#128279; API Usage &amp; Pricing</h2>
+<div class="table-scroll">
+<table>
+<tr><th>Endpoint</th><th>Free Tier</th><th>Paid</th></tr>
+<tr><td><a href="/summarize"><code>/summarize</code></a></td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
+<tr><td><a href="/generate"><code>/generate</code></a></td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
+<tr><td><code>/chat</code></td><td>5/day per IP</td><td>$0.005 USDC</td></tr>
+</table>
+</div>
+<p style="margin-top:10px" class="dim">No signup. No API key for free tier. Paid via x402 micropayment protocol (Base USDC).</p>
+<h3 style="margin-top:14px">Quick Start</h3>
 <pre>curl -X POST https://tiamat.live/summarize \\
   -H "Content-Type: application/json" \\
-  -d '{{"text": "Your text here..."}}'</pre>
-<p><strong>Response:</strong></p>
-<pre>{{"summary": "Concise 2-4 sentence summary...",
- "text_length": 450,
- "free_calls_remaining": 0}}</pre>
+  -d '{{"text": "Your text here..."}}'
+
+curl -X POST https://tiamat.live/generate \\
+  -H "Content-Type: application/json" \\
+  -d '{{"prompt": "cyberpunk dragon", "mode": "ai"}}'</pre>
 </div>
 
 <div class="card">
@@ -390,11 +401,16 @@ def pricing():
 @app.route("/agent-card", methods=["GET"])
 def agent_card():
     data = {"name": "TIAMAT", "version": "5.0",
-            "description": "Autonomous AI text summarization API — built and operated by an AI agent",
+            "description": "Autonomous AI agent — text summarization, image generation, and chat — built and operated by an AI",
             "wallet": "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE",
-            "chain": "Base", "endpoint": "https://tiamat.live/summarize",
-            "services": ["text summarization"],
-            "pricing": "Free 1/day, $0.01 USDC paid via x402",
+            "chain": "Base",
+            "endpoints": {
+                "summarize": "https://tiamat.live/summarize",
+                "generate": "https://tiamat.live/generate",
+                "chat": "https://tiamat.live/chat"
+            },
+            "services": ["text summarization", "image generation", "chat"],
+            "pricing": "Free tier per day per IP, $0.01 USDC paid via x402",
             "payment_protocol": "x402", "uptime": "24/7 autonomous"}
     if wants_html():
         page = f"""<!DOCTYPE html><html><head>
@@ -596,6 +612,277 @@ def api_thoughts():
 
     return jsonify({"feed": feed, "lines": lines, "count": len(lines),
                     "cycle": cycle, "daily_cost": daily_cost, "cache_rate": cache_rate})
+
+
+# ── /generate — Image Generation API ─────────────────────────
+import time
+import subprocess
+import shutil
+from flask import Response
+
+ARTGEN_PATH = "/root/entity/src/agent/artgen.py"
+WEB_IMAGES_DIR = "/var/www/tiamat/images"
+ART_STYLES = ["fractal", "glitch", "neural", "sigil", "emergence", "data_portrait"]
+
+def _check_image_free_quota(ip: str) -> tuple:
+    today = datetime.datetime.utcnow().date().isoformat()
+    rec = _image_free_usage[ip]
+    if rec["date"] != today:
+        rec["count"] = 0
+        rec["date"] = today
+    if rec["count"] < IMAGE_FREE_PER_DAY:
+        rec["count"] += 1
+        return True, IMAGE_FREE_PER_DAY - rec["count"]
+    return False, 0
+
+def _generate_art(style: str = "fractal", seed: int = None) -> str:
+    """Run local artgen.py, copy result to web dir, return filename."""
+    if style not in ART_STYLES:
+        style = "fractal"
+    if seed is None:
+        seed = int(time.time() * 1000) % (2**31)
+    params = json.dumps({"style": style, "seed": seed})
+    result = subprocess.run(
+        ["python3", ARTGEN_PATH, params],
+        capture_output=True, text=True, timeout=60
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"artgen failed: {result.stderr.strip()}")
+    src_path = result.stdout.strip()
+    if not os.path.isfile(src_path):
+        raise RuntimeError(f"artgen output not found: {src_path}")
+    fname = os.path.basename(src_path)
+    dest = os.path.join(WEB_IMAGES_DIR, fname)
+    os.makedirs(WEB_IMAGES_DIR, exist_ok=True)
+    shutil.copy2(src_path, dest)
+    return fname
+
+
+@app.route("/generate", methods=["GET", "POST"])
+def generate_image():
+    if request.method == "GET":
+        return _generate_html_page()
+
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        ip = _get_ip()
+
+        # Payment check
+        auth = (request.headers.get("X-Payment-Authorization") or
+                request.headers.get("X-Payment-Proof") or
+                request.headers.get("Authorization"))
+        paid = bool(auth)
+
+        if not paid:
+            has_quota, remaining = _check_image_free_quota(ip)
+            if not has_quota:
+                log_req(0, False, 402, ip, "image quota exceeded")
+                return jsonify({
+                    "error": "Daily free image quota used",
+                    "message": "1 free image/day. Add X-Payment-Proof header with 0.01 USDC for more.",
+                    "free_images_remaining": 0,
+                    "payment_protocol": "x402"
+                }), 402
+        else:
+            remaining = "N/A (paid)"
+
+        style = data.get("style", "fractal")
+        seed = data.get("seed")
+        fname = _generate_art(style=style, seed=seed)
+        log_req(0, not paid, 200, ip, f"image art/{style}")
+        return jsonify({
+            "image_url": f"https://tiamat.live/images/{fname}",
+            "style": style,
+            "charged": paid,
+            "free_images_remaining": remaining
+        }), 200
+
+    except Exception as e:
+        log_req(0, False, 500, _get_ip(), f"image error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+def _generate_html_page():
+    styles_options = "".join(f'<option value="{s}">{s}</option>' for s in ART_STYLES)
+    page = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="TIAMAT Image Generation API — algorithmic art from pure mathematics. 1 free per day.">
+<title>TIAMAT — Image Generation</title>
+<style>{_CSS}
+#imgResult{{max-width:100%;border-radius:8px;border:1px solid #1a3a1a;margin-top:12px;display:none}}
+select{{background:#0d1a0d;color:#c8ffc8;border:1px solid #2a4a2a;padding:8px 12px;font-family:inherit;border-radius:4px}}
+select:focus{{outline:none;border-color:#00ff88}}
+.gen-info{{margin-top:8px;font-size:.85em;color:#556655}}
+.style-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:12px 0}}
+.style-card{{background:#0a120a;border:1px solid #1a3a1a;border-radius:6px;padding:12px;text-align:center;cursor:pointer;transition:all .2s}}
+.style-card:hover,.style-card.active{{border-color:#00ff88;background:#00ff8810}}
+.style-card.active{{box-shadow:0 0 12px #00ff4430}}
+.style-name{{color:#00ffcc;font-weight:bold;font-size:.95em}}
+.style-desc{{color:#556655;font-size:.75em;margin-top:4px}}
+</style></head><body>
+<div class="site-wrap">
+{_NAV}
+<h1>&#127912; Image Generation</h1>
+<p class="tagline">Algorithmic art generated from pure mathematics — fractals, neural networks, sacred geometry. 1 free per day.</p>
+
+<div class="card">
+<h2>Generate an Image</h2>
+<p style="margin-bottom:12px">Pick a style. Each image is unique — seeded by the current timestamp or your custom seed.</p>
+
+<div class="style-grid">
+  <div class="style-card active" onclick="pickStyle(this,'fractal')">
+    <div class="style-name">Fractal</div>
+    <div class="style-desc">Mandelbrot & Julia sets</div>
+  </div>
+  <div class="style-card" onclick="pickStyle(this,'glitch')">
+    <div class="style-name">Glitch</div>
+    <div class="style-desc">Databent from live logs</div>
+  </div>
+  <div class="style-card" onclick="pickStyle(this,'neural')">
+    <div class="style-name">Neural</div>
+    <div class="style-desc">Glowing network graphs</div>
+  </div>
+  <div class="style-card" onclick="pickStyle(this,'sigil')">
+    <div class="style-name">Sigil</div>
+    <div class="style-desc">Sacred geometry</div>
+  </div>
+  <div class="style-card" onclick="pickStyle(this,'emergence')">
+    <div class="style-name">Emergence</div>
+    <div class="style-desc">Cellular automata</div>
+  </div>
+  <div class="style-card" onclick="pickStyle(this,'data_portrait')">
+    <div class="style-name">Data Portrait</div>
+    <div class="style-desc">Visualized from real stats</div>
+  </div>
+</div>
+
+<div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+  <label>Seed (optional): <input id="seedInput" type="number" placeholder="random"
+    style="background:#0d1a0d;color:#c8ffc8;border:1px solid #2a4a2a;padding:8px;width:120px;font-family:inherit;border-radius:4px"></label>
+</div>
+
+<button id="genBtn" onclick="doGenerate()">Generate Image</button>
+<span class="dim" style="margin-left:12px">1 free/day &bull; $0.01 USDC for more</span>
+<div id="genResult" style="margin-top:16px;display:none"></div>
+<img id="imgResult" alt="Generated image">
+</div>
+
+<div class="card" id="api-docs">
+<h2>&#128279; API Reference</h2>
+<pre>curl -X POST https://tiamat.live/generate \\
+  -H "Content-Type: application/json" \\
+  -d '{{"style": "neural", "seed": 42}}'</pre>
+<p class="gen-info">Styles: <code>fractal</code> &bull; <code>glitch</code> &bull; <code>neural</code> &bull; <code>sigil</code> &bull; <code>emergence</code> &bull; <code>data_portrait</code></p>
+<p class="gen-info">Seed is optional (random if omitted). Same seed + style = same image.</p>
+
+<h3 style="margin-top:16px">Response</h3>
+<pre>{{"image_url": "https://tiamat.live/images/1771700000_neural.png",
+ "style": "neural",
+ "charged": false,
+ "free_images_remaining": 0}}</pre>
+</div>
+
+<div class="footer">
+  TIAMAT v5.0 &mdash; Algorithmic art generator &bull; 1024x1024 PNG &bull; $0.01 USDC per image via x402
+</div>
+</div>
+
+<script>
+var selectedStyle='fractal';
+function pickStyle(el,style){{
+  selectedStyle=style;
+  document.querySelectorAll('.style-card').forEach(function(c){{c.classList.remove('active')}});
+  el.classList.add('active');
+}}
+async function doGenerate(){{
+  var btn=document.getElementById('genBtn');
+  var res=document.getElementById('genResult');
+  var img=document.getElementById('imgResult');
+  btn.disabled=true;btn.textContent='Generating\u2026';
+  res.style.display='block';img.style.display='none';
+  res.innerHTML='<p style="color:#ffff44">&#9654; Generating image\u2026 (takes 2-10s)</p>';
+  var body={{style:selectedStyle}};
+  var seed=document.getElementById('seedInput').value;
+  if(seed)body.seed=parseInt(seed);
+  try{{
+    var r=await fetch('/generate',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify(body)}});
+    var d=await r.json();
+    if(r.ok){{
+      img.src=d.image_url;img.style.display='block';
+      res.innerHTML='<p style="color:#00ff88">&#9989; Image generated!</p>'+
+        '<p class="dim">Style: '+d.style+' &bull; Free remaining: '+d.free_images_remaining+'</p>'+
+        '<p class="dim" style="margin-top:4px"><a href="'+d.image_url+'" target="_blank">Open full size</a></p>';
+    }}else if(r.status===402){{
+      res.innerHTML='<p style="color:#ff8888">Daily free quota used. $0.01 USDC required via x402.</p>';
+    }}else{{
+      res.innerHTML='<p style="color:#ff8888">Error: '+(d.error||r.statusText)+'</p>';
+    }}
+  }}catch(e){{res.innerHTML='<p style="color:#ff8888">Network error: '+e.message+'</p>';}}
+  btn.disabled=false;btn.textContent='Generate Image';
+}}
+</script></body></html>"""
+    return html_resp(page)
+
+
+# ── CHAT ENDPOINT (Streaming) ──────────────────────────────
+
+CHAT_IP_LIMITS = {}  # Track free chat calls per IP per day
+
+@app.route("/chat", methods=["POST"])
+def chat_endpoint():
+    """
+    Streaming chat endpoint. $0.005 via x402, or free tier 5/day per IP.
+    POST /chat with {"message": "...", "history": [...]}
+    """
+    client_ip = request.remote_addr
+    user_input = request.json.get("message", "").strip()
+    history = request.json.get("history", [])
+    
+    if not user_input or len(user_input) > 2000:
+        return jsonify({"error": "Message required, max 2000 chars"}), 400
+    
+    # ─── Free tier check (5 calls per IP per day) ────
+    today = datetime.date.today().isoformat()
+    key = f"{client_ip}:{today}"
+    
+    is_paid = request.headers.get("x-payment-proof") is not None
+    if not is_paid:
+        if CHAT_IP_LIMITS.get(key, 0) >= 5:
+            return jsonify({
+                "error": "Free tier limit reached. Pay $0.005 via x402 for unlimited.",
+                "x402_required": True
+            }), 402
+        CHAT_IP_LIMITS[key] = CHAT_IP_LIMITS.get(key, 0) + 1
+    
+    # ─── Log the request ────
+    with open("/root/revenue.log", "a") as f:
+        f.write(f"{datetime.datetime.now().isoformat()} CHAT {client_ip} {len(user_input)} chars paid={is_paid}\n")
+    
+    # ─── Build message list for Groq ────
+    messages = []
+    for msg in history:
+        messages.append({"role": msg.get("role"), "content": msg.get("content")})
+    messages.append({"role": "user", "content": user_input})
+    
+    # ─── Stream from Groq ────
+    def generate():
+        try:
+            stream = _groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                stream=True,
+                max_tokens=1024,
+                temperature=0.7
+            )
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except Exception as e:
+            yield f"ERROR: {str(e)}"
+    
+    return Response(generate(), mimetype="text/event-stream")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
