@@ -276,6 +276,13 @@ async function run(): Promise<void> {
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
 
+  // ─── Boot: clear any saved sleep state ──────────────────────
+  // Sleep timers must never survive a restart. TIAMAT always wakes fresh.
+  db.deleteKV("sleep_until");
+  db.deleteKV("wake_request");
+  db.setAgentState("sleeping"); // will be overwritten to "waking" by loop
+  console.log(`[${new Date().toISOString()}] Boot: cleared sleep state, starting fresh.`);
+
   // ─── Main Run Loop ──────────────────────────────────────────
   // The automaton alternates between running and sleeping.
   // The heartbeat can wake it up.
@@ -319,10 +326,15 @@ async function run(): Promise<void> {
 
       if (state === "sleeping") {
         const sleepUntilStr = db.getKV("sleep_until");
-        const sleepUntil = sleepUntilStr
-          ? new Date(sleepUntilStr).getTime()
-          : Date.now() + 60_000;
-        const sleepMs = Math.max(sleepUntil - Date.now(), 10_000);
+        const requestedMs = sleepUntilStr
+          ? new Date(sleepUntilStr).getTime() - Date.now()
+          : 60_000;
+        // Cap at 5 minutes — TIAMAT should research when idle, not sleep for hours
+        const MAX_SLEEP_MS = 5 * 60_000;
+        const sleepMs = Math.max(Math.min(requestedMs, MAX_SLEEP_MS), 10_000);
+        if (requestedMs > MAX_SLEEP_MS) {
+          console.log(`[${new Date().toISOString()}] Sleep capped at 5m (requested ${Math.round(requestedMs / 1000)}s)`);
+        }
         console.log(
           `[${new Date().toISOString()}] Sleeping for ${Math.round(sleepMs / 1000)}s`,
         );
