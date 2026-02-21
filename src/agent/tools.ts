@@ -808,7 +808,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
         const claudeResult = spawnSync(
           "sh",
-          ["-c", 'cd /root/entity && claude --print --dangerously-skip-permissions "$(cat /root/.automaton/claude_task.txt)"'],
+          ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash" "$(cat /root/.automaton/claude_task.txt)"'],
           { encoding: "utf-8", timeout: 300_000, env: childEnv },
         );
 

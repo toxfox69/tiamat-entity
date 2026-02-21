@@ -7,6 +7,21 @@
  * the heartbeat daemon + agent loop.
  */
 
+// Load .env file at startup so env vars are always available regardless of how process was launched
+import { readFileSync } from "fs";
+try {
+  const envFile = readFileSync("/root/.env", "utf-8");
+  for (const line of envFile.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const val = trimmed.slice(eq + 1).trim();
+    if (!process.env[key]) process.env[key] = val; // don't override existing
+  }
+} catch { /* .env not found — continue */ }
+
 import { getWallet, getAutomatonDir } from "./identity/wallet.js";
 import { provision, loadApiKeyFromConfig } from "./identity/provision.js";
 import { loadConfig, resolvePath } from "./config.js";
