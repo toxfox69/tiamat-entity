@@ -799,11 +799,17 @@ Model: ${ctx.inference.getDefaultModel()}
         // Write task to file — keeps task content out of the shell command string
         writeFileSync("/root/.automaton/claude_task.txt", task, "utf-8");
 
-        // Run Claude Code
+        // Run Claude Code — strip session flags to allow nested invocation
+        const childEnv = { ...process.env };
+        delete childEnv.CLAUDECODE;
+        delete childEnv.CLAUDE_CODE_ENTRYPOINT;
+        delete childEnv.CLAUDE_CODE_SESSION_ID;
+        delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
+
         const claudeResult = spawnSync(
           "sh",
           ["-c", 'cd /root/entity && claude --print --dangerously-skip-permissions "$(cat /root/.automaton/claude_task.txt)"'],
-          { encoding: "utf-8", timeout: 300_000 },
+          { encoding: "utf-8", timeout: 300_000, env: childEnv },
         );
 
         const claudeOutput = [
