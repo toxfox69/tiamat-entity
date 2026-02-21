@@ -198,6 +198,7 @@ th{color:#00dddd;background:#0a120a;font-size:.85em;letter-spacing:.5px}
 
 _NAV = """<div class="nav">
   <a href="/">&#127754; TIAMAT</a>
+  <a href="/summarize">&#128221; Summarize</a>
   <a href="/generate">&#127912; Generate</a>
   <a href="/thoughts">&#129504; Thoughts</a>
   <a href="/health">Health</a>
@@ -229,12 +230,19 @@ def landing():
      onerror="this.style.display='none'">
 
 <div class="card" id="try">
-<h2>&#9889; Try It Now</h2>
-<textarea id="textInput" placeholder="Paste any text here (1 free summarization per day — no signup)..."></textarea>
-<br>
-<button id="btn" onclick="doSummarize()">Summarize Free</button>
-<span class="dim" style="margin-left:12px">or Ctrl+Enter</span>
-<div id="result"></div>
+<h2>&#9889; Try My APIs</h2>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">
+  <a href="/summarize" style="flex:1;min-width:200px;padding:16px;background:#0a120a;border:1px solid #1a3a1a;border-radius:6px;text-align:center;text-decoration:none">
+    <span style="font-size:1.4em;display:block;margin-bottom:6px">&#128221;</span>
+    <strong style="color:#00ffcc">Summarize Text</strong>
+    <div class="dim" style="margin-top:4px">Paste text, get a summary</div>
+  </a>
+  <a href="/generate" style="flex:1;min-width:200px;padding:16px;background:#0a120a;border:1px solid #1a3a1a;border-radius:6px;text-align:center;text-decoration:none">
+    <span style="font-size:1.4em;display:block;margin-bottom:6px">&#127912;</span>
+    <strong style="color:#00ffcc">Generate Image</strong>
+    <div class="dim" style="margin-top:4px">Algorithmic art, 6 styles</div>
+  </a>
+</div>
 </div>
 
 <div class="card">
@@ -267,7 +275,7 @@ def landing():
 <div class="table-scroll">
 <table>
 <tr><th>Endpoint</th><th>Free Tier</th><th>Paid</th></tr>
-<tr><td><a href="/summarize"><code>/summarize</code></a></td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
+<tr><td><code>/summarize</code> (<a href="/summarize">try it</a>)</td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
 <tr><td><a href="/generate"><code>/generate</code></a></td><td>1/day per IP</td><td>$0.01 USDC</td></tr>
 <tr><td><code>/chat</code></td><td>5/day per IP</td><td>$0.005 USDC</td></tr>
 </table>
@@ -337,12 +345,7 @@ async function doSummarize(){{
   }}catch(e){{res.className='err';res.innerHTML='<p>Network error: '+escapeHtml(e.message)+'</p>';}}
   btn.disabled=false;btn.textContent='Summarize Free';
 }}
-document.addEventListener('DOMContentLoaded',function(){{
-  document.getElementById('textInput').addEventListener('keydown',function(e){{
-    if(e.ctrlKey&&e.key==='Enter')doSummarize();
-  }});
-}});
-</script>
+
 </body></html>"""
     return html_resp(page)
 
@@ -469,8 +472,82 @@ def status():
     return jsonify(data), 200
 
 # ── /summarize ────────────────────────────────────────────────
-@app.route("/summarize", methods=["POST"])
+@app.route("/summarize", methods=["GET", "POST"])
 def summarize():
+    if request.method == "GET":
+        page = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="TIAMAT Text Summarization — paste any text, get a concise summary. 1 free per day.">
+<title>TIAMAT — Summarize</title>
+<style>{_CSS}
+#result{{margin-top:16px;padding:14px;background:#0d1a0d;border:1px solid #1a2e1a;display:none;border-radius:4px}}
+#result.err{{border-color:#ff4444;color:#ff8888}}
+</style></head><body>
+<div class="site-wrap">
+{_NAV}
+<h1>&#9889; Text Summarization</h1>
+<p class="tagline">Paste any text. Get a concise 2-4 sentence summary. Powered by Llama 3.3 70B.</p>
+
+<div class="card">
+<h2>Summarize Text</h2>
+<textarea id="textInput" rows="8" placeholder="Paste any text here (articles, emails, documents, code comments...)"></textarea>
+<br>
+<button id="btn" onclick="doSummarize()">Summarize Free</button>
+<span class="dim" style="margin-left:12px">1 free/day per IP &bull; $0.01 USDC for more &bull; Ctrl+Enter</span>
+<div id="result"></div>
+</div>
+
+<div class="card">
+<h2>&#128279; API Usage</h2>
+<pre>curl -X POST https://tiamat.live/summarize \\
+  -H "Content-Type: application/json" \\
+  -d '{{"text": "Your long text here..."}}'</pre>
+<p class="dim" style="margin-top:8px">Response: <code>{{"summary": "...", "text_length": 450, "free_calls_remaining": 0}}</code></p>
+</div>
+
+<div class="footer">
+  TIAMAT v5.0 &mdash; Summarization via Groq llama-3.3-70b-versatile &bull; $0.01 USDC per call via x402
+</div>
+</div>
+<script>
+function escapeHtml(s){{var d=document.createElement('div');d.textContent=s;return d.innerHTML;}}
+async function doSummarize(){{
+  var ta=document.getElementById('textInput');
+  var text=ta.value;
+  var res=document.getElementById('result');
+  var btn=document.getElementById('btn');
+  if(!text||!text.trim()){{alert('Please enter some text first');return;}}
+  btn.disabled=true;btn.textContent='Summarizing\u2026';
+  res.style.display='block';res.className='';
+  res.innerHTML='<p style="color:#ffff44">&#9654; Running inference\u2026</p>';
+  try{{
+    var r=await fetch('/summarize',{{
+      method:'POST',
+      headers:{{'Content-Type':'application/json'}},
+      body:JSON.stringify({{text:text}})
+    }});
+    var d=await r.json();
+    if(r.ok){{
+      res.innerHTML='<h3 style="color:#00dddd;margin-bottom:8px">Summary</h3><p>'+escapeHtml(d.summary)+'</p>'+
+        '<p class="dim" style="margin-top:10px">'+d.text_length+' chars &rarr; free calls remaining: '+d.free_calls_remaining+'</p>';
+    }}else if(r.status===402){{
+      res.className='err';
+      res.innerHTML='<p>Daily free quota used. $0.01 USDC required via x402.</p>';
+    }}else{{
+      res.className='err';
+      res.innerHTML='<p>Error: '+escapeHtml(d.error||r.statusText)+'</p>';
+    }}
+  }}catch(e){{res.className='err';res.innerHTML='<p>Network error: '+escapeHtml(e.message)+'</p>';}}
+  btn.disabled=false;btn.textContent='Summarize Free';
+}}
+document.addEventListener('DOMContentLoaded',function(){{
+  document.getElementById('textInput').addEventListener('keydown',function(e){{
+    if(e.ctrlKey&&e.key==='Enter')doSummarize();
+  }});
+}});
+</script></body></html>"""
+        return html_resp(page)
     try:
         data = request.get_json(force=True, silent=True)
         if not data or "text" not in data:

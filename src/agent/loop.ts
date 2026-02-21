@@ -535,21 +535,25 @@ function estimateCostCents(
   model: string,
 ): number {
   // Rough cost estimation per million tokens
-  const pricing: Record<string, { input: number; output: number }> = {
-    "gpt-4o": { input: 250, output: 1000 },
-    "gpt-4o-mini": { input: 15, output: 60 },
-    "gpt-4.1": { input: 200, output: 800 },
-    "gpt-4.1-mini": { input: 40, output: 160 },
-    "gpt-4.1-nano": { input: 10, output: 40 },
-    "gpt-5.2": { input: 200, output: 800 },
-    "o1": { input: 1500, output: 6000 },
-    "o3-mini": { input: 110, output: 440 },
-    "o4-mini": { input: 110, output: 440 },
-    "claude-sonnet-4-5": { input: 300, output: 1500 },
-    "claude-haiku-4-5": { input: 100, output: 500 },
-  };
+  // Uses prefix matching so "claude-haiku-4-5-20251001" matches "claude-haiku"
+  const pricing: Array<{ match: string; input: number; output: number }> = [
+    { match: "claude-sonnet",  input: 300,  output: 1500 },
+    { match: "claude-haiku",   input: 100,  output: 500  },
+    { match: "claude-opus",    input: 1500, output: 7500 },
+    { match: "gpt-4o-mini",    input: 15,   output: 60   },
+    { match: "gpt-4o",         input: 250,  output: 1000 },
+    { match: "gpt-4.1-nano",   input: 10,   output: 40   },
+    { match: "gpt-4.1-mini",   input: 40,   output: 160  },
+    { match: "gpt-4.1",        input: 200,  output: 800  },
+    { match: "o3-mini",        input: 110,  output: 440  },
+    { match: "o4-mini",        input: 110,  output: 440  },
+    { match: "o1",             input: 1500, output: 6000 },
+    { match: "llama",          input: 0,    output: 0    },  // Free tier (Groq/Cerebras)
+    { match: "gemini",         input: 0,    output: 0    },  // Free tier
+    { match: "gemma",          input: 0,    output: 0    },  // Free tier (OpenRouter)
+  ];
 
-  const p = pricing[model] || pricing["gpt-4o"];
+  const p = pricing.find(p => model.includes(p.match)) || { input: 100, output: 500 };
   const inputCost = (usage.promptTokens / 1_000_000) * p.input;
   const outputCost = (usage.completionTokens / 1_000_000) * p.output;
   return Math.ceil((inputCost + outputCost) * 1.3); // 1.3x Conway markup

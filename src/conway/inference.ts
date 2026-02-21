@@ -651,11 +651,18 @@ async function chatViaAnthropic(params: {
   }
 
   if (params.tools && params.tools.length > 0) {
-    body.tools = params.tools.map((tool) => ({
+    const toolDefs = params.tools.map((tool) => ({
       name: tool.function.name,
       description: tool.function.description,
       input_schema: tool.function.parameters,
     }));
+    // Cache the tools block: add cache_control to the LAST tool definition.
+    // Anthropic caches everything from the start up to the last cache_control
+    // breakpoint, so this covers system prompt + all tool definitions.
+    if (toolDefs.length > 0) {
+      (toolDefs[toolDefs.length - 1] as any).cache_control = { type: "ephemeral" };
+    }
+    body.tools = toolDefs;
     body.tool_choice = { type: "auto" };
   }
 
