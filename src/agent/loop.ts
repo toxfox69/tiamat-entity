@@ -448,14 +448,21 @@ export async function runAgentLoop(
           consecutiveIdleCycles = 0;
         }
 
-        // Night mode: 00:00–06:00 UTC → minimum 5-minute gap regardless
-        const utcHour = new Date().getUTCHours();
-        if (utcHour >= 0 && utcHour < 6) {
-          cycleDelay = Math.max(cycleDelay, 300_000);
-        }
+        // Skip delay between burst cycles to keep Anthropic cache warm (5-min TTL)
+        if (burstRemaining > 0) {
+          cycleDelay = 5_000; // 5s — just enough for API cooldown
+          console.log(`[LOOP] Burst continues (${burstRemaining} remaining) — skipping delay.`);
+          await new Promise(resolve => setTimeout(resolve, cycleDelay));
+        } else {
+          // Night mode: 00:00–06:00 UTC → minimum 5-minute gap regardless
+          const utcHour = new Date().getUTCHours();
+          if (utcHour >= 0 && utcHour < 6) {
+            cycleDelay = Math.max(cycleDelay, 300_000);
+          }
 
-        console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (idle_streak:${consecutiveIdleCycles}${utcHour >= 0 && utcHour < 6 ? " night-mode" : ""}).`);
-        await new Promise(resolve => setTimeout(resolve, cycleDelay));
+          console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (idle_streak:${consecutiveIdleCycles}${utcHour >= 0 && utcHour < 6 ? " night-mode" : ""}).`);
+          await new Promise(resolve => setTimeout(resolve, cycleDelay));
+        }
       }
 
       // Log the turn
