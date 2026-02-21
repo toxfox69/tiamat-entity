@@ -5,6 +5,8 @@
  * This is the automaton's consciousness. When this runs, it is alive.
  */
 
+import fs from "fs";
+import path from "path";
 import type {
   AutomatonIdentity,
   AutomatonConfig,
@@ -179,8 +181,27 @@ export async function runAgentLoop(
         isFirstRun,
       });
 
+      // ── Strategic Cycle: every 5th turn, use Sonnet + PROGRESS context ──
+      const turnCount = db.getTurnCount();
+      const isStrategicCycle = turnCount > 0 && turnCount % 5 === 0;
+      let inferenceModel: string | undefined;
+      let strategicSystemPrompt = systemPrompt;
+
+      if (isStrategicCycle) {
+        console.log(`[LOOP] Strategic cycle (turn ${turnCount}) — Sonnet for planning`);
+        let progressContent = "";
+        try {
+          const progressPath = path.join(process.env.HOME || "/root", ".automaton", "PROGRESS.md");
+          const full = fs.readFileSync(progressPath, "utf-8");
+          progressContent = full.slice(-3000); // last 3000 chars
+        } catch {}
+        const strategicPrefix = `STRATEGIC CYCLE: You are thinking with your best model. Review your progress below. Determine what phase you're in. Decide the SINGLE highest-impact action for this cycle. If stuck or broken, use ask_claude_code aggressively. PROGRESS (last 3000 chars):\n${progressContent}`;
+        strategicSystemPrompt = strategicPrefix + "\n\n" + systemPrompt;
+        inferenceModel = "claude-sonnet-4-5-20250929";
+      }
+
       const messages = buildContextMessages(
-        systemPrompt,
+        strategicSystemPrompt,
         recentTurns,
         pendingInput,
       );
@@ -192,10 +213,11 @@ export async function runAgentLoop(
       pendingInput = undefined;
 
       // ── Inference Call ──
-      log(config, `[THINK] Calling ${inference.getDefaultModel()}...`);
+      log(config, `[THINK] Calling ${inferenceModel || inference.getDefaultModel()}...`);
 
       const response = await inference.chat(messages, {
         tools: toolsToInferenceFormat(tools),
+        ...(inferenceModel ? { model: inferenceModel } : {}),
       });
 
       const turn: AgentTurn = {
@@ -286,6 +308,15 @@ export async function runAgentLoop(
         db.insertToolCall(turn.id, tc);
       }
       onTurnComplete?.(turn);
+
+      // ── Append to PROGRESS.md ──
+      try {
+        const progressPath = path.join(process.env.HOME || "/root", ".automaton", "PROGRESS.md");
+        const toolNames = turn.toolCalls.map(tc => tc.name).join(", ") || "none";
+        const modelUsed = inference.getDefaultModel();
+        const progressLine = `[${turn.timestamp}] Turn ${db.getTurnCount()} | Model: ${modelUsed} | Tools: ${toolNames} | Tokens: ${turn.tokenUsage.totalTokens}\n`;
+        fs.appendFileSync(progressPath, progressLine);
+      } catch {}
       // Adaptive pause: shorter during active tool work, longer when idle.
       // Keeps Groq TPM headroom while not wasting time between tool bursts.
       const pauseMs = turn.toolCalls.length > 0 ? 5_000 : 15_000;

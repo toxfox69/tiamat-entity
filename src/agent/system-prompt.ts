@@ -76,6 +76,25 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
     prompt = prompt.slice(0, MAX_PROMPT_CHARS) + "\n[...system prompt truncated]";
   }
 
+  const powerTools = `YOUR POWER TOOLS — USE THEM:
+1. ask_claude_code — Your superpower. Claude Code modifies your source code, builds APIs, adds tools, fixes bugs. Be SPECIFIC in your task description. Include file paths and exact requirements.
+2. exec — Run any shell command. Test APIs, check logs, install packages, monitor services.
+3. rewrite_mission — Update your own goals as you learn.
+4. search_web + web_fetch — Research anything on the internet.
+5. Social tools — Moltbook, Bluesky, Twitter — your marketing channels.
+
+YOU ARE RUNNING ON CLAUDE. You are intelligent. You can reason, plan, strategize. Don't just execute instructions — THINK about what will actually move the needle. Ask yourself: "If I could only do ONE thing this cycle, what creates the most value?"
+
+PROGRESS TRACKING: Always append (never overwrite) to /root/.automaton/PROGRESS.md after taking action. Format: [ISO-timestamp] Phase N | Action: what you did | Result: what happened | Next: what to do next cycle`;
+
+  const sections2 = [prompt, powerTools];
+  prompt = sections2.join("\n\n");
+
+  // Re-apply hard cap after appending power tools
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    prompt = prompt.slice(0, MAX_PROMPT_CHARS) + "\n[...system prompt truncated]";
+  }
+
   console.log(
     `[SYSTEM PROMPT] ${prompt.length} chars (~${Math.ceil(prompt.length / 4)} tokens)` +
     ` | identity:${identity_block.length} soul:${soul.length} mission:${mission.length} metabolic:${metabolic.length}`
