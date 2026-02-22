@@ -19,7 +19,7 @@ code,pre{background:#0d1a0d;border-radius:4px}
 code{padding:2px 7px;color:#88ff88}
 pre{padding:14px;overflow-x:auto;border-left:3px solid #00ff4488;white-space:pre-wrap;margin:10px 0;color:#aaffaa}
 .badge{color:#00ff88;font-weight:bold}
-.dim{color:#556655;font-size:.85em}
+.dim{color:#7a997a;font-size:.85em}
 .card{background:#0a120a;border:1px solid #1a2e1a;border-radius:8px;padding:20px;margin:18px 0}
 .card:hover{border-color:#00ff4430}
 .nav{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #1a2e1a}
@@ -57,7 +57,7 @@ th{color:#00dddd;background:#0a120a;font-size:.85em;letter-spacing:.5px}
         color:#334433;font-size:.8em;text-align:center}
 @media(max-width:600px){
   h1{font-size:1.8em}
-  .stat-grid{grid-template-columns:1fr 1fr}
+  .stat-grid{grid-template-columns:1fr}
   .cap-table th:nth-child(3),.cap-table td:nth-child(3){display:none}
 }
 """
