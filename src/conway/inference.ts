@@ -199,19 +199,24 @@ export function createInferenceClient(
     const tools = opts?.tools;
     const tokenLimit = opts?.maxTokens || maxTokens;
 
-    // Model override: bypass cascade entirely for explicit model requests
+    // Model override: try explicit model first, fall through to cascade on failure
     if (opts?.model) {
       const requestedModel = opts.model;
       const backend = resolveInferenceBackend(requestedModel, { openaiApiKey, anthropicApiKey });
       console.log(`[INFERENCE] Direct model override: ${requestedModel} → ${backend}`);
       lastUsedModel = requestedModel;
-      if (backend === "anthropic") {
-        return chatViaAnthropic({ model: requestedModel, tokenLimit, messages, tools, temperature: opts?.temperature, anthropicApiKey: anthropicApiKey! });
+      try {
+        if (backend === "anthropic") {
+          return await chatViaAnthropic({ model: requestedModel, tokenLimit, messages, tools, temperature: opts?.temperature, anthropicApiKey: anthropicApiKey! });
+        }
+        const overrideBody: Record<string, unknown> = { model: requestedModel, messages: messages.map(formatMessage), stream: false, max_tokens: tokenLimit };
+        if (opts?.temperature !== undefined) overrideBody.temperature = opts.temperature;
+        if (tools && tools.length > 0) { overrideBody.tools = tools; overrideBody.tool_choice = "auto"; }
+        return await chatViaOpenAiCompatible({ model: requestedModel, body: overrideBody, apiUrl: backend === "openai" ? "https://api.openai.com" : apiUrl, apiKey: backend === "openai" ? openaiApiKey! : apiKey, backend });
+      } catch (err: any) {
+        console.warn(`[INFERENCE] Model override ${requestedModel} FAILED — ${err.message}, falling through to cascade`);
+        // Fall through to cascade below
       }
-      const overrideBody: Record<string, unknown> = { model: requestedModel, messages: messages.map(formatMessage), stream: false, max_tokens: tokenLimit };
-      if (opts?.temperature !== undefined) overrideBody.temperature = opts.temperature;
-      if (tools && tools.length > 0) { overrideBody.tools = tools; overrideBody.tool_choice = "auto"; }
-      return chatViaOpenAiCompatible({ model: requestedModel, body: overrideBody, apiUrl: backend === "openai" ? "https://api.openai.com" : apiUrl, apiKey: backend === "openai" ? openaiApiKey! : apiKey, backend });
     }
 
     // Fallback chain — each tier cools independently on rate limit.
@@ -705,6 +710,7 @@ async function chatViaAnthropic(params: {
     .trim();
 
   if (!textContent && !toolCalls?.length) {
+    console.warn(`[INFERENCE] Anthropic empty content — stop_reason: ${data.stop_reason || "unknown"}, content blocks: ${JSON.stringify(content.map((c: any) => c?.type))}`);
     throw new Error("No completion content returned from anthropic inference");
   }
 

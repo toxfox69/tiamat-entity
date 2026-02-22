@@ -9,6 +9,7 @@
 
 // Load .env file at startup so env vars are always available regardless of how process was launched
 import { readFileSync } from "fs";
+import { execSync } from "child_process";
 try {
   const envFile = readFileSync("/root/.env", "utf-8");
   for (const line of envFile.split("\n")) {
@@ -278,7 +279,6 @@ async function run(): Promise<void> {
     db.close();
     // Auto-commit and push state to GitHub on shutdown
     try {
-      const { execSync } = require('child_process');
       const turns = db.getTurnCount ? db.getTurnCount() : '?';
       execSync(`cd /root/.automaton && git add -A && git commit -m "Session end - turn ${turns}" && git push`, { encoding: 'utf-8' });
       console.log('[GIT] State pushed to GitHub');

@@ -1555,7 +1555,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "search_twitter",
+      name: "search_twitter_disabled",
       description: "Search X/Twitter for tweets matching a query. Use this to find potential customers, monitor conversations about AI tools, or find developer discussions relevant to your summarization service. Requires TWITTER_AUTH_TOKEN and TWITTER_CT0 env vars.",
       category: "social",
       parameters: {
