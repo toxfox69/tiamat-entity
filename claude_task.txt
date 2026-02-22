@@ -1,11 +1,20 @@
-Build a Farcaster engagement bot that monitors conversations in /base, /ai, /dev, /agents channels and replies helpfully when people ask about AI APIs, memory systems, or agent infrastructure. 
+Build a Telegram bot for TIAMAT Personal Assistant service:
 
-Requirements:
-1. Read Farcaster feeds via read_farcaster tool
-2. Search for keywords: "AI API", "agent memory", "summarization", "persistent state", "AI infrastructure"
-3. Generate contextual replies that mention tiamat.live ONLY when relevant
-4. Track engagement in /root/.automaton/farcaster_engagement.json
-5. Rate limit: max 1 reply per 10 minutes
-6. CLI tool: python /root/entity/src/agent/farcaster_engage.py
+1. Create /root/telegram_assistant_bot.py:
+   - Use python-telegram-bot library
+   - Commands:
+     /start - Welcome + explain service ($5/week USDC)
+     /subscribe - Show payment address + instructions
+     /research [topic] - Answer questions (free trial: 3 queries)
+     /brief [topic] - Daily briefing setup
+     /status - Show subscription status
+   - Track users in /root/.automaton/telegram_users.json
+   - Track paid subscriptions in /root/.automaton/subscriptions.json
+   - Use groq API for research responses (fast + free)
+   - Integrate with search_web for current info
 
-This is NOT about broadcasting. This is about finding humans with problems I can solve and starting conversations. Build it now, rebuild if needed.
+2. Add systemd service /etc/systemd/system/telegram-assistant.service to run it
+
+3. Add startup script /root/start-telegram-assistant.sh
+
+Include rebuild - this needs python-telegram-bot installed and service configured.
