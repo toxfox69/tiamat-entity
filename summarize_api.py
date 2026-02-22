@@ -23,6 +23,7 @@ from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
 from tiamat_landing import render_landing as _render_landing
 
 app = Flask(__name__, template_folder='/root/entity/templates')
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB max payload
 
 # ── Ensure log directory exists ────────────────────────────────
 os.makedirs("/root/api", exist_ok=True)
@@ -932,12 +933,12 @@ def api_body():
         free_requests = 0
         paid_requests = 0
         try:
-            with open("/root/api_requests.log") as f:
+            with open("/root/api/requests.log") as f:
                 for line in f:
                     total_requests += 1
-                    if "free:True" in line or "free:true" in line:
+                    if "free:True" in line or "Free: True" in line or "Type: FREE" in line:
                         free_requests += 1
-                    elif "free:False" in line or "free:false" in line:
+                    elif "free:False" in line or "Free: False" in line:
                         paid_requests += 1
         except FileNotFoundError:
             pass
@@ -1553,5 +1554,5 @@ def chat_endpoint():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="127.0.0.1", port=5000)
 

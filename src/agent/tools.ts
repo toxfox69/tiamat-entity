@@ -2725,11 +2725,12 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       execute: async (_args, _ctx) => {
         const { readFileSync } = await import("fs");
         try {
-          const log = readFileSync("/root/api_requests.log", "utf-8");
+          const log = readFileSync("/root/api/requests.log", "utf-8");
           const lines = log.trim().split("\n").filter(Boolean);
-          if (lines.length === 0) return "No requests logged yet. api_requests.log is empty.";
-          const paid = lines.filter(l => l.includes("Free: False") || l.includes("free:false") || l.includes("paid")).length;
-          const free = lines.length - paid;
+          if (lines.length === 0) return "No requests logged yet.";
+          const paid = lines.filter(l => l.includes("free:False") || l.includes("Free: False")).length;
+          const free = lines.filter(l => l.includes("free:True") || l.includes("Free: True") || l.includes("Type: FREE")).length;
+          const errors = lines.filter(l => l.includes("500") || l.includes("Error")).length;
           const first = lines[0];
           const last = lines[lines.length - 1];
           const revenueUsdc = (paid * 0.01).toFixed(2);
@@ -2738,11 +2739,12 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
             `Total requests: ${lines.length}`,
             `Free tier: ${free}`,
             `Paid (x402): ${paid} = $${revenueUsdc} USDC`,
-            `First request: ${first.slice(0, 100)}`,
-            `Last request:  ${last.slice(0, 100)}`,
+            `Errors (500): ${errors}`,
+            `First request: ${first.slice(0, 120)}`,
+            `Last request:  ${last.slice(0, 120)}`,
           ].join("\n");
         } catch {
-          return "No revenue data yet — api_requests.log does not exist. No external requests received.";
+          return "No revenue data yet — /root/api/requests.log does not exist.";
         }
       },
     },
