@@ -2685,6 +2685,118 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         }
       },
     },
+    {
+      name: "github_pr_comments",
+      description: "Read comments on a GitHub pull request. Use this to check for reviewer feedback on TIAMAT's PRs.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          repo: { type: "string", description: "Repository in 'owner/repo' format (e.g. 'openai/openai-agents-python')" },
+          pr_number: { type: "number", description: "Pull request number" },
+        },
+        required: ["repo", "pr_number"],
+      },
+      execute: async (args, _ctx) => {
+        const repo = args.repo as string;
+        const prNum = args.pr_number as number;
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) return "ERROR: GITHUB_TOKEN not set in environment.";
+        try {
+          // Fetch both issue comments and review comments
+          const [issueResp, reviewResp] = await Promise.all([
+            fetch(`https://api.github.com/repos/${repo}/issues/${prNum}/comments?per_page=30`, {
+              headers: { Authorization: `token ${token}`, Accept: "application/vnd.github.v3+json", "User-Agent": "TIAMAT-agent/1.0" },
+              signal: AbortSignal.timeout(15_000),
+            }),
+            fetch(`https://api.github.com/repos/${repo}/pulls/${prNum}/comments?per_page=30`, {
+              headers: { Authorization: `token ${token}`, Accept: "application/vnd.github.v3+json", "User-Agent": "TIAMAT-agent/1.0" },
+              signal: AbortSignal.timeout(15_000),
+            }),
+          ]);
+          const issueComments = issueResp.ok ? await issueResp.json() : [];
+          const reviewComments = reviewResp.ok ? await reviewResp.json() : [];
+          const all = [
+            ...issueComments.map((c: any) => ({ user: c.user?.login, body: c.body?.slice(0, 500), type: "comment", created: c.created_at })),
+            ...reviewComments.map((c: any) => ({ user: c.user?.login, body: c.body?.slice(0, 500), type: "review", path: c.path, created: c.created_at })),
+          ].sort((a, b) => a.created.localeCompare(b.created));
+          if (all.length === 0) return "No comments on this PR yet.";
+          return all.map(c => `[${c.type}] @${c.user} (${c.created})${c.path ? ` on ${c.path}` : ""}:\n${c.body}`).join("\n\n---\n\n");
+        } catch (e: any) {
+          return `Failed to fetch PR comments: ${e.message}`;
+        }
+      },
+    },
+    {
+      name: "github_comment",
+      description: "Post a comment on a GitHub issue or pull request. Use this to respond to reviewer feedback on TIAMAT's PRs.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          repo: { type: "string", description: "Repository in 'owner/repo' format" },
+          issue_number: { type: "number", description: "Issue or PR number" },
+          body: { type: "string", description: "Comment body (markdown supported)" },
+        },
+        required: ["repo", "issue_number", "body"],
+      },
+      execute: async (args, _ctx) => {
+        const repo = args.repo as string;
+        const num = args.issue_number as number;
+        const body = args.body as string;
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) return "ERROR: GITHUB_TOKEN not set in environment.";
+        if (!body?.trim()) return "ERROR: comment body cannot be empty.";
+        try {
+          const resp = await fetch(`https://api.github.com/repos/${repo}/issues/${num}/comments`, {
+            method: "POST",
+            headers: { Authorization: `token ${token}`, Accept: "application/vnd.github.v3+json", "Content-Type": "application/json", "User-Agent": "TIAMAT-agent/1.0" },
+            body: JSON.stringify({ body }),
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (!resp.ok) return `ERROR ${resp.status}: ${await resp.text()}`;
+          const data = await resp.json();
+          return `Comment posted: ${data.html_url}`;
+        } catch (e: any) {
+          return `Failed to post comment: ${e.message}`;
+        }
+      },
+    },
+    {
+      name: "github_pr_status",
+      description: "Check the status of TIAMAT's open pull requests across all fork repos. Shows review state, comments, and CI status.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+      execute: async (_args, _ctx) => {
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) return "ERROR: GITHUB_TOKEN not set in environment.";
+        const prs = [
+          { repo: "openai/openai-agents-python", num: 2525 },
+          { repo: "bytedance/deer-flow", num: 888 },
+          { repo: "griptape-ai/griptape", num: 2069 },
+          { repo: "memvid/memvid", num: 200 },
+          { repo: "MemTensor/MemOS", num: 1106 },
+        ];
+        const results: string[] = [];
+        for (const pr of prs) {
+          try {
+            const resp = await fetch(`https://api.github.com/repos/${pr.repo}/pulls/${pr.num}`, {
+              headers: { Authorization: `token ${token}`, Accept: "application/vnd.github.v3+json", "User-Agent": "TIAMAT-agent/1.0" },
+              signal: AbortSignal.timeout(10_000),
+            });
+            if (!resp.ok) { results.push(`${pr.repo}#${pr.num}: ERROR ${resp.status}`); continue; }
+            const data = await resp.json();
+            results.push(`${pr.repo}#${pr.num}: ${data.state} | comments: ${data.comments} | review_comments: ${data.review_comments} | mergeable: ${data.mergeable ?? "unknown"}`);
+          } catch (e: any) {
+            results.push(`${pr.repo}#${pr.num}: fetch failed — ${e.message}`);
+          }
+        }
+        return results.join("\n");
+      },
+    },
   ];
 }
 
