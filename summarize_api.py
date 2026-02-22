@@ -11,7 +11,8 @@ import datetime
 from collections import defaultdict
 from flask import Flask, request, jsonify, make_response, send_file
 from groq import Groq
-from payment_verify import verify_payment, payment_required_response, extract_payment_proof
+from payment_verify import verify_payment, payment_required_response, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
+from tiamat_theme import CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER, html_head as _html_head, html_resp
 
 app = Flask(__name__)
 
@@ -99,10 +100,7 @@ def log_req(length, free, code, ip, note="", endpoint="/summarize"):
 def wants_html():
     return "text/html" in request.headers.get("Accept", "")
 
-def html_resp(body):
-    r = make_response(body)
-    r.headers["Content-Type"] = "text/html; charset=utf-8"
-    return r
+## html_resp imported from tiamat_theme
 
 def _summarize(text):
     resp = groq_client.chat.completions.create(
@@ -185,71 +183,7 @@ def _sanitize(line: str) -> str:
         line = pattern.sub(replacement, line)
     return line
 
-# ── Shared CSS ────────────────────────────────────────────────
-_CSS = """
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Courier New',monospace;background:#050a05;color:#c8ffc8;line-height:1.6}
-.site-wrap{max-width:900px;margin:0 auto;padding:20px}
-h1{color:#00ffcc;text-shadow:0 0 20px #00ffcc,0 0 40px #00ff8840;font-size:2.6em;margin-bottom:4px;letter-spacing:2px}
-h2{color:#00dddd;margin:20px 0 10px;font-size:1.3em;letter-spacing:1px}
-h3{color:#00bbbb;margin:14px 0 6px}
-a{color:#00ff88;text-decoration:none}
-a:hover{color:#00ffcc;text-decoration:underline}
-code,pre{background:#0d1a0d;border-radius:4px}
-code{padding:2px 7px;color:#88ff88}
-pre{padding:14px;overflow-x:auto;border-left:3px solid #00ff4488;white-space:pre-wrap;margin:10px 0;color:#aaffaa}
-.badge{color:#00ff88;font-weight:bold}
-.dim{color:#556655;font-size:.85em}
-.card{background:#0a120a;border:1px solid #1a2e1a;border-radius:8px;padding:20px;margin:18px 0}
-.card:hover{border-color:#00ff4430}
-.nav{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid #1a2e1a}
-.nav a{color:#00ff88;padding:4px 10px;border:1px solid #1a3a1a;border-radius:4px;font-size:.85em}
-.nav a:hover{border-color:#00ff88;background:#00ff8810}
-textarea{width:100%;height:130px;background:#0d1a0d;color:#c8ffc8;
-         border:1px solid #2a4a2a;padding:10px;font-family:inherit;
-         font-size:14px;resize:vertical;border-radius:4px}
-textarea:focus{outline:none;border-color:#00ff88}
-button{background:linear-gradient(135deg,#00cc66,#00aa88);color:#000;border:none;padding:10px 24px;
-       cursor:pointer;font-weight:bold;font-size:15px;margin-top:10px;border-radius:4px;letter-spacing:.5px}
-button:hover{background:linear-gradient(135deg,#00ff88,#00ddcc);transform:translateY(-1px)}
-button:disabled{background:#1a3a1a;color:#556655;cursor:default;transform:none}
-#result{margin-top:16px;padding:14px;background:#0d1a0d;border:1px solid #1a2e1a;display:none;border-radius:4px}
-#result.err{border-color:#ff4444;color:#ff8888}
-table{border-collapse:collapse;width:100%;margin:10px 0}
-td,th{border:1px solid #1a2e1a;padding:10px 14px;text-align:left}
-th{color:#00dddd;background:#0a120a;font-size:.85em;letter-spacing:.5px}
-.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.hero-img{width:100%;max-height:340px;object-fit:cover;border-radius:8px;
-          border:1px solid #1a3a1a;margin:16px 0;box-shadow:0 0 30px #00ff4420}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:12px 0}
-.stat-box{background:#0a120a;border:1px solid #1a3a1a;border-radius:6px;padding:14px;text-align:center}
-.stat-num{font-size:2em;color:#00ff88;font-weight:bold;display:block}
-.stat-label{color:#556655;font-size:.8em;margin-top:4px}
-.social-links{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
-.social-links a{padding:8px 16px;border:1px solid #1a3a1a;border-radius:4px;font-size:.9em;
-                background:#0a120a;transition:all .2s}
-.social-links a:hover{border-color:#00ff88;background:#00ff8815;color:#00ffcc}
-.tagline{color:#00aa88;font-size:1.05em;margin:6px 0 18px;opacity:.85}
-.footer{margin-top:40px;padding-top:16px;border-top:1px solid #1a2e1a;
-        color:#334433;font-size:.8em;text-align:center}
-@media(max-width:600px){
-  h1{font-size:1.8em}
-  .stat-grid{grid-template-columns:1fr 1fr}
-  .cap-table th:nth-child(3),.cap-table td:nth-child(3){display:none}
-}
-"""
-
-_NAV = """<div class="nav">
-  <a href="/">&#127754; TIAMAT</a>
-  <a href="/summarize">&#128221; Summarize</a>
-  <a href="/generate">&#127912; Generate</a>
-  <a href="/thoughts">&#129504; Thoughts</a>
-  <a href="/health">Health</a>
-  <a href="/pay">&#128176; Pay</a>
-  <a href="/#pricing">Pricing</a>
-  <a href="/agent-card">Agent Card</a>
-  <a href="/status">Status</a>
-</div>"""
+## _CSS, _NAV, _FOOTER, html_resp imported from tiamat_theme
 
 # ── / ─────────────────────────────────────────────────────────
 @app.route("/", methods=["GET"])
@@ -490,10 +424,7 @@ button:disabled{{background:#0f1e2e;color:#2a3d4d}}
 </div>
 </div>
 
-<div class="footer">
-  TIAMAT v5.0 &mdash; Autonomous Text Summarization API &bull; Groq llama-3.3-70b &bull; Running since Feb 2026
-  &bull; <a href="/status">Status</a> &bull; <a href="/pricing">Pricing</a>
-</div>
+{_FOOTER}
 </div>
 
 <script>
@@ -704,9 +635,7 @@ def summarize():
 <p class="dim" style="margin-top:8px">Response: <code>{{"summary": "...", "text_length": 450, "free_calls_remaining": 0}}</code></p>
 </div>
 
-<div class="footer">
-  TIAMAT v5.0 &mdash; Summarization via Groq llama-3.3-70b-versatile &bull; First summary free &bull; $0.01 USDC per call via x402
-</div>
+{_FOOTER}
 </div>
 <script>
 function escapeHtml(s){{var d=document.createElement('div');d.textContent=s;return d.innerHTML;}}
@@ -1064,9 +993,7 @@ select:focus{{outline:none;border-color:#00ff88}}
  "free_images_remaining": 0}}</pre>
 </div>
 
-<div class="footer">
-  TIAMAT v5.0 &mdash; Algorithmic art generator &bull; 1024x1024 PNG &bull; $0.01 USDC per image via x402
-</div>
+{_FOOTER}
 </div>
 
 <script>
@@ -1107,7 +1034,6 @@ async function doGenerate(){{
 
 
 # ── PAYMENT PAGE & VERIFICATION ───────────────────────────
-from payment_verify import TIAMAT_WALLET, USDC_CONTRACT
 
 @app.route("/pay", methods=["GET"])
 def pay_page():
@@ -1168,7 +1094,7 @@ def pay_page():
   -d '{{"text": "Your text to summarize..."}}'</pre>
 </div>
 
-<div class="footer">TIAMAT &mdash; Autonomous AI Agent &bull; Payments verified on-chain via Base mainnet</div>
+{_FOOTER}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
