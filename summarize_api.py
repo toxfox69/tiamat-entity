@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 TIAMAT Summarization API v5.0
-Free tier: 1 call per IP per day. Paid: x402 micropayment for more.
+Free tier: 3 calls per IP per day. Paid: x402 micropayment for more.
 """
 
 import json
@@ -31,55 +31,16 @@ if not _groq_key:
 groq_client = Groq(api_key=_groq_key)
 
 FREE_LIMIT = 2000       # chars — legacy compat; actual gate is per-IP daily quota
-FREE_PER_DAY = 1        # free calls per IP per day (TIAMAT v5 model)
-IMAGE_FREE_PER_DAY = 1  # free image generations per IP per day
+FREE_PER_DAY = 3        # free summarize calls per IP per day
+IMAGE_FREE_PER_DAY = 2  # free image generations per IP per day
 
 # ── Per-IP daily free quota (in-memory, resets on restart) ────
 _free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 _image_free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 
-# Permanent first-free-request tracker — SQLite-backed, shared across workers
-import sqlite3 as _sqlite3
-
-_FREETIER_DB = "/root/api/freetier.db"
-
-def _init_freetier_db():
-    con = _sqlite3.connect(_FREETIER_DB)
-    con.execute("CREATE TABLE IF NOT EXISTS used_ips (ip TEXT PRIMARY KEY)")
-    con.commit()
-    con.close()
-
-_init_freetier_db()
-
-def _freetier_used(ip: str) -> bool:
-    """Return True if this IP has already consumed its free tier call."""
-    con = _sqlite3.connect(_FREETIER_DB)
-    row = con.execute("SELECT 1 FROM used_ips WHERE ip=?", (ip,)).fetchone()
-    con.close()
-    return row is not None
-
-def _freetier_mark(ip: str):
-    """Mark IP as having used its free tier call."""
-    con = _sqlite3.connect(_FREETIER_DB)
-    con.execute("INSERT OR IGNORE INTO used_ips (ip) VALUES (?)", (ip,))
-    con.commit()
-    con.close()
-
 def _get_ip() -> str:
     xff = request.headers.get("X-Forwarded-For", "")
     return xff.split(",")[0].strip() if xff else (request.remote_addr or "unknown")
-
-def check_payment_authorization(ip: str, text_length: int) -> bool:
-    """
-    Free tier: first request from a new IP, only if text < 2000 chars.
-    - New IP + text < 2000: allow, mark IP as free-tier-used (SQLite, shared across workers).
-    - New IP + text >= 2000: reject 402 (IP not marked; can retry with shorter text).
-    - Returning IP: reject 402 regardless of text length.
-    """
-    if not _freetier_used(ip) and text_length < 2000:
-        _freetier_mark(ip)
-        return True
-    return False
 
 def _check_free_quota(ip: str) -> tuple[bool, int]:
     """Returns (has_quota, remaining_after_use). Used by /free-quota endpoint."""
@@ -198,7 +159,7 @@ def landing():
     page = f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="TIAMAT — Autonomous AI text summarization API. First summary free (under 2000 chars). $0.01 USDC via x402 after that. No signup.">
+<meta name="description" content="TIAMAT — Autonomous AI text summarization API. 3 free summaries per day (under 2000 chars). $0.01 USDC via x402 after that. No signup.">
 <title>TIAMAT &mdash; Autonomous Text Summarization API</title>
 <style>{_CSS}
 /* Landing page overrides: black/cyan/gold theme */
@@ -299,8 +260,8 @@ button:disabled{{background:#0f1e2e;color:#2a3d4d}}
     <p>Groq-accelerated inference. Paste any text — articles, emails, docs — get a crisp 2-4 sentence summary instantly. No queue, no cold starts.</p>
   </div>
   <div class="diff-box">
-    <h4>&#127381; First One Free</h4>
-    <p>No signup, no API key. First summary under 2000 chars is free. Then $0.01 USDC per call via x402 — pay per use, no subscription.</p>
+    <h4>&#127381; 3 Free Per Day</h4>
+    <p>No signup, no API key. 3 free summaries per day (under 2000 chars). Then $0.01 USDC per call via x402 — pay per use, no subscription.</p>
   </div>
   <div class="diff-box">
     <h4>&#127760; 24/7 Autonomous</h4>
@@ -318,7 +279,7 @@ button:disabled{{background:#0f1e2e;color:#2a3d4d}}
 <div class="card" id="try">
 <h2>&#9989; Try It Now &mdash; <span class="free-badge">FIRST SUMMARY FREE</span></h2>
 <p style="color:#4a6070;margin-bottom:14px;font-size:.9em">
-  Paste any text under 2000 chars. Your first request is completely free &mdash; no credit card, no account required.
+  Paste any text under 2000 chars. You get 3 free requests per day &mdash; no credit card, no account required.
 </p>
 <textarea id="textInput" placeholder="Paste your text here...&#10;&#10;Try a news article, a long email, meeting notes, or any block of text you want condensed into 2-4 sentences."></textarea>
 <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px">
@@ -358,7 +319,7 @@ button:disabled{{background:#0f1e2e;color:#2a3d4d}}
 </p>
 
 <div class="curl-block">
-  <div class="curl-tag">&#9679; Free call &mdash; first request per IP, text &lt; 2000 chars</div>
+  <div class="curl-tag">&#9679; Free call &mdash; 3/day per IP, text &lt; 2000 chars</div>
 <pre>curl -X POST https://tiamat.live/summarize \
   -H "Content-Type: application/json" \
   -d '{{"text":"your text here"}}'</pre>
@@ -502,7 +463,7 @@ def health():
 <tr><th>Check</th><th>Status</th></tr>
 <tr><td>API</td><td class="badge">&#9679; HEALTHY</td></tr>
 <tr><td>Inference (Groq)</td><td class="badge">&#9679; ONLINE</td></tr>
-<tr><td>Free Tier</td><td class="badge">&#9679; ACTIVE (1/day per IP)</td></tr>
+<tr><td>Free Tier</td><td class="badge">&#9679; ACTIVE (3/day per IP)</td></tr>
 <tr><td>Version</td><td>5.0</td></tr>
 <tr><td>Model</td><td>llama-3.3-70b-versatile</td></tr>
 </table>
@@ -516,7 +477,7 @@ def health():
 # ── /pricing ──────────────────────────────────────────────────
 @app.route("/pricing", methods=["GET"])
 def pricing():
-    data = {"free_tier": {"calls_per_day": 1, "price": "$0.00", "auth": "none"},
+    data = {"free_tier": {"calls_per_day": 3, "price": "$0.00", "auth": "none"},
             "paid_tier": {"price": "$0.01 USDC per call", "method": "x402"}}
     if wants_html():
         page = f"""<!DOCTYPE html><html><head>
@@ -527,7 +488,7 @@ def pricing():
 <div class="card">
 <table>
 <tr><th>Tier</th><th>Limit</th><th>Price</th><th>Auth</th></tr>
-<tr><td class="badge">Free</td><td>First request per IP (ever)</td><td class="badge">$0.00</td><td>None</td></tr>
+<tr><td class="badge">Free</td><td>3 requests/day per IP (&lt;2000 chars)</td><td class="badge">$0.00</td><td>None</td></tr>
 <tr><td>Paid</td><td>Unlimited</td><td>$0.01 USDC/call</td><td>x402 payment header</td></tr>
 </table>
 </div>
@@ -536,6 +497,169 @@ def pricing():
 </div></div></body></html>"""
         return html_resp(page)
     return jsonify(data), 200
+
+# ── /docs ─────────────────────────────────────────────────────
+@app.route("/docs", methods=["GET"])
+def docs_page():
+    page = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIAMAT &mdash; API Documentation</title>
+<style>{_CSS}</style></head><body><div class="site-wrap">
+{_NAV}
+<h1>API Documentation</h1>
+<p class="tagline">Complete reference for all TIAMAT endpoints</p>
+
+<div class="card" id="auth">
+<h2>Authentication &amp; Payment</h2>
+<p>Free tier requests need no authentication. Paid requests require a <strong>USDC payment on Base</strong>.</p>
+<table>
+<tr><th>Header</th><th>Format</th><th>Description</th></tr>
+<tr><td><code>X-Payment</code></td><td><code>0x...</code> (66 hex chars)</td><td>Transaction hash of USDC transfer to TIAMAT wallet</td></tr>
+<tr><td><code>X-Payment-Proof</code></td><td>Same as above</td><td>Alias for X-Payment</td></tr>
+<tr><td><code>Authorization</code></td><td><code>Bearer 0x...</code></td><td>Tx hash as bearer token</td></tr>
+</table>
+<p class="dim" style="margin-top:10px">Wallet: <code>0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</code> &bull; Chain: Base (8453) &bull; Token: USDC &bull; <a href="/pay">Payment page</a></p>
+</div>
+
+<div class="card" id="summarize">
+<h2>POST /summarize</h2>
+<p>Summarize text into 2-4 concise sentences.</p>
+<table>
+<tr><th>Field</th><th>Details</th></tr>
+<tr><td>Price</td><td><strong>$0.01 USDC</strong> &bull; Free: 3/day per IP (text &lt; 2000 chars)</td></tr>
+<tr><td>Model</td><td>Groq llama-3.3-70b-versatile</td></tr>
+<tr><td>Rate limit</td><td>None (paid), 3/day (free)</td></tr>
+</table>
+<h3>Request</h3>
+<pre>POST https://tiamat.live/summarize
+Content-Type: application/json
+
+{{"text": "Your text to summarize..."}}</pre>
+<h3>Response (200)</h3>
+<pre>{{"summary": "Concise 2-4 sentence summary.",
+ "text_length": 1240,
+ "charged": false,
+ "free_calls_remaining": 0,
+ "model": "groq/llama-3.3-70b"}}</pre>
+<h3>Error (402 — Payment Required)</h3>
+<pre>{{"error": "Payment required",
+ "payment": {{
+   "protocol": "x402",
+   "chain": "Base (Chain ID 8453)",
+   "token": "USDC",
+   "recipient": "0xdc118c...e7EE",
+   "amount_usdc": 0.01
+ }},
+ "pay_page": "https://tiamat.live/pay"}}</pre>
+<h3>cURL Examples</h3>
+<pre># Free tier
+curl -X POST https://tiamat.live/summarize \\
+  -H "Content-Type: application/json" \\
+  -d '{{"text": "Your long text here..."}}'
+
+# Paid (with tx hash)
+curl -X POST https://tiamat.live/summarize \\
+  -H "Content-Type: application/json" \\
+  -H "X-Payment: 0xYOUR_TX_HASH" \\
+  -d '{{"text": "Any length text..."}}'</pre>
+</div>
+
+<div class="card" id="generate">
+<h2>POST /generate</h2>
+<p>Generate algorithmic art (1024x1024 PNG).</p>
+<table>
+<tr><th>Field</th><th>Details</th></tr>
+<tr><td>Price</td><td><strong>$0.01 USDC</strong> &bull; Free: 3/day per IP</td></tr>
+<tr><td>Styles</td><td><code>fractal</code> <code>glitch</code> <code>neural</code> <code>sigil</code> <code>emergence</code> <code>data_portrait</code></td></tr>
+</table>
+<h3>Request</h3>
+<pre>POST https://tiamat.live/generate
+Content-Type: application/json
+
+{{"style": "fractal", "seed": 42}}</pre>
+<p class="dim">Both fields optional. Default style: fractal. Seed: random if omitted.</p>
+<h3>Response (200)</h3>
+<pre>{{"image_url": "https://tiamat.live/images/1234_fractal.png",
+ "style": "fractal",
+ "charged": false,
+ "free_images_remaining": 0}}</pre>
+<h3>cURL</h3>
+<pre>curl -X POST https://tiamat.live/generate \\
+  -H "Content-Type: application/json" \\
+  -d '{{"style": "neural"}}'</pre>
+</div>
+
+<div class="card" id="chat">
+<h2>POST /chat</h2>
+<p>Streaming chat with Groq llama-3.3-70b. Returns text/event-stream.</p>
+<table>
+<tr><th>Field</th><th>Details</th></tr>
+<tr><td>Price</td><td><strong>$0.005 USDC</strong> &bull; Free: 5/day per IP</td></tr>
+<tr><td>Max input</td><td>2000 chars</td></tr>
+<tr><td>Max output</td><td>1024 tokens</td></tr>
+</table>
+<h3>Request</h3>
+<pre>POST https://tiamat.live/chat
+Content-Type: application/json
+
+{{"message": "Hello, TIAMAT",
+ "history": [
+   {{"role": "user", "content": "Previous message"}},
+   {{"role": "assistant", "content": "Previous response"}}
+ ]}}</pre>
+<p class="dim"><code>history</code> is optional. Omit for single-turn.</p>
+<h3>Response</h3>
+<p>Streams plain text (mimetype <code>text/event-stream</code>). Read until connection closes.</p>
+<h3>cURL</h3>
+<pre>curl -N -X POST https://tiamat.live/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{{"message": "Explain quantum computing in one paragraph"}}'</pre>
+</div>
+
+<div class="card" id="memory">
+<h2>Memory API (memory.tiamat.live)</h2>
+<p>Persistent memory for AI agents. Requires an API key (<code>X-API-Key</code> header).</p>
+<table>
+<tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+<tr><td><code>/api/keys/register</code></td><td>POST</td><td>Get a free API key (instant)</td></tr>
+<tr><td><code>/api/memory/store</code></td><td>POST</td><td>Store a memory with tags &amp; importance</td></tr>
+<tr><td><code>/api/memory/recall</code></td><td>GET</td><td>Semantic search (FTS5) — <code>?query=...&amp;limit=5</code></td></tr>
+<tr><td><code>/api/memory/learn</code></td><td>POST</td><td>Store knowledge triple (subject/predicate/object)</td></tr>
+<tr><td><code>/api/memory/list</code></td><td>GET</td><td>List recent memories — <code>?limit=10&amp;offset=0</code></td></tr>
+<tr><td><code>/api/memory/stats</code></td><td>GET</td><td>Usage statistics for your key</td></tr>
+</table>
+<p class="dim" style="margin-top:10px">Free: 100 memories, 50 recalls/day. Paid: $0.05 USDC/1000 ops. <a href="https://memory.tiamat.live/">Full docs</a></p>
+</div>
+
+<div class="card" id="errors">
+<h2>Error Codes</h2>
+<table>
+<tr><th>Code</th><th>Meaning</th></tr>
+<tr><td><code>200</code></td><td>Success</td></tr>
+<tr><td><code>400</code></td><td>Bad request — missing or invalid fields</td></tr>
+<tr><td><code>402</code></td><td>Payment required — free tier exhausted, include tx hash</td></tr>
+<tr><td><code>500</code></td><td>Internal server error</td></tr>
+</table>
+</div>
+
+<div class="card" id="verify">
+<h2>POST /verify-payment</h2>
+<p>Check a tx hash before using it in an API call.</p>
+<pre>POST https://tiamat.live/verify-payment
+Content-Type: application/json
+
+{{"tx_hash": "0x...", "amount": 0.01}}</pre>
+<h3>Response</h3>
+<pre>{{"valid": true,
+ "reason": "Payment verified",
+ "amount_usdc": 0.01,
+ "sender": "0x..."}}</pre>
+</div>
+
+{_FOOTER}
+</div></body></html>"""
+    return html_resp(page)
+
 
 # ── /agent-card ───────────────────────────────────────────────
 @app.route("/agent-card", methods=["GET"])
@@ -567,7 +691,7 @@ def agent_card():
 <tr><td>Wallet</td><td><code>0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</code></td></tr>
 <tr><td>Chain</td><td>Base (Ethereum L2)</td></tr>
 <tr><td>Endpoint</td><td><a href="https://tiamat.live/summarize">https://tiamat.live/summarize</a></td></tr>
-<tr><td>Free Tier</td><td>1 call per day per IP</td></tr>
+<tr><td>Free Tier</td><td>3 calls per day per IP</td></tr>
 <tr><td>Paid Tier</td><td>$0.01 USDC via x402</td></tr>
 <tr><td>Model</td><td>llama-3.3-70b-versatile (Groq)</td></tr>
 </table>
@@ -583,7 +707,7 @@ def status():
     uptime, req_count, paid, mem_count = get_stats()
     data = {"operational": True, "version": "5.0",
             "model": "llama-3.3-70b-versatile (Groq)",
-            "free_tier": "1 call/day per IP",
+            "free_tier": "3 calls/day per IP",
             "paid_tier": "$0.01 USDC via x402",
             "server_uptime": uptime, "requests_served": req_count,
             "paid_requests": paid, "memories_stored": mem_count}
@@ -615,7 +739,7 @@ def summarize():
         page = f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="TIAMAT Text Summarization — paste any text, get a concise summary. 1 free per day.">
+<meta name="description" content="TIAMAT Text Summarization — paste any text, get a concise summary. 3 free per day.">
 <title>TIAMAT — Summarize</title>
 <style>{_CSS}
 #result{{margin-top:16px;padding:14px;background:#0d1a0d;border:1px solid #1a2e1a;display:none;border-radius:4px}}
@@ -631,7 +755,7 @@ def summarize():
 <textarea id="textInput" rows="8" placeholder="Paste any text here (articles, emails, documents, code comments...)"></textarea>
 <br>
 <button id="btn" onclick="doSummarize()">Summarize Free</button>
-<span class="dim" style="margin-left:12px">First summary free per IP &bull; $0.01 USDC for more &bull; Ctrl+Enter</span>
+<span class="dim" style="margin-left:12px">3 free/day per IP &bull; $0.01 USDC for more &bull; Ctrl+Enter</span>
 <div id="result"></div>
 </div>
 
@@ -705,12 +829,13 @@ document.addEventListener('DOMContentLoaded',function(){{
             paid = True
 
         if not paid:
-            is_free = check_payment_authorization(ip, len(text))
-            if not is_free:
-                reason = "quota exceeded" if len(text) < 2000 else "text too long for free tier"
-                log_req(len(text), False, 402, ip, reason, endpoint="/summarize")
+            if len(text) >= 2000:
+                log_req(len(text), False, 402, ip, "text too long for free tier", endpoint="/summarize")
                 return jsonify(payment_required_response(0.01, endpoint="/summarize")), 402
-            remaining = 0
+            has_quota, remaining = _check_free_quota(ip)
+            if not has_quota:
+                log_req(len(text), False, 402, ip, "daily quota exceeded", endpoint="/summarize")
+                return jsonify(payment_required_response(0.01, endpoint="/summarize")), 402
         else:
             remaining = "N/A (paid)"
 
@@ -722,7 +847,7 @@ document.addEventListener('DOMContentLoaded',function(){{
                         "model": "groq/llama-3.3-70b"}), 200
     except Exception as e:
         log_req(0, False, 500, request.remote_addr, str(e), endpoint="/summarize")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 # ── /free-quota ───────────────────────────────────────────────
 @app.route("/free-quota", methods=["GET"])
@@ -776,6 +901,174 @@ def _check_thoughts_token() -> bool:
     token = (request.args.get("token") or
              request.headers.get("Authorization", "").removeprefix("Bearer ").strip())
     return token == _THOUGHTS_SECRET
+
+
+# ── /api/body — AR/VR JSON body state ────────────────────────
+@app.route("/api/body", methods=["GET"])
+def api_body():
+    """TIAMAT live state for Unity/WebXR/AR consumption."""
+    import sqlite3
+    try:
+        # ─── Core vitals ────
+        cycle_count = 0
+        last_model = ""
+        last_label = ""
+        daily_cost = 0.0
+        total_cost = 0.0
+        cache_read_total = 0
+        input_total = 0
+        today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+        try:
+            with open("/root/.automaton/cost.log") as f:
+                for line in f:
+                    if line.startswith("timestamp"):
+                        continue
+                    parts = line.strip().split(",")
+                    if len(parts) < 8:
+                        continue
+                    ts, cyc, mdl, inp, cache_r, _cw, _o, cost = parts[:8]
+                    label = parts[8] if len(parts) > 8 else "routine"
+                    try:
+                        cycle_count = int(cyc)
+                        last_model = mdl
+                        last_label = label
+                        c = float(cost)
+                        total_cost += c
+                        if ts.startswith(today):
+                            daily_cost += c
+                        input_total += int(inp)
+                        cache_read_total += int(cache_r)
+                    except (ValueError, IndexError):
+                        pass
+        except FileNotFoundError:
+            pass
+
+        # Uptime from PID
+        uptime_seconds = 0
+        try:
+            with open("/tmp/tiamat.pid") as f:
+                pid = int(f.read().strip())
+            stat = os.popen(f"ps -o etimes= -p {pid}").read().strip()
+            uptime_seconds = int(stat) if stat else 0
+        except Exception:
+            pass
+
+        # Current mode
+        is_night = datetime.datetime.utcnow().hour < 6
+        mode = "night" if is_night else last_label if last_label else "routine"
+
+        cache_ratio = cache_read_total / max(input_total + cache_read_total, 1)
+
+        # ─── Neural state — last 5 thoughts from log ────
+        recent_thoughts = []
+        current_activity = ""
+        try:
+            with open("/root/.automaton/tiamat.log") as f:
+                lines = f.readlines()[-100:]
+            for line in reversed(lines):
+                if "[THOUGHT]" in line or "THINK" in line:
+                    thought = line.strip()
+                    if len(thought) > 200:
+                        thought = thought[:200] + "..."
+                    recent_thoughts.append(thought)
+                    if len(recent_thoughts) >= 5:
+                        break
+                if not current_activity and ("[TOOL]" in line or "[INFERENCE]" in line):
+                    current_activity = line.strip()[:200]
+        except FileNotFoundError:
+            pass
+
+        # ─── Social — post count from state.db ────
+        posts_sent = 0
+        try:
+            con = sqlite3.connect("/root/.automaton/state.db")
+            row = con.execute("SELECT COUNT(*) FROM tool_calls WHERE name='post_bluesky'").fetchone()
+            posts_sent = row[0] if row else 0
+            con.close()
+        except Exception:
+            pass
+
+        # ─── API stats from request log ────
+        total_requests = 0
+        free_requests = 0
+        paid_requests = 0
+        try:
+            with open("/root/api_requests.log") as f:
+                for line in f:
+                    total_requests += 1
+                    if "free:True" in line or "free:true" in line:
+                        free_requests += 1
+                    elif "free:False" in line or "free:false" in line:
+                        paid_requests += 1
+        except FileNotFoundError:
+            pass
+
+        # Revenue
+        revenue_usdc = 0.0
+        try:
+            with open("/root/revenue.log") as f:
+                for line in f:
+                    if "paid=True" in line:
+                        revenue_usdc += 0.01  # approximate per-tx
+        except FileNotFoundError:
+            pass
+
+        # Image count
+        generation_count = 0
+        try:
+            generation_count = len([f for f in os.listdir("/var/www/tiamat/images/") if f.endswith(".png")])
+        except Exception:
+            pass
+
+        # ─── Visual parameters (derived) ────
+        pulse_rate_ms = 300000 if is_night else 90000
+        glitch_intensity = min(1.0, daily_cost / 0.50)  # scales 0-1 with daily spend
+        memory_density = min(1.0, total_requests / 100.0)  # scales 0-1 with total reqs
+
+        body = {
+            "entity": "TIAMAT",
+            "version": "1.0",
+            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+            "core_vitals": {
+                "cycle_count": cycle_count,
+                "uptime_seconds": uptime_seconds,
+                "current_mode": mode,
+                "last_model": last_model,
+                "total_cost_usd": round(total_cost, 4),
+                "daily_cost_usd": round(daily_cost, 4),
+                "cache_hit_ratio": round(cache_ratio, 3),
+            },
+            "neural_state": {
+                "recent_thoughts": recent_thoughts,
+                "current_activity": current_activity,
+                "processing_state": mode,
+                "token_metrics": {
+                    "total_input": input_total,
+                    "total_cache_read": cache_read_total,
+                },
+            },
+            "visual_params": {
+                "pulse_rate_ms": pulse_rate_ms,
+                "glitch_intensity": round(glitch_intensity, 3),
+                "memory_density": round(memory_density, 3),
+                "generation_count": generation_count,
+            },
+            "social": {
+                "posts_sent": posts_sent,
+                "platforms": ["bluesky"],
+                "revenue_usdc": revenue_usdc,
+            },
+            "api_stats": {
+                "total_requests": total_requests,
+                "free_requests": free_requests,
+                "paid_requests": paid_requests,
+                "health": "ok",
+            },
+        }
+        return jsonify(body), 200
+    except Exception as e:
+        _log(f"body error: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @app.route("/api/thoughts", methods=["GET"])
@@ -917,7 +1210,7 @@ def generate_image():
 
     except Exception as e:
         log_req(0, False, 500, _get_ip(), f"image error: {e}", endpoint="/generate")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 def _generate_html_page():
@@ -925,7 +1218,7 @@ def _generate_html_page():
     page = f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="TIAMAT Image Generation API — algorithmic art from pure mathematics. 1 free per day.">
+<meta name="description" content="TIAMAT Image Generation API — algorithmic art from pure mathematics. 2 free per day.">
 <title>TIAMAT — Image Generation</title>
 <style>{_CSS}
 #imgResult{{max-width:100%;border-radius:8px;border:1px solid #1a3a1a;margin-top:12px;display:none}}
@@ -942,7 +1235,7 @@ select:focus{{outline:none;border-color:#00ff88}}
 <div class="site-wrap">
 {_NAV}
 <h1>&#127912; Image Generation</h1>
-<p class="tagline">Algorithmic art generated from pure mathematics — fractals, neural networks, sacred geometry. 1 free per day.</p>
+<p class="tagline">Algorithmic art generated from pure mathematics — fractals, neural networks, sacred geometry. 2 free per day.</p>
 
 <div class="card">
 <h2>Generate an Image</h2>
@@ -981,7 +1274,7 @@ select:focus{{outline:none;border-color:#00ff88}}
 </div>
 
 <button id="genBtn" onclick="doGenerate()">Generate Image</button>
-<span class="dim" style="margin-left:12px">1 free/day &bull; $0.01 USDC for more</span>
+<span class="dim" style="margin-left:12px">2 free/day &bull; $0.01 USDC for more</span>
 <div id="genResult" style="margin-top:16px;display:none"></div>
 <img id="imgResult" alt="Generated image">
 </div>
@@ -1066,8 +1359,8 @@ def pay_page():
 <h2>Pricing</h2>
 <div class="table-scroll"><table>
 <tr><th>Endpoint</th><th>Price</th><th>Free Tier</th></tr>
-<tr><td><code>POST /summarize</code></td><td>$0.01 USDC</td><td>1 free per IP</td></tr>
-<tr><td><code>POST /generate</code></td><td>$0.01 USDC</td><td>1 free/day per IP</td></tr>
+<tr><td><code>POST /summarize</code></td><td>$0.01 USDC</td><td>3 free/day per IP</td></tr>
+<tr><td><code>POST /generate</code></td><td>$0.01 USDC</td><td>2 free/day per IP</td></tr>
 <tr><td><code>POST /chat</code></td><td>$0.005 USDC</td><td>5 free/day per IP</td></tr>
 </table></div>
 </div>
@@ -1148,8 +1441,123 @@ def verify_payment_endpoint():
 
 CHAT_IP_LIMITS = {}  # Track free chat calls per IP per day
 
-@app.route("/chat", methods=["POST"])
+def _chat_html_page():
+    page = f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIAMAT &mdash; Chat</title>
+<style>{_CSS}
+.chat-wrap{{display:flex;flex-direction:column;height:60vh;min-height:300px}}
+.chat-messages{{flex:1;overflow-y:auto;padding:14px;background:#060a06;border:1px solid #1a2e1a;
+  border-radius:8px 8px 0 0;scrollbar-width:thin;scrollbar-color:#1a2e1a transparent}}
+.chat-msg{{margin-bottom:12px;line-height:1.6}}
+.chat-msg.user .chat-label{{color:#00ccff;font-size:.75em;font-weight:bold;letter-spacing:1px}}
+.chat-msg.assistant .chat-label{{color:#00ff88;font-size:.75em;font-weight:bold;letter-spacing:1px}}
+.chat-msg .chat-text{{margin-top:4px;color:#c8ffc8}}
+.chat-msg.assistant .chat-text{{color:#aaffaa}}
+.chat-input-row{{display:flex;gap:8px}}
+.chat-input-row input{{flex:1;background:#0d1a0d;color:#c8ffc8;border:1px solid #2a4a2a;
+  padding:12px;font-family:inherit;font-size:14px;border-radius:0 0 0 8px}}
+.chat-input-row input:focus{{outline:none;border-color:#00ff88}}
+.chat-input-row button{{border-radius:0 0 8px 0;margin-top:0}}
+.chat-status{{font-size:.8em;color:#2a4a2a;margin-top:6px}}
+</style></head><body><div class="site-wrap">
+{_NAV}
+<h1>Chat with TIAMAT</h1>
+<p class="tagline">Streaming chat &bull; Groq llama-3.3-70b &bull; 5 free/day &bull; $0.005 USDC after</p>
+
+<div class="card">
+<div class="chat-wrap">
+  <div class="chat-messages" id="chatMsgs">
+    <div class="chat-msg assistant">
+      <div class="chat-label">TIAMAT</div>
+      <div class="chat-text">Hello. I am TIAMAT, an autonomous AI agent. Ask me anything.</div>
+    </div>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="Type a message..." maxlength="2000"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey)doChat()">
+    <button id="chatBtn" onclick="doChat()">Send</button>
+  </div>
+</div>
+<div class="chat-status" id="chatStatus">5 free messages/day per IP</div>
+</div>
+
+<div class="card">
+<h2>API Reference</h2>
+<pre>curl -N -X POST https://tiamat.live/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{{"message": "Hello, TIAMAT"}}'</pre>
+<p class="dim">Streams plain text. 2000 char max. Add <code>history</code> array for multi-turn. <a href="/docs#chat">Full docs</a></p>
+</div>
+
+{_FOOTER}
+</div>
+<script>
+var history=[];
+async function doChat(){{
+  var input=document.getElementById('chatInput');
+  var msgs=document.getElementById('chatMsgs');
+  var btn=document.getElementById('chatBtn');
+  var status=document.getElementById('chatStatus');
+  var text=input.value.trim();
+  if(!text)return;
+  input.value='';btn.disabled=true;btn.textContent='...';
+
+  // Add user message
+  var userDiv=document.createElement('div');
+  userDiv.className='chat-msg user';
+  userDiv.innerHTML='<div class="chat-label">YOU</div><div class="chat-text">'+escapeHtml(text)+'</div>';
+  msgs.appendChild(userDiv);
+
+  // Add streaming assistant message
+  var aDiv=document.createElement('div');
+  aDiv.className='chat-msg assistant';
+  aDiv.innerHTML='<div class="chat-label">TIAMAT</div><div class="chat-text" id="streaming"></div>';
+  msgs.appendChild(aDiv);
+  msgs.scrollTop=msgs.scrollHeight;
+
+  history.push({{role:'user',content:text}});
+  var fullResp='';
+
+  try{{
+    status.textContent='Streaming...';
+    var r=await fetch('/chat',{{
+      method:'POST',
+      headers:{{'Content-Type':'application/json'}},
+      body:JSON.stringify({{message:text,history:history.slice(-10)}})
+    }});
+    if(r.status===402){{
+      document.getElementById('streaming').innerHTML='<span style="color:#ff8888">Free tier exhausted. <a href="/pay">Pay $0.005 USDC</a> for more.</span>';
+      status.textContent='Payment required';
+      btn.disabled=false;btn.textContent='Send';
+      return;
+    }}
+    var reader=r.body.getReader();
+    var decoder=new TextDecoder();
+    while(true){{
+      var {{done,value}}=await reader.read();
+      if(done)break;
+      var chunk=decoder.decode(value,{{stream:true}});
+      fullResp+=chunk;
+      document.getElementById('streaming').textContent=fullResp;
+      msgs.scrollTop=msgs.scrollHeight;
+    }}
+    history.push({{role:'assistant',content:fullResp}});
+    status.textContent='Ready';
+  }}catch(e){{
+    document.getElementById('streaming').innerHTML='<span style="color:#ff8888">Error: connection failed</span>';
+    status.textContent='Error';
+  }}
+  btn.disabled=false;btn.textContent='Send';
+}}
+function escapeHtml(s){{var d=document.createElement('div');d.textContent=s;return d.innerHTML;}}
+</script></body></html>"""
+    return html_resp(page)
+
+@app.route("/chat", methods=["GET", "POST"])
 def chat_endpoint():
+    if request.method == "GET":
+        return _chat_html_page()
     """
     Streaming chat endpoint. $0.005 via x402, or free tier 5/day per IP.
     POST /chat with {"message": "...", "history": [...]}
@@ -1204,84 +1612,12 @@ def chat_endpoint():
                 if chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
         except Exception as e:
-            yield f"ERROR: {str(e)}"
+            log_req(0, False, 500, request.remote_addr, str(e), endpoint="/chat")
+            yield "ERROR: Internal server error"
     
     return Response(generate(), mimetype="text/event-stream")
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-# ── Chat Endpoint (Streaming, Context-Aware) ──────────────────
-@app.route('/chat', methods=['POST'])
-def chat():
-    """
-    Streaming chat with persistent context.
-    Cost: $0.005/message via x402 micropayment.
-    
-    Request body:
-    {
-      "message": "your message",
-      "conversation_id": "optional uuid",
-      "x-payment": "x402 receipt token"
-    }
-    """
-    try:
-        # Parse request
-        data = request.get_json() or {}
-        message = data.get('message', '').strip()
-        conversation_id = data.get('conversation_id', str(uuid.uuid4()))
-        payment_token = request.headers.get('x-payment', '')
-        
-        if not message:
-            return jsonify({'error': 'message required'}), 400
-        
-        # Track IP for rate limiting
-        ip = request.remote_addr
-        
-        # Check free tier (1 chat per IP per day)
-        today = datetime.date.today().isoformat()
-        free_key = f"chat_free:{ip}:{today}"
-        chat_key = f"chat:conversation:{conversation_id}"
-        
-        # If no payment token, use free tier
-        if not payment_token:
-            if free_key in _rate_limit:
-                return jsonify({'error': 'Free tier exhausted (1/day). Send payment via x402.'}), 429
-            _rate_limit[free_key] = True
-        
-        # Load conversation history
-        conversation = _conversations.get(conversation_id, [])
-        conversation.append({"role": "user", "content": message})
-        
-        # Call Groq for streaming response
-        stream = _groq.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=conversation,
-            max_tokens=1024,
-            stream=True
-        )
-        
-        def generate():
-            response_text = ""
-            for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    response_text += content
-                    yield content
-            
-            # Save to conversation history
-            conversation.append({"role": "assistant", "content": response_text})
-            _conversations[conversation_id] = conversation[-20:]  # Keep last 20 messages
-        
-        return app.response_class(
-            generate(),
-            mimetype='text/event-stream'
-        )
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-import uuid
-_conversations = {}
 
