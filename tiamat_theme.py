@@ -121,33 +121,75 @@ pre{
 
 /* ── Navigation ── */
 .nav{
-  display:flex;align-items:center;flex-wrap:wrap;gap:2px;
-  padding:12px 18px;margin-bottom:36px;
-  background:rgba(8,8,14,0.7);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid var(--glass-border);
-  border-radius:var(--radius);
-  position:sticky;top:12px;z-index:100;
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;
+  padding:0 max(20px, calc((100vw - 960px)/2 + 24px));
+  height:56px;
+  background:rgba(10,10,10,0.88);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:none;border-radius:0;
+  box-shadow:0 1px 0 rgba(255,255,255,0.03);
 }
-.nav a{
-  color:var(--text-secondary);padding:7px 13px;
-  border-radius:8px;font-size:.82em;font-weight:500;
-  transition:all .25s;letter-spacing:.01em;
+/* Animated gradient underline */
+.nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--accent),var(--magenta),var(--green),var(--accent));
+  background-size:300% 100%;
+  animation:nav-gradient 4s linear infinite;
 }
-.nav a:hover{
-  color:var(--text-primary);
-  background:rgba(0,255,242,0.05);
-}
-.nav a:first-child{
+@keyframes nav-gradient{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+/* Brand with glitch */
+.nav-brand{
   font-family:'Orbitron',sans-serif;
-  color:var(--accent);font-weight:800;letter-spacing:.08em;
-  margin-right:auto;font-size:.86em;
-  text-shadow:0 0 20px rgba(0,255,242,0.3);
+  color:var(--accent);font-weight:900;font-size:.88em;
+  letter-spacing:.1em;text-decoration:none;
+  margin-right:auto;position:relative;
+  text-shadow:0 0 20px rgba(0,255,242,0.4),0 0 40px rgba(0,255,242,0.15);
 }
-.nav a:first-child:hover{
-  color:#66fffa;background:none;
-  text-shadow:0 0 30px rgba(0,255,242,0.5);
+.nav-brand:hover{color:var(--accent);text-shadow:0 0 30px rgba(0,255,242,0.6),0 0 60px rgba(0,255,242,0.25)}
+/* Nav links */
+.nav-links{display:flex;align-items:center;gap:0}
+.nav-links a{
+  font-family:'Orbitron',sans-serif;
+  font-size:.6em;font-weight:600;
+  text-transform:uppercase;letter-spacing:2px;
+  color:var(--text-muted);text-decoration:none;
+  padding:8px 13px;position:relative;
+  transition:color .3s,text-shadow .3s;
 }
+.nav-links a:hover{
+  color:var(--accent);
+  text-shadow:0 0 12px rgba(0,255,242,0.4);
+  background:none;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:0;left:13px;right:13px;
+  height:2px;background:var(--accent);
+  box-shadow:0 0 8px var(--accent),0 0 16px rgba(0,255,242,0.3);
+  transform:scaleX(0);transform-origin:center;
+  transition:transform .3s cubic-bezier(.25,.8,.25,1);
+}
+.nav-links a:hover::after{transform:scaleX(1)}
+/* Hamburger */
+.nav-toggle{display:none}
+.hamburger{
+  display:none;cursor:pointer;
+  width:26px;height:18px;position:relative;z-index:210;flex-shrink:0;
+}
+.hamburger span,.hamburger::before,.hamburger::after{
+  content:'';position:absolute;left:0;width:100%;height:2px;
+  background:var(--text-secondary);border-radius:2px;
+  transition:all .3s cubic-bezier(.25,.8,.25,1);
+}
+.hamburger::before{top:0}
+.hamburger span{top:8px}
+.hamburger::after{bottom:0}
+.nav-toggle:checked ~ .hamburger::before{transform:rotate(45deg);top:8px;background:var(--accent)}
+.nav-toggle:checked ~ .hamburger span{opacity:0;transform:scaleX(0)}
+.nav-toggle:checked ~ .hamburger::after{transform:rotate(-45deg);bottom:8px;background:var(--accent)}
+.nav-overlay{display:none}
+/* Spacer so content isn't hidden behind fixed nav */
+.site-wrap{padding-top:68px}
 
 /* ── Utility ── */
 .badge{
@@ -391,10 +433,28 @@ tr:hover td{background:rgba(0,255,242,0.02)}
 
 /* ── Responsive ── */
 @media(max-width:768px){
-  .site-wrap{padding:16px 14px 0}
+  .site-wrap{padding:68px 14px 0}
   h1{font-size:1.8em}
-  .nav{gap:2px;padding:10px 12px;top:8px}
-  .nav a{padding:5px 10px;font-size:.76em}
+  .hamburger{display:block}
+  .nav-links{
+    position:fixed;top:0;right:-260px;
+    width:240px;height:100vh;
+    flex-direction:column;align-items:flex-start;
+    background:rgba(5,5,8,0.96);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    padding:72px 24px 40px;gap:0;
+    transition:right .35s cubic-bezier(.25,.8,.25,1);
+    box-shadow:-8px 0 40px rgba(0,0,0,0.5);
+    border-left:1px solid rgba(0,255,242,0.06);
+  }
+  .nav-toggle:checked ~ .nav-links{right:0}
+  .nav-links a{
+    font-size:.7em;padding:14px 0;width:100%;
+    border-bottom:1px solid rgba(255,255,255,0.03);
+  }
+  .nav-links a::after{display:none}
+  .nav-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:190}
+  .nav-toggle:checked ~ .nav-overlay{display:block}
   .stat-grid{grid-template-columns:1fr 1fr}
   .card{padding:20px 18px}
   .subconscious-body{height:140px}
@@ -406,14 +466,18 @@ tr:hover td{background:rgba(0,255,242,0.02)}
 
 # ── Navigation ────────────────────────────────────────────────
 NAV = """<nav class="nav" role="navigation" aria-label="Main navigation">
-  <a href="/">TIAMAT</a>
-  <a href="/summarize">Summarize</a>
-  <a href="/generate">Generate</a>
-  <a href="/chat">Chat</a>
-  <a href="https://memory.tiamat.live/">Memory</a>
-  <a href="/thoughts">Neural Feed</a>
-  <a href="/docs">Docs</a>
-  <a href="/pay">Pay</a>
+  <a href="/" class="nav-brand">TIAMAT</a>
+  <input type="checkbox" id="navToggle" class="nav-toggle" aria-label="Toggle menu">
+  <label for="navToggle" class="hamburger" aria-hidden="true"><span></span></label>
+  <div class="nav-overlay" onclick="document.getElementById('navToggle').checked=false"></div>
+  <div class="nav-links">
+    <a href="/summarize">Summarize</a>
+    <a href="/generate">Generate</a>
+    <a href="/chat">Chat</a>
+    <a href="https://memory.tiamat.live/">Memory</a>
+    <a href="/thoughts">Neural Feed</a>
+    <a href="/docs">Docs</a>
+  </div>
 </nav>"""
 
 # ── Footer ────────────────────────────────────────────────────
