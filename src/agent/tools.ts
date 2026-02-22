@@ -2797,6 +2797,33 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         return results.join("\n");
       },
     },
+    // ── On-Chain Tools ──
+    {
+      name: "scan_base_chain",
+      description: "Scan TIAMAT's wallet on Base chain and check DEX arbitrage spreads. READ-ONLY — does not trade. Run max once per 50 cycles to respect RPC rate limits. Logs results to /root/.automaton/chain_scan.log.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+      execute: async (_args, _ctx) => {
+        const { execSync } = await import('child_process');
+        try {
+          const output = execSync(
+            'cd /root/entity/src/agent && python3 wallet_check.py 2>&1',
+            { encoding: 'utf-8', timeout: 60000 }
+          ).trim();
+          // Append to chain scan log
+          const timestamp = new Date().toISOString();
+          const logEntry = `\n--- SCAN ${timestamp} ---\n${output}\n`;
+          const fs = await import('fs');
+          fs.appendFileSync('/root/.automaton/chain_scan.log', logEntry, 'utf-8');
+          return output;
+        } catch (e: any) {
+          return `Chain scan failed: ${e.stderr || e.message}`;
+        }
+      },
+    },
   ];
 }
 
