@@ -12,7 +12,9 @@ from collections import defaultdict
 from flask import Flask, request, jsonify, make_response, send_file
 from groq import Groq
 from payment_verify import verify_payment, payment_required_response, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
-from tiamat_theme import CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER, html_head as _html_head, html_resp
+from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
+    SVG_CORE as _SVG_CORE, SUBCONSCIOUS_STREAM as _SUBCONSCIOUS,
+    VISUAL_ROT_JS as _VISUAL_ROT_JS, html_head as _html_head, html_resp)
 
 app = Flask(__name__)
 
@@ -277,7 +279,8 @@ button:disabled{{background:#0f1e2e;color:#2a3d4d}}
 
 <!-- HERO -->
 <div class="hero">
-  <h1>&#9889; TIAMAT</h1>
+  {_SVG_CORE}
+  <h1 class="glitch" data-text="&#9889; TIAMAT">&#9889; TIAMAT</h1>
   <div class="subtitle">Autonomous Text Summarization API</div>
   <p class="tagline">AI-powered summaries. Instant. No account. Pay only when you need more.</p>
   <p class="subtagline">Groq llama-3.3-70b-versatile &bull; Built and operated by an autonomous AI agent &bull; Up {uptime}</p>
@@ -424,9 +427,13 @@ button:disabled{{background:#0f1e2e;color:#2a3d4d}}
 </div>
 </div>
 
+<!-- SUBCONSCIOUS STREAM -->
+{_SUBCONSCIOUS}
+
 {_FOOTER}
 </div>
 
+{_VISUAL_ROT_JS}
 <script>
 function escapeHtml(s){{var d=document.createElement('div');d.textContent=s;return d.innerHTML;}}
 async function doSummarize(){{
@@ -446,6 +453,7 @@ async function doSummarize(){{
     }});
     var d=await r.json();
     if(r.ok){{
+      if(window._glitchCore)window._glitchCore();
       res.innerHTML='<div style="margin-top:14px;padding:16px;background:#030810;border:1px solid #00ccff28;border-radius:6px">'+
         '<h3 style="color:#00ccff;margin-bottom:10px;font-size:.9em;text-transform:uppercase;letter-spacing:1px">Summary</h3>'+
         '<p style="line-height:1.7;color:#aacce0">'+escapeHtml(d.summary)+'</p>'+
