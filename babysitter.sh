@@ -5,7 +5,7 @@ PROGRESS=/root/.automaton/PROGRESS.md
 CHECK_NUM=0
 LAST_REPORT=0
 
-log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" >> "$LOG"; echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" >&2; }
+log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" >> "$LOG"; }
 
 restart_api() {
   log "ACTION: Restarting gunicorn..."
@@ -46,9 +46,6 @@ write_report() {
   log "Last 3 actions:"
   echo "$last3" | while read line; do log "  $line"; done
   log "=== END REPORT ==="
-  echo "--- babysitter.log as of $(date -u) ---"
-  cat "$LOG"
-  echo "---"
 }
 
 log "=== BABYSITTER STARTED === TIAMAT PID=$(pgrep -f 'node /root/entity/dist/index.js' | head -1)"
