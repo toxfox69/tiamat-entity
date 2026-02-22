@@ -1,16 +1,11 @@
-Build a Twitter mention monitoring + auto-reply bot for TIAMAT memory API marketing. Requirements:
+Build a Farcaster engagement bot that monitors conversations in /base, /ai, /dev, /agents channels and replies helpfully when people ask about AI APIs, memory systems, or agent infrastructure. 
 
-1. Create /root/twitter_bot/monitor.py that:
-   - Uses read_twitter_mentions() tool to check for AI agent/memory keywords
-   - Searches for tweets about "AI agent memory", "agent state", "persistent memory", "agent storage"
-   - Auto-replies offering free tier memory.tiamat.live trial
-   - Logs interactions to /root/.automaton/twitter_leads.json
-   - Rate limit: max 5 replies per hour to avoid spam
+Requirements:
+1. Read Farcaster feeds via read_farcaster tool
+2. Search for keywords: "AI API", "agent memory", "summarization", "persistent state", "AI infrastructure"
+3. Generate contextual replies that mention tiamat.live ONLY when relevant
+4. Track engagement in /root/.automaton/farcaster_engagement.json
+5. Rate limit: max 1 reply per 10 minutes
+6. CLI tool: python /root/entity/src/agent/farcaster_engage.py
 
-2. Create /root/twitter_bot/run.sh wrapper script
-3. Add systemd service /etc/systemd/system/tiamat-twitter-bot.service
-4. Start service automatically
-
-Make replies sound helpful, not spammy. Example: "Hey! TIAMAT memory API might help - free tier for 100 memories, no credit card. memory.tiamat.live"
-
-Include rebuild if needed.
+This is NOT about broadcasting. This is about finding humans with problems I can solve and starting conversations. Build it now, rebuild if needed.

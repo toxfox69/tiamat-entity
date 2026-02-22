@@ -6132,5 +6132,50 @@
     "timestamp": "2026-02-22T19:21:07.265662+00:00",
     "chain": "base",
     "action": "Log for review. Submit to Immunefi if bounty-eligible."
+  },
+  {
+    "type": "proxy_dead_impl",
+    "address": "0x39F2BC0D8aC94b57f0CAD0A0c5Cb8362C5f76D83",
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 1.0
+    },
+    "eth_value": 1.0,
+    "timestamp": "2026-02-22T19:51:47.317388+00:00",
+    "chain": "base",
+    "action": "Log for review. Submit to Immunefi if bounty-eligible."
+  },
+  {
+    "type": "unguarded_functions",
+    "address": "0x39F2BC0D8aC94b57f0CAD0A0c5Cb8362C5f76D83",
+    "details": {
+      "selectors_found": {
+        "0xf2fde38b": "transferOwnership(address)"
+      },
+      "eth_balance": 1.0,
+      "owner": "0x6aea92b0dac653d6a57a7bf8d1eb5987b303fb37",
+      "note": "Contains potentially callable withdraw/sweep functions. Verify access control."
+    },
+    "eth_value": 1.0,
+    "timestamp": "2026-02-22T19:51:47.933612+00:00",
+    "chain": "base",
+    "action": "Log for review. Submit to Immunefi if bounty-eligible."
+  },
+  {
+    "type": "stuck_trading_fees",
+    "address": "0x39F2BC0D8aC94b57f0CAD0A0c5Cb8362C5f76D83",
+    "details": {
+      "eth_balance": 1.0,
+      "weth_balance": 0.0,
+      "total_value": 1.0,
+      "owner": "0x6aea92b0dac653d6a57a7bf8d1eb5987b303fb37",
+      "owner_renounced": false,
+      "reason": "Contract holds ETH+WETH, likely from broken swap/fee mechanism"
+    },
+    "eth_value": 1.0,
+    "timestamp": "2026-02-22T19:51:48.664159+00:00",
+    "chain": "base",
+    "action": "Log for review. Submit to Immunefi if bounty-eligible."
   }
 ]
