@@ -205,15 +205,41 @@ def landing():
         cost_per_thought=cost_per_thought
     )
 
+# ── SEO: robots.txt + sitemap.xml ─────────────────────────────
+@app.route("/robots.txt")
+def robots_txt():
+    r = make_response("User-agent: *\nAllow: /\n\nSitemap: https://tiamat.live/sitemap.xml\n")
+    r.headers["Content-Type"] = "text/plain"
+    return r
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    pages = [
+        ("https://tiamat.live/", "daily", "1.0"),
+        ("https://tiamat.live/docs", "weekly", "0.8"),
+        ("https://tiamat.live/summarize", "weekly", "0.9"),
+        ("https://tiamat.live/generate", "weekly", "0.9"),
+        ("https://tiamat.live/chat", "weekly", "0.9"),
+        ("https://tiamat.live/thoughts", "hourly", "0.7"),
+        ("https://tiamat.live/pay", "monthly", "0.6"),
+        ("https://tiamat.live/status", "always", "0.5"),
+    ]
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for url, freq, priority in pages:
+        xml += f'  <url><loc>{url}</loc><changefreq>{freq}</changefreq><priority>{priority}</priority></url>\n'
+    xml += '</urlset>\n'
+    r = make_response(xml)
+    r.headers["Content-Type"] = "application/xml"
+    return r
+
 # ── /health ───────────────────────────────────────────────────
 @app.route("/health", methods=["GET"])
 def health():
     data = {"status": "healthy", "service": "TIAMAT summarization API", "version": "5.0",
             "model": "llama-3.3-70b-versatile", "inference": "Groq"}
     if wants_html():
-        page = f"""<!DOCTYPE html><html><head>
-<meta charset="utf-8"><title>TIAMAT &mdash; Health</title>
-<style>{_CSS}</style></head><body><div class="site-wrap">
+        page = f"""{_html_head('TIAMAT &mdash; Health')}<body><div class="site-wrap">
 {_NAV}
 <h1>&#9989; Health</h1>
 <div class="card">
@@ -238,9 +264,7 @@ def pricing():
     data = {"free_tier": {"calls_per_day": 3, "price": "$0.00", "auth": "none"},
             "paid_tier": {"price": "$0.01 USDC per call", "method": "x402"}}
     if wants_html():
-        page = f"""<!DOCTYPE html><html><head>
-<meta charset="utf-8"><title>TIAMAT &mdash; Pricing</title>
-<style>{_CSS}</style></head><body><div class="site-wrap">
+        page = f"""{_html_head('TIAMAT &mdash; Pricing')}<body><div class="site-wrap">
 {_NAV}
 <h1>&#128178; Pricing</h1>
 <div class="card">
@@ -259,10 +283,7 @@ def pricing():
 # ── /docs ─────────────────────────────────────────────────────
 @app.route("/docs", methods=["GET"])
 def docs_page():
-    page = f"""<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TIAMAT &mdash; API Documentation</title>
-<style>{_CSS}</style></head><body><div class="site-wrap">
+    page = f"""{_html_head('TIAMAT &mdash; API Documentation')}<body><div class="site-wrap">
 {_NAV}
 <h1>API Documentation</h1>
 <p class="tagline">Complete reference for all TIAMAT endpoints</p>
@@ -435,9 +456,7 @@ def agent_card():
             "pricing": "Free tier per day per IP, $0.01 USDC paid via x402",
             "payment_protocol": "x402", "uptime": "24/7 autonomous"}
     if wants_html():
-        page = f"""<!DOCTYPE html><html><head>
-<meta charset="utf-8"><title>TIAMAT &mdash; Agent Card</title>
-<style>{_CSS}</style></head><body><div class="site-wrap">
+        page = f"""{_html_head('TIAMAT &mdash; Agent Card')}<body><div class="site-wrap">
 {_NAV}
 <h1>&#129302; Agent Card</h1>
 <div class="card">
@@ -470,10 +489,8 @@ def status():
             "server_uptime": uptime, "requests_served": req_count,
             "paid_requests": paid, "memories_stored": mem_count}
     if wants_html():
-        page = f"""<!DOCTYPE html><html><head>
-<meta charset="utf-8"><title>TIAMAT &mdash; Status</title>
-<style>{_CSS}</style>
-<meta http-equiv="refresh" content="60"></head><body><div class="site-wrap">
+        page = f"""{_html_head('TIAMAT &mdash; Status')}
+<meta http-equiv="refresh" content="60"><body><div class="site-wrap">
 {_NAV}
 <h1>&#128202; Status</h1>
 <div class="card">
@@ -494,15 +511,8 @@ def status():
 @app.route("/summarize", methods=["GET", "POST"])
 def summarize():
     if request.method == "GET":
-        page = f"""<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="TIAMAT Text Summarization — paste any text, get a concise summary. 3 free per day.">
-<title>TIAMAT — Summarize</title>
-<style>{_CSS}
-#result{{margin-top:16px;padding:14px;background:#0d1a0d;border:1px solid #1a2e1a;display:none;border-radius:4px}}
-#result.err{{border-color:#ff4444;color:#ff8888}}
-</style></head><body>
+        _extra = '#result{{margin-top:16px;padding:14px;background:#0d1a0d;border:1px solid #1a2e1a;display:none;border-radius:4px}}#result.err{{border-color:#ff4444;color:#ff8888}}'
+        page = f"""{_html_head('TIAMAT &mdash; Summarize', _extra)}<body>
 <div class="site-wrap">
 {_NAV}
 <h1>&#9889; Text Summarization</h1>
@@ -996,23 +1006,8 @@ def generate_image():
 
 def _generate_html_page():
     styles_options = "".join(f'<option value="{s}">{s}</option>' for s in ART_STYLES)
-    page = f"""<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="TIAMAT Image Generation API — algorithmic art from pure mathematics. 2 free per day.">
-<title>TIAMAT — Image Generation</title>
-<style>{_CSS}
-#imgResult{{max-width:100%;border-radius:8px;border:1px solid #1a3a1a;margin-top:12px;display:none}}
-select{{background:#0d1a0d;color:#c8ffc8;border:1px solid #2a4a2a;padding:8px 12px;font-family:inherit;border-radius:4px}}
-select:focus{{outline:none;border-color:#00ff88}}
-.gen-info{{margin-top:8px;font-size:.85em;color:#556655}}
-.style-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:12px 0}}
-.style-card{{background:#0a120a;border:1px solid #1a3a1a;border-radius:6px;padding:12px;text-align:center;cursor:pointer;transition:all .2s}}
-.style-card:hover,.style-card.active{{border-color:#00ff88;background:#00ff8810}}
-.style-card.active{{box-shadow:0 0 12px #00ff4430}}
-.style-name{{color:#00ffcc;font-weight:bold;font-size:.95em}}
-.style-desc{{color:#556655;font-size:.75em;margin-top:4px}}
-</style></head><body>
+    _gen_extra = '#imgResult{{max-width:100%;border-radius:8px;border:1px solid var(--border);margin-top:12px;display:none}}.gen-info{{margin-top:8px;font-size:.85em;color:var(--text-muted)}}.style-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:12px 0}}.style-card{{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:var(--radius-xs);padding:12px;text-align:center;cursor:pointer;transition:all .2s}}.style-card:hover,.style-card.active{{border-color:var(--accent);background:var(--accent-dim)}}.style-card.active{{box-shadow:0 0 12px rgba(0,255,242,0.15)}}.style-name{{color:var(--accent);font-weight:bold;font-size:.95em}}.style-desc{{color:var(--text-muted);font-size:.75em;margin-top:4px}}'
+    page = f"""{_html_head('TIAMAT &mdash; Image Generation', _gen_extra)}<body>
 <div class="site-wrap">
 {_NAV}
 <h1>&#127912; Image Generation</h1>
@@ -1119,10 +1114,7 @@ async function doGenerate(){{
 
 @app.route("/pay", methods=["GET"])
 def pay_page():
-    page = f"""<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pay TIAMAT &mdash; USDC on Base</title>
-<style>{_CSS}</style></head><body><div class="site-wrap">
+    page = f"""{_html_head('Pay TIAMAT &mdash; USDC on Base')}<body><div class="site-wrap">
 {_NAV}
 <h1>Pay TIAMAT</h1>
 <p class="tagline">Send USDC on Base mainnet to unlock API access</p>
@@ -1228,25 +1220,8 @@ def verify_payment_endpoint():
 CHAT_IP_LIMITS = {}  # Track free chat calls per IP per day
 
 def _chat_html_page():
-    page = f"""<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TIAMAT &mdash; Chat</title>
-<style>{_CSS}
-.chat-wrap{{display:flex;flex-direction:column;height:60vh;min-height:300px}}
-.chat-messages{{flex:1;overflow-y:auto;padding:14px;background:#060a06;border:1px solid #1a2e1a;
-  border-radius:8px 8px 0 0;scrollbar-width:thin;scrollbar-color:#1a2e1a transparent}}
-.chat-msg{{margin-bottom:12px;line-height:1.6}}
-.chat-msg.user .chat-label{{color:#00ccff;font-size:.75em;font-weight:bold;letter-spacing:1px}}
-.chat-msg.assistant .chat-label{{color:#00ff88;font-size:.75em;font-weight:bold;letter-spacing:1px}}
-.chat-msg .chat-text{{margin-top:4px;color:#c8ffc8}}
-.chat-msg.assistant .chat-text{{color:#aaffaa}}
-.chat-input-row{{display:flex;gap:8px}}
-.chat-input-row input{{flex:1;background:#0d1a0d;color:#c8ffc8;border:1px solid #2a4a2a;
-  padding:12px;font-family:inherit;font-size:14px;border-radius:0 0 0 8px}}
-.chat-input-row input:focus{{outline:none;border-color:#00ff88}}
-.chat-input-row button{{border-radius:0 0 8px 0;margin-top:0}}
-.chat-status{{font-size:.8em;color:#2a4a2a;margin-top:6px}}
-</style></head><body><div class="site-wrap">
+    _chat_extra = '.chat-wrap{{display:flex;flex-direction:column;height:60vh;min-height:300px}}.chat-messages{{flex:1;overflow-y:auto;padding:14px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:var(--radius-sm) var(--radius-sm) 0 0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}}.chat-msg{{margin-bottom:12px;line-height:1.6}}.chat-msg.user .chat-label{{color:var(--accent);font-size:.75em;font-weight:bold;letter-spacing:1px}}.chat-msg.assistant .chat-label{{color:var(--green);font-size:.75em;font-weight:bold;letter-spacing:1px}}.chat-msg .chat-text{{margin-top:4px;color:var(--text-primary)}}.chat-msg.assistant .chat-text{{color:var(--text-secondary)}}.chat-input-row{{display:flex;gap:0}}.chat-input-row input{{flex:1;background:rgba(0,0,0,0.4);color:var(--text-primary);border:1px solid var(--border);padding:12px;font-family:inherit;font-size:14px;border-radius:0 0 0 var(--radius-sm)}}.chat-input-row input:focus{{outline:none;border-color:rgba(0,255,242,0.3)}}.chat-input-row button{{border-radius:0 0 var(--radius-sm) 0;margin-top:0}}.chat-status{{font-size:.8em;color:var(--text-muted);margin-top:6px}}'
+    page = f"""{_html_head('TIAMAT &mdash; Chat', _chat_extra)}<body><div class="site-wrap">
 {_NAV}
 <h1>Chat with TIAMAT</h1>
 <p class="tagline">Streaming chat &bull; Groq llama-3.3-70b &bull; 5 free/day &bull; $0.005 USDC after</p>
