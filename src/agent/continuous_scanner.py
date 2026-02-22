@@ -18,6 +18,7 @@ from contract_scanner import (
     AERODROME_FACTORY,
 )
 from opportunity_queue import OpportunityQueue
+from auto_executor import executor as auto_exec
 
 PID_FILE = "/run/tiamat/tiamat_scanner.pid"
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -103,25 +104,40 @@ def main():
                                 finding = check_fn(addr)
                                 if finding:
                                     eth_val = finding.get("eth_value", 0)
-                                    # Skip findings with negligible value
                                     if eth_val < 0.01:
                                         continue
-                                    # Telegram alert for high-value findings
+
+                                    ftype = finding["type"]
+                                    faddr = finding["address"]
+                                    details = finding.get("details", {})
+                                    executed = False
+
+                                    # ── Fast path: try auto-execute immediately ──
+                                    if auto_exec.enabled:
+                                        if ftype == "unguarded_functions" and details.get("callable_functions"):
+                                            executed = auto_exec.try_rescue(faddr, details["callable_functions"], eth_val)
+                                        elif ftype == "stuck_trading_fees" and details.get("callable_functions"):
+                                            executed = auto_exec.try_rescue(faddr, details["callable_functions"], eth_val)
+
+                                    if executed:
+                                        log.info(f"AUTO-EXECUTED: {ftype} at {faddr} for {eth_val:.4f} ETH")
+                                        continue  # Don't queue — already handled
+
+                                    # ── Slow path: alert + queue for TIAMAT review ──
                                     if eth_val > 0.01:
                                         msg = (
                                             f"<b>VULN FOUND</b>\n"
-                                            f"Type: {finding['type']}\n"
-                                            f"Addr: {finding['address']}\n"
+                                            f"Type: {ftype}\n"
+                                            f"Addr: {faddr}\n"
                                             f"ETH: {eth_val:.4f}"
                                         )
                                         send_telegram(msg)
-                                    # Push to opportunity queue for TIAMAT
                                     OpportunityQueue.push({
                                         "source": "scanner",
-                                        "type": finding["type"],
-                                        "address": finding["address"],
+                                        "type": ftype,
+                                        "address": faddr,
                                         "eth_value": eth_val,
-                                        "details": finding.get("details", {}),
+                                        "details": details,
                                         "action": finding.get("action", "review"),
                                     })
                             except Exception:
@@ -136,18 +152,26 @@ def main():
                 try:
                     pre_count = len(scanner.findings)
                     scanner.scan_pairs_for_skim(UNISWAP_V2_FACTORY, num_pairs=30)
+                    time.sleep(15)  # Cool down between factory scans to avoid 429
                     scanner.scan_pairs_for_skim(AERODROME_FACTORY, num_pairs=30)
-                    # Push any new skim findings to queue
+                    # Auto-execute or queue new skim findings
                     for f in scanner.findings[pre_count:]:
                         if f.get("type") == "skimmable_pair":
-                            OpportunityQueue.push({
-                                "source": "skim_scanner",
-                                "type": "skimmable_pair",
-                                "address": f["address"],
-                                "eth_value": f.get("eth_value", 0),
-                                "details": f.get("details", {}),
-                                "action": "skim",
-                            })
+                            eth_val = f.get("eth_value", 0)
+                            executed = False
+                            if auto_exec.enabled and eth_val > 0.01:
+                                executed = auto_exec.try_skim(f["address"], eth_val)
+                            if executed:
+                                log.info(f"AUTO-SKIMMED: {f['address']} for {eth_val:.4f} ETH")
+                            else:
+                                OpportunityQueue.push({
+                                    "source": "skim_scanner",
+                                    "type": "skimmable_pair",
+                                    "address": f["address"],
+                                    "eth_value": eth_val,
+                                    "details": f.get("details", {}),
+                                    "action": "skim",
+                                })
                 except Exception as e:
                     log.error(f"Periodic skim scan failed: {e}")
 

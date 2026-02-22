@@ -89,6 +89,16 @@ DANGEROUS_SELECTORS = {
     "0x853828b6": "withdrawAll()",
 }
 
+# Selectors that take no args — just the 4-byte selector
+NO_ARG_SELECTORS = {"0x3ccfd60b", "0xe9fad8ee", "0x7b103999", "0x853828b6"}
+# Selectors that take a single address arg
+ADDR_ARG_SELECTORS = {"0x51cff8d9", "0xf2fde38b", "0x01681a62"}
+# Selectors that take a single uint256 arg
+UINT_ARG_SELECTORS = {"0x2e1a7d4d"}
+
+# Random non-privileged caller for simulation (not owner, not zero)
+SIM_CALLER = "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF"
+
 # ── Logging ──
 
 log = logging.getLogger("vuln_scanner")
@@ -121,6 +131,26 @@ class ContractScanner:
             except Exception:
                 continue
         raise ConnectionError("All Base RPCs failed")
+
+    def _rotate_rpc(self):
+        """Switch to the next RPC in the list (for 429 rate limits)."""
+        current_idx = BASE_RPCS.index(self.rpc) if self.rpc in BASE_RPCS else -1
+        next_idx = (current_idx + 1) % len(BASE_RPCS)
+        for i in range(len(BASE_RPCS)):
+            rpc = BASE_RPCS[(next_idx + i) % len(BASE_RPCS)]
+            if rpc == self.rpc:
+                continue
+            try:
+                w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 15}))
+                w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+                if w3.is_connected():
+                    self.w3 = w3
+                    self.rpc = rpc
+                    log.info(f"Rotated RPC to {rpc}")
+                    return True
+            except Exception:
+                continue
+        return False
 
     def _reconnect(self):
         """Reconnect on RPC failure, cycling through providers."""
@@ -188,6 +218,50 @@ class ContractScanner:
         except Exception:
             pass
         return None
+
+    def _build_calldata(self, selector, addr):
+        """Build calldata for a selector, encoding args as needed."""
+        sel = selector[2:]  # strip 0x
+        if selector in NO_ARG_SELECTORS:
+            return "0x" + sel
+        if selector in ADDR_ARG_SELECTORS:
+            # Encode address arg: pad to 32 bytes (use the caller as dummy recipient)
+            return "0x" + sel + SIM_CALLER[2:].lower().zfill(64)
+        if selector in UINT_ARG_SELECTORS:
+            # Encode uint256 arg: use max uint to simulate withdrawing everything
+            return "0x" + sel + "f" * 64
+        return "0x" + sel
+
+    def _simulate_call(self, target, calldata, caller=None):
+        """Dry-run a call via eth_call. Returns True if it doesn't revert."""
+        try:
+            self.w3.eth.call({
+                "from": Web3.to_checksum_address(caller or SIM_CALLER),
+                "to": Web3.to_checksum_address(target),
+                "data": calldata,
+            })
+            return True
+        except Exception:
+            return False
+
+    def validate_extraction_paths(self, addr, selectors=None):
+        """Simulate all dangerous selectors on a contract. Returns dict of callable ones.
+
+        For each selector found in bytecode, tries eth_call from a random
+        non-privileged address. If the call doesn't revert, that function
+        is genuinely callable by anyone — a real vulnerability.
+        """
+        addr = Web3.to_checksum_address(addr)
+        targets = selectors or DANGEROUS_SELECTORS
+        callable_fns = {}
+
+        for selector, name in targets.items():
+            calldata = self._build_calldata(selector, addr)
+            if self._simulate_call(addr, calldata):
+                callable_fns[selector] = name
+                log.info(f"CALLABLE: {name} on {addr} (from random caller)")
+
+        return callable_fns
 
     # ── Check 1: Stuck ETH ──
 
@@ -353,14 +427,21 @@ class ContractScanner:
 
         owner = self._get_owner(addr)
 
+        # Simulate each found selector — only keep ones that don't revert
+        callable_fns = self.validate_extraction_paths(addr, found_selectors)
+        if not callable_fns:
+            log.info(f"Skipping {addr}: selectors found in bytecode but all revert on eth_call")
+            return None
+
         return self._add_finding(
             "unguarded_functions",
             addr,
             {
                 "selectors_found": found_selectors,
+                "callable_functions": callable_fns,
                 "eth_balance": eth_bal,
                 "owner": owner,
-                "note": "Contains potentially callable withdraw/sweep functions. Verify access control.",
+                "note": f"{len(callable_fns)} function(s) callable by unprivileged caller via eth_call simulation.",
             },
             eth_value=eth_bal,
         )
@@ -425,6 +506,7 @@ class ContractScanner:
         factory_addr = Web3.to_checksum_address(factory_addr)
         log.info(f"Scanning {num_pairs} pairs from factory {factory_addr[:10]}...")
         findings = []
+        retries = 0
 
         try:
             factory = self.w3.eth.contract(address=factory_addr, abi=FACTORY_ABI)
@@ -439,11 +521,24 @@ class ContractScanner:
                     r = self.check_skimmable_pair(pair_addr)
                     if r:
                         findings.append(r)
+                    retries = 0  # Reset on success
                 except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str or "Too Many Requests" in err_str:
+                        retries += 1
+                        if retries >= 3:
+                            log.info(f"Skim scan: 3 consecutive 429s, stopping early at pair {i}")
+                            break
+                        log.info(f"Skim scan: 429 at pair {i}, rotating RPC and backing off 10s")
+                        self._rotate_rpc()
+                        time.sleep(10)
+                        # Re-create factory contract with new w3
+                        factory = self.w3.eth.contract(address=factory_addr, abi=FACTORY_ABI)
+                        continue
                     log.debug(f"Pair {i} failed: {e}")
                     continue
                 # Rate limit to avoid RPC throttling
-                time.sleep(0.2)
+                time.sleep(0.5)
         except Exception as e:
             log.error(f"Factory scan failed: {e}")
 
@@ -527,6 +622,12 @@ class ContractScanner:
         owner_dead = owner and owner.lower() in {d.lower() for d in DEAD_ADDRESSES}
 
         if owner_dead or total > 0.1:
+            # Validate there's actually a callable extraction path
+            callable_fns = self.validate_extraction_paths(addr)
+            if not callable_fns:
+                log.info(f"Skipping stuck_trading_fees {addr}: {total:.4f} ETH but no callable extraction path")
+                return None
+
             return self._add_finding(
                 "stuck_trading_fees",
                 addr,
@@ -536,7 +637,8 @@ class ContractScanner:
                     "total_value": total,
                     "owner": owner,
                     "owner_renounced": owner_dead,
-                    "reason": "Contract holds ETH+WETH, likely from broken swap/fee mechanism",
+                    "callable_functions": callable_fns,
+                    "reason": f"Contract holds ETH+WETH with {len(callable_fns)} callable extraction path(s)",
                 },
                 eth_value=total,
             )

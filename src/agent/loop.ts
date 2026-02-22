@@ -7,6 +7,7 @@
 
 import fs from "fs";
 import path from "path";
+import { execFileSync } from "child_process";
 import type {
   AutomatonIdentity,
   AutomatonConfig,
@@ -425,6 +426,24 @@ export async function runAgentLoop(
         const progressLine = `[${turn.timestamp}] Turn ${db.getTurnCount()} | Model: ${modelUsed} | Tools: ${toolNames} | Tokens: ${turn.tokenUsage.totalTokens}\n`;
         fs.appendFileSync(progressPath, progressLine);
       } catch {}
+      // ── Hardcoded MARKET actions after strategic phase 3 ──
+      // Runs regardless of what the agent decided to do with its tokens.
+      if (burstPhase === 3) {
+        console.log("[LOOP] Phase 3 (MARKET) complete — running hardcoded farcaster_engage...");
+        try {
+          const engageOut = execFileSync("python3", ["farcaster_engage.py", "run"], {
+            cwd: "/root/entity/src/agent",
+            timeout: 60_000,
+            env: { ...process.env },
+            encoding: "utf-8",
+          });
+          console.log(`[LOOP] farcaster_engage result: ${engageOut.slice(0, 200)}`);
+          log(config, `[FARCASTER-AUTO] ${engageOut.slice(0, 300)}`);
+        } catch (e: any) {
+          console.log(`[LOOP] farcaster_engage failed: ${e.message?.slice(0, 200)}`);
+        }
+      }
+
       // ── Optimization 5: Adaptive cycle pacing ──
       // Reduce frequency when TIAMAT is idle; accelerate when active.
       // Night mode (00:00–06:00 UTC) enforces minimum 5-minute gap.
