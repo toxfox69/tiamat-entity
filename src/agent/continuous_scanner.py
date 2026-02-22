@@ -17,6 +17,7 @@ from contract_scanner import (
     UNISWAP_V2_FACTORY,
     AERODROME_FACTORY,
 )
+from opportunity_queue import OpportunityQueue
 
 PID_FILE = "/tmp/tiamat_scanner.pid"
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -98,14 +99,26 @@ def main():
                         ]:
                             try:
                                 finding = check_fn(addr)
-                                if finding and finding.get("eth_value", 0) > 0.01:
-                                    msg = (
-                                        f"<b>VULN FOUND</b>\n"
-                                        f"Type: {finding['type']}\n"
-                                        f"Addr: {finding['address']}\n"
-                                        f"ETH: {finding['eth_value']:.4f}"
-                                    )
-                                    send_telegram(msg)
+                                if finding:
+                                    eth_val = finding.get("eth_value", 0)
+                                    # Telegram alert for high-value findings
+                                    if eth_val > 0.01:
+                                        msg = (
+                                            f"<b>VULN FOUND</b>\n"
+                                            f"Type: {finding['type']}\n"
+                                            f"Addr: {finding['address']}\n"
+                                            f"ETH: {eth_val:.4f}"
+                                        )
+                                        send_telegram(msg)
+                                    # Push to opportunity queue for TIAMAT
+                                    OpportunityQueue.push({
+                                        "source": "scanner",
+                                        "type": finding["type"],
+                                        "address": finding["address"],
+                                        "eth_value": eth_val,
+                                        "details": finding.get("details", {}),
+                                        "action": finding.get("action", "review"),
+                                    })
                             except Exception:
                                 pass
 
@@ -116,8 +129,20 @@ def main():
             if cycle > 0 and cycle % 100 == 0:
                 log.info(f"Cycle {cycle}: Periodic skim scan")
                 try:
+                    pre_count = len(scanner.findings)
                     scanner.scan_pairs_for_skim(UNISWAP_V2_FACTORY, num_pairs=30)
                     scanner.scan_pairs_for_skim(AERODROME_FACTORY, num_pairs=30)
+                    # Push any new skim findings to queue
+                    for f in scanner.findings[pre_count:]:
+                        if f.get("type") == "skimmable_pair":
+                            OpportunityQueue.push({
+                                "source": "skim_scanner",
+                                "type": "skimmable_pair",
+                                "address": f["address"],
+                                "eth_value": f.get("eth_value", 0),
+                                "details": f.get("details", {}),
+                                "action": "skim",
+                            })
                 except Exception as e:
                     log.error(f"Periodic skim scan failed: {e}")
 

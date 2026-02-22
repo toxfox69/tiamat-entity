@@ -18,6 +18,7 @@ import logging
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 from eth_account import Account
+from opportunity_queue import OpportunityQueue
 
 # ============ CONFIG ============
 BASE_HTTP_RPCS = [
@@ -372,15 +373,29 @@ class BaseSniper:
 
                 log.info(f"POS {token_addr[:10]}...: {buy_eth} ETH -> {current_eth:.6f} ETH ({ratio:.2f}x)")
 
+                sell_reason = None
                 if ratio >= SELL_PROFIT_TARGET:
-                    log.info(f"TAKE PROFIT {ratio:.2f}x")
-                    self.sell_token(token_addr)
+                    sell_reason = f"TAKE PROFIT {ratio:.2f}x"
                 elif ratio <= SELL_STOP_LOSS:
-                    log.info(f"STOP LOSS {ratio:.2f}x")
-                    self.sell_token(token_addr)
+                    sell_reason = f"STOP LOSS {ratio:.2f}x"
                 elif time.time() - pos["buy_time"] > MAX_HOLD_SECONDS:
-                    log.info("TIME EXIT (1h max hold)")
-                    self.sell_token(token_addr)
+                    sell_reason = "TIME EXIT (1h max hold)"
+
+                if sell_reason:
+                    log.info(sell_reason)
+                    tx = self.sell_token(token_addr)
+                    if tx:
+                        try:
+                            OpportunityQueue.push({
+                                "source": "sniper",
+                                "type": "trade_closed",
+                                "address": token_addr,
+                                "eth_value": current_eth - buy_eth,
+                                "description": f"{sell_reason} | {buy_eth} ETH -> {current_eth:.6f} ETH",
+                                "action": "log_revenue",
+                            })
+                        except Exception:
+                            pass
 
             except Exception as e:
                 log.error(f"Position check error {token_addr[:10]}...: {str(e)[:60]}")
@@ -427,6 +442,22 @@ class BaseSniper:
 
                         pair_addr = Web3.to_checksum_address(pair)
                         log.info(f"NEW PAIR: {new_token} | pair: {pair_addr} | block: {event_log['blockNumber']}")
+
+                        # Push to opportunity queue for TIAMAT
+                        try:
+                            OpportunityQueue.push({
+                                "source": "sniper",
+                                "type": "new_token_launch",
+                                "address": new_token,
+                                "pair": pair_addr,
+                                "eth_value": 0,
+                                "description": f"New token {new_token[:16]}... paired with WETH",
+                                "action": "evaluate_for_snipe",
+                                "block": event_log["blockNumber"],
+                            })
+                        except Exception:
+                            pass
+
                         self.buy_token(new_token, pair_addr)
 
                 except Exception as e:

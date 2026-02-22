@@ -2941,6 +2941,69 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         }
       },
     },
+    {
+      name: "check_opportunities",
+      description: "Check the opportunity queue for pending items from background scanners/sniper. Returns pending opportunities that need action. After acting on an item, call again with action='done' and address to mark it handled. Actions: 'peek' (list pending), 'done <address>' (mark handled), 'stats' (queue summary).",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "peek|done <address>|stats" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const { execSync } = await import('child_process');
+        const action = (args as { action: string }).action || 'peek';
+
+        const pythonScript = (code: string) => {
+          try {
+            return execSync(
+              `cd /root/entity/src/agent && python3 -c ${JSON.stringify(code)} 2>&1`,
+              { encoding: 'utf-8', timeout: 10000 }
+            ).trim();
+          } catch (e: any) {
+            return `Error: ${e.stderr?.slice(0, 500) || e.message}`;
+          }
+        };
+
+        if (action === 'peek') {
+          return pythonScript(`
+from opportunity_queue import OpportunityQueue
+import json
+pending = OpportunityQueue.peek()
+if not pending:
+    print("No pending opportunities.")
+else:
+    print(f"{len(pending)} pending opportunities:")
+    for i, o in enumerate(pending):
+        print(f"  [{i}] {o.get('type','?')} | {o.get('address','?')[:16]}... | {o.get('eth_value',0)} ETH | src: {o.get('source','?')} | action: {o.get('action','?')}")
+`);
+        }
+
+        if (action === 'stats') {
+          return pythonScript(`
+import json
+with open("/root/.automaton/opportunity_queue.json") as f:
+    q = json.load(f)
+pending = [x for x in q if x.get("status") == "pending"]
+acted = [x for x in q if x.get("status") == "acted"]
+print(f"Queue: {len(q)} total | {len(pending)} pending | {len(acted)} acted")
+`);
+        }
+
+        if (action.startsWith('done ')) {
+          const addr = action.split(' ')[1];
+          return pythonScript(`
+from opportunity_queue import OpportunityQueue
+OpportunityQueue.mark_done_by_address("${addr}")
+print("Marked done: ${addr}")
+`);
+        }
+
+        return 'Unknown action. Use: peek, done <address>, stats';
+      },
+    },
   ];
 }
 
