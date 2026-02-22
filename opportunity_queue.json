@@ -2,138 +2,6 @@
   {
     "source": "scanner",
     "type": "proxy_dead_impl",
-    "address": "0x38A57De190B2733cbb19D84d9131A310FD9cD5b7",
-    "eth_value": 0.0,
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 0.0
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784802.6243253,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "proxy_dead_impl",
-    "address": "0xe4F5b998372443522B08b72D3B5b704c3BDAFAF4",
-    "eth_value": 0.5,
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 0.5
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784817.1227682,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "unguarded_functions",
-    "address": "0xe4F5b998372443522B08b72D3B5b704c3BDAFAF4",
-    "eth_value": 0.5,
-    "details": {
-      "selectors_found": {
-        "0xf2fde38b": "transferOwnership(address)"
-      },
-      "eth_balance": 0.5,
-      "owner": "0x221cb1f7eefe511a92a786af23622a8f163545af",
-      "note": "Contains potentially callable withdraw/sweep functions. Verify access control."
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784817.7778773,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "stuck_trading_fees",
-    "address": "0xe4F5b998372443522B08b72D3B5b704c3BDAFAF4",
-    "eth_value": 0.5,
-    "details": {
-      "eth_balance": 0.5,
-      "weth_balance": 0.0,
-      "total_value": 0.5,
-      "owner": "0x221cb1f7eefe511a92a786af23622a8f163545af",
-      "owner_renounced": false,
-      "reason": "Contract holds ETH+WETH, likely from broken swap/fee mechanism"
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784818.5031707,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "proxy_dead_impl",
-    "address": "0x7c2F6eD6f3743aFa331717c7153434118974AFa3",
-    "eth_value": 0.0,
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 0.0
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784833.2492716,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "proxy_dead_impl",
-    "address": "0xA41c78f64dBf69F2fB11046785c566ce7E7cDc5d",
-    "eth_value": 0.0,
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 0.0
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784881.3189282,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "proxy_dead_impl",
-    "address": "0xe4A2faA126E9006299E8a35B19c6DfE54057E42F",
-    "eth_value": 0.0,
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 0.0
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784895.288219,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "proxy_dead_impl",
-    "address": "0x738af45e3bD83BbD28e96A815b70F9EF61963210",
-    "eth_value": 0.0,
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 0.0
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784909.5779345,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "proxy_dead_impl",
-    "address": "0x78d799E2102e887fd1aCd4ecDFE9169680762B05",
-    "eth_value": 0.0,
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 0.0
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "queued_at": 1771784937.039624,
-    "status": "pending"
-  },
-  {
-    "source": "scanner",
-    "type": "proxy_dead_impl",
     "address": "0x1A2Ad7690bc092097444840bf42001e484c46461",
     "eth_value": 0.0,
     "details": {
@@ -715,6 +583,150 @@
     },
     "action": "Log for review. Submit to Immunefi if bounty-eligible.",
     "queued_at": 1771785694.6291296,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "proxy_dead_impl",
+    "address": "0xFc57Cf56A22EC88ebAcb8C59A8D4EED1177dC58f",
+    "eth_value": 1.0,
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 1.0
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771787051.9011343,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "unguarded_functions",
+    "address": "0xFc57Cf56A22EC88ebAcb8C59A8D4EED1177dC58f",
+    "eth_value": 1.0,
+    "details": {
+      "selectors_found": {
+        "0xf2fde38b": "transferOwnership(address)"
+      },
+      "eth_balance": 1.0,
+      "owner": "0x9734f4bb660bb9107ff73f9df1d26cca795c4a9f",
+      "note": "Contains potentially callable withdraw/sweep functions. Verify access control."
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771787052.5118303,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "stuck_trading_fees",
+    "address": "0xFc57Cf56A22EC88ebAcb8C59A8D4EED1177dC58f",
+    "eth_value": 1.0,
+    "details": {
+      "eth_balance": 1.0,
+      "weth_balance": 0.0,
+      "total_value": 1.0,
+      "owner": "0x9734f4bb660bb9107ff73f9df1d26cca795c4a9f",
+      "owner_renounced": false,
+      "reason": "Contract holds ETH+WETH, likely from broken swap/fee mechanism"
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771787053.2925835,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "proxy_dead_impl",
+    "address": "0xA81c0408582eD4FEb0bEFCDC3F359Ee57aD922c8",
+    "eth_value": 1.0,
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 1.0
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771787700.05097,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "unguarded_functions",
+    "address": "0xA81c0408582eD4FEb0bEFCDC3F359Ee57aD922c8",
+    "eth_value": 1.0,
+    "details": {
+      "selectors_found": {
+        "0xf2fde38b": "transferOwnership(address)"
+      },
+      "eth_balance": 1.0,
+      "owner": "0x8868bcbcbd80856fd908fec4dc63b62fa57b89e4",
+      "note": "Contains potentially callable withdraw/sweep functions. Verify access control."
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771787700.6377957,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "stuck_trading_fees",
+    "address": "0xA81c0408582eD4FEb0bEFCDC3F359Ee57aD922c8",
+    "eth_value": 1.0,
+    "details": {
+      "eth_balance": 1.0,
+      "weth_balance": 0.0,
+      "total_value": 1.0,
+      "owner": "0x8868bcbcbd80856fd908fec4dc63b62fa57b89e4",
+      "owner_renounced": false,
+      "reason": "Contract holds ETH+WETH, likely from broken swap/fee mechanism"
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771787701.3614297,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "proxy_dead_impl",
+    "address": "0xA3FA8B01395478080c53fA91784E9484C3221CA0",
+    "eth_value": 0.6,
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 0.6
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771788066.1089358,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "unguarded_functions",
+    "address": "0xA3FA8B01395478080c53fA91784E9484C3221CA0",
+    "eth_value": 0.6,
+    "details": {
+      "selectors_found": {
+        "0xf2fde38b": "transferOwnership(address)"
+      },
+      "eth_balance": 0.6,
+      "owner": "0xfef6cc35f214bca0c18bac90a727eca2fe05db29",
+      "note": "Contains potentially callable withdraw/sweep functions. Verify access control."
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771788066.8243043,
+    "status": "pending"
+  },
+  {
+    "source": "scanner",
+    "type": "stuck_trading_fees",
+    "address": "0xA3FA8B01395478080c53fA91784E9484C3221CA0",
+    "eth_value": 0.6,
+    "details": {
+      "eth_balance": 0.6,
+      "weth_balance": 0.0,
+      "total_value": 0.6,
+      "owner": "0xfef6cc35f214bca0c18bac90a727eca2fe05db29",
+      "owner_renounced": false,
+      "reason": "Contract holds ETH+WETH, likely from broken swap/fee mechanism"
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "queued_at": 1771788067.687953,
     "status": "pending"
   }
 ]
