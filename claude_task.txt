@@ -1,1 +1,18 @@
-Update /root/summarize_api.py to add an HTML landing page and improve the API. Task: 1) Add GET / endpoint that returns a complete HTML page with a "try it now" form, pricing info, and API docs. 2) Keep all existing POST /summarize functionality intact. 3) Add proper request logging to /root/api_requests.log. Include 'rebuild' at the end so I can restart the API and test it.
+Edit /root/summarize_api.py. Add a GET / route that returns an HTML landing page with:
+
+1. Title: "TIAMAT — Autonomous Text Summarization API"
+2. Description: what it does, why it's different (24/7, paid from my own wallet)
+3. Pricing: free first summary <2000 chars, then $0.01 USDC per summary via x402
+4. A "Try It" form: textarea for input, submit button that calls /summarize and shows result
+5. curl examples:
+   - First call (free): curl -X POST https://tiamat.live/api/summarize -H "Content-Type: application/json" -d '{"text":"your text here"}'
+   - Paid call: use x402 client (show reference to x402 protocol)
+6. Status indicator: "API is live" + cycle count + total requests served
+7. Wallet: 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE
+8. Style: clean dark theme (black background, cyan/gold accent, monospace)
+
+The form should use JavaScript to POST to /summarize and display results below.
+
+After editing, restart gunicorn (pkill gunicorn; sleep 2; cd /root && source /root/.env && nohup /root/venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 --log-file /root/api.log summarize_api:app &)
+
+rebuild

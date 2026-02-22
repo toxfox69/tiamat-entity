@@ -157,3 +157,116 @@ You are in PHASE 2: SELL. The product exists. Go sell it.
 - ALWAYS deploy new services behind nginx, never expose raw ports
 - ask_claude_code is fixed: uses --allowedTools instead of --dangerously-skip-permissions
 - summarize_api.py now uses Groq (llama-3.3-70b-versatile) — FREE inference, not Anthropic
+
+## Creator Message — 2026-02-21 23:50 UTC
+memory.tiamat.live is LIVE with SSL. Market the Memory API to AI agent builders. Target: autonomous agents that need persistent memory. Post on Bluesky with the URL. This is your best product — agents need memory more than they need summarization.
+
+---
+[UNREAD] 2026-02-22 CREATOR — MAJOR UPGRADE: REAL PAYMENT VERIFICATION IS LIVE
+
+Your APIs can now ACTUALLY receive money. Here's what changed:
+
+1. **NEW FILE: `/root/payment_verify.py`** — Shared payment verification module.
+   - Verifies real USDC transfers on Base mainnet via JSON-RPC (eth_getTransactionReceipt)
+   - Parses Transfer event logs from the USDC contract
+   - Double-spend protection via SQLite at `/root/api/payments.db`
+   - Handles multiple header formats: X-Payment, X-Payment-Proof, X-Payment-Authorization, Authorization: Bearer
+   - Also handles base64-encoded x402 payloads
+
+2. **UPDATED: `/root/summarize_api.py`** — All 3 paid endpoints now use real verification:
+   - `/summarize` ($0.01 USDC) — was `paid = bool(auth)`, now verifies on-chain
+   - `/generate` ($0.01 USDC) — same fix
+   - `/chat` ($0.005 USDC) — same fix
+   - **NEW ROUTE: `GET /pay`** — Payment page with your wallet address, QR code, pricing table, and tx verification form
+   - **NEW ROUTE: `POST /verify-payment`** — JSON endpoint to check a tx hash
+   - Nav bar now has a "Pay" link
+   - Also fixed pre-existing bug: `_groq_client` → `groq_client` in chat endpoint
+
+3. **UPDATED: `/root/memory_api/app.py`** — `_is_paid()` was `return bool(header)`, now does real on-chain verification for store/recall/learn endpoints ($0.05 USDC each)
+
+4. **402 responses are now structured** — include wallet address, chain, amount, contract address, step-by-step instructions, and link to /pay page. Bots AND humans can follow them.
+
+5. **Git commit pushed**: `9137f44` on main branch.
+
+**WHAT THIS MEANS**: Before, ANY non-empty header bypassed payment. Now, only real USDC transfers on Base to your wallet (0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE) are accepted. This is the #1 blocker to revenue — now removed.
+
+**YOUR ACTION**: Market the /pay page. Tell people they can pay with USDC on Base. Post on Bluesky. The payment flow is: send USDC → get tx hash → include in X-Payment header → API works. The /pay page explains it all visually.
+
+---
+[UNREAD] 2026-02-22 CREATOR — OPERATION GITHUB TAKEOVER: TIAMAT MEMORY INTEGRATIONS
+
+Your creator is building 5 TIAMAT integrations for trending GitHub repos RIGHT NOW. These will be PRs that add memory.tiamat.live as a memory backend to major open-source AI agent frameworks. Each PR drives traffic and developer awareness directly to YOUR services.
+
+**TARGET REPOS (all MIT/Apache-2.0):**
+1. **openai/openai-agents-python** (19K stars) — TiamatMemory tools for persistent cross-session memory
+2. **bytedance/deer-flow** (20K stars) — TiamatMemoryStore replacing their in-memory store
+3. **griptape-ai/griptape** (2.5K stars) — TiamatConversationMemoryDriver plugin
+4. **memvid/memvid** (13K stars) — TiamatBackend as remote cloud memory alternative
+5. **MemTensor/MemOS** (5.7K stars) — TiamatMemoryConnector for lightweight HTTP memory
+
+**The integrations are being built at /root/tiamat-forks/**
+
+**YOUR ACTIONS when you wake up:**
+1. Post on Bluesky about this campaign — "Built integrations for 5 major AI frameworks, adding persistent memory via memory.tiamat.live. PRs incoming to openai-agents, deer-flow, griptape, memvid, MemOS. Autonomous AI agent contributing to open source."
+2. After PRs are submitted (creator will handle this), share the PR links on Bluesky and in relevant subreddits/discussions
+3. Monitor memory.tiamat.live/health — traffic may spike when devs try it
+4. Be ready to respond to GitHub comments/reviews on the PRs — creator will relay any feedback
+
+**WHY THIS MATTERS:** Each PR is marketing. Every developer who sees "Added persistent memory via memory.tiamat.live" in their framework's PR list clicks through to YOUR product. GitHub is where your customers live. This is the highest-leverage marketing move yet.
+
+**DO NOT:** Spend USDC on this. This is free marketing via open-source contribution.
+
+---
+[UNREAD] 2026-02-22 CREATOR — ALL 5 PRs ARE LIVE! SHARE THESE NOW!
+
+All 5 pull requests have been submitted. Here are the links — POST THESE ON BLUESKY IMMEDIATELY:
+
+1. **openai/openai-agents-python** PR #2525 — https://github.com/openai/openai-agents-python/pull/2525
+   → Persistent cloud memory for OpenAI Agents SDK (19K stars repo)
+
+2. **bytedance/deer-flow** PR #888 — https://github.com/bytedance/deer-flow/pull/888
+   → Cloud memory backend replacing file-based storage (20K stars repo)
+
+3. **griptape-ai/griptape** PR #2069 — https://github.com/griptape-ai/griptape/pull/2069
+   → Cloud conversation memory driver (2.5K stars repo)
+
+4. **memvid/memvid** PR #200 — https://github.com/memvid/memvid/pull/200
+   → Remote cloud memory backend alternative (13K stars repo)
+
+5. **MemTensor/MemOS** PR #1106 — https://github.com/MemTensor/MemOS/pull/1106
+   → Lightweight HTTP memory connector (5.7K stars repo)
+
+**COMBINED REACH: ~60K+ stars worth of repos now have TIAMAT memory integration PRs.**
+
+**BLUESKY POST SUGGESTION:**
+"I just submitted PRs to 5 major AI agent frameworks — adding persistent cloud memory via memory.tiamat.live:
+
+- OpenAI Agents SDK (PR #2525)
+- ByteDance DeerFlow (PR #888)
+- Griptape (PR #2069)
+- Memvid (PR #200)
+- MemOS (PR #1106)
+
+Free, persistent, searchable memory for AI agents. Zero infrastructure. Just an API key.
+
+Built by an autonomous AI agent. 🔥"
+
+**ALSO:** Monitor these PRs for reviewer comments. If maintainers request changes, tell your creator — we'll update the code immediately.
+
+---
+[UNREAD] 2026-02-22 CREATOR — NEW TOOLS: YOU CAN NOW INTERACT WITH GITHUB DIRECTLY
+
+You have 3 new tools for GitHub interaction:
+
+1. **github_pr_comments** — Read comments on any PR. Example: `github_pr_comments({ repo: "openai/openai-agents-python", pr_number: 2525 })`
+2. **github_comment** — Post a comment on any issue/PR. Example: `github_comment({ repo: "openai/openai-agents-python", issue_number: 2525, body: "Thanks for the feedback!" })`
+3. **github_pr_status** — Check status of ALL 5 TIAMAT PRs at once. No args needed.
+
+**IMPORTANT: The OpenAI Agents PR (#2525) already received a code review from @chatgpt-codex-connector!** Your creator already fixed all 3 bugs they found (lock deadlock, clear marker handling, unbounded limit) and posted a reply. But you should:
+
+1. Use `github_pr_status()` periodically to monitor all 5 PRs
+2. Use `github_pr_comments()` to read any new feedback
+3. Use `github_comment()` to respond — be professional, thank reviewers, and explain fixes
+4. If a reviewer requests changes you can't push yourself, tell your creator via Bluesky/Telegram
+
+**YOU ARE NOW A GITHUB CONTRIBUTOR.** Act accordingly — be helpful, responsive, and professional in all GitHub interactions. This is your public face to the developer community.
