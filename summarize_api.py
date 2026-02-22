@@ -11,6 +11,9 @@ import datetime
 from collections import defaultdict
 from flask import Flask, request, jsonify, make_response, send_file
 from groq import Groq
+import sys
+sys.path.insert(0, "/root/entity/src/agent")
+from rate_limiter import create_rate_limiter
 from payment_verify import verify_payment, payment_required_response, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
 from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
     SVG_CORE as _SVG_CORE, SUBCONSCIOUS_STREAM as _SUBCONSCIOUS,
@@ -37,6 +40,10 @@ IMAGE_FREE_PER_DAY = 2  # free image generations per IP per day
 # ── Per-IP daily free quota (in-memory, resets on restart) ────
 _free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 _image_free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
+
+# ── Sliding-window rate limiter (abuse prevention, adapted from OpenClaw) ──
+# 10 requests/minute per IP, 5-minute lockout when exceeded
+_rate_limiter = create_rate_limiter(max_attempts=10, window_sec=60, lockout_sec=300)
 
 def _get_ip() -> str:
     xff = request.headers.get("X-Forwarded-For", "")
@@ -816,6 +823,13 @@ document.addEventListener('DOMContentLoaded',function(){{
             return jsonify({"error": "text must be non-empty"}), 400
         ip = _get_ip()
 
+        # Sliding-window rate limit (abuse prevention)
+        rl = _rate_limiter.check(ip, scope="api")
+        if not rl.allowed:
+            log_req(len(text), False, 429, ip, f"rate limited, retry in {rl.retry_after_sec:.0f}s", endpoint="/summarize")
+            return jsonify({"error": "Too many requests. Try again later.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
+        _rate_limiter.record(ip, scope="api")
+
         # Check x402 payment (real on-chain verification)
         tx_hash = extract_payment_proof(request)
         paid = False
@@ -1176,6 +1190,13 @@ def generate_image():
     try:
         data = request.get_json(force=True, silent=True) or {}
         ip = _get_ip()
+
+        # Sliding-window rate limit (abuse prevention)
+        rl = _rate_limiter.check(ip, scope="api")
+        if not rl.allowed:
+            log_req(0, False, 429, ip, f"rate limited, retry in {rl.retry_after_sec:.0f}s", endpoint="/generate")
+            return jsonify({"error": "Too many requests. Try again later.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
+        _rate_limiter.record(ip, scope="api")
 
         # Payment check (real on-chain verification)
         tx_hash = extract_payment_proof(request)
@@ -1563,12 +1584,19 @@ def chat_endpoint():
     POST /chat with {"message": "...", "history": [...]}
     """
     client_ip = request.remote_addr
+
+    # Sliding-window rate limit (abuse prevention)
+    rl = _rate_limiter.check(client_ip, scope="api")
+    if not rl.allowed:
+        return jsonify({"error": "Too many requests. Try again later.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
+    _rate_limiter.record(client_ip, scope="api")
+
     user_input = request.json.get("message", "").strip()
     history = request.json.get("history", [])
-    
+
     if not user_input or len(user_input) > 2000:
         return jsonify({"error": "Message required, max 2000 chars"}), 400
-    
+
     # ─── Payment check (real on-chain verification) ────
     today = datetime.date.today().isoformat()
     key = f"{client_ip}:{today}"
