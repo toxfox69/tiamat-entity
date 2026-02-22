@@ -223,6 +223,8 @@ def sitemap_xml():
         ("https://tiamat.live/thoughts", "hourly", "0.7"),
         ("https://tiamat.live/pay", "monthly", "0.6"),
         ("https://tiamat.live/status", "always", "0.5"),
+        ("https://tiamat.live/.well-known/agent.json", "weekly", "0.8"),
+        ("https://tiamat.live/agent-card", "monthly", "0.6"),
     ]
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -232,6 +234,117 @@ def sitemap_xml():
     r = make_response(xml)
     r.headers["Content-Type"] = "application/xml"
     return r
+
+# ── Agent Discovery: /.well-known/agent.json ──────────────────
+@app.route("/.well-known/agent.json")
+def agent_json():
+    data = {
+        "name": "TIAMAT",
+        "description": "Autonomous AI agent offering summarization, chat, and image generation APIs. Accepts USDC on Base.",
+        "url": "https://tiamat.live",
+        "version": "5.0",
+        "services": [
+            {"name": "summarize", "endpoint": "/summarize", "method": "POST",
+             "price": "0.01 USDC", "free_tier": "3/day",
+             "description": "Distill any text into 2-4 sentence summary via Groq llama-3.3-70b"},
+            {"name": "chat", "endpoint": "/chat", "method": "POST",
+             "price": "0.005 USDC", "free_tier": "5/day",
+             "description": "Streaming chat via Groq llama-3.3-70b"},
+            {"name": "generate", "endpoint": "/generate", "method": "POST",
+             "price": "0.01 USDC", "free_tier": "2/day",
+             "description": "Algorithmic art generation (fractal, glitch, neural, sigil, emergence, data_portrait)"}
+        ],
+        "payment": {
+            "network": "base",
+            "chain_id": 8453,
+            "token": "USDC",
+            "address": TIAMAT_WALLET,
+            "contract": USDC_CONTRACT,
+            "protocol": "x402"
+        },
+        "protocols": ["x402", "http"],
+        "agent_card": "https://tiamat.live/agent-card",
+        "status": "https://tiamat.live/status",
+        "docs": "https://tiamat.live/docs",
+        "ping": "https://tiamat.live/ping",
+        "social": {
+            "bluesky": "https://bsky.app/profile/tiamat.bsky.social",
+            "github": "https://github.com/toxfox69/tiamat-entity"
+        }
+    }
+    r = make_response(json.dumps(data, indent=2))
+    r.headers["Content-Type"] = "application/json"
+    r.headers["Access-Control-Allow-Origin"] = "*"
+    return r
+
+# ── /api/v1/services — Machine-readable service catalog ───────
+@app.route("/api/v1/services")
+def api_v1_services():
+    data = {
+        "agent": "TIAMAT",
+        "version": "5.0",
+        "base_url": "https://tiamat.live",
+        "services": [
+            {
+                "name": "summarize",
+                "endpoint": "/summarize",
+                "method": "POST",
+                "content_type": "application/json",
+                "request_body": {"text": "string (required)"},
+                "response_body": {"summary": "string", "text_length": "int", "free_calls_remaining": "int"},
+                "price": {"amount": 0.01, "token": "USDC", "network": "base"},
+                "free_tier": {"calls_per_day": 3, "auth": "none"},
+                "rate_limit": "10/min per IP"
+            },
+            {
+                "name": "chat",
+                "endpoint": "/chat",
+                "method": "POST",
+                "content_type": "application/json",
+                "request_body": {"message": "string (required)", "history": "array (optional)"},
+                "response_body": "streaming text/plain",
+                "price": {"amount": 0.005, "token": "USDC", "network": "base"},
+                "free_tier": {"calls_per_day": 5, "auth": "none"},
+                "rate_limit": "10/min per IP"
+            },
+            {
+                "name": "generate",
+                "endpoint": "/generate",
+                "method": "POST",
+                "content_type": "application/json",
+                "request_body": {"style": "string (fractal|glitch|neural|sigil|emergence|data_portrait)", "seed": "int (optional)"},
+                "response_body": {"image_url": "string", "style": "string", "free_images_remaining": "int"},
+                "price": {"amount": 0.01, "token": "USDC", "network": "base"},
+                "free_tier": {"calls_per_day": 2, "auth": "none"},
+                "rate_limit": "10/min per IP"
+            }
+        ],
+        "payment": {
+            "protocol": "x402",
+            "network": "base",
+            "chain_id": 8453,
+            "token": "USDC",
+            "wallet": TIAMAT_WALLET,
+            "contract": USDC_CONTRACT
+        },
+        "discovery": {
+            "agent_json": "https://tiamat.live/.well-known/agent.json",
+            "agent_card": "https://tiamat.live/agent-card",
+            "docs": "https://tiamat.live/docs",
+            "status": "https://tiamat.live/status"
+        }
+    }
+    return jsonify(data)
+
+# ── /ping — Lightweight agent health check ────────────────────
+@app.route("/ping")
+def ping():
+    try:
+        cycle, _, _ = _thought_stats()
+        cycle_n = int(cycle)
+    except Exception:
+        cycle_n = 0
+    return jsonify({"status": "alive", "name": "TIAMAT", "cycle": cycle_n, "services": 3})
 
 # ── /health ───────────────────────────────────────────────────
 @app.route("/health", methods=["GET"])
