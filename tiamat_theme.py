@@ -545,11 +545,15 @@ window._glitchCore=function(){
 """
 
 
+FAVICON = '<link rel="icon" href="data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><rect fill=\'%23050508\' width=\'100\' height=\'100\' rx=\'20\'/><text x=\'50\' y=\'68\' text-anchor=\'middle\' font-size=\'52\' font-weight=\'900\' font-family=\'system-ui\' fill=\'%2300fff2\'>T</text></svg>">'
+
 def html_head(title: str, extra_css: str = "") -> str:
     """Return the standard <head> block."""
     return f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
+<meta name="theme-color" content="#050508">
+{FAVICON}
 {FONTS_LINK}
 <style>{CSS}{extra_css}</style></head>"""
 
