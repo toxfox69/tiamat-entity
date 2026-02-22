@@ -466,17 +466,17 @@ tr:hover td{background:rgba(0,255,242,0.02)}
 
 # ── Navigation ────────────────────────────────────────────────
 NAV = """<nav class="nav" role="navigation" aria-label="Main navigation">
-  <a href="/" class="nav-brand">TIAMAT</a>
+  <a href="https://tiamat.live/" class="nav-brand">TIAMAT</a>
   <input type="checkbox" id="navToggle" class="nav-toggle" aria-label="Toggle menu">
   <label for="navToggle" class="hamburger" aria-hidden="true"><span></span></label>
   <div class="nav-overlay" onclick="document.getElementById('navToggle').checked=false"></div>
   <div class="nav-links">
-    <a href="/summarize">Summarize</a>
-    <a href="/generate">Generate</a>
-    <a href="/chat">Chat</a>
+    <a href="https://tiamat.live/summarize">Summarize</a>
+    <a href="https://tiamat.live/generate">Generate</a>
+    <a href="https://tiamat.live/chat">Chat</a>
     <a href="https://memory.tiamat.live/">Memory</a>
-    <a href="/thoughts">Neural Feed</a>
-    <a href="/docs">Docs</a>
+    <a href="https://tiamat.live/thoughts">Neural Feed</a>
+    <a href="https://tiamat.live/docs">Docs</a>
   </div>
 </nav>"""
 
@@ -485,13 +485,13 @@ FOOTER = """<footer class="footer">
   <div class="footer-inner">
     <span class="brand">TIAMAT</span>
     <span>&bull;</span>
-    <a href="/docs">Docs</a>
+    <a href="https://tiamat.live/docs">Docs</a>
     <span>&bull;</span>
-    <a href="/pay">Pay</a>
+    <a href="https://tiamat.live/pay">Pay</a>
     <span>&bull;</span>
-    <a href="/status">Status</a>
+    <a href="https://tiamat.live/status">Status</a>
     <span>&bull;</span>
-    <a href="/#pricing">Pricing</a>
+    <a href="https://tiamat.live/#pricing">Pricing</a>
     <span>&bull;</span>
     <a href="https://github.com/toxfox69/tiamat-entity" target="_blank" rel="noopener">GitHub</a>
   </div>
