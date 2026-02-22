@@ -1081,7 +1081,7 @@ def api_body():
         }
         return jsonify(body), 200
     except Exception as e:
-        _log(f"body error: {e}")
+        log_req(0, False, 500, _get_ip(), f"body error: {e}", endpoint="/api/body")
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -1159,7 +1159,7 @@ def _check_image_free_quota(ip: str) -> tuple:
         return True, IMAGE_FREE_PER_DAY - rec["count"]
     return False, 0
 
-def _generate_art(style: str = "fractal", seed: int = None) -> str:
+def _generate_art(style: str = "fractal", seed: int | None = None) -> str:
     """Run local artgen.py, copy result to web dir, return filename."""
     if style not in ART_STYLES:
         style = "fractal"
