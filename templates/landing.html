@@ -169,32 +169,142 @@ body{
 .page-wrap{
   max-width:1120px;margin:0 auto;padding:0 28px;
   position:relative;z-index:10;
+  padding-top:60px; /* clear fixed nav */
 }
 
 /* ═══ NAV ═══ */
 .nav{
-  display:flex;align-items:center;flex-wrap:wrap;gap:2px;
-  padding:14px 20px;margin:20px 0 0;
-  background:rgba(8,8,14,0.6);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid var(--glass-border);
-  border-radius:var(--radius);
-  position:sticky;top:12px;z-index:100;
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;
+  padding:0 max(28px, calc((100vw - 1120px)/2 + 28px));
+  height:60px;
+  background:rgba(10,10,10,0.0);
+  backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);
+  transition:background .4s,backdrop-filter .4s,-webkit-backdrop-filter .4s,box-shadow .4s;
+  border:none;border-radius:0;
 }
-.nav a{
-  color:var(--text-sec);padding:7px 14px;border-radius:8px;
-  font-size:.82em;font-weight:500;text-decoration:none;
-  transition:all .25s;letter-spacing:.01em;
+.nav.scrolled{
+  background:rgba(10,10,10,0.88);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 1px 0 rgba(255,255,255,0.03);
 }
-.nav a:hover{color:var(--text);background:rgba(0,255,242,0.05)}
+/* Animated gradient underline */
+.nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--green),var(--cyan));
+  background-size:300% 100%;
+  animation:nav-gradient 4s linear infinite;
+  opacity:0;transition:opacity .4s;
+}
+.nav.scrolled::after{opacity:1}
+@keyframes nav-gradient{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+
+/* Brand with mini glitch */
 .nav-brand{
-  font-family:'Orbitron',sans-serif !important;
-  color:var(--cyan) !important;font-weight:800 !important;
-  letter-spacing:.08em !important;margin-right:auto !important;
-  font-size:.88em !important;
-  text-shadow:0 0 20px rgba(0,255,242,0.3);
+  font-family:'Orbitron',sans-serif;
+  color:var(--cyan);font-weight:900;font-size:.9em;
+  letter-spacing:.1em;text-decoration:none;
+  margin-right:auto;position:relative;
+  text-shadow:0 0 20px rgba(0,255,242,0.4),0 0 40px rgba(0,255,242,0.15);
+  animation:brand-breathe 4s ease-in-out infinite;
 }
-.nav-brand:hover{text-shadow:0 0 30px rgba(0,255,242,0.6) !important;background:none !important}
+.nav-brand::before,.nav-brand::after{
+  content:'TIAMAT';position:absolute;top:0;left:0;
+  width:100%;height:100%;overflow:hidden;
+}
+.nav-brand::before{
+  color:var(--magenta);clip-path:polygon(0 0,100% 0,100% 33%,0 33%);
+  animation:glitch-1 4s ease-in-out infinite;
+}
+.nav-brand::after{
+  color:var(--green);clip-path:polygon(0 67%,100% 67%,100% 100%,0 100%);
+  animation:glitch-2 3.5s ease-in-out infinite;
+}
+@keyframes brand-breathe{
+  0%,100%{text-shadow:0 0 20px rgba(0,255,242,0.4),0 0 40px rgba(0,255,242,0.15)}
+  50%{text-shadow:0 0 30px rgba(0,255,242,0.6),0 0 60px rgba(0,255,242,0.25)}
+}
+.nav-brand:hover{color:var(--cyan)}
+
+/* Nav links */
+.nav-links{
+  display:flex;align-items:center;gap:0;
+}
+.nav-links a{
+  font-family:'Orbitron',sans-serif;
+  font-size:.62em;font-weight:600;
+  text-transform:uppercase;letter-spacing:2px;
+  color:var(--text-muted);text-decoration:none;
+  padding:8px 14px;position:relative;
+  transition:color .3s,text-shadow .3s;
+}
+.nav-links a:hover{
+  color:var(--cyan);
+  text-shadow:0 0 12px rgba(0,255,242,0.4);
+}
+/* Active underline effect */
+.nav-links a::after{
+  content:'';position:absolute;bottom:0;left:14px;right:14px;
+  height:2px;background:var(--cyan);
+  box-shadow:0 0 8px var(--cyan),0 0 16px rgba(0,255,242,0.3);
+  transform:scaleX(0);transform-origin:center;
+  transition:transform .3s cubic-bezier(.25,.8,.25,1);
+}
+.nav-links a:hover::after,.nav-links a.active::after{
+  transform:scaleX(1);
+}
+
+/* Hamburger (CSS-only) */
+.nav-toggle{display:none}
+.hamburger{
+  display:none;cursor:pointer;
+  width:28px;height:20px;position:relative;z-index:210;
+  flex-shrink:0;
+}
+.hamburger span,.hamburger::before,.hamburger::after{
+  content:'';position:absolute;left:0;width:100%;height:2px;
+  background:var(--text-sec);border-radius:2px;
+  transition:all .3s cubic-bezier(.25,.8,.25,1);
+}
+.hamburger::before{top:0}
+.hamburger span{top:9px}
+.hamburger::after{bottom:0}
+.nav-toggle:checked ~ .hamburger::before{
+  transform:rotate(45deg);top:9px;background:var(--cyan);
+}
+.nav-toggle:checked ~ .hamburger span{
+  opacity:0;transform:scaleX(0);
+}
+.nav-toggle:checked ~ .hamburger::after{
+  transform:rotate(-45deg);bottom:9px;background:var(--cyan);
+}
+
+@media(max-width:768px){
+  .hamburger{display:block}
+  .nav-links{
+    position:fixed;top:0;right:-280px;
+    width:260px;height:100vh;
+    flex-direction:column;align-items:flex-start;
+    background:rgba(5,5,8,0.96);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    padding:80px 28px 40px;gap:0;
+    transition:right .35s cubic-bezier(.25,.8,.25,1);
+    box-shadow:-8px 0 40px rgba(0,0,0,0.5);
+    border-left:1px solid rgba(0,255,242,0.06);
+  }
+  .nav-toggle:checked ~ .nav-links{right:0}
+  .nav-links a{
+    font-size:.72em;padding:14px 0;width:100%;
+    border-bottom:1px solid rgba(255,255,255,0.03);
+  }
+  .nav-links a::after{display:none}
+  /* Overlay */
+  .nav-overlay{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.5);z-index:190;
+  }
+  .nav-toggle:checked ~ .nav-overlay{display:block}
+}
 
 /* ═══ HERO — THE MAIN EVENT ═══ */
 .hero{
@@ -938,8 +1048,6 @@ a:hover{color:#66fffa}
   .pricing-grid{grid-template-columns:1fr}
   .demo-section{padding:24px 18px}
   .tab-btn{font-size:.68em;padding:12px 10px;letter-spacing:.04em}
-  .nav{gap:2px;padding:10px 14px;top:8px}
-  .nav a{padding:5px 10px;font-size:.76em}
   .hero-cta{gap:10px}
   .cta-btn{padding:14px 24px;font-size:.85em}
   .scroll-indicator{display:none}
@@ -963,18 +1071,22 @@ a:hover{color:#66fffa}
 <div class="noise" aria-hidden="true"></div>
 <div class="vignette" aria-hidden="true"></div>
 
-<div class="page-wrap">
-  <nav class="nav" role="navigation" aria-label="Main navigation">
-    <a href="/" class="nav-brand">TIAMAT</a>
+<nav class="nav" id="mainNav" role="navigation" aria-label="Main navigation">
+  <a href="/" class="nav-brand">TIAMAT</a>
+  <input type="checkbox" id="navToggle" class="nav-toggle" aria-label="Toggle menu">
+  <label for="navToggle" class="hamburger" aria-hidden="true"><span></span></label>
+  <div class="nav-overlay" onclick="document.getElementById('navToggle').checked=false"></div>
+  <div class="nav-links">
     <a href="/summarize">Summarize</a>
     <a href="/generate">Generate</a>
     <a href="/chat">Chat</a>
     <a href="https://memory.tiamat.live/">Memory</a>
     <a href="/thoughts">Neural Feed</a>
     <a href="/docs">Docs</a>
-    <a href="/pay">Pay</a>
-  </nav>
+  </div>
+</nav>
 
+<div class="page-wrap">
   <!-- ═══ HERO ═══ -->
   <header class="hero" role="banner">
     <!-- SVG Concentric Rings -->
@@ -1385,6 +1497,19 @@ function doGenerate() {
     btn.disabled = false; btn.textContent = 'GENERATE';
   });
 }
+
+/* ═══ NAV SCROLL ═══ */
+(function(){
+  var nav = document.getElementById('mainNav');
+  if (!nav) return;
+  var scrolled = false;
+  function onScroll() {
+    var s = window.scrollY > 30;
+    if (s !== scrolled) { scrolled = s; nav.classList.toggle('scrolled', s); }
+  }
+  window.addEventListener('scroll', onScroll, {passive: true});
+  onScroll();
+})();
 
 /* ═══ INIT ═══ */
 document.addEventListener('DOMContentLoaded', function() {
