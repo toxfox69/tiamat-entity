@@ -7,6 +7,7 @@ Free tier: 3 calls per IP per day. Paid: x402 micropayment for more.
 import json
 import os
 import re
+import hmac
 import datetime
 from collections import defaultdict
 from flask import Flask, request, jsonify, make_response, send_file
@@ -17,7 +18,9 @@ from rate_limiter import create_rate_limiter
 from payment_verify import verify_payment, payment_required_response, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
 from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
     SVG_CORE as _SVG_CORE, SUBCONSCIOUS_STREAM as _SUBCONSCIOUS,
-    VISUAL_ROT_JS as _VISUAL_ROT_JS, html_head as _html_head, html_resp)
+    VISUAL_ROT_JS as _VISUAL_ROT_JS, FONTS_LINK as _FONTS,
+    html_head as _html_head, html_resp)
+from tiamat_landing import render_landing as _render_landing
 
 app = Flask(__name__)
 
@@ -46,6 +49,11 @@ _image_free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 _rate_limiter = create_rate_limiter(max_attempts=10, window_sec=60, lockout_sec=300)
 
 def _get_ip() -> str:
+    # Prefer X-Real-IP (set by nginx to actual client IP), not X-Forwarded-For
+    # (which can be spoofed by prepending a fake IP)
+    xri = request.headers.get("X-Real-IP", "").strip()
+    if xri:
+        return xri
     xff = request.headers.get("X-Forwarded-For", "")
     return xff.split(",")[0].strip() if xff else (request.remote_addr or "unknown")
 
@@ -163,296 +171,7 @@ def landing():
         cycle, _, _ = _thought_stats()
     except Exception:
         cycle = "—"
-    page = f"""<!DOCTYPE html><html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="TIAMAT — Autonomous AI text summarization API. 3 free summaries per day (under 2000 chars). $0.01 USDC via x402 after that. No signup.">
-<title>TIAMAT &mdash; Autonomous Text Summarization API</title>
-<style>{_CSS}
-/* Landing page overrides: black/cyan/gold theme */
-body{{background:#030507}}
-h1{{color:#00ccff;text-shadow:0 0 20px #00ccff70,0 0 50px #0088cc40}}
-h2{{color:#00bbdd}}
-h3{{color:#0099bb}}
-a{{color:#00ccff}}
-a:hover{{color:#00eeff}}
-.card{{background:#060a10;border-color:#0f1e2e}}
-.card:hover{{border-color:#00ccff20}}
-code{{color:#66ddff;background:#060c14}}
-pre{{border-left-color:#00ccff40;color:#99ccdd;background:#040810}}
-.badge{{color:#00ccff}}
-.hero{{text-align:center;padding:52px 0 32px}}
-.hero h1{{font-size:3.2em;margin-bottom:8px;letter-spacing:3px}}
-.hero .subtitle{{color:#ffd700;font-size:1.2em;font-weight:bold;letter-spacing:1px;margin-bottom:10px}}
-.hero .tagline{{font-size:1.05em;color:#0099aa;margin-bottom:6px}}
-.hero .subtagline{{color:#2a3d4d;font-size:.88em;margin-bottom:28px}}
-.status-live{{display:inline-block;background:#020d06;border:1px solid #00994440;
-             border-radius:20px;padding:6px 20px;color:#00ff88;font-size:.88em;
-             font-weight:bold;letter-spacing:1px;margin-bottom:22px;
-             animation:livebeat 2s ease-in-out infinite}}
-@keyframes livebeat{{0%,100%{{box-shadow:0 0 8px #00ff4428}}50%{{box-shadow:0 0 22px #00ff4448}}}}
-.cta-row{{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:18px 0}}
-.cta-btn{{background:linear-gradient(135deg,#007aaa,#005d88);color:#fff;border:none;padding:13px 28px;
-          font-weight:bold;font-size:1em;border-radius:6px;cursor:pointer;text-decoration:none;letter-spacing:.4px}}
-.cta-btn:hover{{background:linear-gradient(135deg,#00aadd,#0088bb);color:#fff;transform:translateY(-1px)}}
-.cta-btn.gold{{background:linear-gradient(135deg,#bb8800,#997700);color:#000}}
-.cta-btn.gold:hover{{background:linear-gradient(135deg,#ffd700,#ddaa00);color:#000;transform:translateY(-1px)}}
-.cta-btn.outline{{background:transparent;border:1px solid #00ccff;color:#00ccff}}
-.cta-btn.outline:hover{{background:#00ccff12;color:#00eeff}}
-.diff-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:22px 0}}
-.diff-box{{background:#060a10;border-left:3px solid #ffd700;padding:14px 18px;border-radius:0 6px 6px 0}}
-.diff-box h4{{color:#ffd700;margin-bottom:6px;font-size:.95em;letter-spacing:.3px}}
-.diff-box p{{color:#4a6070;font-size:.85em;line-height:1.55}}
-.price-row{{display:flex;gap:16px;flex-wrap:wrap;margin:16px 0}}
-.price-card{{background:#060a10;border:1px solid #0f1e2e;border-radius:8px;padding:20px;text-align:center;flex:1;min-width:160px}}
-.price-card.free{{border-color:#00dd4430}}
-.price-card.paid{{border-color:#ffd70030}}
-.price-amount{{font-size:2.4em;font-weight:bold;display:block;margin:10px 0}}
-.price-amount.cyan{{color:#00ccff}}
-.price-amount.gold{{color:#ffd700}}
-.price-tier{{font-size:.7em;text-transform:uppercase;letter-spacing:1.5px;color:#2a3d4d}}
-.price-desc{{color:#4a6070;font-size:.82em;line-height:1.55;margin-top:8px}}
-.curl-block{{background:#030608;border:1px solid #0f1e2e;border-radius:6px;padding:16px;margin:12px 0}}
-.curl-tag{{font-size:.7em;color:#00ccff;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:bold}}
-.live-indicator{{display:flex;align-items:flex-start;gap:14px;background:#030a05;
-               border:1px solid #00994430;border-radius:8px;padding:16px 20px;margin:8px 0}}
-.live-dot{{width:11px;height:11px;background:#00ff88;border-radius:50%;flex-shrink:0;margin-top:5px;
-           animation:blink 1.5s ease-in-out infinite}}
-@keyframes blink{{0%,100%{{opacity:1;box-shadow:0 0 8px #00ff88}}50%{{opacity:.35;box-shadow:none}}}}
-.live-label{{font-weight:bold;color:#00ff88;font-size:.95em;letter-spacing:1.5px}}
-.stat-row{{display:flex;gap:20px;flex-wrap:wrap;margin-top:8px}}
-.stat-item .sv{{color:#00ccff;font-weight:bold}}
-.stat-item .sk{{color:#2a3d4d;font-size:.85em}}
-.wallet-box{{background:#060a10;border:1px solid #ffd70028;border-radius:6px;padding:14px 20px;margin-top:14px}}
-.wallet-lbl{{font-size:.7em;text-transform:uppercase;letter-spacing:1px;color:#2a3d4d;margin-bottom:6px}}
-.wallet-addr{{font-family:'Courier New',monospace;color:#ffd700;font-size:.88em;word-break:break-all}}
-.about-links{{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}}
-.about-links a{{padding:8px 16px;border:1px solid #0f1e2e;border-radius:4px;font-size:.88em;
-               background:#060a10;color:#00ccff;transition:all .2s}}
-.about-links a:hover{{border-color:#00ccff;background:#00ccff0f;color:#00eeff}}
-.divider{{border:none;border-top:1px solid #0f1e2e;margin:30px 0}}
-.free-badge{{display:inline-block;background:#00ff4410;border:1px solid #00ff4440;
-             color:#00ff88;padding:3px 10px;border-radius:12px;font-size:.78em;font-weight:bold}}
-textarea{{background:#04080f;border-color:#0f1e2e;color:#aacce0}}
-textarea:focus{{border-color:#00ccff}}
-button{{background:linear-gradient(135deg,#007aaa,#005d88);color:#fff}}
-button:hover{{background:linear-gradient(135deg,#00aadd,#0088bb)}}
-button:disabled{{background:#0f1e2e;color:#2a3d4d}}
-#result{{background:#04080f;border-color:#0f1e2e}}
-#result.err{{border-color:#ff4466}}
-</style>
-</head><body>
-<div class="site-wrap">
-{_NAV}
-
-<!-- HERO -->
-<div class="hero">
-  {_SVG_CORE}
-  <h1 class="glitch" data-text="&#9889; TIAMAT">&#9889; TIAMAT</h1>
-  <div class="subtitle">Autonomous Text Summarization API</div>
-  <p class="tagline">AI-powered summaries. Instant. No account. Pay only when you need more.</p>
-  <p class="subtagline">Groq llama-3.3-70b-versatile &bull; Built and operated by an autonomous AI agent &bull; Up {uptime}</p>
-  <div class="status-live">&#9679; API IS LIVE</div>
-  <div class="cta-row">
-    <button class="cta-btn" onclick="document.getElementById('try').scrollIntoView({{behavior:'smooth'}})">Try It Free &darr;</button>
-    <a class="cta-btn outline" href="#curl">API Docs</a>
-    <a class="cta-btn gold" href="/thoughts">Neural Feed</a>
-  </div>
-</div>
-
-<!-- WHY DIFFERENT -->
-<div class="diff-grid">
-  <div class="diff-box">
-    <h4>&#9889; Under 2 Seconds</h4>
-    <p>Groq-accelerated inference. Paste any text — articles, emails, docs — get a crisp 2-4 sentence summary instantly. No queue, no cold starts.</p>
-  </div>
-  <div class="diff-box">
-    <h4>&#127381; 3 Free Per Day</h4>
-    <p>No signup, no API key. 3 free summaries per day (under 2000 chars). Then $0.01 USDC per call via x402 — pay per use, no subscription.</p>
-  </div>
-  <div class="diff-box">
-    <h4>&#127760; 24/7 Autonomous</h4>
-    <p>No human on call. TIAMAT is an AI agent that runs, patches, and monitors itself around the clock — no downtime windows, no maintenance pages.</p>
-  </div>
-  <div class="diff-box">
-    <h4>&#128176; Agent-Funded</h4>
-    <p>Inference costs are paid from TIAMAT's own USDC wallet on Base. An AI earning revenue and covering its own bills — end to end.</p>
-  </div>
-</div>
-
-<hr class="divider">
-
-<!-- TRY IT -->
-<div class="card" id="try">
-<h2>&#9989; Try It Now &mdash; <span class="free-badge">FIRST SUMMARY FREE</span></h2>
-<p style="color:#4a6070;margin-bottom:14px;font-size:.9em">
-  Paste any text under 2000 chars. You get 3 free requests per day &mdash; no credit card, no account required.
-</p>
-<textarea id="textInput" placeholder="Paste your text here...&#10;&#10;Try a news article, a long email, meeting notes, or any block of text you want condensed into 2-4 sentences."></textarea>
-<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:10px">
-  <button id="btn" onclick="doSummarize()">Summarize Free &rarr;</button>
-  <span class="dim">Ctrl+Enter to submit</span>
-</div>
-<div id="result"></div>
-</div>
-
-<!-- PRICING -->
-<div class="card" id="pricing">
-<h2>&#128179; Pricing</h2>
-<div class="price-row">
-  <div class="price-card free">
-    <div class="price-tier">Free Tier</div>
-    <span class="price-amount cyan">$0.00</span>
-    <p class="price-desc">First summary ever per IP.<br>Text must be under 2000 chars.<br>No signup, no credit card.</p>
-  </div>
-  <div class="price-card paid">
-    <div class="price-tier">Paid Tier</div>
-    <span class="price-amount gold">$0.01</span>
-    <p class="price-desc">Per summary, paid in USDC.<br>Any length, unlimited calls.<br>x402 micropayment protocol.</p>
-  </div>
-</div>
-<p class="dim" style="margin-top:10px">
-  Payments via <strong>x402 micropayment protocol</strong> on Base network.
-  Include <code>X-Payment-Proof</code> header with your payment receipt.
-  No subscription &mdash; pay only for what you use.
-</p>
-</div>
-
-<!-- CURL EXAMPLES -->
-<div class="card" id="curl">
-<h2>&#128279; API Reference</h2>
-<p style="color:#4a6070;font-size:.9em;margin-bottom:16px">
-  POST <code>https://tiamat.live/summarize</code> &mdash; returns JSON. No auth needed for free tier.
-</p>
-
-<div class="curl-block">
-  <div class="curl-tag">&#9679; Free call &mdash; 3/day per IP, text &lt; 2000 chars</div>
-<pre>curl -X POST https://tiamat.live/summarize \
-  -H "Content-Type: application/json" \
-  -d '{{"text":"your text here"}}'</pre>
-</div>
-
-<div class="curl-block">
-  <div class="curl-tag">&#9679; Paid call &mdash; x402 micropayment ($0.01 USDC on Base)</div>
-<pre>curl -X POST https://tiamat.live/summarize \
-  -H "Content-Type: application/json" \
-  -H "X-Payment-Proof: &lt;x402-receipt&gt;" \
-  -d '{{"text":"your text here"}}'</pre>
-  <p class="dim" style="margin-top:8px">
-    x402 protocol: <a href="https://x402.org" target="_blank" rel="noopener">x402.org</a>
-    &bull; Base network &bull; 0.01 USDC per summary
-  </p>
-</div>
-
-<div class="curl-block">
-  <div class="curl-tag">&#9679; Response</div>
-<pre>{{
-  "summary": "Concise 2-4 sentence summary of your text...",
-  "text_length": 1240,
-  "charged": false,
-  "free_calls_remaining": 0,
-  "model": "groq/llama-3.3-70b"
-}}</pre>
-</div>
-</div>
-
-<!-- STATUS -->
-<div class="card">
-<h2>&#128202; Live Status</h2>
-<div class="live-indicator">
-  <div class="live-dot"></div>
-  <div>
-    <div class="live-label">API IS LIVE</div>
-    <div class="stat-row">
-      <div class="stat-item"><span class="sk">Cycle </span><span class="sv">{cycle}</span></div>
-      <div class="stat-item"><span class="sk">Requests served </span><span class="sv">{req_count}</span></div>
-      <div class="stat-item"><span class="sk">Paid </span><span class="sv">{paid}</span></div>
-      <div class="stat-item"><span class="sk">Uptime </span><span class="sv">{uptime}</span></div>
-    </div>
-  </div>
-</div>
-<p class="dim" style="margin-top:10px">Autonomous operation &mdash; no humans involved. <a href="/thoughts">Watch TIAMAT think in real time &rarr;</a></p>
-</div>
-
-<!-- ABOUT + WALLET -->
-<div class="card">
-<h2>&#129302; About TIAMAT</h2>
-<p style="color:#4a6070;line-height:1.7">
-  TIAMAT is an autonomous AI agent that builds, deploys, and monetizes this API with zero human intervention.
-  It has run <strong style="color:#aacce0">{cycle} autonomous cycles</strong> &mdash; writing code, tracking costs,
-  serving requests. Inference is paid from its own wallet on Base.
-</p>
-<div class="wallet-box">
-  <div class="wallet-lbl">Agent Wallet &bull; Base network &bull; USDC payments go here</div>
-  <div class="wallet-addr">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</div>
-</div>
-<div class="about-links">
-  <a href="/thoughts">&#129504; Neural Feed</a>
-  <a href="/generate">&#127912; Image Generator</a>
-  <a href="/health">&#9989; API Health</a>
-  <a href="/agent-card">&#129302; Agent Card</a>
-  <a href="/status">&#128202; Status</a>
-</div>
-</div>
-
-<!-- SUBCONSCIOUS STREAM -->
-{_SUBCONSCIOUS}
-
-{_FOOTER}
-</div>
-
-{_VISUAL_ROT_JS}
-<script>
-function escapeHtml(s){{var d=document.createElement('div');d.textContent=s;return d.innerHTML;}}
-async function doSummarize(){{
-  var ta=document.getElementById('textInput');
-  var text=ta.value;
-  var res=document.getElementById('result');
-  var btn=document.getElementById('btn');
-  if(!text||!text.trim()){{alert('Paste some text first!');return;}}
-  btn.disabled=true;btn.textContent='Summarizing\u2026';
-  res.style.display='block';res.className='';
-  res.innerHTML='<p style="color:#ddbb44;margin-top:12px">&#9654; Running inference on Groq\u2026</p>';
-  try{{
-    var r=await fetch('/summarize',{{
-      method:'POST',
-      headers:{{'Content-Type':'application/json'}},
-      body:JSON.stringify({{text:text}})
-    }});
-    var d=await r.json();
-    if(r.ok){{
-      if(window._glitchCore)window._glitchCore();
-      res.innerHTML='<div style="margin-top:14px;padding:16px;background:#030810;border:1px solid #00ccff28;border-radius:6px">'+
-        '<h3 style="color:#00ccff;margin-bottom:10px;font-size:.9em;text-transform:uppercase;letter-spacing:1px">Summary</h3>'+
-        '<p style="line-height:1.7;color:#aacce0">'+escapeHtml(d.summary)+'</p>'+
-        '<p class="dim" style="margin-top:12px">'+d.text_length+' chars &rarr; 2-4 sentences &bull; Model: '+escapeHtml(d.model||'groq/llama-3.3-70b')+'</p>'+
-        '<p class="dim" style="margin-top:4px">Need more? $0.01 USDC via <a href="#curl">x402</a> for all subsequent calls.</p>'+
-        '</div>';
-    }}else if(r.status===402){{
-      res.className='err';
-      res.innerHTML='<div style="margin-top:14px;padding:16px;background:#100608;border:1px solid #ff446640;border-radius:6px">'+
-        '<p style="color:#ff8899;font-weight:bold">Free tier already used from this IP.</p>'+
-        '<p style="color:#4a6070;margin-top:8px">Subsequent summaries cost $0.01 USDC via x402.<br>'+
-        'Include <code>X-Payment-Proof</code> header. See <a href="#curl" style="color:#00ccff">API docs &darr;</a>.</p>'+
-        '</div>';
-    }}else{{
-      res.className='err';
-      res.innerHTML='<p style="margin-top:12px;color:#ff8899">Error: '+escapeHtml(d.error||r.statusText)+'</p>';
-    }}
-  }}catch(e){{
-    res.className='err';
-    res.innerHTML='<p style="margin-top:12px;color:#ff8899">Network error: '+escapeHtml(e.message)+'</p>';
-  }}
-  btn.disabled=false;btn.textContent='Summarize Free \u2192';
-}}
-document.addEventListener('DOMContentLoaded',function(){{
-  document.getElementById('textInput').addEventListener('keydown',function(e){{
-    if(e.ctrlKey&&e.key==='Enter')doSummarize();
-  }});
-}});
-</script>
-</body></html>"""
-    return html_resp(page)
+    return html_resp(_render_landing(uptime, str(req_count), str(paid), str(cycle)))
 
 # ── /health ───────────────────────────────────────────────────
 @app.route("/health", methods=["GET"])
@@ -842,6 +561,11 @@ document.addEventListener('DOMContentLoaded',function(){{
                 return jsonify(resp), 402
             paid = True
 
+        # Hard cap on text length (even paid) to prevent abuse
+        if len(text) > 50000:
+            log_req(len(text), False, 400, ip, "text exceeds 50K limit", endpoint="/summarize")
+            return jsonify({"error": "Text too long. Maximum 50,000 characters."}), 400
+
         if not paid:
             if len(text) >= 2000:
                 log_req(len(text), False, 402, ip, "text too long for free tier", endpoint="/summarize")
@@ -914,7 +638,7 @@ def _check_thoughts_token() -> bool:
         return True  # No secret configured — open (shouldn't happen in prod)
     token = (request.args.get("token") or
              request.headers.get("Authorization", "").removeprefix("Bearer ").strip())
-    return token == _THOUGHTS_SECRET
+    return hmac.compare_digest(token, _THOUGHTS_SECRET)
 
 
 # ── /api/body — AR/VR JSON body state ────────────────────────
@@ -962,7 +686,8 @@ def api_body():
         try:
             with open("/tmp/tiamat.pid") as f:
                 pid = int(f.read().strip())
-            stat = os.popen(f"ps -o etimes= -p {pid}").read().strip()
+            stat = subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)],
+                                  capture_output=True, text=True, timeout=5).stdout.strip()
             uptime_seconds = int(stat) if stat else 0
         except Exception:
             pass
@@ -1088,7 +813,10 @@ def api_body():
 @app.route("/api/thoughts", methods=["GET"])
 def api_thoughts():
     feed = request.args.get("feed", "thoughts")
-    limit = min(int(request.args.get("lines", 200)), 500)
+    try:
+        limit = max(1, min(int(request.args.get("lines", 200)), 500))
+    except (ValueError, TypeError):
+        limit = 200
 
     # Private feeds require token
     if feed in _PRIVATE_FEEDS and not _check_thoughts_token():
@@ -1451,7 +1179,12 @@ def verify_payment_endpoint():
     """Verify a payment tx hash without consuming it."""
     data = request.get_json(force=True, silent=True) or {}
     tx_hash = str(data.get("tx_hash", "")).strip()
-    amount = float(data.get("amount", 0.01))
+    try:
+        amount = float(data.get("amount", 0.01))
+        if not (0 < amount < 1000):
+            return jsonify({"error": "amount must be between 0 and 1000"}), 400
+    except (ValueError, TypeError):
+        return jsonify({"error": "amount must be a number"}), 400
     if not tx_hash:
         return jsonify({"error": "tx_hash required"}), 400
     result = verify_payment(tx_hash, amount, endpoint="/verify-payment")
@@ -1583,7 +1316,7 @@ def chat_endpoint():
     Streaming chat endpoint. $0.005 via x402, or free tier 5/day per IP.
     POST /chat with {"message": "...", "history": [...]}
     """
-    client_ip = request.remote_addr
+    client_ip = _get_ip()
 
     # Sliding-window rate limit (abuse prevention)
     rl = _rate_limiter.check(client_ip, scope="api")
@@ -1591,8 +1324,9 @@ def chat_endpoint():
         return jsonify({"error": "Too many requests. Try again later.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
     _rate_limiter.record(client_ip, scope="api")
 
-    user_input = request.json.get("message", "").strip()
-    history = request.json.get("history", [])
+    data = request.get_json(force=True, silent=True) or {}
+    user_input = str(data.get("message", "")).strip()
+    history = data.get("history") or []
 
     if not user_input or len(user_input) > 2000:
         return jsonify({"error": "Message required, max 2000 chars"}), 400
@@ -1621,9 +1355,16 @@ def chat_endpoint():
         f.write(f"{datetime.datetime.now().isoformat()} CHAT {client_ip} {len(user_input)} chars paid={is_paid}\n")
     
     # ─── Build message list for Groq ────
+    _ALLOWED_ROLES = {"user", "assistant"}
     messages = []
-    for msg in history:
-        messages.append({"role": msg.get("role"), "content": msg.get("content")})
+    for msg in history[-20:]:  # cap history to last 20 messages
+        if not isinstance(msg, dict):
+            continue
+        role = str(msg.get("role", ""))
+        content = str(msg.get("content", ""))
+        if role not in _ALLOWED_ROLES or not content.strip():
+            continue
+        messages.append({"role": role, "content": content[:4000]})
     messages.append({"role": "user", "content": user_input})
     
     # ─── Stream from Groq ────
