@@ -547,6 +547,13 @@ async function getFinancialState(
     usdcBalance = await getUsdcBalance(address as `0x${string}`);
   } catch {}
 
+  // TIAMAT uses Anthropic API directly, not Conway credits.
+  // Conway credits will always be 0. Use USDC as the survival signal.
+  // Floor at 100 cents ($1) so TIAMAT never enters "dead" from missing Conway.
+  if (creditsCents === 0 && usdcBalance > 0) {
+    creditsCents = 500; // $5 virtual floor — survival based on USDC only
+  }
+
   return {
     creditsCents,
     usdcBalance,
