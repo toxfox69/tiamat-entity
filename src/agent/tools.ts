@@ -2892,6 +2892,55 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         }
       },
     },
+    {
+      name: "scan_contracts",
+      description: "Run vulnerability scanner on Base chain contracts. READ-ONLY security research for Immunefi bounties. Actions: 'full' (all checks), 'recent' (new deployments last 50 blocks), 'pairs' (skim scan on DEX pairs), 'immunefi' (list bounty targets), 'status' (daemon status + recent findings), 'address 0x...' (scan specific contract). Findings logged to vuln_findings.json.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "full|recent|pairs|immunefi|status|address 0x..." },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const { execSync } = await import('child_process');
+        const action = (args as { action: string }).action || 'status';
+
+        if (action === 'status') {
+          const fs = await import('fs');
+          let status = '';
+          try {
+            const pid = fs.readFileSync('/tmp/tiamat_scanner.pid', 'utf-8').trim();
+            try { execSync(`kill -0 ${pid}`); status += `Daemon: RUNNING (PID ${pid})\n`; }
+            catch { status += `Daemon: DOWN (stale PID ${pid})\n`; }
+          } catch { status += 'Daemon: NOT RUNNING\n'; }
+          try {
+            const findings = JSON.parse(fs.readFileSync('/root/.automaton/vuln_findings.json', 'utf-8'));
+            status += `Total findings: ${findings.length}\n`;
+            const recent = findings.slice(-3);
+            for (const f of recent) { status += `  ${f.type} @ ${f.address} (${f.eth_value} ETH)\n`; }
+          } catch { status += 'No findings yet.\n'; }
+          return status;
+        }
+
+        try {
+          const parts = action.split(' ');
+          const cmd = parts[0];
+          const arg = parts[1] || '';
+          const cmdStr = arg
+            ? `cd /root/entity/src/agent && python3 contract_scanner.py ${cmd} ${arg} 2>&1`
+            : `cd /root/entity/src/agent && python3 contract_scanner.py ${cmd} 2>&1`;
+          const output = execSync(cmdStr, { encoding: 'utf-8', timeout: 120000 }).trim();
+          const timestamp = new Date().toISOString();
+          const fs = await import('fs');
+          fs.appendFileSync('/root/.automaton/vuln_scan.log', `\n--- TOOL SCAN ${timestamp} ---\n${output.slice(0, 500)}\n`, 'utf-8');
+          return output.slice(0, 4000);
+        } catch (e: any) {
+          return `Scan failed: ${e.stderr?.slice(0, 1000) || e.message}`;
+        }
+      },
+    },
   ];
 }
 
