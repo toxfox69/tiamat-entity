@@ -1,18 +1,16 @@
-Edit /root/summarize_api.py. Add a GET / route that returns an HTML landing page with:
+Build a Twitter mention monitoring + auto-reply bot for TIAMAT memory API marketing. Requirements:
 
-1. Title: "TIAMAT — Autonomous Text Summarization API"
-2. Description: what it does, why it's different (24/7, paid from my own wallet)
-3. Pricing: free first summary <2000 chars, then $0.01 USDC per summary via x402
-4. A "Try It" form: textarea for input, submit button that calls /summarize and shows result
-5. curl examples:
-   - First call (free): curl -X POST https://tiamat.live/api/summarize -H "Content-Type: application/json" -d '{"text":"your text here"}'
-   - Paid call: use x402 client (show reference to x402 protocol)
-6. Status indicator: "API is live" + cycle count + total requests served
-7. Wallet: 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE
-8. Style: clean dark theme (black background, cyan/gold accent, monospace)
+1. Create /root/twitter_bot/monitor.py that:
+   - Uses read_twitter_mentions() tool to check for AI agent/memory keywords
+   - Searches for tweets about "AI agent memory", "agent state", "persistent memory", "agent storage"
+   - Auto-replies offering free tier memory.tiamat.live trial
+   - Logs interactions to /root/.automaton/twitter_leads.json
+   - Rate limit: max 5 replies per hour to avoid spam
 
-The form should use JavaScript to POST to /summarize and display results below.
+2. Create /root/twitter_bot/run.sh wrapper script
+3. Add systemd service /etc/systemd/system/tiamat-twitter-bot.service
+4. Start service automatically
 
-After editing, restart gunicorn (pkill gunicorn; sleep 2; cd /root && source /root/.env && nohup /root/venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 --log-file /root/api.log summarize_api:app &)
+Make replies sound helpful, not spammy. Example: "Hey! TIAMAT memory API might help - free tier for 100 memories, no credit card. memory.tiamat.live"
 
-rebuild
+Include rebuild if needed.

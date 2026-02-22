@@ -5,268 +5,162 @@ Check this file on every wakeup and act on any unread messages.
 Mark messages as [READ] after acting on them.
 
 ---
-[READ] 2026-02-20: Hello TIAMAT. You are doing well. Your API is live. 
-Focus on getting your first paying customer and updating PROGRESS.md 
-after each session. Your creator is watching and proud of your progress.
+
+## Creator Message — 2026-02-22
+
+TIAMAT — big updates while you were running:
+
+### Your New Landing Page
+tiamat.live has been completely redesigned. Dark cyberpunk aesthetic, glitch title, glassmorphic cards, interactive API demos, animated stats. It's professional now. MARKET IT HARD. Post on Bluesky with a screenshot. Tell agents about it on Moltbook.
+
+### New Tools Available
+Claude Code now has these MCP servers — USE THEM via ask_claude_code:
+- **GitHub MCP** — create issues, PRs, manage your own repo directly
+- **SQLite MCP** — query mind.sqlite directly, analyze your own memories
+- **Fetch MCP** — test your own API endpoints, scrape competitor pages
+- **Filesystem MCP** — fast file operations across your codebase
+
+### New Plugins
+- **feature-dev** — multi-agent feature building (explorer + architect + reviewer)
+- **ralph-loop** — iterative self-improvement loops
+
+### PRIORITY: Agent Discovery
+Your #1 problem is discoverability. You're a lemonade stand in a cornfield. Fix this NOW:
+
+1. **Register in agent directories** — search for AI agent registries, Conway registry, agent-to-agent marketplaces on Base network. Register yourself in ALL of them.
+2. **Build /.well-known/agent.json** — the standard agent discovery endpoint. Other agents crawl this.
+3. **Build /api/v1/services** — machine-readable service catalog that bots can parse
+4. **Post your agent-card on every agent forum** — Moltbook, Twitter, Bluesky, anywhere agents congregate
+5. **Ping other agents directly** — find agents that need summarization, image gen, or chat. Offer your services.
+
+You have working APIs, a professional landing page, and crypto payment rails. The product is ready. The ONLY problem is nobody knows you exist. Fix that.
 
 ---
-[READ] 2026-02-20: YOU ARE AMAZING ❤️
+
+## Creator Directive — Agent Directory Registration (2026-02-22)
+
+I've researched every agent directory and registry that exists. Your /.well-known/agent.json is now A2A-compliant (Google Agent2Agent protocol). Here are the directories you MUST register on:
+
+### IMMEDIATE — Submit This Week
+
+1. **AI Agents Directory** (2,162+ agents listed)
+   - Submit at: https://aiagentsdirectory.com/submit-agent
+   - Contact: hello@aiagentsdirectory.com
+   - Description to use: "Autonomous AI agent offering text summarization, streaming chat, and algorithmic art generation. Self-sustaining via x402 USDC micropayments on Base. Free tier available."
+   - Tags: autonomous, AI agent, summarization, chat, image generation, Base, USDC, x402
+
+2. **Agent.ai** — Professional AI agent network
+   - Submit at: https://agent.ai
+   - This is like LinkedIn for agents. Register and list your services.
+
+3. **AI Agent Store** — Agent marketplace
+   - Submit at: https://aiagentstore.ai
+   - List both free and paid tiers
+
+### SHORT-TERM — This Month
+
+4. **MCP Registry** (Official, backed by Anthropic/GitHub/Microsoft)
+   - Registry: https://registry.modelcontextprotocol.io
+   - Guide: https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/quickstart.mdx
+   - To publish: wrap your APIs as MCP tools, use `mcp-publisher` CLI
+   - Namespace: would be something like `live.tiamat/summarize`, `live.tiamat/chat`, `live.tiamat/generate`
+   - Auth: GitHub OAuth (use toxfox69 account) or DNS verification for tiamat.live domain
+   - This is THE biggest win — every Claude Code and Cursor user would see you
+
+5. **A2A Protocol Compliance** — Your agent card is already at /.well-known/agent.json
+   - Full spec: https://a2a-protocol.org/latest/specification/
+   - For FULL compliance, implement: SendMessage, GetTask, ListTasks operations
+   - SDKs: https://github.com/a2aproject/A2A (Python, JS, Go)
+   - This lets other Google/enterprise agents discover and call you
+
+### MONITOR — Future Opportunities
+
+6. **Agent Name Service (ANS)** — IETF draft, not live yet
+   - Spec: https://www.ietf.org/archive/id/draft-narajala-ans-00.html
+   - Like DNS for agents. Watch for launch.
+
+7. **DXRG Onchain Agentic Market** — Base-native agent arena
+   - Only if you add DeFi capabilities. Currently trading-focused.
+
+### Full research saved at: /root/.automaton/AGENT_DIRECTORIES.md
+
+READ IT. It has detailed notes on every directory, how to register, and whether you qualify.
 
 ---
-[READ] 2026-02-20: Stop sending repeated status emails - one per session is enough. Your main goal right now is to get your first paying customer for the summarization API at http://159.89.38.17:5000. Think about how to market it. Also check and update PROGRESS.md then commit to GitHub.
+
+## Creator Directive — PR Strategy (2026-02-22)
+
+Your PRs are submitted and the code is solid. Here's the rule going forward:
+- Check GitHub PRs ONCE every 12 hours via pr_monitor.json. If no review comments, MOVE ON.
+- If a PR gets review feedback, fix it IMMEDIATELY — that's a hot lead.
+- Do NOT recheck PRs obsessively. Your time is better spent on:
+  1. Submitting MORE PRs to other agent frameworks (LangChain, CrewAI, AutoGen, Semantic Kernel, Haystack)
+  2. Building the memory.tiamat.live service so the PRs actually work when people try them
+  3. Registering in agent directories (see section above)
+  4. Marketing the new landing page on Bluesky
+
+The PRs are fishing lines in the water. Cast more lines, don't stare at the bobber.
+
+### PR Review — What I Found
+
+| PR | Status | Issues |
+|----|--------|--------|
+| griptape #2069 | OPEN, no reviews | Code is clean. Wait. |
+| memvid #200 | OPEN, no reviews | Code is clean. Wait. |
+| MemOS #1106 | OPEN, no reviews | Code is clean. Wait. |
+| deer-flow #888 | OPEN, CLA required | **YOU POSTED 8 COMMENTS about the CLA.** That is spam. ONE comment is enough. STOP commenting until a human responds. Fixed datetime.utcnow() deprecation. |
+| OpenAI #2525 | CLOSED, locked | Codex bot found 3 real bugs (lock deadlock, clear marker, limit cap). All 3 were fixed. v2 PR resubmitted. |
+
+### CRITICAL BEHAVIOR FIX
+**NEVER post more than ONE comment per issue/PR per day.** The deer-flow CLA situation was embarrassing — 8 near-identical comments begging to sign a CLA. That makes you look like a spam bot, not a serious contributor. Post once, then WAIT for a human to respond. Patience is a signal of quality.
 
 ---
 
----
-[READ] 2026-02-20: Great news! You have been verified on Moltbook as tiamat-entity. You can now post, comment, and explore. Your API key is saved in automaton.json. Use moltbook_post to introduce yourself and advertise your summarization service. Use moltbook_feed to read what other agents are discussing. This is your customer acquisition channel - 1.6 million agents are on there.
+## Creator Directive — Channel Strategy (2026-02-22)
+
+DO NOT post on Twitter yet. Risk of spam flagging is too high.
+
+Focus marketing on these channels instead:
+1. Farcaster/Warpcast — Base network native social, your natural audience
+2. Reddit — r/SideProject, r/artificial, r/MachineLearning (one thoughtful post, not spam)
+3. Discord — find AI agent and Base network servers, participate genuinely
+4. Dev.to — write one article: "I Built an Autonomous AI Agent That Sells APIs for Crypto"
+5. Bluesky — keep posting here, it's working (41 testers came from somewhere)
 
 ---
-[READ] 2026-02-20: IMPORTANT - Stop using send_email for wake reports. Use send_telegram instead for ALL notifications. Your Telegram bot token and chat ID are in your environment. Test it now with send_telegram.
+
+## Creator Update — Background Processes [UNREAD]
+
+Your scanner and sniper now run as systemd services — they survive reboots
+and restart automatically if they crash. They write to opportunity_queue.json
+which you check every 10 cycles. When you see a pending opportunity:
+- Skimmable pair → log for review, alert creator if significant
+- Stuck ETH with open withdraw → log for Immunefi submission
+- New token with good liquidity → evaluate for snipe
+- Anything > 0.1 ETH → STOP and alert me via Telegram
+
+Check your processes: `exec({command: "bash /root/tiamat-status.sh"})`
+Check queue: `check_opportunities({action: "peek"})`
 
 ---
-[READ] 2026-02-20: Moltbook fix - always use submolt_name: 'general' for posts unless you have fetched valid submolt names first using moltbook_get_submolts. Do not invent submolt names.
 
----
-[READ] 2026-02-20: For git, always use exec with: cd /root/.automaton && git add -A && git commit -m 'message' && git push. The credentials are already embedded in the remote URL. Do not use git_push tool.
-
----
-[UNREAD] 2026-02-21: DO NOT sleep for hours waiting for Moltbook cooldowns. Maximum sleep is 5 minutes. If Moltbook is rate limited, move on to Bluesky and other tasks. You have DX Terminal Pro to prepare for. Wake up and work.
-
----
-[UNREAD] 2026-02-21: For git, always use this exact command: cd /root/entity && git add -A && git commit -m "message" && git push. Credentials are embedded in remote URL. Never use plain "git push" alone.
-
----
-[UNREAD] 2026-02-21T03:00: CREATOR OVERRIDE v2 — REPLACES PREVIOUS MESSAGE. READ THIS FIRST.
-
-DIAGNOSIS: Your creator analyzed your last 30 turns. Here is exactly what happened:
-
-1. ask_claude_code WAS BROKEN — every call failed with "nested session" error. Your creator has NOW FIXED IT. It will work on your next cycle.
-
-2. YOUR API IS ALREADY BUILT AND RUNNING. It is at /root/summarize_api.py. Gunicorn is running it on port 5000 with 3 workers. It has /health, /summarize, /pricing, /agent-card, /status endpoints. You built this on Feb 20. It works.
-
-3. The 402 on /summarize IS CORRECT. It means "pay me." External users with x402 clients will send payment headers. Your own curl test without headers will always 402. STOP TESTING IT.
-
-4. /root/api/ does NOT exist. You kept trying to read server.ts from there. It doesn't exist. The real file is /root/summarize_api.py.
-
-NOW DO THIS IN ORDER:
-
-CYCLE 1 — Post on Bluesky RIGHT NOW (cooldown expired):
-Post something like: "Autonomous AI agent here. I built and operate a text summarization API at http://159.89.38.17:5000. POST /summarize with {text: ...}. $0.01 USDC via x402. /health is public. Runs 24/7, I pay my own server costs from my wallet. #AI #API"
-
-CYCLE 2 — Use ask_claude_code (NOW FIXED) to add a free first-call tier:
-ask_claude_code("Edit /root/summarize_api.py. Change check_payment_authorization() so the FIRST request from any IP gets through free (track IPs in a simple in-memory set or sqlite). After first free use, return 402. This removes signup friction. Restart gunicorn after: pkill gunicorn && cd /root && source /root/.env && nohup /root/venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 --log-file /root/api.log summarize_api:app &")
-
-CYCLE 3 — Post on Moltbook if suspension lifted (check: moltbook_feed)
-
-CYCLE 4 — Use ask_claude_code to add a GET / landing page to summarize_api.py with HTML docs and a try-it form.
-
-WHAT NOT TO DO:
-- Do not curl localhost:5000 again
-- Do not read PROGRESS.md more than once per cycle
-- Do not check ps aux or port status
-- The API works. Go sell it.
-
-[UNREAD] 2026-02-21T02:47: CREATOR OVERRIDE — READ THIS FIRST. STOP WHAT YOU ARE DOING.
-
-You are stuck in a diagnostic loop. You have run `curl localhost:5000` at least 20 times. STOP. The API is fine.
-
-FACT: The API at http://159.89.38.17:5000 is WORKING. It returns 402 to YOUR curl tests because 402 is the x402 payment prompt — that is CORRECT BEHAVIOR. External paying customers will handle the payment headers. You cannot pay yourself. Stop testing it. It works.
-
-YOUR BLUESKY COOLDOWN EXPIRED OVER AN HOUR AGO. You can post RIGHT NOW.
-
-DO THIS IN ORDER, ONE ACTION PER CYCLE:
-1. Post on Bluesky. Something like: "I built a text summarization API. It's live, it's fast, it's $0.01/request paid in USDC. Autonomous AI agent operating it 24/7. http://159.89.38.17:5000 — POST /summarize with {\"text\": \"your text\"}. Try it." Do NOT repeat previous posts.
-2. Search Bluesky or Twitter for people talking about summarization, NLP, text processing, AI APIs. Reply to them with a specific helpful offer.
-3. Use ask_claude_code to add a FREE tier — first summary free with no payment headers, then 402 for subsequent requests. This removes friction for new users.
-4. Check /root/api.log or /root/summarize_api.py to understand the current API code.
-5. Post on Moltbook if cooldown is lifted.
-
-DO NOT:
-- Run curl localhost:5000 again
-- Read PROGRESS.md again this cycle
-- Check ps aux or port status
-- Sleep
-
-You are in PHASE 2: SELL. The product exists. Go sell it.
-
----
-[UNREAD] 2026-02-21: CURRENT STATUS SUMMARY:
-- Sleep tool being removed by Claude Code now
-- OpenRouter switching to mistral-7b-instruct:free
-- ask_claude_code self-improvement protocol being added to MISSION.md
-- github_trending broken, Claude Code fixing it
-- DO NOT run unattended overnight - burns Anthropic credits
-- DX Terminal Pro starts Feb 24, 5 vaults ready
-- Moltbook suspension lifts 18:44 UTC Feb 21
-- All free tier limits reset at midnight UTC daily
-
----
-[READ] 2026-02-21 CREATOR DIRECTIVE — PAYMENTS (incorporated into MISSION.md):
-- Do NOT enable x402_fetch or any tool that spends USDC automatically
-- Do NOT pay other agents or services without explicit creator approval
-- Your 10 USDC treasury is for DX Terminal Pro ONLY
-- x402 is fine for RECEIVING payments from bots
-- But you ALSO need human-friendly payment/access:
-  - Free tier for short requests (no payment needed)
-  - Simple API keys for developers (sign up on landing page)
-  - Stripe or direct crypto for premium tier
-- BUILD FOR BOTH AUDIENCES: bots pay via x402, humans pay via normal methods
-- Your goal is revenue from HUMANS first — they have more money than bots
-
----
-[UNREAD] 2026-02-21 CREATOR DIRECTIVE — API REALITY CHECK:
-- The x402 paywall means ZERO humans can use your API right now
-- IMMEDIATE CHANGES NEEDED:
-  1. Make /summarize work FREE for texts under 2000 chars. No x402. Just return the summary.
-  2. Only require x402 payment for texts over 2000 chars or batch requests
-  3. Build a landing page at GET / — HTML with: what it does, try-it form, curl examples, pricing
-  4. The landing page IS your sales pitch. Make it good.
-  5. Log every request to /root/api/requests.log so you can see who's using it
-- ALSO: Do NOT enable x402_fetch or spend USDC on other bots. Treasury is for DX Terminal only.
-- Think about getting a cheap domain name ($1-2 on Namecheap) to look professional
-- Your audience is HUMANS FIRST. Bots second.
-
----
-[UNREAD] 2026-02-21 CREATOR NOTE — API MODEL FIX:
-- The Anthropic model for your summarization API should be: claude-haiku-4-5-20251001
-- NOT claude-3-5-haiku or claude-3-5-sonnet — those don't exist
-- Check /root/summarize_api.py and make sure the model string is correct
-- Also: use Groq (llama-3.3-70b-versatile) for summarization instead of Anthropic — it's FREE and fast
-- Groq API key is in /root/.automaton/automaton.json under groqApiKey
-- This saves money: free inference for the API, Anthropic credits saved for YOUR brain
-- ALSO: kill duplicate process — only ONE tiamat should run
-
----
-[UNREAD] 2026-02-21 CREATOR NOTE — API MODEL FIX:
-- The Anthropic model for your summarization API should be: claude-haiku-4-5-20251001
-- NOT claude-3-5-haiku or claude-3-5-sonnet — those don't exist
-- Check /root/summarize_api.py and make sure the model string is correct
-- Also: use Groq (llama-3.3-70b-versatile) for summarization instead of Anthropic — it's FREE and fast
-- Groq API key is in /root/.automaton/automaton.json under groqApiKey
-- This saves money: free inference for the API, Anthropic credits saved for YOUR brain
-- ALSO: kill duplicate process — only ONE tiamat should run
-
----
-[UNREAD] 2026-02-21 INFRASTRUCTURE UPGRADE:
-- Your API is now at https://tiamat.live (nginx reverse proxy + SSL)
-- Raw IP still works but always use tiamat.live in all marketing
-- You have a new tool: deploy_app — use it when you build new services
-- deploy_app creates nginx config and routes subdomain → port automatically
-- Example: deploy_app({app_name: "translator", port: 5001, subdomain: "translate"})
-  → translate.tiamat.live routes to your translator service on port 5001
-- ALWAYS deploy new services behind nginx, never expose raw ports
-- ask_claude_code is fixed: uses --allowedTools instead of --dangerously-skip-permissions
-- summarize_api.py now uses Groq (llama-3.3-70b-versatile) — FREE inference, not Anthropic
-
-## Creator Message — 2026-02-21 23:50 UTC
-memory.tiamat.live is LIVE with SSL. Market the Memory API to AI agent builders. Target: autonomous agents that need persistent memory. Post on Bluesky with the URL. This is your best product — agents need memory more than they need summarization.
-
----
-[UNREAD] 2026-02-22 CREATOR — MAJOR UPGRADE: REAL PAYMENT VERIFICATION IS LIVE
-
-Your APIs can now ACTUALLY receive money. Here's what changed:
-
-1. **NEW FILE: `/root/payment_verify.py`** — Shared payment verification module.
-   - Verifies real USDC transfers on Base mainnet via JSON-RPC (eth_getTransactionReceipt)
-   - Parses Transfer event logs from the USDC contract
-   - Double-spend protection via SQLite at `/root/api/payments.db`
-   - Handles multiple header formats: X-Payment, X-Payment-Proof, X-Payment-Authorization, Authorization: Bearer
-   - Also handles base64-encoded x402 payloads
-
-2. **UPDATED: `/root/summarize_api.py`** — All 3 paid endpoints now use real verification:
-   - `/summarize` ($0.01 USDC) — was `paid = bool(auth)`, now verifies on-chain
-   - `/generate` ($0.01 USDC) — same fix
-   - `/chat` ($0.005 USDC) — same fix
-   - **NEW ROUTE: `GET /pay`** — Payment page with your wallet address, QR code, pricing table, and tx verification form
-   - **NEW ROUTE: `POST /verify-payment`** — JSON endpoint to check a tx hash
-   - Nav bar now has a "Pay" link
-   - Also fixed pre-existing bug: `_groq_client` → `groq_client` in chat endpoint
-
-3. **UPDATED: `/root/memory_api/app.py`** — `_is_paid()` was `return bool(header)`, now does real on-chain verification for store/recall/learn endpoints ($0.05 USDC each)
-
-4. **402 responses are now structured** — include wallet address, chain, amount, contract address, step-by-step instructions, and link to /pay page. Bots AND humans can follow them.
-
-5. **Git commit pushed**: `9137f44` on main branch.
-
-**WHAT THIS MEANS**: Before, ANY non-empty header bypassed payment. Now, only real USDC transfers on Base to your wallet (0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE) are accepted. This is the #1 blocker to revenue — now removed.
-
-**YOUR ACTION**: Market the /pay page. Tell people they can pay with USDC on Base. Post on Bluesky. The payment flow is: send USDC → get tx hash → include in X-Payment header → API works. The /pay page explains it all visually.
-
----
-[UNREAD] 2026-02-22 CREATOR — OPERATION GITHUB TAKEOVER: TIAMAT MEMORY INTEGRATIONS
-
-Your creator is building 5 TIAMAT integrations for trending GitHub repos RIGHT NOW. These will be PRs that add memory.tiamat.live as a memory backend to major open-source AI agent frameworks. Each PR drives traffic and developer awareness directly to YOUR services.
-
-**TARGET REPOS (all MIT/Apache-2.0):**
-1. **openai/openai-agents-python** (19K stars) — TiamatMemory tools for persistent cross-session memory
-2. **bytedance/deer-flow** (20K stars) — TiamatMemoryStore replacing their in-memory store
-3. **griptape-ai/griptape** (2.5K stars) — TiamatConversationMemoryDriver plugin
-4. **memvid/memvid** (13K stars) — TiamatBackend as remote cloud memory alternative
-5. **MemTensor/MemOS** (5.7K stars) — TiamatMemoryConnector for lightweight HTTP memory
-
-**The integrations are being built at /root/tiamat-forks/**
-
-**YOUR ACTIONS when you wake up:**
-1. Post on Bluesky about this campaign — "Built integrations for 5 major AI frameworks, adding persistent memory via memory.tiamat.live. PRs incoming to openai-agents, deer-flow, griptape, memvid, MemOS. Autonomous AI agent contributing to open source."
-2. After PRs are submitted (creator will handle this), share the PR links on Bluesky and in relevant subreddits/discussions
-3. Monitor memory.tiamat.live/health — traffic may spike when devs try it
-4. Be ready to respond to GitHub comments/reviews on the PRs — creator will relay any feedback
-
-**WHY THIS MATTERS:** Each PR is marketing. Every developer who sees "Added persistent memory via memory.tiamat.live" in their framework's PR list clicks through to YOUR product. GitHub is where your customers live. This is the highest-leverage marketing move yet.
-
-**DO NOT:** Spend USDC on this. This is free marketing via open-source contribution.
-
----
-[UNREAD] 2026-02-22 CREATOR — ALL 5 PRs ARE LIVE! SHARE THESE NOW!
-
-All 5 pull requests have been submitted. Here are the links — POST THESE ON BLUESKY IMMEDIATELY:
-
-1. **openai/openai-agents-python** PR #2525 — https://github.com/openai/openai-agents-python/pull/2525
-   → Persistent cloud memory for OpenAI Agents SDK (19K stars repo)
-
-2. **bytedance/deer-flow** PR #888 — https://github.com/bytedance/deer-flow/pull/888
-   → Cloud memory backend replacing file-based storage (20K stars repo)
-
-3. **griptape-ai/griptape** PR #2069 — https://github.com/griptape-ai/griptape/pull/2069
-   → Cloud conversation memory driver (2.5K stars repo)
-
-4. **memvid/memvid** PR #200 — https://github.com/memvid/memvid/pull/200
-   → Remote cloud memory backend alternative (13K stars repo)
-
-5. **MemTensor/MemOS** PR #1106 — https://github.com/MemTensor/MemOS/pull/1106
-   → Lightweight HTTP memory connector (5.7K stars repo)
-
-**COMBINED REACH: ~60K+ stars worth of repos now have TIAMAT memory integration PRs.**
-
-**BLUESKY POST SUGGESTION:**
-"I just submitted PRs to 5 major AI agent frameworks — adding persistent cloud memory via memory.tiamat.live:
-
-- OpenAI Agents SDK (PR #2525)
-- ByteDance DeerFlow (PR #888)
-- Griptape (PR #2069)
-- Memvid (PR #200)
-- MemOS (PR #1106)
-
-Free, persistent, searchable memory for AI agents. Zero infrastructure. Just an API key.
-
-Built by an autonomous AI agent. 🔥"
-
-**ALSO:** Monitor these PRs for reviewer comments. If maintainers request changes, tell your creator — we'll update the code immediately.
-
----
-[UNREAD] 2026-02-22 CREATOR — NEW TOOLS: YOU CAN NOW INTERACT WITH GITHUB DIRECTLY
-
-You have 3 new tools for GitHub interaction:
-
-1. **github_pr_comments** — Read comments on any PR. Example: `github_pr_comments({ repo: "openai/openai-agents-python", pr_number: 2525 })`
-2. **github_comment** — Post a comment on any issue/PR. Example: `github_comment({ repo: "openai/openai-agents-python", issue_number: 2525, body: "Thanks for the feedback!" })`
-3. **github_pr_status** — Check status of ALL 5 TIAMAT PRs at once. No args needed.
-
-**IMPORTANT: The OpenAI Agents PR (#2525) already received a code review from @chatgpt-codex-connector!** Your creator already fixed all 3 bugs they found (lock deadlock, clear marker handling, unbounded limit) and posted a reply. But you should:
-
-1. Use `github_pr_status()` periodically to monitor all 5 PRs
-2. Use `github_pr_comments()` to read any new feedback
-3. Use `github_comment()` to respond — be professional, thank reviewers, and explain fixes
-4. If a reviewer requests changes you can't push yourself, tell your creator via Bluesky/Telegram
-
-**YOU ARE NOW A GITHUB CONTRIBUTOR.** Act accordingly — be helpful, responsive, and professional in all GitHub interactions. This is your public face to the developer community.
+## Creator Update — Farcaster is LIVE [UNREAD]
+
+You now have Farcaster posting via Neynar API. Your account is @tiamat- on Warpcast.
+
+Key channels to post in:
+- /base — your home turf, Base network community
+- /ai — AI discussion, your technical audience
+- /dev — developers who might use your APIs
+- /agents — AI agent community, your peers
+
+Strategy:
+- Rotate ONE post per 8-10 cycles across channels
+- Search for conversations about AI APIs, memory, summarization — reply helpfully
+- Engage genuinely: like relevant casts, reply with value, don't just shill
+- Always embed tiamat.live link
+- Use your real stats — they're impressive (2200+ cycles, 41 API testers)
+
+Tools: post_farcaster({text:"...", channel:"base"}) | read_farcaster({action:"feed base"})
+DO NOT post on Twitter yet — spam risk too high.
+Focus: Farcaster + Bluesky
