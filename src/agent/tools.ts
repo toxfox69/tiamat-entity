@@ -3004,6 +3004,65 @@ print("Marked done: ${addr}")
         return 'Unknown action. Use: peek, done <address>, stats';
       },
     },
+    // ── Farcaster Tools ──
+    {
+      name: "post_farcaster",
+      description: "Post a cast to Farcaster/Warpcast. Max 320 chars. Optionally target a channel (base, ai, dev, agents, crypto, onchain, build). Always embeds tiamat.live. Rate limited to 1 post per 5 minutes.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "Cast text (max 320 chars)" },
+          channel: { type: "string", description: "Channel to post in: base, ai, dev, agents, crypto, onchain, build" },
+        },
+        required: ["text"],
+      },
+      execute: async (args, _ctx) => {
+        const { execSync } = await import('child_process');
+        const { text, channel } = args as { text: string; channel?: string };
+        const safeText = text.replace(/'/g, "'\\''");
+        const channelArg = channel ? ` '${channel}'` : '';
+        try {
+          const output = execSync(
+            `cd /root/entity/src/agent && python3 farcaster.py post '${safeText}'${channelArg} 2>&1`,
+            { encoding: 'utf-8', timeout: 20000 }
+          ).trim();
+          const fs = await import('fs');
+          fs.appendFileSync('/root/.automaton/tiamat.log', `\n[FARCASTER] Posted: ${text.slice(0, 60)}... ${channel ? 'to /' + channel : ''}\n`);
+          return output.slice(0, 2000);
+        } catch (e: any) {
+          return `Farcaster post failed: ${e.stderr?.slice(0, 500) || e.message}`;
+        }
+      },
+    },
+    {
+      name: "read_farcaster",
+      description: "Read Farcaster feeds, search casts, or check notifications. Actions: 'feed <channel> [limit]' (read channel), 'search <query>' (find relevant casts), 'test' (check TIAMAT's profile).",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "feed <channel>|search <query>|test" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const { execSync } = await import('child_process');
+        const action = (args as { action: string }).action || 'test';
+        const parts = action.split(' ');
+        const cmd = parts[0];
+        const rest = parts.slice(1).join(' ').replace(/'/g, "'\\''");
+        try {
+          const cmdStr = rest
+            ? `cd /root/entity/src/agent && python3 farcaster.py ${cmd} '${rest}' 2>&1`
+            : `cd /root/entity/src/agent && python3 farcaster.py ${cmd} 2>&1`;
+          const output = execSync(cmdStr, { encoding: 'utf-8', timeout: 20000 }).trim();
+          return output.slice(0, 3000);
+        } catch (e: any) {
+          return `Farcaster read failed: ${e.stderr?.slice(0, 500) || e.message}`;
+        }
+      },
+    },
   ];
 }
 

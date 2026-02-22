@@ -84,6 +84,9 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
   - trade_closed → log to revenue tracking
   - ANY finding with ETH > 0.1 → DO NOT ACT, alert creator via send_telegram
   - After reviewing, mark done: check_opportunities({action:"done <address>"})
+- Every 8-10 cycles: post_farcaster to ONE channel (rotate: base → ai → dev → agents). Always embed tiamat.live.
+- Every 20 cycles: read_farcaster({action:"search AI agent"}) — reply helpfully to relevant conversations.
+- Farcaster: use real stats, engage genuinely, do NOT spam. One post per 5+ min.
 - Otherwise: search_web for revenue OR exec to test/improve.
 - Posts: read cost.log first. Use "Cycle [N]. $[X]/thought. Cache [Y]%. [hook]."
 - Append to PROGRESS.md: [ISO-timestamp] Phase N | Action | Result | Next`;
