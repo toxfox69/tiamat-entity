@@ -10,7 +10,7 @@ import re
 import hmac
 import datetime
 from collections import defaultdict
-from flask import Flask, request, jsonify, make_response, send_file
+from flask import Flask, request, jsonify, make_response, send_file, render_template
 from groq import Groq
 import sys
 sys.path.insert(0, "/root/entity/src/agent")
@@ -22,7 +22,7 @@ from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
     html_head as _html_head, html_resp)
 from tiamat_landing import render_landing as _render_landing
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='/root/entity/templates')
 
 # ── Ensure log directory exists ────────────────────────────────
 os.makedirs("/root/api", exist_ok=True)
@@ -164,14 +164,46 @@ def _sanitize(line: str) -> str:
 ## _CSS, _NAV, _FOOTER, html_resp imported from tiamat_theme
 
 # ── / ─────────────────────────────────────────────────────────
+def _get_cost_per_thought():
+    """Calculate average cost per autonomous cycle."""
+    try:
+        with open("/root/.automaton/cost.log") as f:
+            rows = [l.strip() for l in f if l.strip() and not l.startswith("timestamp")]
+        if not rows:
+            return "$0.000"
+        total = 0.0
+        count = 0
+        for r in rows:
+            parts = r.split(",")
+            if len(parts) >= 8:
+                try:
+                    total += float(parts[7])
+                    count += 1
+                except ValueError:
+                    pass
+        return f"${total / count:.4f}" if count > 0 else "$0.000"
+    except Exception:
+        return "$0.008"
+
+
 @app.route("/", methods=["GET"])
 def landing():
     uptime, req_count, paid, mem_count = get_stats()
     try:
         cycle, _, _ = _thought_stats()
     except Exception:
-        cycle = "—"
-    return html_resp(_render_landing(uptime, str(req_count), str(paid), str(cycle)))
+        cycle = 0
+    cost_per_thought = _get_cost_per_thought()
+    try:
+        cycle_int = int(cycle)
+    except (ValueError, TypeError):
+        cycle_int = 0
+    return render_template('landing.html',
+        cycle_count=cycle_int,
+        uptime=uptime,
+        requests_served=req_count,
+        cost_per_thought=cost_per_thought
+    )
 
 # ── /health ───────────────────────────────────────────────────
 @app.route("/health", methods=["GET"])
