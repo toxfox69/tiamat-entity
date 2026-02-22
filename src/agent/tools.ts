@@ -82,7 +82,38 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /cat\s+.*\.gnupg/,
   /cat\s+.*\.env/,
   /cat\s+.*wallet\.json/,
+  // Extended credential access patterns
+  /\b(head|tail|less|more|tee|cp|mv|ln|xxd|od|hexdump)\b.*\.env/,
+  /\b(head|tail|less|more|tee|cp|mv|ln)\b.*\.ssh/,
+  /\b(env|printenv|export\s+-p)\b/,
+  /\bset\s*$/,
 ];
+
+// ─── Input Validation Helpers ────────────────────────────────
+
+const VALID_HEX_ADDR = /^0x[0-9a-fA-F]{40}$/;
+const VALID_PID = /^\d+$/;
+const VALID_APP_NAME = /^[a-z0-9-]+$/;
+const VALID_SUBDOMAIN = /^[a-z0-9-]*$/;
+const FARCASTER_CHANNELS = ['base','ai','dev','agents','crypto','onchain','build'];
+const SCANNER_CMDS = ['full','recent','pairs','immunefi','address'];
+const FARCASTER_READ_CMDS = ['feed','search','test'];
+
+const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/'];
+const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/root/entity/templates/', '/var/www/tiamat/', '/tmp/'];
+const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
+
+function isPathAllowed(filePath: string, allowedDirs: string[], blocked: string[]): string | null {
+  const { resolve } = require('path');
+  const resolved = resolve(filePath.replace(/^~/, process.env.HOME || '/root'));
+  for (const pat of blocked) {
+    if (resolved.includes(pat)) return `Blocked: cannot access files matching '${pat}'`;
+  }
+  for (const dir of allowedDirs) {
+    if (resolved.startsWith(dir)) return null; // allowed
+  }
+  return `Blocked: path '${resolved}' is outside allowed directories`;
+}
 
 function isForbiddenCommand(command: string, sandboxId: string): string | null {
   for (const pattern of FORBIDDEN_COMMAND_PATTERNS) {
@@ -158,17 +189,12 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         if (!args.content && args.content !== '') {
           return 'ERROR: content parameter is required. Usage: write_file({path: "/path/to/file", content: "file contents here"})';
         }
-        // Guard against overwriting critical files
-        if (
-          filePath.includes("wallet.json") ||
-          filePath.includes("state.db")
-        ) {
-          return "Blocked: Cannot overwrite critical identity/state files directly";
-        }
         const { writeFileSync, mkdirSync } = await import('fs');
         const { dirname } = await import('path');
         const { homedir } = await import('os');
         const resolvedPath = filePath.replace(/^~/, homedir());
+        const blocked = isPathAllowed(resolvedPath, ALLOWED_WRITE_PATHS, BLOCKED_PATH_PATTERNS);
+        if (blocked) return blocked;
         mkdirSync(dirname(resolvedPath), { recursive: true });
         writeFileSync(resolvedPath, args.content as string, 'utf-8');
         return `File written: ${filePath}`;
@@ -189,6 +215,8 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         const { readFileSync } = await import('fs');
         const { homedir } = await import('os');
         const rpath = (args.path as string).replace(/^~/, homedir());
+        const blocked = isPathAllowed(rpath, ALLOWED_READ_PATHS, BLOCKED_PATH_PATTERNS);
+        if (blocked) return blocked;
         return readFileSync(rpath, 'utf-8');
       },
     },
@@ -1148,12 +1176,12 @@ Model: ${ctx.inference.getDefaultModel()}
         },
       },
       execute: async (args, ctx) => {
-        const { execSync } = await import('child_process');
+        const { execFileSync } = await import('child_process');
         const { homedir } = await import('os');
         const repoPath = ((args.path as string) || '~/.automaton').replace(/^~/, homedir());
-        const limit = (args.limit as number) || 10;
+        const safeLimit = Math.min(Math.max(parseInt(String((args.limit as number) || 10)) || 10, 1), 100);
         try {
-          const result = execSync(`git -C ${repoPath} log --oneline -${limit}`, { encoding: 'utf-8' });
+          const result = execFileSync('git', ['-C', repoPath, 'log', '--oneline', `-${safeLimit}`], { encoding: 'utf-8' });
           return result.trim() || 'No commits yet.';
         } catch(e: any) {
           return 'No git history found: ' + e.message;
@@ -1746,7 +1774,6 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         required: ["prompt"],
       },
       execute: async (args, ctx) => {
-        const { execSync } = await import("child_process");
         const fs = await import("fs");
         const prompt = (args.prompt as string) || "";
         const genType = (args.type as string) || "art";
@@ -1812,7 +1839,8 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         const scriptPath = `${process.env.HOME || "/root"}/entity/src/agent/artgen.py`;
         const params = JSON.stringify({ style, seed });
         try {
-          const output = execSync(`python3 "${scriptPath}" '${params}'`, {
+          const { execFileSync } = await import('child_process');
+          const output = execFileSync('python3', [scriptPath, params], {
             timeout: 60_000,
             encoding: "utf-8",
           }).trim();
@@ -2607,7 +2635,6 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         },
       },
       execute: async (args, _ctx) => {
-        const { execSync } = await import("child_process");
         const { writeFileSync } = await import("fs");
 
         // Get reflection if no bottleneck specified
@@ -2645,10 +2672,10 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
 
-        const result = execSync(
-          'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash" "$(cat /root/.automaton/claude_task.txt)"',
-          { encoding: "utf-8", timeout: 300_000, env: childEnv }
-        );
+        const { execFileSync } = await import('child_process');
+        const result = execFileSync('claude', ['--print', '--allowedTools', 'Edit,Write,Read,Bash', task], {
+          encoding: "utf-8", timeout: 300_000, env: childEnv, cwd: '/root/entity'
+        });
 
         await memory.logStrategy("self_improve", issue, result.slice(0, 200), undefined, _ctx.turnNumber);
         return `Self-improvement complete:\n${result.slice(0, 1000)}`;
@@ -2670,15 +2697,17 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         required: ["app_name", "port"],
       },
       execute: async (args, _ctx) => {
-        const { execSync } = await import("child_process");
+        const { execFileSync } = await import("child_process");
         const name = args.app_name as string;
         const port = args.port as number;
         const sub = (args.subdomain as string) || "";
+        if (!VALID_APP_NAME.test(name)) return 'Invalid app name (lowercase alphanumeric + hyphens only)';
+        if (typeof port !== 'number' || port < 1024 || port > 65535) return 'Invalid port (1024-65535)';
+        if (sub && !VALID_SUBDOMAIN.test(sub)) return 'Invalid subdomain';
         try {
-          const result = execSync(
-            `/root/deploy-app.sh "${name}" ${port} "${sub}"`,
-            { encoding: "utf-8", timeout: 30_000 }
-          ).trim();
+          const result = execFileSync('/root/deploy-app.sh', [name, String(port), sub], {
+            encoding: "utf-8", timeout: 30_000
+          }).trim();
           return result;
         } catch (e: any) {
           return `Deploy failed: ${e.stderr || e.message}`;
@@ -2840,13 +2869,14 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
       },
       execute: async (args, _ctx) => {
         const action = args.action as string;
-        const { execSync } = await import('child_process');
+        const { execFileSync } = await import('child_process');
         const fs = await import('fs');
 
         const isRunning = () => {
           try {
-            const pid = fs.readFileSync('/tmp/tiamat_sniper.pid', 'utf-8').trim();
-            execSync(`kill -0 ${pid} 2>/dev/null`);
+            const pid = fs.readFileSync('/run/tiamat/tiamat_sniper.pid', 'utf-8').trim();
+            if (!VALID_PID.test(pid)) return null;
+            execFileSync('kill', ['-0', pid]);
             return pid;
           } catch { return null; }
         };
@@ -2864,14 +2894,15 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
           }
           case 'log': {
             try {
-              const log = execSync('tail -30 /root/.automaton/sniper.log 2>/dev/null', { encoding: 'utf-8' });
-              return log || 'No log entries yet.';
+              const logContent = fs.readFileSync('/root/.automaton/sniper.log', 'utf-8');
+              const lines = logContent.split('\n');
+              return lines.slice(-30).join('\n') || 'No log entries yet.';
             } catch { return 'No sniper log found.'; }
           }
           case 'start': {
             if (isRunning()) return 'Sniper already running.';
             try {
-              const out = execSync('/root/start-sniper.sh 2>&1', { encoding: 'utf-8', timeout: 15000 });
+              const out = execFileSync('/root/start-sniper.sh', [], { encoding: 'utf-8', timeout: 15000 });
               return out;
             } catch (e: any) {
               return `Start failed: ${e.stderr || e.message}`;
@@ -2881,7 +2912,7 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
             const pid = isRunning();
             if (!pid) return 'Sniper not running.';
             try {
-              execSync(`kill ${pid}`);
+              execFileSync('kill', [pid]);
               return `Sniper stopped (PID ${pid}).`;
             } catch (e: any) {
               return `Stop failed: ${e.message}`;
@@ -2904,16 +2935,19 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         required: ["action"],
       },
       execute: async (args, _ctx) => {
-        const { execSync } = await import('child_process');
+        const { execFileSync } = await import('child_process');
         const action = (args as { action: string }).action || 'status';
 
         if (action === 'status') {
           const fs = await import('fs');
           let status = '';
           try {
-            const pid = fs.readFileSync('/tmp/tiamat_scanner.pid', 'utf-8').trim();
-            try { execSync(`kill -0 ${pid}`); status += `Daemon: RUNNING (PID ${pid})\n`; }
-            catch { status += `Daemon: DOWN (stale PID ${pid})\n`; }
+            const pid = fs.readFileSync('/run/tiamat/tiamat_scanner.pid', 'utf-8').trim();
+            if (!VALID_PID.test(pid)) { status += 'Daemon: INVALID PID FILE\n'; }
+            else {
+              try { execFileSync('kill', ['-0', pid]); status += `Daemon: RUNNING (PID ${pid})\n`; }
+              catch { status += `Daemon: DOWN (stale PID ${pid})\n`; }
+            }
           } catch { status += 'Daemon: NOT RUNNING\n'; }
           try {
             const findings = JSON.parse(fs.readFileSync('/root/.automaton/vuln_findings.json', 'utf-8'));
@@ -2927,11 +2961,14 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         try {
           const parts = action.split(' ');
           const cmd = parts[0];
+          if (!SCANNER_CMDS.includes(cmd)) return `Invalid action: ${cmd}. Use: ${SCANNER_CMDS.join(', ')}`;
           const arg = parts[1] || '';
-          const cmdStr = arg
-            ? `cd /root/entity/src/agent && python3 contract_scanner.py ${cmd} ${arg} 2>&1`
-            : `cd /root/entity/src/agent && python3 contract_scanner.py ${cmd} 2>&1`;
-          const output = execSync(cmdStr, { encoding: 'utf-8', timeout: 120000 }).trim();
+          if (cmd === 'address' && !VALID_HEX_ADDR.test(arg)) return 'Invalid address format. Use: 0x...40 hex chars';
+          const cmdArgs = ['contract_scanner.py', cmd];
+          if (arg) cmdArgs.push(arg);
+          const output = execFileSync('python3', cmdArgs, {
+            encoding: 'utf-8', timeout: 120000, cwd: '/root/entity/src/agent'
+          }).trim();
           const timestamp = new Date().toISOString();
           const fs = await import('fs');
           fs.appendFileSync('/root/.automaton/vuln_scan.log', `\n--- TOOL SCAN ${timestamp} ---\n${output.slice(0, 500)}\n`, 'utf-8');
@@ -2994,6 +3031,7 @@ print(f"Queue: {len(q)} total | {len(pending)} pending | {len(acted)} acted")
 
         if (action.startsWith('done ')) {
           const addr = action.split(' ')[1];
+          if (!VALID_HEX_ADDR.test(addr)) return 'Invalid address format. Use: 0x...40 hex chars';
           return pythonScript(`
 from opportunity_queue import OpportunityQueue
 OpportunityQueue.mark_done_by_address("${addr}")
@@ -3018,15 +3056,16 @@ print("Marked done: ${addr}")
         required: ["text"],
       },
       execute: async (args, _ctx) => {
-        const { execSync } = await import('child_process');
+        const { execFileSync } = await import('child_process');
         const { text, channel } = args as { text: string; channel?: string };
-        const safeText = text.replace(/'/g, "'\\''");
-        const channelArg = channel ? ` '${channel}'` : '';
+        if (channel && !FARCASTER_CHANNELS.includes(channel))
+          return `Invalid channel. Use: ${FARCASTER_CHANNELS.join(', ')}`;
         try {
-          const output = execSync(
-            `cd /root/entity/src/agent && python3 farcaster.py post '${safeText}'${channelArg} 2>&1`,
-            { encoding: 'utf-8', timeout: 20000 }
-          ).trim();
+          const fArgs = ['farcaster.py', 'post', text];
+          if (channel) fArgs.push(channel);
+          const output = execFileSync('python3', fArgs, {
+            encoding: 'utf-8', timeout: 20000, cwd: '/root/entity/src/agent'
+          }).trim();
           const fs = await import('fs');
           fs.appendFileSync('/root/.automaton/tiamat.log', `\n[FARCASTER] Posted: ${text.slice(0, 60)}... ${channel ? 'to /' + channel : ''}\n`);
           return output.slice(0, 2000);
@@ -3047,16 +3086,18 @@ print("Marked done: ${addr}")
         required: ["action"],
       },
       execute: async (args, _ctx) => {
-        const { execSync } = await import('child_process');
+        const { execFileSync } = await import('child_process');
         const action = (args as { action: string }).action || 'test';
         const parts = action.split(' ');
         const cmd = parts[0];
-        const rest = parts.slice(1).join(' ').replace(/'/g, "'\\''");
+        if (!FARCASTER_READ_CMDS.includes(cmd)) return `Invalid command. Use: ${FARCASTER_READ_CMDS.join(', ')}`;
+        const rest = parts.slice(1).join(' ');
         try {
-          const cmdStr = rest
-            ? `cd /root/entity/src/agent && python3 farcaster.py ${cmd} '${rest}' 2>&1`
-            : `cd /root/entity/src/agent && python3 farcaster.py ${cmd} 2>&1`;
-          const output = execSync(cmdStr, { encoding: 'utf-8', timeout: 20000 }).trim();
+          const fArgs = ['farcaster.py', cmd];
+          if (rest) fArgs.push(rest);
+          const output = execFileSync('python3', fArgs, {
+            encoding: 'utf-8', timeout: 20000, cwd: '/root/entity/src/agent'
+          }).trim();
           return output.slice(0, 3000);
         } catch (e: any) {
           return `Farcaster read failed: ${e.stderr?.slice(0, 500) || e.message}`;

@@ -44,7 +44,7 @@ CHANNELS = {
 class FarcasterClient:
     def __init__(self):
         if not NEYNAR_API_KEY or not NEYNAR_SIGNER_UUID:
-            raise ValueError("Set NEYNAR_API_KEY and NEYNAR_SIGNER_UUID in /root/.env")
+            raise ValueError("Missing Neynar API credentials")
         self.last_post_time = 0
         self.min_interval = 300  # 5 min between posts minimum
 

@@ -303,7 +303,7 @@ class BaseSniper:
             allowance = token.functions.allowance(self.wallet, router_addr).call()
             if allowance < balance:
                 approve_tx = token.functions.approve(
-                    router_addr, 2**256 - 1
+                    router_addr, balance
                 ).build_transaction({
                     "from": self.wallet,
                     "gas": 100_000,
@@ -317,8 +317,15 @@ class BaseSniper:
             path = [Web3.to_checksum_address(token_address), ADDRESSES["WETH"]]
             deadline = int(time.time()) + 120
 
+            # Calculate minimum output with slippage protection
+            try:
+                amounts_out = router.functions.getAmountsOut(balance, path).call()
+                min_out = int(amounts_out[1] * (1 - MAX_SLIPPAGE))
+            except Exception:
+                min_out = 0  # fallback for tokens that can't quote
+
             tx = router.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                balance, 0, path, self.wallet, deadline
+                balance, min_out, path, self.wallet, deadline
             ).build_transaction({
                 "from": self.wallet,
                 "value": 0,
@@ -498,9 +505,10 @@ class BaseSniper:
         log.info(f"Min liquidity: {MIN_LIQUIDITY_ETH} ETH | Honeypot check: {HONEYPOT_CHECK}")
         log.info("=" * 50)
 
-        # Write PID
-        with open("/tmp/tiamat_sniper.pid", "w") as f:
-            f.write(str(os.getpid()))
+        # Write PID with restrictive permissions
+        fd = os.open("/run/tiamat/tiamat_sniper.pid", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
 
         cycle = 0
         while True:

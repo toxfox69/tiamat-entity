@@ -19,7 +19,7 @@ from contract_scanner import (
 )
 from opportunity_queue import OpportunityQueue
 
-PID_FILE = "/tmp/tiamat_scanner.pid"
+PID_FILE = "/run/tiamat/tiamat_scanner.pid"
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
@@ -39,12 +39,13 @@ def send_telegram(message):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return
     try:
-        url = (
-            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-            f"/sendMessage?chat_id={TELEGRAM_CHAT_ID}"
-            f"&text={urllib.parse.quote(message)}&parse_mode=HTML"
-        )
-        urllib.request.urlopen(url, timeout=10)
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        data = urllib.parse.urlencode({
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML",
+        }).encode("utf-8")
+        urllib.request.urlopen(url, data=data, timeout=10)
     except Exception as e:
         log.debug(f"Telegram alert failed: {e}")
 
@@ -52,9 +53,10 @@ def send_telegram(message):
 def main():
     global running
 
-    # Write PID
-    with open(PID_FILE, "w") as f:
-        f.write(str(os.getpid()))
+    # Write PID with restrictive permissions
+    fd = os.open(PID_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.write(fd, str(os.getpid()).encode())
+    os.close(fd)
 
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
