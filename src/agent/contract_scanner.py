@@ -91,16 +91,14 @@ DANGEROUS_SELECTORS = {
 
 # ── Logging ──
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.FileHandler(SCAN_LOG),
-        logging.StreamHandler(sys.stderr),
-    ],
-)
 log = logging.getLogger("vuln_scanner")
+if not log.handlers:
+    log.setLevel(logging.INFO)
+    _fmt = logging.Formatter("[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    _fh = logging.FileHandler(SCAN_LOG)
+    _fh.setFormatter(_fmt)
+    log.addHandler(_fh)
+    log.propagate = False
 
 
 class ContractScanner:
@@ -675,6 +673,11 @@ class ContractScanner:
 # ── CLI Entry Point ──
 
 if __name__ == "__main__":
+    # Add stderr output for CLI usage
+    _sh = logging.StreamHandler(sys.stderr)
+    _sh.setFormatter(logging.Formatter("[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+    log.addHandler(_sh)
+
     action = sys.argv[1] if len(sys.argv) > 1 else "full"
     scanner = ContractScanner()
 

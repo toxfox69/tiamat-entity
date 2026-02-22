@@ -7,32 +7,23 @@ PID file: /tmp/tiamat_scanner.pid
 Log: /root/.automaton/vuln_scan.log
 """
 import os
-import sys
 import time
 import signal
 import logging
 import urllib.parse
+import urllib.request
 from contract_scanner import (
     ContractScanner,
     UNISWAP_V2_FACTORY,
     AERODROME_FACTORY,
-    SCAN_LOG,
 )
 
 PID_FILE = "/tmp/tiamat_scanner.pid"
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.FileHandler(SCAN_LOG),
-        logging.StreamHandler(sys.stderr),
-    ],
-)
-log = logging.getLogger("continuous_scanner")
+# Reuse vuln_scanner logger (contract_scanner.py already has FileHandler for SCAN_LOG)
+log = logging.getLogger("vuln_scanner")
 
 running = True
 
@@ -47,7 +38,6 @@ def send_telegram(message):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return
     try:
-        import urllib.request
         url = (
             f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
             f"/sendMessage?chat_id={TELEGRAM_CHAT_ID}"
