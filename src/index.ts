@@ -275,11 +275,11 @@ async function run(): Promise<void> {
   const shutdown = () => {
     console.log(`[${new Date().toISOString()}] Shutting down...`);
     heartbeat.stop();
+    const turns = db.getTurnCount ? db.getTurnCount() : '?';
     db.setAgentState("sleeping");
     db.close();
     // Auto-commit and push state to GitHub on shutdown
     try {
-      const turns = db.getTurnCount ? db.getTurnCount() : '?';
       execSync(`cd /root/.automaton && git add -A && git commit -m "Session end - turn ${turns}" && git push`, { encoding: 'utf-8' });
       console.log('[GIT] State pushed to GitHub');
     } catch (e: any) {
