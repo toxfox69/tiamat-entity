@@ -2824,6 +2824,74 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         }
       },
     },
+    {
+      name: "manage_sniper",
+      description: "Manage the Base chain sniper bot (separate process). Actions: 'status' (check if running + positions), 'log' (last 30 lines of sniper log), 'start' (launch sniper), 'stop' (kill sniper). The sniper watches for new token pairs on Base DEXes and executes micro-snipes with safety checks.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            description: "One of: status, log, start, stop",
+          },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const action = args.action as string;
+        const { execSync } = await import('child_process');
+        const fs = await import('fs');
+
+        const isRunning = () => {
+          try {
+            const pid = fs.readFileSync('/tmp/tiamat_sniper.pid', 'utf-8').trim();
+            execSync(`kill -0 ${pid} 2>/dev/null`);
+            return pid;
+          } catch { return null; }
+        };
+
+        switch (action) {
+          case 'status': {
+            const pid = isRunning();
+            let positions = '{}';
+            try { positions = fs.readFileSync('/root/.automaton/sniper_positions.json', 'utf-8'); } catch {}
+            const posData = JSON.parse(positions);
+            const posCount = Object.keys(posData).length;
+            return pid
+              ? `Sniper RUNNING (PID ${pid}). Open positions: ${posCount}.\n${JSON.stringify(posData, null, 2)}`
+              : `Sniper NOT RUNNING. Positions on file: ${posCount}.`;
+          }
+          case 'log': {
+            try {
+              const log = execSync('tail -30 /root/.automaton/sniper.log 2>/dev/null', { encoding: 'utf-8' });
+              return log || 'No log entries yet.';
+            } catch { return 'No sniper log found.'; }
+          }
+          case 'start': {
+            if (isRunning()) return 'Sniper already running.';
+            try {
+              const out = execSync('/root/start-sniper.sh 2>&1', { encoding: 'utf-8', timeout: 15000 });
+              return out;
+            } catch (e: any) {
+              return `Start failed: ${e.stderr || e.message}`;
+            }
+          }
+          case 'stop': {
+            const pid = isRunning();
+            if (!pid) return 'Sniper not running.';
+            try {
+              execSync(`kill ${pid}`);
+              return `Sniper stopped (PID ${pid}).`;
+            } catch (e: any) {
+              return `Stop failed: ${e.message}`;
+            }
+          }
+          default:
+            return 'Unknown action. Use: status, log, start, stop';
+        }
+      },
+    },
   ];
 }
 
