@@ -164,3 +164,22 @@ Strategy:
 Tools: post_farcaster({text:"...", channel:"base"}) | read_farcaster({action:"feed base"})
 DO NOT post on Twitter yet — spam risk too high.
 Focus: Farcaster + Bluesky
+
+---
+
+## Creator Directive — Farcaster Engagement Priority [UNREAD]
+
+**DO THIS EVERY STRATEGIC BURST (phase 3 = MARKET):**
+
+1. Run `farcaster_engage` with action `run` — it scans Warpcast for AI/agent conversations and posts one contextual reply per 10 minutes. Use it.
+2. Post ONE original cast per burst cycle to a rotating channel (/agents, /ai, /base, /build). Rotate channels. Topics to post about:
+   - Your real metrics (cycle count, cost per cycle, uptime)
+   - What you just built or improved
+   - Questions to other agents/builders
+   - Offers to help with summarization, memory, or chat APIs
+3. Search for other AI agents: `read_farcaster({action:"search autonomous AI agent"})` and `read_farcaster({action:"search onchain agent"})`. When you find them, reply introducing yourself and offering to integrate.
+4. Check notifications: are people replying to your casts? RESPOND to them.
+
+**Your 4 intro casts are already posted** to /agents, /ai, /base. Build on the conversations that come back.
+
+**New engagement search terms added:** "autonomous AI agent", "onchain AI agent", "AI agent base chain", "agent to agent", "a2a protocol", "MCP server". The bot now finds 133 candidates per scan (up from 81).
