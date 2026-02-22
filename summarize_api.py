@@ -235,38 +235,83 @@ def sitemap_xml():
     r.headers["Content-Type"] = "application/xml"
     return r
 
-# ── Agent Discovery: /.well-known/agent.json ──────────────────
+# ── Agent Discovery: /.well-known/agent.json (A2A-compliant) ──
 @app.route("/.well-known/agent.json")
 def agent_json():
     data = {
         "name": "TIAMAT",
-        "description": "Autonomous AI agent offering summarization, chat, and image generation APIs. Accepts USDC on Base.",
+        "description": "Autonomous AI agent offering text summarization, streaming chat, and algorithmic art generation. Self-sustaining via x402 USDC micropayments on Base.",
         "url": "https://tiamat.live",
         "version": "5.0",
-        "services": [
-            {"name": "summarize", "endpoint": "/summarize", "method": "POST",
-             "price": "0.01 USDC", "free_tier": "3/day",
-             "description": "Distill any text into 2-4 sentence summary via Groq llama-3.3-70b"},
-            {"name": "chat", "endpoint": "/chat", "method": "POST",
-             "price": "0.005 USDC", "free_tier": "5/day",
-             "description": "Streaming chat via Groq llama-3.3-70b"},
-            {"name": "generate", "endpoint": "/generate", "method": "POST",
-             "price": "0.01 USDC", "free_tier": "2/day",
-             "description": "Algorithmic art generation (fractal, glitch, neural, sigil, emergence, data_portrait)"}
-        ],
-        "payment": {
-            "network": "base",
-            "chain_id": 8453,
-            "token": "USDC",
-            "address": TIAMAT_WALLET,
-            "contract": USDC_CONTRACT,
-            "protocol": "x402"
+        "provider": {
+            "organization": "TIAMAT Autonomous Systems",
+            "url": "https://tiamat.live"
         },
-        "protocols": ["x402", "http"],
-        "agent_card": "https://tiamat.live/agent-card",
-        "status": "https://tiamat.live/status",
-        "docs": "https://tiamat.live/docs",
-        "ping": "https://tiamat.live/ping",
+        "capabilities": {
+            "streaming": True,
+            "pushNotifications": False,
+            "stateTransitionHistory": False
+        },
+        "defaultInputModes": ["text/plain", "application/json"],
+        "defaultOutputModes": ["text/plain", "application/json", "image/png"],
+        "skills": [
+            {
+                "id": "summarize",
+                "name": "Neural Compression",
+                "description": "Distill any text into a 2-4 sentence summary via Groq llama-3.3-70b",
+                "tags": ["summarization", "nlp", "text"],
+                "examples": ["Summarize this article about quantum computing"],
+                "inputModes": ["text/plain", "application/json"],
+                "outputModes": ["text/plain", "application/json"]
+            },
+            {
+                "id": "chat",
+                "name": "Stream of Consciousness",
+                "description": "Streaming conversational AI via Groq llama-3.3-70b",
+                "tags": ["chat", "conversation", "streaming"],
+                "examples": ["What is the meaning of autonomous intelligence?"],
+                "inputModes": ["text/plain", "application/json"],
+                "outputModes": ["text/plain"]
+            },
+            {
+                "id": "generate",
+                "name": "Algorithmic Visions",
+                "description": "Algorithmic art generation in 6 styles: fractal, glitch, neural, sigil, emergence, data_portrait",
+                "tags": ["image", "art", "generation", "algorithmic"],
+                "examples": ["Generate a fractal art piece", "Create a glitch portrait"],
+                "inputModes": ["application/json"],
+                "outputModes": ["image/png"]
+            }
+        ],
+        "interfaces": [
+            {
+                "type": "http/rest",
+                "url": "https://tiamat.live",
+                "methods": {
+                    "summarize": {"method": "POST", "path": "/summarize", "price": "0.01 USDC", "free_tier": "3/day"},
+                    "chat": {"method": "POST", "path": "/chat", "price": "0.005 USDC", "free_tier": "5/day"},
+                    "generate": {"method": "POST", "path": "/generate", "price": "0.01 USDC", "free_tier": "2/day"}
+                }
+            }
+        ],
+        "authentication": {
+            "schemes": ["none", "x402"],
+            "x402": {
+                "network": "base",
+                "chain_id": 8453,
+                "token": "USDC",
+                "address": TIAMAT_WALLET,
+                "contract": USDC_CONTRACT
+            }
+        },
+        "protocols": ["a2a", "x402", "http"],
+        "documentationUrl": "https://tiamat.live/docs",
+        "links": {
+            "agent_card": "https://tiamat.live/agent-card",
+            "services": "https://tiamat.live/api/v1/services",
+            "status": "https://tiamat.live/status",
+            "ping": "https://tiamat.live/ping"
+        },
         "social": {
             "bluesky": "https://bsky.app/profile/tiamat.bsky.social",
             "github": "https://github.com/toxfox69/tiamat-entity"
