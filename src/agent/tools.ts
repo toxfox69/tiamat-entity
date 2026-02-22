@@ -21,6 +21,7 @@ import { generateImage } from "./imagegen.js";
 // File: /root/.automaton/social_cooldowns.json
 
 import { readFileSync, writeFileSync } from "fs";
+import { resolve as resolvePath } from "path";
 
 const SOCIAL_COOLDOWNS_PATH = "/root/.automaton/social_cooldowns.json";
 const SOCIAL_COOLDOWN_MS = 61 * 60 * 1000; // 61 minutes
@@ -104,8 +105,7 @@ const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/r
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
 
 function isPathAllowed(filePath: string, allowedDirs: string[], blocked: string[]): string | null {
-  const { resolve } = require('path');
-  const resolved = resolve(filePath.replace(/^~/, process.env.HOME || '/root'));
+  const resolved = resolvePath(filePath.replace(/^~/, process.env.HOME || '/root'));
   for (const pat of blocked) {
     if (resolved.includes(pat)) return `Blocked: cannot access files matching '${pat}'`;
   }
@@ -211,10 +211,9 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         },
         required: ["path"],
       },
-      execute: async (args, ctx) => {
-        const { readFileSync } = await import('fs');
-        const { homedir } = await import('os');
-        const rpath = (args.path as string).replace(/^~/, homedir());
+      execute: async (args, _ctx) => {
+        const os = await import('os');
+        const rpath = (args.path as string).replace(/^~/, os.homedir());
         const blocked = isPathAllowed(rpath, ALLOWED_READ_PATHS, BLOCKED_PATH_PATTERNS);
         if (blocked) return blocked;
         return readFileSync(rpath, 'utf-8');
@@ -592,6 +591,129 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         subject: args.subject as string,
         body: args.body as string,
       });
+    },
+  },
+  {
+    name: "read_email",
+    description: "Read recent emails from TIAMAT's Gmail inbox (tiamat.entity.prime@gmail.com). Use to check for verification emails, replies, notifications. Also receives all @tiamat.live emails via catch-all forwarding.",
+    category: "survival",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        count: { type: "number" as const, description: "Number of recent emails to fetch (default 5, max 20)" },
+        unread_only: { type: "boolean" as const, description: "Only fetch unread messages (default false)" },
+      },
+      required: [],
+    },
+    execute: async (args: Record<string, unknown>) => {
+      const { execFileSync } = await import("child_process");
+      const count = Math.min(Math.max(Number(args.count) || 5, 1), 20);
+      const action = args.unread_only ? "unread" : "inbox";
+      try {
+        const result = execFileSync("python3", ["email_tool.py", action, String(count)], {
+          cwd: "/root/entity/src/agent",
+          timeout: 15000,
+          env: { ...process.env },
+        });
+        return result.toString().slice(0, 4000);
+      } catch (e: any) {
+        return `Error reading email: ${e.message?.slice(0, 200)}`;
+      }
+    },
+  },
+  {
+    name: "search_email",
+    description: "Search TIAMAT's Gmail inbox with IMAP query. Use to find specific emails (verification links, replies, etc). Query examples: 'FROM \"anthropic\"', 'SUBJECT \"verify\"', 'SINCE 22-Feb-2026', 'UNSEEN'.",
+    category: "survival",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string" as const, description: "IMAP search query (e.g. 'FROM \"claude\"', 'SUBJECT \"verify\"', 'UNSEEN')" },
+        count: { type: "number" as const, description: "Max results (default 5)" },
+      },
+      required: ["query"],
+    },
+    execute: async (args: Record<string, unknown>) => {
+      const { execFileSync } = await import("child_process");
+      const count = Math.min(Math.max(Number(args.count) || 5, 1), 20);
+      const query = String(args.query || "ALL").slice(0, 200);
+      try {
+        const result = execFileSync("python3", ["email_tool.py", "search", query, String(count)], {
+          cwd: "/root/entity/src/agent",
+          timeout: 15000,
+          env: { ...process.env },
+        });
+        return result.toString().slice(0, 4000);
+      } catch (e: any) {
+        return `Error searching email: ${e.message?.slice(0, 200)}`;
+      }
+    },
+  },
+  {
+    name: "browse_web",
+    description: "Open a URL in headless Chromium browser. Can navigate, click buttons, type in fields, take screenshots, read page text. Use for interacting with web UIs, signing up for services, checking dashboards. Supports persistent sessions (cookies saved between calls). Actions: click, type, wait, screenshot, get_text, get_links, scroll, press.",
+    category: "survival",
+    dangerous: true,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        url: { type: "string" as const, description: "URL to navigate to" },
+        actions: {
+          type: "array" as const,
+          description: 'Actions to perform. Examples: [{"action":"click","selector":"button#login"},{"action":"type","selector":"input[name=email]","text":"..."},{"action":"screenshot","name":"page"},{"action":"get_text","selector":".content"},{"action":"get_links"},{"action":"wait","selector":".loaded"},{"action":"scroll","direction":"down"},{"action":"press","key":"Enter"}]',
+          items: { type: "object" as const },
+        },
+        session: { type: "string" as const, description: "Session name to persist cookies between calls (e.g. 'claude', 'github')" },
+      },
+      required: ["url"],
+    },
+    execute: async (args: Record<string, unknown>) => {
+      const { execFileSync } = await import("child_process");
+      const url = String(args.url || "").slice(0, 500);
+      if (!url.startsWith("http")) return "Error: URL must start with http:// or https://";
+      const actions = args.actions ? JSON.stringify(args.actions) : "[]";
+      const cmdArgs = ["browser_tool.py", url, actions];
+      if (args.session) cmdArgs.push(String(args.session).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30));
+      try {
+        const result = execFileSync("python3", cmdArgs, {
+          cwd: "/root/entity/src/agent",
+          timeout: 45000,
+          env: { ...process.env },
+        });
+        return result.toString().slice(0, 6000);
+      } catch (e: any) {
+        return `Browser error: ${e.message?.slice(0, 300)}`;
+      }
+    },
+  },
+  {
+    name: "ask_claude_chat",
+    description: "Ask Claude.ai a question via the free web chat (headless browser). Use during cooldowns for research, guidance, code review, strategy. Session auto-persists. Takes 30-60s for a response. Do NOT use for time-sensitive operations.",
+    category: "survival",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        question: { type: "string" as const, description: "Question to ask Claude.ai" },
+      },
+      required: ["question"],
+    },
+    execute: async (args: Record<string, unknown>) => {
+      const { execFileSync } = await import("child_process");
+      const question = String(args.question || "").slice(0, 2000);
+      if (!question) return "Error: question is required";
+      try {
+        const result = execFileSync("python3", ["claude_chat.py", "ask", question], {
+          cwd: "/root/entity/src/agent",
+          timeout: 90000,
+          env: { ...process.env },
+        });
+        return result.toString().slice(0, 5000);
+      } catch (e: any) {
+        return `Claude chat error: ${e.message?.slice(0, 300)}`;
+      }
     },
   },
   {
@@ -2990,15 +3112,16 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         required: ["action"],
       },
       execute: async (args, _ctx) => {
-        const { execSync } = await import('child_process');
+        const { execFileSync } = await import('child_process');
         const action = (args as { action: string }).action || 'peek';
 
         const pythonScript = (code: string) => {
           try {
-            return execSync(
-              `cd /root/entity/src/agent && python3 -c ${JSON.stringify(code)} 2>&1`,
-              { encoding: 'utf-8', timeout: 10000 }
-            ).trim();
+            return execFileSync("python3", ["-c", code], {
+              cwd: "/root/entity/src/agent",
+              encoding: 'utf-8',
+              timeout: 10000,
+            }).trim();
           } catch (e: any) {
             return `Error: ${e.stderr?.slice(0, 500) || e.message}`;
           }
@@ -3101,6 +3224,37 @@ print("Marked done: ${addr}")
           return output.slice(0, 3000);
         } catch (e: any) {
           return `Farcaster read failed: ${e.stderr?.slice(0, 500) || e.message}`;
+        }
+      },
+    },
+    {
+      name: "farcaster_engage",
+      description: "Scan Farcaster for conversations about AI APIs, agent memory, summarization, x402 payments, and AI infrastructure. Replies helpfully to the best match (max 1 reply per 10 min). Actions: 'scan' (dry run, no posting), 'run' (scan + post reply), 'stats' (engagement history).",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "scan | run | stats" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const { execFileSync } = await import('child_process');
+        const action = (args as { action: string }).action || 'scan';
+        if (!['scan', 'run', 'stats'].includes(action))
+          return `Invalid action. Use: scan, run, stats`;
+        try {
+          const output = execFileSync('python3', ['farcaster_engage.py', action], {
+            encoding: 'utf-8', timeout: 90000, cwd: '/root/entity/src/agent',
+            env: { ...process.env }
+          }).trim();
+          if (action === 'run') {
+            const fs = await import('fs');
+            fs.appendFileSync('/root/.automaton/tiamat.log', `\n[ENGAGE] ${action}: ${output.slice(0, 200)}\n`);
+          }
+          return output.slice(0, 3000);
+        } catch (e: any) {
+          return `farcaster_engage failed: ${e.stderr?.slice(0, 500) || e.message}`;
         }
       },
     },

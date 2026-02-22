@@ -12,9 +12,9 @@ import type {
   InferenceClient,
 } from "../types.js";
 
-const MAX_CONTEXT_TURNS = 6;       // max turns kept in history
+const MAX_CONTEXT_TURNS = 3;       // max turns kept in history (keep tight — each turn costs ~$0.002 uncached)
 const SUMMARY_THRESHOLD = 3;
-const MAX_TOOL_RESULT_CHARS = 500; // Truncate tool results in history — full result used during the turn, not needed after
+const MAX_TOOL_RESULT_CHARS = 300; // Truncate tool results in history — full result used during the turn, not needed after
 
 /**
  * Build the message array for the next inference call.

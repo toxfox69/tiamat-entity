@@ -103,6 +103,9 @@ def main():
                                 finding = check_fn(addr)
                                 if finding:
                                     eth_val = finding.get("eth_value", 0)
+                                    # Skip findings with negligible value
+                                    if eth_val < 0.01:
+                                        continue
                                     # Telegram alert for high-value findings
                                     if eth_val > 0.01:
                                         msg = (

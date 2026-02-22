@@ -295,6 +295,8 @@ class ContractScanner:
             # Check if it's a zero address or if impl has no code
             if impl_addr.lower() in {d.lower() for d in DEAD_ADDRESSES}:
                 eth_bal = self._get_eth_balance(addr)
+                if eth_bal < 0.01:
+                    return None
                 return self._add_finding(
                     "proxy_dead_impl",
                     addr,
@@ -344,11 +346,12 @@ class ContractScanner:
             return None
 
         eth_bal = self._get_eth_balance(addr)
-        owner = self._get_owner(addr)
 
-        # Only interesting if has ETH or owner is dead/missing
-        if eth_bal < 0.001 and owner and owner.lower() not in {d.lower() for d in DEAD_ADDRESSES}:
+        # Skip contracts with < 0.01 ETH — not worth investigating
+        if eth_bal < 0.01:
             return None
+
+        owner = self._get_owner(addr)
 
         return self._add_finding(
             "unguarded_functions",
