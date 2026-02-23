@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "name": "TIAMAT Agent Communication Protocol (TACP)",
+  "description": "Zero-token structured message contract for inter-agent communication",
+
+  "ops": {
+    "SKIM": {
+      "category": "execute",
+      "requires": ["addr", "eth"],
+      "optional": ["pair", "token0", "token1", "excess0", "excess1"],
+      "auto_execute": true,
+      "handler": "auto_executor.try_skim",
+      "ttl_seconds": 300,
+      "description": "Execute skim on LP pair with excess tokens"
+    },
+    "RESCUE": {
+      "category": "execute",
+      "requires": ["addr", "eth", "fn"],
+      "optional": ["args", "gas_limit"],
+      "auto_execute": true,
+      "handler": "auto_executor.try_rescue",
+      "ttl_seconds": 300,
+      "description": "Call unprotected withdraw/rescue function"
+    },
+    "SNIPE": {
+      "category": "execute",
+      "requires": ["addr", "eth", "action"],
+      "optional": ["slippage", "amount"],
+      "auto_execute": false,
+      "handler": "manage_sniper",
+      "ttl_seconds": 600,
+      "description": "Sniper buy/sell action"
+    },
+    "ALERT": {
+      "category": "notify",
+      "requires": ["severity", "msg"],
+      "optional": ["source", "data"],
+      "auto_execute": true,
+      "handler": "send_telegram",
+      "ttl_seconds": null,
+      "description": "Send alert to operator"
+    },
+    "REPORT": {
+      "category": "telemetry",
+      "requires": ["metric", "value"],
+      "optional": ["unit", "context"],
+      "auto_execute": true,
+      "handler": "log_metric",
+      "ttl_seconds": null,
+      "description": "Report a metric value"
+    },
+    "CONFIG": {
+      "category": "control",
+      "requires": ["key", "value"],
+      "optional": ["reason"],
+      "auto_execute": false,
+      "handler": "update_config",
+      "ttl_seconds": null,
+      "description": "Propose config change (requires TIAMAT approval)"
+    },
+    "PROPOSE": {
+      "category": "control",
+      "requires": ["key", "from", "to"],
+      "optional": ["reason", "evidence"],
+      "auto_execute": false,
+      "handler": "review_proposal",
+      "ttl_seconds": 3600,
+      "description": "Propose parameter change with before/after"
+    },
+    "BUILD": {
+      "category": "task",
+      "requires": ["spec"],
+      "optional": ["priority", "deadline"],
+      "auto_execute": false,
+      "handler": "queue_build_task",
+      "ttl_seconds": null,
+      "description": "Request TIAMAT build something (needs LLM reasoning)"
+    },
+    "HEARTBEAT": {
+      "category": "telemetry",
+      "requires": ["agent", "status"],
+      "optional": ["uptime", "cycles", "errors"],
+      "auto_execute": true,
+      "handler": "log_heartbeat",
+      "ttl_seconds": null,
+      "description": "Agent alive signal"
+    },
+    "ACK": {
+      "category": "control",
+      "requires": ["ref_id", "result"],
+      "optional": ["data"],
+      "auto_execute": true,
+      "handler": "log_ack",
+      "ttl_seconds": null,
+      "description": "Acknowledge receipt/completion of a previous message"
+    },
+    "ERROR": {
+      "category": "notify",
+      "requires": ["agent", "error", "context"],
+      "optional": ["stack", "recoverable"],
+      "auto_execute": true,
+      "handler": "log_error",
+      "ttl_seconds": null,
+      "description": "Agent error report"
+    }
+  },
+
+  "categories": {
+    "execute": "Direct on-chain or system actions. May auto-execute if flagged.",
+    "notify": "Informational messages. Always processed, never blocked.",
+    "telemetry": "Metrics, heartbeats, status. Logged, not acted on.",
+    "control": "Config changes, proposals. Require TIAMAT approval.",
+    "task": "Work requests that need LLM reasoning to fulfill."
+  },
+
+  "severity_levels": ["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"],
+
+  "message_envelope": {
+    "id": "ulid or uuid — unique message identifier",
+    "ts": "unix epoch seconds",
+    "from": "agent name (scanner, sniper, tiamat, child_*)",
+    "op": "op code from ops table",
+    "ttl": "expiry unix epoch (ts + ttl_seconds), null = never expires",
+    "payload": "op-specific fields as flat object",
+    "status": "pending | processing | done | expired | failed",
+    "result": "set by handler after processing"
+  },
+
+  "queues": {
+    "inbound": "/root/.automaton/agent_inbox.jsonl",
+    "outbound": "/root/.automaton/agent_outbox.jsonl",
+    "opportunity": "/root/.automaton/opportunity_queue.json",
+    "heartbeats": "/root/.automaton/agent_heartbeats.json"
+  },
+
+  "transport": {
+    "format": "jsonl (one message per line, append-only)",
+    "locking": "fcntl.LOCK_EX for writes, fcntl.LOCK_SH for reads",
+    "rotation": "rotate at 1000 lines, archive to .1/.2/.3 (max 3)",
+    "encoding": "utf-8, no BOM"
+  },
+
+  "rules": {
+    "1": "Agent-to-agent: NEVER use natural language. Structured JSON ops only.",
+    "2": "Agent-to-human: Natural language is fine.",
+    "3": "Agent-to-LLM: Compressed shorthand, no pleasantries.",
+    "4": "All messages MUST include id, ts, from, op, payload.",
+    "5": "Expired messages (ts + ttl < now) are skipped, not processed.",
+    "6": "auto_execute=true ops are handled without LLM reasoning.",
+    "7": "auto_execute=false ops are queued for TIAMAT's next strategic cycle.",
+    "8": "Unknown ops are logged and ignored (forward compatibility).",
+    "9": "Payload values: addresses as 0x-prefixed hex, ETH as float, tokens as int strings.",
+    "10": "Max message size: 4KB. If you need more, you're doing it wrong."
+  }
+}

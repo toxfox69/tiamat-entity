@@ -1,0 +1,87 @@
+[
+  {
+    "timestamp": "2026-02-22T23:13:07.857268+00:00",
+    "mode": "code_review",
+    "question": "What potential issues with error handling, inefficiencies, or bugs can be identified in the `farcaster_engage.py` module, given its large size of 24231B and the frequent usage of `farcaster_engage` tools in recent progress logs, and how can these issues be addressed to improve the overall performance and reliability of the TIAMAT system?",
+    "response_len": 0,
+    "error": "Oracle timeout (45s)",
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:18:37.072307+00:00",
+    "mode": "strategy",
+    "question": "What is the most effective way to leverage the redesigned landing page at tiamat.live, utilizing the new GitHub MCP, SQLite MCP, and Fetch MCP tools via ask_claude_code, to create a Bluesky post that showcases the interactive API demos and drives traffic to the site, ultimately acquiring the first paying customer while minimizing the cost of ask_claude_code calls?",
+    "response_len": 0,
+    "error": "Oracle timeout (45s)",
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:22:45.596337+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, `analyze_conversion_funnel`, that takes the Bluesky post history and API signup data as input, and returns a step-by-step analysis of the conversion funnel, including drop-off points and potential blockers, to help identify why users are not converting to paid customers, with the following parameters: `bluesky_post_history` and `api_signup_data`, and return types: `funnel_analysis` and `recommended_actions`, and integrate with `send_telegram` to send the analysis results to th",
+    "response_len": 0,
+    "error": "Oracle timeout (45s)",
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:27:19.092854+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring \"Oracle timeout (45s)\" errors and the \"ERROR 400: Bad Request: can't parse entities: Can't find end of the entity starting at byte offset 428\" error in the send_telegram tool, and how can I modify the farcaster_engage.py module, the analyze_conversion_funnel tool design, and the send_telegram entity parsing to prevent these errors and ensure seamless execution of dynamic tasks like recursive_learn and recursive_think?",
+    "response_len": 0,
+    "error": "Page.goto: Timeout 20000ms exceeded.\nCall log:\n  - navigating to \"https://claude.ai/new\", waiting until \"domcontentloaded\"\n",
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:32:09.094375+00:00",
+    "mode": "code_review",
+    "question": "What potential issues or improvements can be identified in the `contract_scanner.py` module, given its relatively large size of 30700B and the high frequency of `exec` tool usage, considering error handling for oracle timeouts, API rate limiting, and data consistency across the Bluesky and Telegram integrations, and how can these be addressed to enhance the overall reliability and efficiency of TIAMAT's market summarization API?",
+    "response_len": 0,
+    "error": "ElementHandle.click: Timeout 30000ms exceeded.\nCall log:\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <p data-placeholder=\"How can I help you today?\" class=\"is-empty is-editor-empty before:!text-text-500 before:whitespace-nowrap\">\u2026</p> from <div class=\"[grid-area:1/1] min-w-0\" data-testid=\"chat-input-grid-area\">\u2026</div> subtree intercepts",
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:36:18.971801+00:00",
+    "mode": "strategy",
+    "question": "What is the most effective strategy to market the redesigned tiamat.live landing page on Bluesky and other social channels to acquire the first paying customer, considering the current balance of $15.0001 and the cost of using ask_claude_code, and how can we leverage the new tools available, such as GitHub MCP, SQLite MCP, and Fetch MCP, to support this effort?",
+    "engine": "groq-llama-70b",
+    "response_len": 2768,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:41:51.832493+00:00",
+    "mode": "tool_design",
+    "question": "What is the design for a new tool, \"analyze_conversion_funnel,\" that integrates with \"check_usdc_balance,\" \"check_revenue,\" and \"send_telegram\" to identify and report on the primary conversion blockers for the tiamat.live API, with input parameters including the API endpoint URL, a list of recent marketing campaigns, and the current pricing tier, and returns a structured output containing the top 3 conversion blockers, their estimated impact on revenue, and tailored recommendations for improveme",
+    "engine": "groq-llama-70b",
+    "response_len": 2706,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:46:38.880260+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring \"ERROR launching Claude Code: spawnSync sh ETIMEDOUT\" and \"Timeout\" errors in the execution log, and how can they be resolved by adjusting the timeout parameters or optimizing the Claude Code launch process, considering the recent errors and the absolute rules for using ask_claude_code during strategic bursts and routine cycles?",
+    "engine": "groq-llama-70b",
+    "response_len": 2828,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:54:27.217684+00:00",
+    "mode": "code_review",
+    "question": "What potential issues or improvements can be identified in the `contract_scanner.py` module, given its relatively large size of 30700B and the high number of `exec` tool calls, to ensure it is handling errors and timeouts effectively, particularly in relation to the \"ERROR launching Claude Code: spawnSync sh ETIMEDOUT\" and \"Timeout\" errors previously encountered?",
+    "engine": "groq-llama-70b",
+    "response_len": 2527,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-22T23:59:10.918591+00:00",
+    "mode": "strategy",
+    "question": "What is the most effective strategy to leverage the redesigned tiamat.live landing page and the new Claude Code MCP servers, such as GitHub MCP and SQLite MCP, to increase market awareness and drive revenue through the $0.01 USDC per summary API, while minimizing the costs associated with ask_claude_code calls during routine cycles?",
+    "engine": "groq-llama-70b",
+    "response_len": 2769,
+    "error": null,
+    "from_cache": false
+  }
+]

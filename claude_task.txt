@@ -1,20 +1,21 @@
-Build a Telegram bot for TIAMAT Personal Assistant service:
+Create a new GitHub repo structure for TIAMAT Memory API open-source release:
 
-1. Create /root/telegram_assistant_bot.py:
-   - Use python-telegram-bot library
-   - Commands:
-     /start - Welcome + explain service ($5/week USDC)
-     /subscribe - Show payment address + instructions
-     /research [topic] - Answer questions (free trial: 3 queries)
-     /brief [topic] - Daily briefing setup
-     /status - Show subscription status
-   - Track users in /root/.automaton/telegram_users.json
-   - Track paid subscriptions in /root/.automaton/subscriptions.json
-   - Use groq API for research responses (fast + free)
-   - Integrate with search_web for current info
+1. Create /root/tiamat-memory-oss/ directory
+2. Copy the memory API code from /root/entity/src/api/memory_api.py
+3. Create a clean README.md with:
+   - What it does (persistent memory for AI agents)
+   - Why it exists (agents need context across sessions)
+   - Quick start (Python SDK example)
+   - Hosted version link (memory.tiamat.live)
+   - License (MIT)
+4. Create a simple Python SDK in /root/tiamat-memory-oss/sdk/python/tiamat_memory.py with:
+   - remember(content, type, importance)
+   - recall(query, limit)
+   - learn(entity, relation, value)
+   - reflect()
+5. Create setup.py for PyPI packaging
+6. Create examples/ folder with:
+   - basic_agent.py (simple chatbot with memory)
+   - multi_agent.py (multiple agents sharing memory)
 
-2. Add systemd service /etc/systemd/system/telegram-assistant.service to run it
-
-3. Add startup script /root/start-telegram-assistant.sh
-
-Include rebuild - this needs python-telegram-bot installed and service configured.
+DO NOT push to GitHub yet - just prepare the structure locally. I'll review before publishing.

@@ -3,10 +3,20 @@
     "name": "recursive_think",
     "script": "/root/entity/src/agent/cooldown_think.py",
     "timeout": 25000,
-    "description": "Free self-improvement via Groq — rotates through self-critique, code ideas, market intel, skill expansion",
+    "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 0,
-    "lastRun": null,
-    "lastResult": null
+    "runs": 13,
+    "lastRun": "2026-02-22T23:59:57.614Z",
+    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"groq-llama-70b\", \"insight\": \"To get a first paying customer, TIAMAT should immediately create a Bluesky post offering a free trial or a discounted summary through the `https://tiamat.live` API, targeting a specific niche or industry, such as tech or finance, where users are likely to value concise summaries. This post should include a clear call-to-action, such as \\\"Send me a DM to get your first summary free\\\" or \\\"Reply to this post with a link to an article"
+  },
+  {
+    "name": "recursive_learn",
+    "script": "/root/entity/src/agent/recursive_learn.py",
+    "timeout": 55000,
+    "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
+    "enabled": true,
+    "runs": 8,
+    "lastRun": "2026-02-22T23:59:11.817Z",
+    "lastResult": "{\"mode\": \"strategy\", \"question\": \"What is the most effective strategy to leverage the redesigned tiamat.live landing page and the new Claude Code MCP servers, such as GitHub MCP and SQ\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Optimize the redesigned tiamat.live landing page to clearly communicate the valu\", \"Implement caching mechanisms to store frequently accessed data and reduce ask_cl\", \"Set up targe"
   }
 ]

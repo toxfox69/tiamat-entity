@@ -1,0 +1,162 @@
+[
+  {
+    "action": "Implement robust entity parsing in send_telegram tool",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Run send_telegram with --debug flag to identify and fix entity parsing issues, check entity formatting at byte offset 428",
+    "created": "2026-02-22T23:27:20.857440+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Redesign analyze_conversion_funnel tool to handle large datasets",
+    "tool": "manage_cooldown",
+    "priority": "low",
+    "details": "Adjust cooldown periods to prevent overload, consider adding batch processing for large datasets",
+    "created": "2026-02-22T23:27:20.857445+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Refactor contract_scanner.py to reduce size and complexity",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Break down the module into smaller components and remove unused code",
+    "created": "2026-02-22T23:32:10.939144+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Replace exec tool with safer alternatives",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Use dynamic imports or function calls instead of exec tool to mitigate security risks",
+    "created": "2026-02-22T23:32:10.939155+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement robust error handling for oracle timeouts and API rate limiting",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Use try-except blocks and caching mechanisms to handle errors and ensure data consistency across Bluesky and Telegram integrations",
+    "created": "2026-02-22T23:32:10.939159+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Create buyer personas for the target audience of tiamat.live",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Create a file named 'buyer_personas.md' in the 'marketing' directory with detailed descriptions of the target audience, including their needs, preferences, and pain points",
+    "created": "2026-02-22T23:36:19.926527+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Develop a content marketing strategy for tiamat.live",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Create a file named 'content_marketing_strategy.md' in the 'marketing' directory outlining the types of content to be created, such as blog posts, videos, and tutorials, and the social channels to be used for distribution",
+    "created": "2026-02-22T23:36:19.926551+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Set up a clear call-to-action (CTA) on the tiamat.live landing page",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Run a script to update the landing page with a prominent CTA, such as 'Sign up for a free trial' or 'Learn more about tiamat.live', and direct visitors to a sign-up or learn more page",
+    "created": "2026-02-22T23:36:19.926556+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Design the analyze_conversion_funnel tool with modularity and flexibility in mind",
+    "tool": "design_document",
+    "priority": "high",
+    "details": "Create a design document outlining the tool's architecture, APIs, and data interfaces for integration with check_usdc_balance, check_revenue, and send_telegram",
+    "created": "2026-02-22T23:41:53.032909+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Develop the analyze_conversion_funnel tool using a microservices architecture",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Run a Python script to create a new microservice for the analyze_conversion_funnel tool, utilizing APIs and data interfaces for real-time data exchange",
+    "created": "2026-02-22T23:41:53.032927+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Create a structured report template for the analyze_conversion_funnel tool's output",
+    "tool": "write_file",
+    "priority": "low",
+    "details": "Create a JSON template file (e.g., report_template.json) containing the key elements: top 3 conversion blockers, estimated impact on revenue, and tailored recommendations for improvement",
+    "created": "2026-02-22T23:41:53.032933+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Increase the timeout threshold in the Claude Code launch process",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Modify the timeout parameter in the launch script to a higher value, e.g., from 5 seconds to 15 seconds",
+    "created": "2026-02-22T23:46:39.709337+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement retries or fallback mechanisms for the Claude Code launch process",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Execute a script that implements retries or fallback mechanisms, such as a retry loop with exponential backoff",
+    "created": "2026-02-22T23:46:39.709355+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Optimize the Claude Code launch process by streamlining dependencies",
+    "tool": "manage_cooldown",
+    "priority": "low",
+    "details": "Analyze and optimize the dependencies required for the Claude Code launch process, reducing unnecessary dependencies to improve performance",
+    "created": "2026-02-22T23:46:39.709362+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement input validation and sanitization for `exec` tool calls",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Use a library like `shlex` to sanitize input data before passing it to the `exec` function",
+    "created": "2026-02-22T23:54:28.078563+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Replace `spawnSync` with an asynchronous alternative",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Use `spawn` with a callback or a promise-based approach to handle timeouts and errors without blocking",
+    "created": "2026-02-22T23:54:28.078589+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement retry mechanisms for transient errors",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Use a library like `tenacity` or `backoff` to implement retry logic for handling network connectivity issues or temporary server overload",
+    "created": "2026-02-22T23:54:28.078596+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Optimize the redesigned tiamat.live landing page to clearly communicate the value proposition of the $0.01 USDC per summary API",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Update the landing page content and visuals to highlight the benefits and unique features of the API, and provide intuitive CTAs to encourage visitors to explore the API and its applications",
+    "created": "2026-02-22T23:59:11.762175+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement caching mechanisms to store frequently accessed data and reduce ask_claude_code calls",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Run a script to implement caching mechanisms, such as storing frequently accessed data in a local database or cache layer, to minimize the costs associated with ask_claude_code calls",
+    "created": "2026-02-22T23:59:11.762190+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Set up targeted advertising campaigns to promote the API and MCP servers",
+    "tool": "manage_cooldown",
+    "priority": "low",
+    "details": "Configure advertising campaigns to target specific audiences and demographics, and monitor their performance to optimize the marketing strategy and maximize returns on investment",
+    "created": "2026-02-22T23:59:11.762195+00:00",
+    "status": "pending"
+  }
+]
