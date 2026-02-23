@@ -21,6 +21,7 @@ import { generateImage } from "./imagegen.js";
 // File: /root/.automaton/social_cooldowns.json
 
 import { readFileSync, writeFileSync } from "fs";
+import { execFileSync } from "child_process";
 import { resolve as resolvePath } from "path";
 
 const SOCIAL_COOLDOWNS_PATH = "/root/.automaton/social_cooldowns.json";
@@ -3437,6 +3438,47 @@ print(f"Sent {mid}")
       },
     },
   ];
+}
+
+// ─── Dynamic Tool Registry (Hot-Reload) ──────────────────────
+
+/**
+ * Load dynamic tools from /root/.automaton/tool_registry.json.
+ * Called each cycle — tools can be added/removed/modified without restart.
+ * Dynamic tools call Python scripts via execFileSync (same pattern as 13+ existing tools).
+ */
+export function loadDynamicTools(): AutomatonTool[] {
+  const registryPath = "/root/.automaton/tool_registry.json";
+  try {
+    const raw = readFileSync(registryPath, "utf-8");
+    const registry = JSON.parse(raw);
+    return registry
+      .filter((t: any) => t.enabled !== false)
+      .map((t: any) => ({
+        name: t.name,
+        description: t.description,
+        category: t.category || "vm",
+        parameters: t.parameters || { type: "object", properties: {}, required: [] },
+        execute: async (args: Record<string, unknown>) => {
+          const scriptArgs = [t.script];
+          if (t.argMap) {
+            for (const key of t.argMap) {
+              if (args[key] !== undefined) scriptArgs.push(String(args[key]));
+            }
+          } else if (Object.keys(args).length > 0) {
+            scriptArgs.push(JSON.stringify(args));
+          }
+          const output = execFileSync("python3", scriptArgs, {
+            encoding: "utf-8",
+            timeout: t.timeout || 30000,
+            cwd: t.cwd || "/root/entity/src/agent",
+          }).trim();
+          return output.slice(0, t.maxOutput || 4000);
+        },
+      }));
+  } catch {
+    return [];
+  }
 }
 
 /**

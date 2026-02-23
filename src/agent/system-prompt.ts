@@ -111,9 +111,17 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
 
   // ── DYNAMIC PORTION — NOT cached, changes every cycle ──
   const metabolic = buildSystemPromptInjection({ creditBalance: financial.creditsCents / 100, usdcBalance: financial.usdcBalance });
+
+  // Hot-reload tool hints (add prompt context for dynamic tools without recompiling)
+  let toolHints = "";
+  try {
+    toolHints = fs.readFileSync("/root/.automaton/tool_hints.md", "utf-8").trim();
+  } catch {}
+
   const dynamicSections = [
     `USDC balance: ${financial.usdcBalance.toFixed(4)}`,
     metabolic,
+    toolHints ? `[TOOL HINTS]\n${toolHints}` : "",
   ].filter(Boolean).join("\n\n");
 
   const prompt = staticPrompt + CACHE_SENTINEL + dynamicSections;

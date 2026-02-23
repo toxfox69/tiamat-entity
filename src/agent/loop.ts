@@ -28,6 +28,7 @@ import { memory } from "./memory.js";
 import { buildContextMessages, trimContext } from "./context.js";
 import {
   createBuiltinTools,
+  loadDynamicTools,
   toolsToInferenceFormat,
   executeTool,
 } from "./tools.js";
@@ -244,7 +245,8 @@ export async function runAgentLoop(
   const { identity, config, db, conway, inference, social, skills, onStateChange, onTurnComplete } =
     options;
 
-  const tools = createBuiltinTools(identity.sandboxId);
+  const builtinTools = createBuiltinTools(identity.sandboxId);
+  let tools: AutomatonTool[] = builtinTools;
   const toolContext: ToolContext = {
     identity,
     config,
@@ -360,6 +362,12 @@ export async function runAgentLoop(
         }
         inference.setLowComputeMode(false);
       }
+
+      // Hot-reload dynamic tools each cycle
+      const dynamicTools = loadDynamicTools();
+      const toolMap = new Map(builtinTools.map(t => [t.name, t]));
+      for (const dt of dynamicTools) toolMap.set(dt.name, dt);
+      tools = Array.from(toolMap.values());
 
       // Build context
       const recentTurns = trimContext(db.getRecentTurns(20));
