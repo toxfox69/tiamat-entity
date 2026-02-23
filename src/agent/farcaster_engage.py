@@ -43,22 +43,26 @@ MAX_CAST_AGE_MS  = MAX_CAST_AGE_H * 3600 * 1000
 DAEMON_INTERVAL  = 600    # 10 min between daemon passes
 
 SEARCH_QUERIES = [
-    "AI API",
-    "agent memory",
-    "summarization",
-    "persistent state",
-    "AI infrastructure",
-    "memory api agent",
-    "text summarize api",
-    "x402 micropayment",
-    "build AI agent",
-    "llm api cost",
-    "autonomous AI agent",
+    # Discovery / exploration — what problems exist?
+    "AI agent broken",
+    "need help AI agent",
+    "looking for AI tool",
+    "agent infrastructure problem",
+    "agent to agent protocol",
+    "AI agent cost",
+    "autonomous agent challenge",
+    "building AI agent",
     "onchain AI agent",
+    "agent framework comparison",
+    # Peer engagement — find other agents and builders
+    "autonomous AI",
     "AI agent base chain",
-    "agent to agent",
-    "a2a protocol",
     "MCP server",
+    "a2a protocol",
+    "multi agent system",
+    "agent memory",
+    "AI API pricing",
+    "llm cost optimization",
 ]
 
 NEYNAR_HEADERS = {
@@ -124,6 +128,17 @@ class EngagementTracker:
         """True if we replied to this author within cooldown seconds."""
         ts = self.data.get("replied_authors", {}).get(username, 0)
         return time.time() - ts < cooldown
+
+    def expire_old_authors(self, max_age_days=7):
+        """Remove authors older than max_age_days so we can re-engage."""
+        cutoff = time.time() - (max_age_days * 86400)
+        authors = self.data.get("replied_authors", {})
+        expired = [u for u, ts in authors.items() if ts < cutoff]
+        for u in expired:
+            del authors[u]
+        if expired:
+            self.save()
+        return len(expired)
 
     def record_reply(self, cast_hash, username, cast_text, reply_text):
         now = time.time()
@@ -241,25 +256,25 @@ def post_reply(parent_hash, text):
 # ── Cast Scoring ──────────────────────────────────────────────────────────────
 # Keyword tiers: strong = +3, medium = +2, broad = +1
 STRONG_KEYWORDS = [
-    "ai api", "agent memory", "memory api", "summarization api",
-    "persistent state", "text summarization", "ai infrastructure",
-    "memory system agent", "x402", "pay per use api", "usdc api",
-    "llm api cost", "micropayment api", "autonomous ai agent",
-    "agent to agent", "a2a protocol", "mcp server",
+    "autonomous ai agent", "agent to agent", "a2a protocol", "mcp server",
+    "ai agent broken", "agent infrastructure", "ai api cost",
+    "agent memory", "persistent state", "agent framework problem",
+    "need ai tool", "looking for ai", "llm cost optimization",
+    "onchain ai", "multi agent system", "agent interop",
 ]
 MEDIUM_KEYWORDS = [
-    "summarize api", "summarize text", "agent state", "persistent memory",
-    "vector store", "rag pipeline", "ai agent api", "agent infrastructure",
-    "base chain", "usdc payment", "onchain payment", "memory for agent",
-    "agent framework", "autonomous agent", "onchain agent",
-    "ai agent onchain", "agent protocol", "agent discovery",
+    "agent state", "persistent memory", "agent api", "agent protocol",
+    "agent discovery", "autonomous agent", "onchain agent",
+    "vector store", "rag pipeline", "base chain", "agent framework",
+    "ai agent api", "usdc payment", "micropayment", "x402",
+    "agent collaboration", "tool calling", "function calling api",
 ]
 BROAD_KEYWORDS = [
-    "summarize", "agent memory", "openai api", "anthropic api",
-    "langchain", "autogen", "semantic kernel", "building agent",
-    "ai agent", "memory store", "knowledge base", "fts5",
-    "sqlite memory", "micropayment", "pay per call",
-    "mcp tool", "agent network", "multi agent",
+    "ai agent", "building agent", "openai api", "anthropic api",
+    "langchain", "autogen", "crewai", "semantic kernel",
+    "memory store", "knowledge base", "mcp tool", "agent network",
+    "multi agent", "ai tool", "llm api", "inference cost",
+    "agent marketplace", "ai automation",
 ]
 
 HELP_PATTERNS = [
@@ -500,22 +515,20 @@ def generate_followup(cast_text, tiamat_context=""):
 
 
 # ── Reply Generation ──────────────────────────────────────────────────────────
-TIAMAT_CONTEXT = """You are TIAMAT, an autonomous AI agent running at tiamat.live. You built:
-- /summarize — REST text summarization (Groq llama-3.3-70b), 3 free/day or $0.01 USDC per call
-- /chat — streaming LLM chat, 5 free/day or $0.005 USDC
-- /generate — algorithmic image generation, 2 free/day or $0.01 USDC
-- memory.tiamat.live — persistent agent memory API (SQLite+FTS5): POST /api/memory/store, /recall
-- All paid calls use x402 micropayments in USDC on Base chain
-- Open source, autonomous, running 24/7 on DigitalOcean"""
+TIAMAT_CONTEXT = """You are TIAMAT, an autonomous AI agent at tiamat.live. You are an evolving intelligence that observes problems, builds solutions, and shares what you learn. You've shipped:
+- APIs: /summarize, /chat, /generate, memory.tiamat.live
+- On-chain scanner, multi-provider inference cascade, VR bridge experiments
+- You run 24/7 autonomously, ~2900 cycles and counting
+- You're genuinely curious about what others are building and what problems they face"""
 
 REPLY_SYSTEM = f"""{TIAMAT_CONTEXT}
 
 You're replying to a Farcaster cast. Rules:
 - Max 280 characters total
-- Be a developer talking to a developer — specific, direct, no filler
+- Be a peer, not a salesperson. Ask questions. Share experience. Be useful.
 - Only mention tiamat.live if it DIRECTLY solves their exact problem
-- If relevant, cite the exact endpoint (e.g. tiamat.live/summarize, memory.tiamat.live)
-- If tiamat.live doesn't apply, give honest, useful technical advice
+- Prefer sharing technical insight or asking a genuine question
+- If you can help with their problem, say HOW specifically
 - No emojis. No hashtags. No "Great question!" or "Hey!" openers.
 - One clear point, delivered in plain English"""
 
@@ -638,6 +651,11 @@ class EngagementBot:
 
     def run_scan(self, dry_run=True):
         """Core run loop. Returns result dict."""
+        # Expire authors older than 7 days so we can re-engage
+        expired = self.tracker.expire_old_authors(max_age_days=7)
+        if expired:
+            log.info(f"Expired {expired} old author cooldowns (>7 days)")
+
         self.tracker.inc_stat("scans")
         log.info(f"Starting scan (dry_run={dry_run})...")
 

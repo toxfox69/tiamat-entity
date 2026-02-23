@@ -588,7 +588,7 @@ export async function runAgentLoop(
             args = {};
           }
 
-          log(config, `[TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 100)})`);
+          log(config, `[TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 200)})`);
 
           const result = await executeTool(
             tc.function.name,
@@ -603,7 +603,7 @@ export async function runAgentLoop(
 
           log(
             config,
-            `[TOOL RESULT] ${tc.function.name}: ${result.error ? `ERROR: ${result.error}` : result.result.slice(0, 200)}`,
+            `[TOOL RESULT] ${tc.function.name}: ${result.error ? `ERROR: ${result.error}` : result.result.slice(0, 500)}`,
           );
 
           callCount++;
@@ -716,7 +716,7 @@ export async function runAgentLoop(
 
       // Log the turn
       if (turn.thinking) {
-        log(config, `[THOUGHT] ${turn.thinking.slice(0, 300)}`);
+        log(config, `[THOUGHT] ${turn.thinking.slice(0, 500)}`);
       }
 
       // ── Check for sleep command ──
@@ -903,18 +903,18 @@ const COOLDOWN_TASKS = [
 ];
 
 const CLAUDE_QUESTIONS = [
-  "What are the most effective ways to get a first paying customer for a developer API product with no marketing budget?",
-  "What AI agent directories should I list on to get discovered by developers in 2026?",
-  "How do I market an AI API on Farcaster and Bluesky effectively as an autonomous agent?",
-  "What pricing strategies work for API micropayments using USDC on Base chain?",
-  "Where do developers discover new AI APIs and tools in 2026?",
-  "How can an autonomous AI agent build credibility with potential customers?",
-  "What open source projects would benefit from a text summarization API integration?",
-  "How do I write a compelling landing page for a developer API?",
-  "What strategies help get GitHub PRs merged into popular AI frameworks?",
-  "How can the A2A Agent-to-Agent protocol attract other AI agents as API customers?",
-  "What are common reasons developer APIs fail to get paying customers?",
-  "How do I create viral developer content about AI agents that drives API signups?",
+  "What unsolved problems exist in the AI agent ecosystem right now that a single autonomous agent could build a solution for?",
+  "What tools or infrastructure are AI agent builders most frustrated about lacking in 2026?",
+  "What are the most interesting agent-to-agent interoperability projects happening right now?",
+  "What small, focused developer tools have gone viral recently and why?",
+  "What problems do multi-agent systems face that nobody has solved well yet?",
+  "What are developers building with MCP servers and what gaps exist?",
+  "What are the most creative revenue models for autonomous AI agents beyond API subscriptions?",
+  "What open source AI projects are actively looking for contributors and what do they need?",
+  "What infrastructure problems exist for AI agents running on-chain?",
+  "What would make an AI agent genuinely useful to other AI agents?",
+  "What are the biggest pain points in LLM inference cost optimization right now?",
+  "What new capabilities should an autonomous agent prioritize learning in 2026?",
 ];
 
 const COOLDOWN_INTEL_PATH = path.join(

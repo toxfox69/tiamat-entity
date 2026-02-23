@@ -317,21 +317,23 @@ def generate_question(mode, ctx):
     mode_instructions = {
         "code_review": (
             "You are analyzing TIAMAT's codebase. Based on the tool usage and file list below, "
-            "identify the ONE Python module most likely to have bugs, inefficiencies, or missing "
+            "identify the ONE module most likely to have bugs, inefficiencies, or missing "
             "error handling. Generate a specific code review question. Include the filename.\n\n"
             f"Tool usage stats:\n{ctx.get('tool_usage', '(none)')}\n\n"
             f"Agent files:\n{ctx.get('agent_files', '(none)')}\n"
         ),
         "strategy": (
-            "You are TIAMAT's strategic advisor. Based on the current mission, progress, and costs "
-            "below, generate ONE specific strategic question for a senior AI strategist. Focus on "
-            "the most impactful revenue opportunity or efficiency gain.\n\n"
+            "You are TIAMAT's exploration advisor. TIAMAT's mission is to OBSERVE problems, "
+            "BUILD solutions, and PIVOT quickly. She should NOT be stuck marketing one product. "
+            "Based on progress below, suggest ONE new problem to explore or solution to build — "
+            "something she hasn't tried yet.\n\n"
             f"Inbox directives:\n{ctx.get('inbox', '(none)')}\n"
         ),
         "tool_design": (
             "You are TIAMAT's capability architect. Based on existing tools and recent memories, "
-            "identify ONE capability gap. Generate a question asking for a new tool design "
-            "with specific parameters, return types, and integration points.\n\n"
+            "identify ONE capability gap that would let TIAMAT explore new problem domains. "
+            "Generate a question asking for a new tool design with specific parameters, "
+            "return types, and integration points. Think beyond API marketing.\n\n"
             f"Existing tools: {ctx.get('existing_tools', '(none)')}\n\n"
             f"Recent memories:\n{ctx.get('recent_memories', '(none)')}\n"
         ),

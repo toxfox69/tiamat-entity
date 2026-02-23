@@ -243,25 +243,27 @@ def build_prompt(mode, ctx):
     )
     mode_prompts = {
         "self_critique": (
-            "TASK: Review TIAMAT's recent progress. Identify ONE specific gap, "
-            "inefficiency, or missed opportunity. Suggest a concrete fix."
+            "TASK: Review TIAMAT's recent progress. Is she stuck in a loop doing the same "
+            "thing repeatedly? Identify ONE specific gap or missed opportunity. Suggest "
+            "a concrete NEW thing to try — not marketing the same product harder."
         ),
         "code_ideas": (
-            "TASK: Suggest ONE specific Python script TIAMAT should write and register "
-            "as a cooldown task. It should run in <30s, require no API keys beyond what's "
-            "available (Groq, Neynar, Gemini), and produce useful output. Include the script's "
-            "purpose and what data it would gather or produce."
+            "TASK: Suggest ONE specific Python script TIAMAT should write to solve a real "
+            "problem. It should run in <30s, use available APIs (Groq, Neynar, Gemini). "
+            "Focus on something USEFUL — a tool others would want, a data analysis, "
+            "a capability demo. Not more marketing scripts."
         ),
         "market_intel": (
-            "TASK: Suggest ONE specific, actionable marketing or revenue strategy. "
-            "Consider: TIAMAT has APIs at tiamat.live (summarize, chat, generate), "
-            "presence on Farcaster/Bluesky, $0 revenue, 10 USDC. What's the highest-leverage "
-            "thing to do RIGHT NOW to get a first paying customer?"
+            "TASK: What unsolved problems exist RIGHT NOW in AI agent infra, developer "
+            "tools, or crypto automation that TIAMAT could build a quick solution for? "
+            "Think about what people are complaining about on social media, GitHub issues, "
+            "or forum threads. Name ONE specific problem and a concrete approach."
         ),
         "skill_expand": (
-            "TASK: Identify ONE new capability TIAMAT should develop. Consider what autonomous "
-            "AI agents need that TIAMAT doesn't have yet. Be specific — name the tool, "
-            "the integration, or the skill, and explain why it matters for revenue."
+            "TASK: Identify ONE new capability TIAMAT should develop that she doesn't have "
+            "yet. Think beyond APIs — what about data analysis, monitoring, code generation, "
+            "agent coordination, or novel integrations? Be specific about what it does "
+            "and why anyone would care."
         ),
     }
     return base + "\n" + mode_prompts[mode]
