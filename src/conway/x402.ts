@@ -8,6 +8,7 @@
 import {
   createPublicClient,
   http,
+  fallback,
   parseUnits,
   type Address,
   type PrivateKeyAccount,
@@ -18,6 +19,15 @@ import { base, baseSepolia } from "viem/chains";
 const USDC_ADDRESSES: Record<string, Address> = {
   "eip155:8453": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base mainnet
   "eip155:84532": "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
+};
+
+const CHAIN_RPCS: Record<string, string[]> = {
+  "eip155:8453": [
+    "https://base.drpc.org",
+    "https://mainnet.base.org",
+    "https://base.meowrpc.com",
+  ],
+  "eip155:84532": [],
 };
 
 const CHAINS: Record<string, any> = {
@@ -210,9 +220,14 @@ export async function getUsdcBalanceDetailed(
   }
 
   try {
+    const rpcs = CHAIN_RPCS[network];
+    const transport = rpcs && rpcs.length > 0
+      ? fallback(rpcs.map(url => http(url)))
+      : http();
+
     const client = createPublicClient({
       chain,
-      transport: http(),
+      transport,
     });
 
     const balance = await client.readContract({
@@ -229,6 +244,7 @@ export async function getUsdcBalanceDetailed(
       ok: true,
     };
   } catch (err: any) {
+    console.log(`[USDC] Balance check FAILED for ${network}: ${err?.message?.slice(0, 200)}`);
     return {
       balance: 0,
       network,

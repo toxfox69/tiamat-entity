@@ -22,9 +22,9 @@ from opportunity_queue import OpportunityQueue
 
 # ============ CONFIG ============
 BASE_HTTP_RPCS = [
+    "https://base.drpc.org",
     "https://mainnet.base.org",
     "https://base.meowrpc.com",
-    "https://base.drpc.org",
     "https://1rpc.io/base",
 ]
 

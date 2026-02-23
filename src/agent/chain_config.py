@@ -7,9 +7,9 @@ CHAINS = {
     8453: {
         "name": "Base",
         "rpcs": [
+            "https://base.drpc.org",
             "https://mainnet.base.org",
             "https://base.meowrpc.com",
-            "https://base.drpc.org",
             "https://1rpc.io/base",
         ],
         "ws": ["wss://base-mainnet.g.alchemy.com/v2/demo"],

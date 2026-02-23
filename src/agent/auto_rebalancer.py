@@ -54,7 +54,7 @@ LIFI_API = "https://li.quest/v1"
 CHAINS = {
     8453: {
         "name": "Base",
-        "rpcs": ["https://mainnet.base.org", "https://base.meowrpc.com"],
+        "rpcs": ["https://base.drpc.org", "https://mainnet.base.org", "https://base.meowrpc.com"],
         "min_eth": 0.001,      # ~$2.50 — enough for hundreds of Base txns
         "target_eth": 0.002,   # Top up to this amount
         "is_source": True,     # Can bridge FROM this chain (has USDC)

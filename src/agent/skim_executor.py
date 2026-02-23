@@ -17,7 +17,7 @@ if not PRIVATE_KEY:
     sys.exit(1)
 
 account = Account.from_key(PRIVATE_KEY)
-w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+w3 = Web3(Web3.HTTPProvider("https://base.drpc.org"))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 PAIR_ABI = json.loads("""[

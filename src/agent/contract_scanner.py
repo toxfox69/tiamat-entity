@@ -35,9 +35,9 @@ except ImportError:
 # ── Config (defaults for Base, overridden by chain_config) ──
 
 BASE_RPCS = [
+    "https://base.drpc.org",
     "https://mainnet.base.org",
     "https://base.meowrpc.com",
-    "https://base.drpc.org",
     "https://1rpc.io/base",
 ]
 

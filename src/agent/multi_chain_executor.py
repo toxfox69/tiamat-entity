@@ -27,7 +27,7 @@ WALLET_ADDR = "0xdc118c4e1284a61e4d5277936a64B9E08Ad9e7EE"
 CHAIN_CONFIG = {
     8453: {
         "name": "Base",
-        "rpcs": ["https://mainnet.base.org", "https://base.meowrpc.com", "https://base.drpc.org"],
+        "rpcs": ["https://base.drpc.org", "https://mainnet.base.org", "https://base.meowrpc.com"],
         "chain_id": 8453,
         "auto_execute": True,
         "max_gas_gwei": 100,
@@ -78,7 +78,7 @@ class MultiChainExecutor:
         self.account = None
         if WALLET_KEY:
             # Test with any chain's web3 — account is chain-independent
-            w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+            w3 = Web3(Web3.HTTPProvider("https://base.drpc.org"))
             self.account = w3.eth.account.from_key(WALLET_KEY)
             LOG.info(f"Wallet loaded: {self.account.address}")
 

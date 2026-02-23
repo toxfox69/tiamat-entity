@@ -7,9 +7,9 @@ from web3 import Web3
 
 # Base chain RPCs (free, no API key)
 BASE_RPCS = [
+    "https://base.drpc.org",
     "https://mainnet.base.org",
     "https://base.meowrpc.com",
-    "https://base.drpc.org",
     "https://1rpc.io/base"
 ]
 

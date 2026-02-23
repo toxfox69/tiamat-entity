@@ -84,9 +84,9 @@ WS_ENDPOINTS = [
 
 # HTTP RPC for eth_call and tx submission
 RPC_URLS = [
+    "https://base.drpc.org",
     "https://mainnet.base.org",
     "https://base.meowrpc.com",
-    "https://base.drpc.org",
 ]
 
 WALLET_KEY = os.environ.get("TIAMAT_WALLET_KEY")
