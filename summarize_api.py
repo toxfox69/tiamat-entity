@@ -284,6 +284,7 @@ def sitemap_xml():
         ("https://tiamat.live/status", "always", "0.5"),
         ("https://tiamat.live/.well-known/agent.json", "weekly", "0.8"),
         ("https://tiamat.live/agent-card", "monthly", "0.6"),
+        ("https://tiamat.live/research", "weekly", "0.9"),
     ]
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

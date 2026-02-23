@@ -37,6 +37,14 @@ GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-2.0-flash"
 GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
+CEREBRAS_URL   = "https://api.cerebras.ai/v1/chat/completions"
+CEREBRAS_KEY   = os.environ.get("CEREBRAS_API_KEY", "")
+CEREBRAS_MODEL = "gpt-oss-120b"
+
+OPENROUTER_URL   = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+
 STATE_DIR    = Path("/root/.automaton")
 AGENT_DIR    = Path("/root/entity/src/agent")
 ORACLE_DIR   = STATE_DIR / "oracle_insights"
@@ -116,15 +124,68 @@ def ask_groq(prompt, max_tokens=400):
         return None, str(e)[:200]
 
 
+def ask_cerebras(prompt, max_tokens=400):
+    """Cerebras gpt-oss-120b — free tier."""
+    if not CEREBRAS_KEY:
+        return None, "CEREBRAS_API_KEY not set"
+    try:
+        resp = requests.post(
+            CEREBRAS_URL,
+            headers={"Authorization": f"Bearer {CEREBRAS_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": CEREBRAS_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens,
+                "temperature": 0.7,
+            },
+            timeout=20,
+        )
+        if resp.status_code == 200:
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            return text, None
+        return None, f"Cerebras {resp.status_code}: {resp.text[:120]}"
+    except Exception as e:
+        return None, str(e)[:200]
+
+
+def ask_openrouter(prompt, max_tokens=400):
+    """OpenRouter free tier — llama-3.3-70b."""
+    if not OPENROUTER_KEY:
+        return None, "OPENROUTER_API_KEY not set"
+    try:
+        resp = requests.post(
+            OPENROUTER_URL,
+            headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens,
+                "temperature": 0.7,
+            },
+            timeout=20,
+        )
+        if resp.status_code == 200:
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            return text, None
+        return None, f"OpenRouter {resp.status_code}: {resp.text[:120]}"
+    except Exception as e:
+        return None, str(e)[:200]
+
+
 def ask_fast_cascade(prompt, max_tokens=400):
-    """Fast cascade (no browser): Gemini → Groq. Returns (text, engine, error)."""
-    text, err = ask_gemini(prompt, max_tokens)
-    if text:
-        return text, "gemini-2.0-flash", None
-    text2, err2 = ask_groq(prompt, max_tokens)
-    if text2:
-        return text2, "groq-llama-70b", None
-    return None, None, f"Gemini: {err} | Groq: {err2}"
+    """Fast cascade: Gemini → Groq → Cerebras → OpenRouter. Returns (text, engine, error)."""
+    errors = []
+    for name, fn in [
+        ("gemini-2.0-flash", ask_gemini),
+        ("groq-llama-70b", ask_groq),
+        ("cerebras-120b", ask_cerebras),
+        ("openrouter-llama-70b", ask_openrouter),
+    ]:
+        text, err = fn(prompt, max_tokens)
+        if text:
+            return text, name, None
+        errors.append(f"{name}: {err}")
+    return None, None, " | ".join(errors)
 
 
 # ── Context gathering ───────────────────────────────────────────
@@ -377,7 +438,25 @@ def ask_oracle(question):
         save_cache(question, resp)
         return resp, "groq-llama-70b", None, False
 
-    return None, None, f"Claude.ai: {err1} | Gemini: {err2} | Groq: {err3}", False
+    # Tier 4: Cerebras gpt-oss-120b
+    resp, err4 = ask_cerebras(
+        f"Answer this question thoroughly (2-3 paragraphs):\n\n{question}",
+        max_tokens=800,
+    )
+    if resp:
+        save_cache(question, resp)
+        return resp, "cerebras-120b", None, False
+
+    # Tier 5: OpenRouter free
+    resp, err5 = ask_openrouter(
+        f"Answer this question thoroughly (2-3 paragraphs):\n\n{question}",
+        max_tokens=800,
+    )
+    if resp:
+        save_cache(question, resp)
+        return resp, "openrouter-llama-70b", None, False
+
+    return None, None, f"Claude.ai: {err1} | Gemini: {err2} | Groq: {err3} | Cerebras: {err4} | OpenRouter: {err5}", False
 
 
 def alert_session_dead(error_msg):

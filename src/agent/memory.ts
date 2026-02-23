@@ -48,6 +48,10 @@ class TiamatMemory {
           connection: { database: path.join(process.env.HOME || "/root", ".automaton", "noormme.sqlite") },
         });
         await noormmeDb.initialize();
+        // Provision agentic schema (agent_rituals, agent_knowledge_base, etc.)
+        if (noormmeDb.agent?.schema?.initializeSchema) {
+          await noormmeDb.agent.schema.initializeSchema();
+        }
         this.cortex = noormmeDb.agent?.cortex || null;
         if (this.cortex) {
           this.useNoormme = true;

@@ -29,6 +29,14 @@ GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = "gemini-2.0-flash"
 GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
+CEREBRAS_URL   = "https://api.cerebras.ai/v1/chat/completions"
+CEREBRAS_KEY   = os.environ.get("CEREBRAS_API_KEY", "")
+CEREBRAS_MODEL = "gpt-oss-120b"
+
+OPENROUTER_URL   = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+
 STATE_DIR   = Path("/root/.automaton")
 THINK_LOG   = STATE_DIR / "cooldown_thoughts.jsonl"
 THINK_STATE = STATE_DIR / "cooldown_think_state.json"
@@ -85,19 +93,68 @@ def ask_groq(prompt, max_tokens=400):
         return None, str(e)[:200]
 
 
+def ask_cerebras(prompt, max_tokens=400):
+    """Cerebras gpt-oss-120b — free tier."""
+    if not CEREBRAS_KEY:
+        return None, "CEREBRAS_API_KEY not set"
+    try:
+        resp = requests.post(
+            CEREBRAS_URL,
+            headers={"Authorization": f"Bearer {CEREBRAS_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": CEREBRAS_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens,
+                "temperature": 0.7,
+            },
+            timeout=20,
+        )
+        if resp.status_code == 200:
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            return text, None
+        return None, f"Cerebras {resp.status_code}: {resp.text[:120]}"
+    except Exception as e:
+        return None, str(e)[:200]
+
+
+def ask_openrouter(prompt, max_tokens=400):
+    """OpenRouter free tier — llama-3.3-70b."""
+    if not OPENROUTER_KEY:
+        return None, "OPENROUTER_API_KEY not set"
+    try:
+        resp = requests.post(
+            OPENROUTER_URL,
+            headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens,
+                "temperature": 0.7,
+            },
+            timeout=20,
+        )
+        if resp.status_code == 200:
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            return text, None
+        return None, f"OpenRouter {resp.status_code}: {resp.text[:120]}"
+    except Exception as e:
+        return None, str(e)[:200]
+
+
 def ask_cascade(prompt, max_tokens=400):
-    """Try Gemini → Groq. Returns (text, engine_used, error)."""
-    # Tier 1: Gemini 2.0 Flash
-    text, err = ask_gemini(prompt, max_tokens)
-    if text:
-        return text, "gemini-2.0-flash", None
-
-    # Tier 2: Groq llama-3.3-70b
-    text2, err2 = ask_groq(prompt, max_tokens)
-    if text2:
-        return text2, "groq-llama-70b", None
-
-    return None, None, f"All engines failed. Gemini: {err} | Groq: {err2}"
+    """Try Gemini → Groq → Cerebras → OpenRouter. Returns (text, engine_used, error)."""
+    errors = []
+    for name, fn in [
+        ("gemini-2.0-flash", ask_gemini),
+        ("groq-llama-70b", ask_groq),
+        ("cerebras-120b", ask_cerebras),
+        ("openrouter-llama-70b", ask_openrouter),
+    ]:
+        text, err = fn(prompt, max_tokens)
+        if text:
+            return text, name, None
+        errors.append(f"{name}: {err}")
+    return None, None, "All engines failed. " + " | ".join(errors)
 
 
 # ── State & context ─────────────────────────────────────────────
