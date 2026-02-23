@@ -829,9 +829,11 @@ function estimateCostCents(
     { match: "o3-mini",        input: 110,  output: 440  },
     { match: "o4-mini",        input: 110,  output: 440  },
     { match: "o1",             input: 1500, output: 6000 },
-    { match: "llama",          input: 0,    output: 0    },  // Free tier (Groq/Cerebras)
+    { match: "llama",          input: 0,    output: 0    },  // Free tier (Groq)
+    { match: "gpt-oss",        input: 0,    output: 0    },  // Free tier (Cerebras)
     { match: "gemini",         input: 0,    output: 0    },  // Free tier
     { match: "gemma",          input: 0,    output: 0    },  // Free tier (OpenRouter)
+    { match: "mistral",        input: 0,    output: 0    },  // Free tier (OpenRouter)
   ];
 
   const p = pricing.find(p => model.includes(p.match)) || { input: 100, output: 500 };
