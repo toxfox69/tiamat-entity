@@ -385,6 +385,55 @@ class TiamatMemory {
   }
 
   isReady(): boolean { return memoryReady; }
+
+  /** Run L1→L2 memory compression (call during strategic cycles) */
+  async compressL1toL2(currentCycle: number): Promise<number> {
+    if (!this.db) return 0;
+    try {
+      const { compressL1toL2, ensureSchema } = await import("./memory-compress.js");
+      ensureSchema(this.db);
+      return await compressL1toL2(this.db, currentCycle);
+    } catch (err: any) {
+      console.error(`[MEMORY] compressL1toL2 failed: ${err.message}`);
+      return 0;
+    }
+  }
+
+  /** Run L2→L3 core knowledge extraction (call every ~100 strategic cycles) */
+  async compressL2toL3(): Promise<number> {
+    if (!this.db) return 0;
+    try {
+      const { compressL2toL3, ensureSchema } = await import("./memory-compress.js");
+      ensureSchema(this.db);
+      return await compressL2toL3(this.db);
+    } catch (err: any) {
+      console.error(`[MEMORY] compressL2toL3 failed: ${err.message}`);
+      return 0;
+    }
+  }
+
+  /** Smart tiered recall: L3 → L2 → L1, within token budget */
+  async smartRecall(
+    query: string,
+    tokenBudget: number = 2000
+  ): Promise<Array<{ tier: string; content: string; id: number; score?: number }>> {
+    if (!this.db) return [];
+    try {
+      const { smartRecall, ensureSchema } = await import("./memory-compress.js");
+      ensureSchema(this.db);
+      return smartRecall(this.db, query, tokenBudget);
+    } catch (err: any) {
+      console.error(`[MEMORY] smartRecall failed: ${err.message}`);
+      // Fallback to basic recall
+      const basic = await this.recall(query, { limit: 5 });
+      return basic.map((m) => ({
+        tier: "L1" as const,
+        content: `[L1:${m.type}|${m.importance}] ${m.content}`,
+        id: m.id,
+        score: m.importance,
+      }));
+    }
+  }
 }
 
 // Singleton — imported once, shared across tools

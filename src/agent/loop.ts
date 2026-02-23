@@ -413,6 +413,18 @@ export async function runAgentLoop(
         let memoryReflection = "";
         try { memoryReflection = await memory.reflect(); } catch {}
 
+        // Memory compression: L1→L2 every strategic cycle, L2→L3 every 100th
+        try {
+          const compressed = await memory.compressL1toL2(turnCount);
+          if (compressed > 0) console.log(`[COMPRESS] L1→L2: ${compressed} clusters compressed`);
+          if (turnCount % 100 === 0) {
+            const facts = await memory.compressL2toL3();
+            if (facts > 0) console.log(`[COMPRESS] L2→L3: ${facts} core facts extracted`);
+          }
+        } catch (e: any) {
+          console.log(`[COMPRESS] Error: ${e.message?.slice(0, 100)}`);
+        }
+
         // Revenue metrics from api_requests.log
         let revenueContext = "";
         try {

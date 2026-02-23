@@ -2637,24 +2637,26 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     },
     {
       name: "recall",
-      description: "Search long-term memory for relevant information. Use before making decisions or when you need context about past actions, customers, or strategies.",
+      description: "Smart tiered memory search. Searches core knowledge (L3) first, then compressed summaries (L2), then raw memories (L1). Stays within token budget for efficiency.",
       category: "cognitive",
       parameters: {
         type: "object",
         properties: {
           query: { type: "string", description: "Keywords to search for in memory" },
-          type: { type: "string", enum: ["observation","outcome","strategy","customer","error","insight"], description: "Optional: filter by memory type" },
-          limit: { type: "number", description: "Max results (default 5)" },
+          token_budget: { type: "number", description: "Max tokens to return (default 2000)" },
         },
         required: ["query"],
       },
       execute: async (args, _ctx) => {
-        const memories = await memory.recall(args.query as string, {
-          type: args.type as string | undefined,
-          limit: (args.limit as number) || 5,
-        });
-        if (memories.length === 0) return "No memories found for that query.";
-        return memories.map((m: any) => `[${m.type}|${m.importance}] ${m.content}`).join("\n---\n");
+        const results = await memory.smartRecall(
+          args.query as string,
+          (args.token_budget as number) || 2000
+        );
+        if (results.length === 0) return "No memories found for that query.";
+        const tierCounts = { L3: 0, L2: 0, L1: 0 };
+        for (const r of results) tierCounts[r.tier as keyof typeof tierCounts]++;
+        const header = `[${results.length} results: ${tierCounts.L3}×L3, ${tierCounts.L2}×L2, ${tierCounts.L1}×L1]`;
+        return header + "\n" + results.map((r) => r.content).join("\n---\n");
       },
     },
     {
