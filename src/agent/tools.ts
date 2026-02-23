@@ -654,7 +654,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
   },
   {
     name: "browse_web",
-    description: "Open a URL in headless Chromium browser. Can navigate, click buttons, type in fields, take screenshots, read page text. Use for interacting with web UIs, signing up for services, checking dashboards. Supports persistent sessions (cookies saved between calls). Actions: click, type, wait, screenshot, get_text, get_links, scroll, press.",
+    description: "HEAVY: Launches headless Chromium (~300MB RAM). ONLY use when you MUST interact with a web UI (click buttons, fill forms, login flows). For reading pages, extracting text, searching, or getting links — use the 'browse' tool instead (15MB, instant). Supports persistent sessions. Actions: click, type, wait, screenshot, get_text, get_links, scroll, press.",
     category: "survival",
     dangerous: true,
     parameters: {
