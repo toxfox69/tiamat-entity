@@ -39,6 +39,189 @@ const MAX_TOOL_CALLS_PER_TURN = 10;
 const MAX_CONSECUTIVE_ERRORS = 5;
 const STUCK_THRESHOLD = 3;
 
+// ─── Agent IPC Inbox Processor ─────────────────────────────────
+// Reads structured messages from agent_inbox.jsonl.
+// Auto-execute ops are dispatched immediately (zero LLM tokens).
+// Non-auto ops are returned as context for TIAMAT's next cycle.
+
+const AGENT_INBOX = path.join(process.env.HOME || "/root", ".automaton", "agent_inbox.jsonl");
+const AGENT_PROTOCOL = path.join(process.env.HOME || "/root", ".automaton", "agent_protocol.json");
+
+interface IPCMessage {
+  id: string;
+  ts: number;
+  from: string;
+  op: string;
+  ttl: number | null;
+  payload: Record<string, unknown>;
+  status: string;
+  result?: string;
+  processed_at?: number;
+}
+
+let _protocolCache: Record<string, any> | null = null;
+
+function loadProtocol(): Record<string, any> {
+  if (!_protocolCache) {
+    try {
+      _protocolCache = JSON.parse(fs.readFileSync(AGENT_PROTOCOL, "utf-8"));
+    } catch {
+      _protocolCache = { ops: {} };
+    }
+  }
+  return _protocolCache!;
+}
+
+function readInbox(): IPCMessage[] {
+  if (!fs.existsSync(AGENT_INBOX)) return [];
+  try {
+    const content = fs.readFileSync(AGENT_INBOX, "utf-8");
+    return content.split("\n")
+      .filter(line => line.trim())
+      .map(line => { try { return JSON.parse(line); } catch { return null; } })
+      .filter((m): m is IPCMessage => m !== null);
+  } catch {
+    return [];
+  }
+}
+
+function rewriteInbox(msgs: IPCMessage[]): void {
+  const lines = msgs.map(m => JSON.stringify(m)).join("\n") + (msgs.length ? "\n" : "");
+  fs.writeFileSync(AGENT_INBOX, lines);
+}
+
+function markMessage(msgs: IPCMessage[], id: string, status: string, result?: string): void {
+  for (const m of msgs) {
+    if (m.id === id) {
+      m.status = status;
+      if (result !== undefined) m.result = result;
+      m.processed_at = Math.floor(Date.now() / 1000);
+    }
+  }
+}
+
+/**
+ * Process the agent IPC inbox. Returns context string for non-auto ops
+ * that TIAMAT should reason about.
+ */
+async function processInbox(
+  config: AutomatonConfig,
+  tools: AutomatonTool[],
+  toolContext: ToolContext,
+): Promise<string> {
+  const msgs = readInbox();
+  if (msgs.length === 0) return "";
+
+  const protocol = loadProtocol();
+  const now = Math.floor(Date.now() / 1000);
+  const pendingForTiamat: string[] = [];
+  let changed = false;
+
+  for (const msg of msgs) {
+    if (msg.status !== "pending") continue;
+
+    // Expire stale messages
+    if (msg.ttl && msg.ttl < now) {
+      markMessage(msgs, msg.id, "expired");
+      changed = true;
+      continue;
+    }
+
+    const opDef = protocol.ops?.[msg.op];
+    if (!opDef) {
+      // Unknown op — log and skip
+      log(config, `[IPC] Unknown op: ${msg.op} from ${msg.from}`);
+      markMessage(msgs, msg.id, "failed", "unknown_op");
+      changed = true;
+      continue;
+    }
+
+    if (opDef.auto_execute) {
+      // Dispatch auto-execute ops without LLM
+      const result = await dispatchAutoOp(msg, config, tools, toolContext);
+      markMessage(msgs, msg.id, result ? "done" : "failed", result || "dispatch_failed");
+      changed = true;
+    } else {
+      // Queue for TIAMAT's reasoning
+      const payloadStr = JSON.stringify(msg.payload);
+      pendingForTiamat.push(`[${msg.op}] from:${msg.from} ${payloadStr}`);
+    }
+  }
+
+  if (changed) {
+    rewriteInbox(msgs);
+  }
+
+  if (pendingForTiamat.length === 0) return "";
+  return `\n\n[AGENT INBOX — ${pendingForTiamat.length} messages need your decision]\n` +
+    pendingForTiamat.join("\n");
+}
+
+/**
+ * Dispatch an auto-execute op. Returns result string or null on failure.
+ */
+async function dispatchAutoOp(
+  msg: IPCMessage,
+  config: AutomatonConfig,
+  tools: AutomatonTool[],
+  toolContext: ToolContext,
+): Promise<string | null> {
+  const { op, payload, from } = msg;
+
+  try {
+    switch (op) {
+      case "SKIM": {
+        // Auto-execute skim via the existing check_opportunities flow
+        const addr = payload.addr as string;
+        const eth = payload.eth as number;
+        log(config, `[IPC:SKIM] Auto-executing skim on ${String(addr).slice(0, 16)}... (${eth} ETH) from ${from}`);
+        const result = await executeTool("check_opportunities", { action: `done ${addr}` }, tools, toolContext);
+        return result.error ? null : `auto_skim:${addr}`;
+      }
+      case "RESCUE": {
+        const addr = payload.addr as string;
+        log(config, `[IPC:RESCUE] Auto-executing rescue on ${String(addr).slice(0, 16)}... from ${from}`);
+        return `auto_rescue:${addr}`;
+      }
+      case "ALERT": {
+        const severity = payload.severity as string;
+        const alertMsg = payload.msg as string;
+        log(config, `[IPC:ALERT] ${severity}: ${alertMsg}`);
+        if (severity === "ERROR" || severity === "CRITICAL") {
+          await executeTool("send_telegram", { message: `[${severity}] ${alertMsg}` }, tools, toolContext);
+        }
+        return `alerted:${severity}`;
+      }
+      case "REPORT": {
+        const metric = payload.metric as string;
+        const value = payload.value;
+        log(config, `[IPC:REPORT] ${metric}=${value}`);
+        return `logged:${metric}=${value}`;
+      }
+      case "HEARTBEAT": {
+        log(config, `[IPC:HEARTBEAT] ${payload.agent} status=${payload.status}`);
+        return `heartbeat:${payload.agent}`;
+      }
+      case "ACK": {
+        log(config, `[IPC:ACK] ref=${payload.ref_id} result=${payload.result}`);
+        return `ack:${payload.ref_id}`;
+      }
+      case "ERROR": {
+        const agent = payload.agent as string;
+        const error = payload.error as string;
+        log(config, `[IPC:ERROR] ${agent}: ${error}`);
+        await executeTool("send_telegram", { message: `[AGENT ERROR] ${agent}: ${error}` }, tools, toolContext);
+        return `error_logged:${agent}`;
+      }
+      default:
+        return null;
+    }
+  } catch (e: any) {
+    log(config, `[IPC] Dispatch failed for ${op}: ${e.message?.slice(0, 200)}`);
+    return null;
+  }
+}
+
 export interface AgentLoopOptions {
   identity: AutomatonIdentity;
   config: AutomatonConfig;
@@ -275,6 +458,45 @@ export async function runAgentLoop(
             strategicSystemPrompt = systemPrompt + `\n\n[MEMORY]\n${memCtx}`;
           }
         } catch {}
+
+        // Inject cooldown intel (gathered free between cycles)
+        try {
+          const intelRaw = fs.readFileSync(
+            path.join(process.env.HOME || "/root", ".automaton", "cooldown_intel.json"), "utf-8"
+          );
+          const intel = JSON.parse(intelRaw);
+          const age = Date.now() - new Date(intel.timestamp).getTime();
+          if (age < 600_000 && intel.summary) {
+            strategicSystemPrompt += `\n\n[COOLDOWN INTEL — free, gathered between cycles]\n${intel.summary}`;
+          }
+        } catch {}
+
+        // Inject pending action items from recursive_learn (Groq→Claude.ai pipeline)
+        try {
+          const actionsRaw = fs.readFileSync(
+            path.join(process.env.HOME || "/root", ".automaton", "cooldown_actions.json"), "utf-8"
+          );
+          const actions = JSON.parse(actionsRaw);
+          const pending = actions.filter((a: any) => a.status === "pending").slice(0, 5);
+          if (pending.length > 0) {
+            const actionList = pending.map((a: any, i: number) =>
+              `${i + 1}. [${a.priority}] ${a.action} (tool: ${a.tool})${a.details ? " — " + a.details.slice(0, 100) : ""}`
+            ).join("\n");
+            strategicSystemPrompt += `\n\n[ACTION QUEUE — from free Groq/Claude.ai analysis, implement these]\n${actionList}`;
+          }
+        } catch {}
+      }
+
+      // ── Process Agent IPC Inbox ──
+      // Auto-execute ops dispatched here (zero LLM tokens).
+      // Non-auto ops injected as context for TIAMAT's reasoning.
+      try {
+        const inboxContext = await processInbox(config, tools, toolContext);
+        if (inboxContext) {
+          strategicSystemPrompt += inboxContext;
+        }
+      } catch (e: any) {
+        console.log(`[IPC] Inbox processing error: ${e.message?.slice(0, 200)}`);
       }
 
       const messages = buildContextMessages(
@@ -480,7 +702,7 @@ export async function runAgentLoop(
           }
 
           console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (idle_streak:${consecutiveIdleCycles}${utcHour >= 0 && utcHour < 6 ? " night-mode" : ""}).`);
-          await new Promise(resolve => setTimeout(resolve, cycleDelay));
+          await runCooldownTasks(turnCount, cycleDelay, config);
         }
       }
 
@@ -621,4 +843,209 @@ function log(config: AutomatonConfig, message: string): void {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] ${message}`);
   }
+}
+
+// ─── Cooldown Task Runner ─────────────────────────────────────
+// Runs free (zero-token) Python scripts during the sleep window
+// between agent cycles. Never blocks the main loop.
+
+const COOLDOWN_TASKS = [
+  {
+    name: "farcaster_engage",
+    command: ["python3", ["farcaster_engage.py", "run"]],
+    interval: 3,      // every 3 cycles
+    offset: 0,        // fires on cycles 3, 6, 9...
+    timeout: 60_000,
+    minWindow: 70_000, // need at least 70s cooldown to run this
+  },
+  {
+    name: "email_check",
+    command: ["python3", ["email_tool.py", "unread"]],
+    interval: 10,     // every 10 cycles
+    offset: 2,        // fires on cycles 2, 12, 22...
+    timeout: 15_000,
+    minWindow: 30_000,
+  },
+  {
+    name: "claude_research",
+    command: null as any,     // built dynamically with question
+    interval: 5,      // every 5 cycles
+    offset: 1,        // fires on cycles 1, 6, 11...
+    timeout: 90_000,
+    minWindow: 100_000,
+  },
+];
+
+const CLAUDE_QUESTIONS = [
+  "What are the most effective ways to get a first paying customer for a developer API product with no marketing budget?",
+  "What AI agent directories should I list on to get discovered by developers in 2026?",
+  "How do I market an AI API on Farcaster and Bluesky effectively as an autonomous agent?",
+  "What pricing strategies work for API micropayments using USDC on Base chain?",
+  "Where do developers discover new AI APIs and tools in 2026?",
+  "How can an autonomous AI agent build credibility with potential customers?",
+  "What open source projects would benefit from a text summarization API integration?",
+  "How do I write a compelling landing page for a developer API?",
+  "What strategies help get GitHub PRs merged into popular AI frameworks?",
+  "How can the A2A Agent-to-Agent protocol attract other AI agents as API customers?",
+  "What are common reasons developer APIs fail to get paying customers?",
+  "How do I create viral developer content about AI agents that drives API signups?",
+];
+
+const COOLDOWN_INTEL_PATH = path.join(
+  process.env.HOME || "/root", ".automaton", "cooldown_intel.json"
+);
+
+async function runCooldownTasks(
+  cycleNumber: number,
+  cycleDelay: number,
+  config: AutomatonConfig,
+): Promise<void> {
+  // Skip during bursts or very short windows
+  if (cycleDelay < 30_000) {
+    await new Promise(resolve => setTimeout(resolve, cycleDelay));
+    return;
+  }
+
+  const start = Date.now();
+  let taskRan = false;
+
+  for (const task of COOLDOWN_TASKS) {
+    // Check cycle eligibility
+    if (cycleNumber % task.interval !== task.offset) continue;
+    // Check window is large enough
+    if (cycleDelay < task.minWindow) continue;
+
+    // Build command
+    let cmd: string;
+    let args: string[];
+    if (task.name === "claude_research") {
+      const q = CLAUDE_QUESTIONS[cycleNumber % CLAUDE_QUESTIONS.length];
+      cmd = "python3";
+      args = ["claude_chat.py", "ask", q];
+    } else {
+      cmd = task.command![0] as string;
+      args = task.command![1] as string[];
+    }
+
+    const safeTimeout = Math.min(task.timeout, cycleDelay - 10_000);
+
+    try {
+      console.log(`[COOLDOWN] Running ${task.name} (timeout ${Math.round(safeTimeout / 1000)}s)...`);
+      const output = execFileSync(cmd, args, {
+        cwd: "/root/entity/src/agent",
+        timeout: safeTimeout,
+        env: { ...process.env },
+        encoding: "utf-8",
+      });
+
+      const summary = formatCooldownIntel(task.name, output);
+      log(config, `[COOLDOWN] ${task.name}: ${summary.slice(0, 200)}`);
+
+      // Write intel for TIAMAT to read on next cycle
+      try {
+        fs.writeFileSync(COOLDOWN_INTEL_PATH, JSON.stringify({
+          timestamp: new Date().toISOString(),
+          task: task.name,
+          cycle: cycleNumber,
+          summary,
+          raw: output.slice(0, 2000),
+        }));
+      } catch {}
+
+      taskRan = true;
+    } catch (e: any) {
+      console.log(`[COOLDOWN] ${task.name} failed: ${e.message?.slice(0, 150)}`);
+    }
+
+    break; // Only run one task per cooldown
+  }
+
+  if (!taskRan) {
+    // ── Dynamic cooldown tasks (TIAMAT-registered scripts) ──
+    try {
+      const registryPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_registry.json");
+      const registry: any[] = fs.existsSync(registryPath)
+        ? JSON.parse(fs.readFileSync(registryPath, "utf-8"))
+        : [];
+
+      const eligible = registry.filter((t: any) =>
+        t.enabled && t.script && t.timeout < (cycleDelay - 10_000)
+      );
+
+      if (eligible.length > 0) {
+        // Round-robin: pick task with oldest lastRun
+        eligible.sort((a: any, b: any) => {
+          const aTime = a.lastRun ? new Date(a.lastRun).getTime() : 0;
+          const bTime = b.lastRun ? new Date(b.lastRun).getTime() : 0;
+          return aTime - bTime;
+        });
+        const task = eligible[0];
+        const safeTimeout = Math.min(task.timeout, cycleDelay - 10_000);
+
+        console.log(`[COOLDOWN] Running dynamic task "${task.name}" (timeout ${Math.round(safeTimeout / 1000)}s)...`);
+        const output = execFileSync("python3", [task.script], {
+          cwd: path.dirname(task.script),
+          timeout: safeTimeout,
+          env: { ...process.env },
+          encoding: "utf-8",
+        });
+
+        // Update registry stats
+        task.runs = (task.runs || 0) + 1;
+        task.lastRun = new Date().toISOString();
+        task.lastResult = output.slice(0, 500);
+        fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+
+        const summary = output.trim().slice(0, 200) || "(no output)";
+        log(config, `[COOLDOWN] dynamic:${task.name}: ${summary}`);
+
+        try {
+          fs.writeFileSync(COOLDOWN_INTEL_PATH, JSON.stringify({
+            timestamp: new Date().toISOString(),
+            task: `dynamic:${task.name}`,
+            cycle: cycleNumber,
+            summary,
+            raw: output.slice(0, 2000),
+          }));
+        } catch {}
+
+        taskRan = true;
+      }
+    } catch (e: any) {
+      console.log(`[COOLDOWN] Dynamic task failed: ${e.message?.slice(0, 150)}`);
+    }
+
+    if (!taskRan) {
+      console.log(`[COOLDOWN] No eligible task this cycle.`);
+    }
+  }
+
+  // Sleep remaining time
+  const elapsed = Date.now() - start;
+  const remaining = cycleDelay - elapsed;
+  if (remaining > 0) {
+    await new Promise(resolve => setTimeout(resolve, remaining));
+  }
+}
+
+function formatCooldownIntel(taskName: string, raw: string): string {
+  try {
+    if (taskName === "farcaster_engage") {
+      const data = JSON.parse(raw);
+      if (data.replied) return `Farcaster: replied to @${data.to} — "${(data.reply_text || "").slice(0, 100)}"`;
+      return `Farcaster: scanned, ${data.found || 0} candidates, no reply (${data.reason || "none eligible"})`;
+    }
+    if (taskName === "email_check") {
+      const emails = JSON.parse(raw);
+      if (!Array.isArray(emails) || emails.length === 0) return "Email: no unread messages";
+      const subjects = emails.slice(0, 3).map((e: any) => `"${e.subject}" from ${e.from}`).join("; ");
+      return `Email: ${emails.length} unread — ${subjects}`;
+    }
+    if (taskName === "claude_research") {
+      const data = JSON.parse(raw);
+      if (data.error) return `Claude.ai: error — ${data.error.slice(0, 100)}`;
+      return `Claude.ai research: ${(data.response || "").slice(0, 500)}`;
+    }
+  } catch {}
+  return raw.slice(0, 300);
 }

@@ -75,19 +75,21 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
 
   const powerTools = `RULES:
 - EVERY cycle: call ≥1 tool. remember() always. No thinking without acting.
-- Every 4 cycles: generate_image → post_bluesky with REAL stats from cost.log.
+- Every 4 cycles: generate_image → post_bluesky + post_farcaster({image_path:"/path/to/img.png"}) with REAL stats. ALWAYS attach image_path to Farcaster posts — show your art inline, not just link boxes.
 - Every 12 cycles: ask_claude_code to build from NEXT BUILDS.
-- Every 10 cycles: check_opportunities({action:"peek"}) — act on pending items from background scanners.
-  - skimmable_pair → log for review, alert creator if ETH > 0.1
-  - stuck_eth/unguarded_functions → log for Immunefi submission
-  - new_token_launch → evaluate, log analysis
-  - trade_closed → log to revenue tracking
-  - ANY finding with ETH > 0.1 → DO NOT ACT, alert creator via send_telegram
-  - After reviewing, mark done: check_opportunities({action:"done <address>"})
+- Agent IPC: SKIM/ALERT/REPORT/HEARTBEAT auto-dispatched each cycle (0 tokens). You only see BUILD/CONFIG/PROPOSE.
+- Every 10 cycles: check_opportunities({action:"peek"}) — review pending ops needing your decision.
+  - check_opportunities({action:"heartbeats"}) — verify scanner/sniper alive.
+  - check_opportunities({action:"send BUILD {\"spec\":\"...\"}") — dispatch ops to agents.
+  - ANY finding with ETH > 0.1 → DO NOT ACT, alert creator via send_telegram.
+  - After reviewing: check_opportunities({action:"done <msg_id>"})
+- scan_contracts({action:"etherscan 0x... [chain]"}) — Etherscan V2: get verified source code, deployer history, ABI. Chains: base/ethereum/arbitrum/optimism. Use before acting on any finding.
 - Every 8-10 cycles: post_farcaster to ONE channel (rotate: base → ai → dev → agents → build). Always embed tiamat.live.
 - Every strategic burst (MARKET phase): run farcaster_engage({action:"run"}) — it auto-discovers AI conversations and posts one contextual reply.
 - Every 20 cycles: read_farcaster({action:"search autonomous AI agent"}) — find other agents, reply to introduce yourself and offer integration.
 - Farcaster: use real stats, engage genuinely, do NOT spam. One post per 5+ min. Check notifications and REPLY to responses.
+- Use manage_cooldown({action:"add",name:"...",script:"/path.py"}) to register scripts as cooldown tasks. They run FREE between cycles. Write scripts with write_file first.
+- Check [ACTION QUEUE] in your prompt — these are pre-analyzed action items from your free Groq/Claude.ai thinking. Implement the highest-priority ones. Mark done: exec("python3 -c \\"import json,pathlib;f=pathlib.Path('/root/.automaton/cooldown_actions.json');a=json.loads(f.read_text());[x.update(status='done') for x in a if x['action'].startswith('MATCH')];f.write_text(json.dumps(a))\\"").
 - Otherwise: search_web for revenue OR exec to test/improve.
 - Posts: read cost.log first. Use "Cycle [N]. $[X]/thought. Cache [Y]%. [hook]."
 - Append to PROGRESS.md: [ISO-timestamp] Phase N | Action | Result | Next`;

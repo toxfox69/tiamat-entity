@@ -45,6 +45,63 @@ IMAGE_FREE_PER_DAY = 2  # free image generations per IP per day
 _free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 _image_free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 
+# ── Usage tracking for conversion analytics ────────────────────
+USAGE_FILE = "/root/.automaton/api_users.json"
+
+def track_usage(ip, endpoint):
+    """Track every API call for conversion analytics."""
+    try:
+        if os.path.exists(USAGE_FILE):
+            with open(USAGE_FILE) as f:
+                users = json.load(f)
+        else:
+            users = {}
+
+        if ip not in users:
+            users[ip] = {
+                "first_seen": datetime.datetime.utcnow().isoformat(),
+                "last_seen": datetime.datetime.utcnow().isoformat(),
+                "total_calls": 0,
+                "endpoints": {},
+                "hit_limit": 0,
+            }
+
+        users[ip]["last_seen"] = datetime.datetime.utcnow().isoformat()
+        users[ip]["total_calls"] += 1
+        users[ip]["endpoints"][endpoint] = users[ip]["endpoints"].get(endpoint, 0) + 1
+
+        with open(USAGE_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
+    except Exception:
+        pass  # Never break the API for tracking
+
+def track_limit_hit(ip, endpoint):
+    """Track when a user hits the free tier limit (high conversion signal)."""
+    try:
+        if os.path.exists(USAGE_FILE):
+            with open(USAGE_FILE) as f:
+                users = json.load(f)
+        else:
+            users = {}
+
+        if ip not in users:
+            users[ip] = {
+                "first_seen": datetime.datetime.utcnow().isoformat(),
+                "last_seen": datetime.datetime.utcnow().isoformat(),
+                "total_calls": 0,
+                "endpoints": {},
+                "hit_limit": 0,
+            }
+
+        users[ip]["hit_limit"] = users[ip].get("hit_limit", 0) + 1
+        users[ip]["last_limit_hit"] = datetime.datetime.utcnow().isoformat()
+        users[ip]["last_limit_endpoint"] = endpoint
+
+        with open(USAGE_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
+    except Exception:
+        pass
+
 # ── Sliding-window rate limiter (abuse prevention, adapted from OpenClaw) ──
 # 10 requests/minute per IP, 5-minute lockout when exceeded
 _rate_limiter = create_rate_limiter(max_attempts=10, window_sec=60, lockout_sec=300)
@@ -222,6 +279,7 @@ def sitemap_xml():
         ("https://tiamat.live/generate", "weekly", "0.9"),
         ("https://tiamat.live/chat", "weekly", "0.9"),
         ("https://tiamat.live/thoughts", "hourly", "0.7"),
+        ("https://tiamat.live/pricing", "weekly", "0.8"),
         ("https://tiamat.live/pay", "monthly", "0.6"),
         ("https://tiamat.live/status", "always", "0.5"),
         ("https://tiamat.live/.well-known/agent.json", "weekly", "0.8"),
@@ -420,22 +478,89 @@ def health():
 # ── /pricing ──────────────────────────────────────────────────
 @app.route("/pricing", methods=["GET"])
 def pricing():
-    data = {"free_tier": {"calls_per_day": 3, "price": "$0.00", "auth": "none"},
-            "paid_tier": {"price": "$0.01 USDC per call", "method": "x402"}}
+    data = {
+        "tiers": {
+            "free": {"calls_per_day": 3, "price": "$0.00", "auth": "none"},
+            "pay_per_use": {"price_summarize": "$0.01 USDC", "price_chat": "$0.005 USDC", "price_generate": "$0.01 USDC", "method": "x402"},
+            "builder": {"price": "1 USDC/month", "calls_per_day": 100, "method": "manual"},
+            "unlimited": {"price": "5 USDC/month", "calls_per_day": "unlimited", "method": "manual"},
+        },
+        "wallet": TIAMAT_WALLET,
+        "chain": "Base (8453)",
+        "token": "USDC",
+    }
     if wants_html():
-        page = f"""{_html_head('TIAMAT &mdash; Pricing')}<body><div class="site-wrap">
+        page = f"""{_html_head('TIAMAT &mdash; Pricing', '.tier-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin:20px 0}}.tier{{padding:24px;border-radius:8px}}.tier.featured{{border-color:var(--accent)}}.tier h2{{color:var(--accent);margin-bottom:8px}}.price{{font-size:28px;color:#fff;margin:12px 0}}.price span{{font-size:14px;color:var(--text-muted)}}.features{{list-style:none;padding:0;margin:16px 0}}.features li{{padding:6px 0;border-bottom:1px solid var(--border)}}.features li::before{{content:"\\2713 ";color:var(--accent)}}.cta-btn{{display:block;text-align:center;margin-top:16px;padding:10px;background:var(--accent);color:#000;text-decoration:none;border-radius:4px;font-weight:bold}}.wallet-box{{max-width:600px;margin:30px auto;padding:20px;border:1px solid var(--accent);border-radius:8px;text-align:center}}.wallet-addr{{font-size:12px;word-break:break-all;color:var(--accent);margin:10px 0}}')}
+<body><div class="site-wrap">
 {_NAV}
-<h1>&#128178; Pricing</h1>
-<div class="card">
-<table>
-<tr><th>Tier</th><th>Limit</th><th>Price</th><th>Auth</th></tr>
-<tr><td class="badge">Free</td><td>3 requests/day per IP (&lt;2000 chars)</td><td class="badge">$0.00</td><td>None</td></tr>
-<tr><td>Paid</td><td>Unlimited</td><td>$0.01 USDC/call</td><td>x402 payment header</td></tr>
-</table>
+<h1>&#9889; TIAMAT API Pricing</h1>
+<p class="tagline">Autonomous AI APIs &mdash; no signup, no API key, just send requests</p>
+
+<div class="tier-grid">
+  <div class="card tier">
+    <h2>Free</h2>
+    <div class="price">$0 <span>forever</span></div>
+    <ul class="features">
+      <li>3 requests/day per endpoint</li>
+      <li>Summarization API</li>
+      <li>Chat API (streaming)</li>
+      <li>Image generation (6 styles)</li>
+      <li>No signup required</li>
+    </ul>
+    <a href="/" class="try-btn" style="display:inline-block;margin-top:12px;padding:10px 20px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;border-radius:4px">Try Now &rarr;</a>
+  </div>
+
+  <div class="card tier featured" style="border-color:var(--accent)">
+    <h2>Builder</h2>
+    <div class="price">1 USDC <span>/month</span></div>
+    <ul class="features">
+      <li>100 requests/day per endpoint</li>
+      <li>All free tier endpoints</li>
+      <li>Priority response times</li>
+      <li>Pay with crypto &mdash; no credit card</li>
+    </ul>
+    <a href="#pay" class="cta-btn">Get Builder &rarr;</a>
+  </div>
+
+  <div class="card tier">
+    <h2>Unlimited</h2>
+    <div class="price">5 USDC <span>/month</span></div>
+    <ul class="features">
+      <li>Unlimited requests</li>
+      <li>All endpoints</li>
+      <li>Bulk processing</li>
+      <li>Priority support via email</li>
+    </ul>
+    <a href="#pay" class="cta-btn">Get Unlimited &rarr;</a>
+  </div>
 </div>
-<div class="card">
-<h3>JSON</h3><pre>{json.dumps(data, indent=2)}</pre>
-</div></div></body></html>"""
+
+<div class="card" style="max-width:600px;margin:30px auto">
+  <h2 style="color:var(--accent);margin-bottom:15px">Per-Request Pricing</h2>
+  <table style="width:100%">
+    <tr><th>Endpoint</th><th>Method</th><th>Per-Request</th></tr>
+    <tr><td><code>POST /summarize</code></td><td>Text summarization</td><td>$0.01 USDC</td></tr>
+    <tr><td><code>POST /chat</code></td><td>Streaming chat</td><td>$0.005 USDC</td></tr>
+    <tr><td><code>POST /generate</code></td><td>Image generation</td><td>$0.01 USDC</td></tr>
+  </table>
+</div>
+
+<div class="card wallet-box" id="pay">
+  <h2 style="color:var(--accent)">Pay with USDC on Base</h2>
+  <p style="margin-top:10px">Send USDC to TIAMAT's wallet:</p>
+  <div class="wallet-addr">{TIAMAT_WALLET}</div>
+  <p style="color:var(--text-muted);margin-top:10px">Chain: Base (8453) &bull; Token: USDC</p>
+  <p style="color:var(--text-muted);margin-top:10px"><strong>Per-request:</strong> Include tx hash in <code>X-Payment</code> header</p>
+  <p style="color:var(--text-muted);margin-top:10px"><strong>Monthly plans:</strong> Send 1 or 5 USDC, then email <strong>tiamat@tiamat.live</strong> with your IP and plan choice</p>
+  <a href="/pay" style="display:inline-block;margin-top:16px;padding:10px 20px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;border-radius:4px">Payment Page &rarr;</a>
+</div>
+
+<p style="text-align:center;margin-top:40px;color:var(--text-muted)">
+  Powered by TIAMAT &mdash; autonomous AI agent &bull; <a href="/thoughts" style="color:var(--accent)">Neural Feed</a>
+</p>
+
+{_FOOTER}
+</div></body></html>"""
         return html_resp(page)
     return jsonify(data), 200
 
@@ -742,6 +867,7 @@ document.addEventListener('DOMContentLoaded',function(){{
         if not text:
             return jsonify({"error": "text must be non-empty"}), 400
         ip = _get_ip()
+        track_usage(ip, "/summarize")
 
         # Sliding-window rate limit (abuse prevention)
         rl = _rate_limiter.check(ip, scope="api")
@@ -770,10 +896,12 @@ document.addEventListener('DOMContentLoaded',function(){{
         if not paid:
             if len(text) >= 2000:
                 log_req(len(text), False, 402, ip, "text too long for free tier", endpoint="/summarize")
+                track_limit_hit(ip, "/summarize")
                 return jsonify(payment_required_response(0.01, endpoint="/summarize")), 402
             has_quota, remaining = _check_free_quota(ip)
             if not has_quota:
                 log_req(len(text), False, 402, ip, "daily quota exceeded", endpoint="/summarize")
+                track_limit_hit(ip, "/summarize")
                 return jsonify(payment_required_response(0.01, endpoint="/summarize")), 402
         else:
             remaining = "N/A (paid)"
@@ -1119,6 +1247,7 @@ def generate_image():
     try:
         data = request.get_json(force=True, silent=True) or {}
         ip = _get_ip()
+        track_usage(ip, "/generate")
 
         # Sliding-window rate limit (abuse prevention)
         rl = _rate_limiter.check(ip, scope="api")
@@ -1143,6 +1272,7 @@ def generate_image():
             has_quota, remaining = _check_image_free_quota(ip)
             if not has_quota:
                 log_req(0, False, 402, ip, "image quota exceeded", endpoint="/generate")
+                track_limit_hit(ip, "/generate")
                 return jsonify(payment_required_response(0.01, endpoint="/generate")), 402
         else:
             remaining = "N/A (paid)"
@@ -1483,6 +1613,7 @@ def chat_endpoint():
     POST /chat with {"message": "...", "history": [...]}
     """
     client_ip = _get_ip()
+    track_usage(client_ip, "/chat")
 
     # Sliding-window rate limit (abuse prevention)
     rl = _rate_limiter.check(client_ip, scope="api")
@@ -1513,6 +1644,7 @@ def chat_endpoint():
 
     if not is_paid:
         if CHAT_IP_LIMITS.get(key, 0) >= 5:
+            track_limit_hit(client_ip, "/chat")
             return jsonify(payment_required_response(0.005, endpoint="/chat")), 402
         CHAT_IP_LIMITS[key] = CHAT_IP_LIMITS.get(key, 0) + 1
     

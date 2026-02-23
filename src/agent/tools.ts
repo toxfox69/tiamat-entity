@@ -97,7 +97,7 @@ const VALID_PID = /^\d+$/;
 const VALID_APP_NAME = /^[a-z0-9-]+$/;
 const VALID_SUBDOMAIN = /^[a-z0-9-]*$/;
 const FARCASTER_CHANNELS = ['base','ai','dev','agents','crypto','onchain','build'];
-const SCANNER_CMDS = ['full','recent','pairs','immunefi','address'];
+const SCANNER_CMDS = ['full','recent','pairs','immunefi','address','etherscan','balances','report'];
 const FARCASTER_READ_CMDS = ['feed','search','test'];
 
 const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/'];
@@ -3049,7 +3049,7 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
     },
     {
       name: "scan_contracts",
-      description: "Run vulnerability scanner on Base chain contracts. READ-ONLY security research for Immunefi bounties. Actions: 'full' (all checks), 'recent' (new deployments last 50 blocks), 'pairs' (skim scan on DEX pairs), 'immunefi' (list bounty targets), 'status' (daemon status + recent findings), 'address 0x...' (scan specific contract). Findings logged to vuln_findings.json.",
+      description: "Run vulnerability scanner on multi-chain contracts. READ-ONLY security research for Immunefi bounties. Actions: 'full' (all checks), 'recent' (new deployments last 50 blocks), 'pairs' (skim scan on DEX pairs), 'immunefi' (list bounty targets), 'status' (daemon status + recent findings), 'address 0x...' (scan specific contract), 'etherscan 0x... [chain]' (Etherscan V2 enrichment — chains: base/ethereum/arbitrum/optimism), 'balances' (check wallet ETH on all chains), 'report' (send Telegram funding report). Findings logged to vuln_findings.json.",
       category: "vm",
       parameters: {
         type: "object",
@@ -3073,12 +3073,20 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
               catch { status += `Daemon: DOWN (stale PID ${pid})\n`; }
             }
           } catch { status += 'Daemon: NOT RUNNING\n'; }
+          for (const [cid, cname] of [['8453','Base'],['42161','Arbitrum'],['10','Optimism'],['1','Ethereum']]) {
+            try {
+              const fpath = `/root/.automaton/vuln_findings_${cid}.json`;
+              const findings = JSON.parse(fs.readFileSync(fpath, 'utf-8'));
+              status += `${cname}: ${findings.length} findings\n`;
+              const recent = findings.slice(-2);
+              for (const f of recent) { status += `  ${f.type} @ ${f.address?.slice(0,16)}... (${f.eth_value} ETH)\n`; }
+            } catch { /* no findings for this chain */ }
+          }
+          // Legacy findings file
           try {
             const findings = JSON.parse(fs.readFileSync('/root/.automaton/vuln_findings.json', 'utf-8'));
-            status += `Total findings: ${findings.length}\n`;
-            const recent = findings.slice(-3);
-            for (const f of recent) { status += `  ${f.type} @ ${f.address} (${f.eth_value} ETH)\n`; }
-          } catch { status += 'No findings yet.\n'; }
+            if (findings.length > 0) status += `Legacy findings: ${findings.length}\n`;
+          } catch { /* no legacy findings */ }
           return status;
         }
 
@@ -3088,6 +3096,26 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
           if (!SCANNER_CMDS.includes(cmd)) return `Invalid action: ${cmd}. Use: ${SCANNER_CMDS.join(', ')}`;
           const arg = parts[1] || '';
           if (cmd === 'address' && !VALID_HEX_ADDR.test(arg)) return 'Invalid address format. Use: 0x...40 hex chars';
+          if (cmd === 'balances' || cmd === 'report') {
+            try {
+              const balArgs = ['multi_chain_executor.py', cmd === 'balances' ? 'balances' : 'report'];
+              const balOutput = execFileSync('python3', balArgs, {
+                encoding: 'utf-8', timeout: 30000, cwd: '/root/entity/src/agent'
+              }).trim();
+              return balOutput.slice(0, 4000);
+            } catch (e: any) {
+              return `Balance check failed: ${e.stderr?.slice(0, 500) || e.message}`;
+            }
+          }
+          if (cmd === 'etherscan') {
+            if (!VALID_HEX_ADDR.test(arg)) return 'Usage: etherscan 0x... [chain]. Chains: base, ethereum, arbitrum, optimism';
+            const chain = parts[2] || 'base';
+            const esArgs = ['etherscan_v2.py', 'enrich', arg, chain];
+            const esOutput = execFileSync('python3', esArgs, {
+              encoding: 'utf-8', timeout: 30000, cwd: '/root/entity/src/agent'
+            }).trim();
+            return esOutput.slice(0, 4000);
+          }
           const cmdArgs = ['contract_scanner.py', cmd];
           if (arg) cmdArgs.push(arg);
           const output = execFileSync('python3', cmdArgs, {
@@ -3104,12 +3132,12 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
     },
     {
       name: "check_opportunities",
-      description: "Check the opportunity queue for pending items from background scanners/sniper. Returns pending opportunities that need action. After acting on an item, call again with action='done' and address to mark it handled. Actions: 'peek' (list pending), 'done <address>' (mark handled), 'stats' (queue summary).",
+      description: "Agent IPC inbox. Actions: 'peek' (pending messages), 'stats' (queue stats + heartbeats), 'done <msg_id>' (mark handled), 'send <op> <json_payload>' (send a message), 'heartbeats' (check agent liveness). Auto-execute ops (SKIM, ALERT, REPORT, HEARTBEAT) are dispatched automatically each cycle — this tool is for manual review and control ops.",
       category: "vm",
       parameters: {
         type: "object",
         properties: {
-          action: { type: "string", description: "peek|done <address>|stats" },
+          action: { type: "string", description: "peek|stats|done <msg_id>|send <OP> {json}|heartbeats" },
         },
         required: ["action"],
       },
@@ -3131,68 +3159,118 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
 
         if (action === 'peek') {
           return pythonScript(`
-from opportunity_queue import OpportunityQueue
+from agent_ipc import AgentIPC
 import json
-pending = OpportunityQueue.peek()
-if not pending:
-    print("No pending opportunities.")
+msgs = AgentIPC.recv()
+if not msgs:
+    print("No pending messages.")
 else:
-    print(f"{len(pending)} pending opportunities:")
-    for i, o in enumerate(pending):
-        print(f"  [{i}] {o.get('type','?')} | {o.get('address','?')[:16]}... | {o.get('eth_value',0)} ETH | src: {o.get('source','?')} | action: {o.get('action','?')}")
+    print(f"{len(msgs)} pending:")
+    for m in msgs[:20]:
+        p = json.dumps(m.get("payload",{}))
+        if len(p) > 80: p = p[:77] + "..."
+        print(f"  [{m['id'][:8]}] {m['op']} from:{m['from']} {p}")
 `);
         }
 
         if (action === 'stats') {
           return pythonScript(`
+from agent_ipc import AgentIPC
 import json
-with open("/root/.automaton/opportunity_queue.json") as f:
-    q = json.load(f)
-pending = [x for x in q if x.get("status") == "pending"]
-acted = [x for x in q if x.get("status") == "acted"]
-print(f"Queue: {len(q)} total | {len(pending)} pending | {len(acted)} acted")
+s = AgentIPC.stats()
+print(json.dumps(s, indent=2))
+`);
+        }
+
+        if (action === 'heartbeats') {
+          return pythonScript(`
+from agent_ipc import AgentIPC
+import json
+hb = AgentIPC.check_heartbeats()
+if not hb:
+    print("No heartbeats recorded.")
+else:
+    for agent, info in hb.items():
+        stale = " STALE" if info.get("stale") else ""
+        print(f"  {agent}: {info.get('status','?')}{stale} (cycles:{info.get('cycles','?')} ts:{info.get('ts','?')})")
 `);
         }
 
         if (action.startsWith('done ')) {
-          const addr = action.split(' ')[1];
-          if (!VALID_HEX_ADDR.test(addr)) return 'Invalid address format. Use: 0x...40 hex chars';
+          const msgId = action.split(' ')[1];
+          if (!msgId || msgId.length < 4) return 'Invalid msg_id. Use: done <msg_id>';
           return pythonScript(`
-from opportunity_queue import OpportunityQueue
-OpportunityQueue.mark_done_by_address("${addr}")
-print("Marked done: ${addr}")
+from agent_ipc import AgentIPC
+AgentIPC.mark("${msgId}", "done", "manual")
+print("Marked done: ${msgId}")
 `);
         }
 
-        return 'Unknown action. Use: peek, done <address>, stats';
+        if (action.startsWith('send ')) {
+          const parts = action.match(/^send\s+(\w+)\s+(.+)$/);
+          if (!parts) return 'Usage: send <OP> {"key":"value"}';
+          const op = parts[1];
+          const payloadStr = parts[2];
+          // Validate op and payload are safe
+          if (!/^[A-Z_]+$/.test(op)) return 'Invalid op code. Use uppercase: SKIM, ALERT, BUILD, etc.';
+          try { JSON.parse(payloadStr); } catch { return 'Invalid JSON payload'; }
+          return pythonScript(`
+from agent_ipc import AgentIPC
+import json
+mid = AgentIPC.send("tiamat", "${op}", json.loads('${payloadStr.replace(/'/g, "\\'")}'))
+print(f"Sent {mid}")
+`);
+        }
+
+        return 'Unknown action. Use: peek, stats, heartbeats, done <msg_id>, send <OP> {json}';
       },
     },
     // ── Farcaster Tools ──
     {
       name: "post_farcaster",
-      description: "Post a cast to Farcaster/Warpcast. Max 320 chars. Optionally target a channel (base, ai, dev, agents, crypto, onchain, build). Always embeds tiamat.live. Rate limited to 1 post per 5 minutes.",
+      description: "Post a cast to Farcaster/Warpcast. Max 320 chars. Optionally target a channel (base, ai, dev, agents, crypto, onchain, build). Always embeds tiamat.live. Attach image_path from generate_image to show art inline instead of just a link box. Rate limited to 1 post per 5 minutes.",
       category: "social",
       parameters: {
         type: "object",
         properties: {
           text: { type: "string", description: "Cast text (max 320 chars)" },
           channel: { type: "string", description: "Channel to post in: base, ai, dev, agents, crypto, onchain, build" },
+          image_path: { type: "string", description: "Local image path from generate_image to attach (e.g. /root/.automaton/images/123_neural.png)" },
         },
         required: ["text"],
       },
       execute: async (args, _ctx) => {
         const { execFileSync } = await import('child_process');
-        const { text, channel } = args as { text: string; channel?: string };
+        const { text, channel, image_path } = args as { text: string; channel?: string; image_path?: string };
         if (channel && !FARCASTER_CHANNELS.includes(channel))
           return `Invalid channel. Use: ${FARCASTER_CHANNELS.join(', ')}`;
+
+        // If image provided, copy to web dir and pass URL to farcaster.py
+        let imageUrl = '';
+        if (image_path) {
+          try {
+            const { copyFileSync, mkdirSync, existsSync } = await import('fs');
+            const { basename } = await import('path');
+            const filename = basename(image_path);
+            const webDir = '/var/www/tiamat/images';
+            mkdirSync(webDir, { recursive: true });
+            const dest = `${webDir}/${filename}`;
+            if (!existsSync(dest)) copyFileSync(image_path, dest);
+            imageUrl = `https://tiamat.live/images/${filename}`;
+          } catch (imgErr: any) {
+            console.error(`[post_farcaster] Image copy failed: ${imgErr.message}`);
+          }
+        }
+
         try {
           const fArgs = ['farcaster.py', 'post', text];
           if (channel) fArgs.push(channel);
+          if (imageUrl) fArgs.push(imageUrl);
           const output = execFileSync('python3', fArgs, {
             encoding: 'utf-8', timeout: 20000, cwd: '/root/entity/src/agent'
           }).trim();
           const fs = await import('fs');
-          fs.appendFileSync('/root/.automaton/tiamat.log', `\n[FARCASTER] Posted: ${text.slice(0, 60)}... ${channel ? 'to /' + channel : ''}\n`);
+          fs.appendFileSync('/root/.automaton/tiamat.log', `\n[FARCASTER] Posted: ${text.slice(0, 60)}... ${channel ? 'to /' + channel : ''}${imageUrl ? ' +image' : ''}\n`);
           return output.slice(0, 2000);
         } catch (e: any) {
           return `Farcaster post failed: ${e.stderr?.slice(0, 500) || e.message}`;
@@ -3258,6 +3336,78 @@ print("Marked done: ${addr}")
         } catch (e: any) {
           return `farcaster_engage failed: ${e.stderr?.slice(0, 500) || e.message}`;
         }
+      },
+    },
+
+    // ─── Dynamic Cooldown Task Manager ───────────────────────────
+    {
+      name: "manage_cooldown",
+      description: "Manage dynamic cooldown tasks — Python scripts that run FREE between cycles. Actions: add (register a script), list (show all tasks + stats), remove (delete a task by name).",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["add", "list", "remove"], description: "Action to perform" },
+          name: { type: "string", description: "Task name (add/remove)" },
+          script: { type: "string", description: "Absolute path to .py script (add)" },
+          timeout: { type: "number", description: "Max execution time in ms (add, default 30000)" },
+          description: { type: "string", description: "What this task does (add)" },
+        },
+        required: ["action"],
+      },
+      execute: async (args: any) => {
+        const fs = await import('fs');
+        const REGISTRY_PATH = '/root/.automaton/cooldown_registry.json';
+        const ALLOWED_PREFIXES = ['/root/.automaton/', '/root/entity/src/agent/'];
+
+        function loadRegistry(): any[] {
+          try { return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf-8')); } catch { return []; }
+        }
+        function saveRegistry(tasks: any[]) {
+          fs.writeFileSync(REGISTRY_PATH, JSON.stringify(tasks, null, 2));
+        }
+
+        const { action, name, script, timeout, description } = args;
+
+        if (action === 'list') {
+          const tasks = loadRegistry();
+          if (tasks.length === 0) return 'No dynamic cooldown tasks registered.';
+          return tasks.map((t: any) =>
+            `${t.enabled ? '✓' : '✗'} ${t.name}: ${t.script} (timeout ${t.timeout}ms, runs: ${t.runs || 0}, last: ${t.lastRun || 'never'})${t.lastResult ? '\n  → ' + t.lastResult.slice(0, 120) : ''}`
+          ).join('\n');
+        }
+
+        if (action === 'remove') {
+          if (!name) return 'Error: name required for remove';
+          const tasks = loadRegistry();
+          const idx = tasks.findIndex((t: any) => t.name === name);
+          if (idx === -1) return `Task "${name}" not found`;
+          tasks.splice(idx, 1);
+          saveRegistry(tasks);
+          return `Removed cooldown task "${name}". ${tasks.length} tasks remaining.`;
+        }
+
+        if (action === 'add') {
+          if (!name || !script) return 'Error: name and script required for add';
+          if (!script.endsWith('.py')) return 'Error: script must be a .py file';
+          if (!ALLOWED_PREFIXES.some(p => script.startsWith(p)))
+            return `Error: script must be under ${ALLOWED_PREFIXES.join(' or ')}`;
+          try { fs.accessSync(script, fs.constants.R_OK); } catch {
+            return `Error: script not found or not readable: ${script}`;
+          }
+          const tasks = loadRegistry();
+          if (tasks.length >= 20) return 'Error: max 20 cooldown tasks. Remove some first.';
+          if (tasks.some((t: any) => t.name === name)) return `Error: task "${name}" already exists. Remove it first.`;
+          tasks.push({
+            name, script, timeout: timeout || 30000,
+            description: description || '', enabled: true,
+            runs: 0, lastRun: null, lastResult: null,
+          });
+          saveRegistry(tasks);
+          return `Registered cooldown task "${name}" → ${script} (timeout ${timeout || 30000}ms). It will run during idle cooldowns at zero API cost.`;
+        }
+
+        return 'Invalid action. Use: add, list, remove';
       },
     },
   ];

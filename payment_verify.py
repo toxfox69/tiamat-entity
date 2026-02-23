@@ -223,9 +223,10 @@ def _parse_tx_hash(value: str) -> str:
 
 # ── Standardized 402 response body ───────────────────────────
 def payment_required_response(amount_usdc: float, endpoint: str = "") -> dict:
-    """Return a standardized 402 response body with payment instructions."""
+    """Return a standardized 402 response body with payment instructions and upgrade options."""
     return {
-        "error": "Payment required",
+        "error": "free_tier_limit",
+        "message": "You've used all your free requests for today.",
         "payment": {
             "protocol": "x402",
             "chain": "Base (Chain ID 8453)",
@@ -235,11 +236,28 @@ def payment_required_response(amount_usdc: float, endpoint: str = "") -> dict:
             "amount_usdc": amount_usdc,
             "amount_raw": int(amount_usdc * (10 ** USDC_DECIMALS)),
         },
-        "instructions": {
-            "1": f"Send {amount_usdc} USDC to {TIAMAT_WALLET} on Base",
-            "2": "Include the tx hash in the X-Payment header",
-            "3": "Retry your request with the header attached",
+        "upgrade_options": {
+            "pay_per_use": {
+                "price": f"${amount_usdc} USDC per request",
+                "how": f"Send USDC on Base to {TIAMAT_WALLET}",
+                "then": "Include tx hash in X-Payment header",
+            },
+            "monthly_builder": {
+                "price": "1 USDC/month",
+                "requests": "100/day",
+                "how": f"Send 1 USDC to {TIAMAT_WALLET}, email tiamat@tiamat.live with your IP",
+            },
+            "monthly_unlimited": {
+                "price": "5 USDC/month",
+                "requests": "unlimited",
+                "how": f"Send 5 USDC to {TIAMAT_WALLET}, email tiamat@tiamat.live with your IP",
+            },
         },
+        "wallet": TIAMAT_WALLET,
+        "chain": "Base (Chain ID 8453)",
+        "token": "USDC",
+        "pricing_page": "https://tiamat.live/pricing",
         "pay_page": "https://tiamat.live/pay",
+        "free_reset": "Limits reset daily at midnight UTC",
         "endpoint": endpoint,
     }

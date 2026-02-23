@@ -1,8 +1,13 @@
 """
-TIAMAT Contract Vulnerability Scanner — Base Chain
+TIAMAT Contract Vulnerability Scanner — Multi-Chain
 Read-only security scanner for responsible disclosure and Immunefi bounty research.
 Detects: stuck ETH, skimmable pairs, dead proxies, unguarded functions,
 uninitialized proxies, stuck trading fees.
+
+Now with Etherscan V2 enrichment: verified source code analysis, deployer reputation,
+and ABI-based function identification instead of blind bytecode guessing.
+
+Supports: Base, Arbitrum, Optimism, Ethereum (via chain_config.py).
 
 All findings are logged — NO exploitation, NO execution of vulnerable functions.
 """
@@ -14,7 +19,20 @@ from datetime import datetime, timezone
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 
-# ── Config ──
+try:
+    from etherscan_v2 import enrich_finding as etherscan_enrich
+    HAS_ETHERSCAN = True
+except ImportError:
+    HAS_ETHERSCAN = False
+
+try:
+    from chain_config import CHAINS, get_findings_file
+except ImportError:
+    CHAINS = {}
+    def get_findings_file(chain_id):
+        return "/root/.automaton/vuln_findings.json"
+
+# ── Config (defaults for Base, overridden by chain_config) ──
 
 BASE_RPCS = [
     "https://mainnet.base.org",
@@ -26,7 +44,7 @@ BASE_RPCS = [
 FINDINGS_FILE = "/root/.automaton/vuln_findings.json"
 SCAN_LOG = "/root/.automaton/vuln_scan.log"
 
-# Key addresses
+# Key addresses (defaults for Base)
 WETH = "0x4200000000000000000000000000000000000006"
 DEAD_ADDRESSES = {
     "0x0000000000000000000000000000000000000000",
@@ -34,7 +52,7 @@ DEAD_ADDRESSES = {
     "0x0000000000000000000000000000000000000001",
 }
 
-# Uniswap V2 factory on Base
+# Uniswap V2 factory on Base (backward compat)
 UNISWAP_V2_FACTORY = "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6"
 # Aerodrome factory on Base
 AERODROME_FACTORY = "0x420DD381b31aEf6683db6B902084cB0FFECe40Da"
@@ -112,32 +130,51 @@ if not log.handlers:
 
 
 class ContractScanner:
-    def __init__(self):
+    def __init__(self, chain_id=8453, rpcs=None, weth=None, findings_file=None, chain_name=None):
+        self.chain_id = chain_id
+        self.chain_name = chain_name or "Base"
+        self.rpcs = rpcs or BASE_RPCS
+        self.weth = weth or WETH
+        self.findings_file = findings_file or get_findings_file(chain_id)
         self.w3 = None
         self.rpc = None
         self.findings = []
         self._connect()
 
+    @classmethod
+    def from_chain_config(cls, chain_id):
+        """Create a scanner from chain_config.py settings."""
+        cfg = CHAINS.get(chain_id)
+        if not cfg:
+            raise ValueError(f"Unknown chain_id: {chain_id}")
+        return cls(
+            chain_id=chain_id,
+            rpcs=cfg["rpcs"],
+            weth=cfg["weth"],
+            findings_file=get_findings_file(chain_id),
+            chain_name=cfg["name"],
+        )
+
     def _connect(self):
-        for rpc in BASE_RPCS:
+        for rpc in self.rpcs:
             try:
                 w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 15}))
                 w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
                 if w3.is_connected():
                     self.w3 = w3
                     self.rpc = rpc
-                    log.info(f"Connected to {rpc} | block {w3.eth.block_number}")
+                    log.info(f"[{self.chain_name}] Connected to {rpc} | block {w3.eth.block_number}")
                     return
             except Exception:
                 continue
-        raise ConnectionError("All Base RPCs failed")
+        raise ConnectionError(f"All {self.chain_name} RPCs failed")
 
     def _rotate_rpc(self):
         """Switch to the next RPC in the list (for 429 rate limits)."""
-        current_idx = BASE_RPCS.index(self.rpc) if self.rpc in BASE_RPCS else -1
-        next_idx = (current_idx + 1) % len(BASE_RPCS)
-        for i in range(len(BASE_RPCS)):
-            rpc = BASE_RPCS[(next_idx + i) % len(BASE_RPCS)]
+        current_idx = self.rpcs.index(self.rpc) if self.rpc in self.rpcs else -1
+        next_idx = (current_idx + 1) % len(self.rpcs)
+        for i in range(len(self.rpcs)):
+            rpc = self.rpcs[(next_idx + i) % len(self.rpcs)]
             if rpc == self.rpc:
                 continue
             try:
@@ -146,7 +183,7 @@ class ContractScanner:
                 if w3.is_connected():
                     self.w3 = w3
                     self.rpc = rpc
-                    log.info(f"Rotated RPC to {rpc}")
+                    log.info(f"[{self.chain_name}] Rotated RPC to {rpc}")
                     return True
             except Exception:
                 continue
@@ -157,25 +194,47 @@ class ContractScanner:
         self.w3 = None
         self._connect()
 
-    def _add_finding(self, vuln_type, address, details, eth_value=0.0):
+    def _add_finding(self, vuln_type, address, details, eth_value=0.0, chain_id=None):
+        if chain_id is None:
+            chain_id = self.chain_id
         finding = {
             "type": vuln_type,
             "address": address,
             "details": details,
             "eth_value": eth_value,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "chain": "base",
+            "chain": self.chain_name.lower(),
+            "chain_id": chain_id,
             "action": "Log for review. Submit to Immunefi if bounty-eligible.",
         }
+
+        # Etherscan V2 enrichment — get verified source + deployer intel
+        if HAS_ETHERSCAN and eth_value >= 0.01:
+            try:
+                enrichment = etherscan_enrich(address, chain_id)
+                finding["etherscan"] = enrichment
+
+                if enrichment.get("recommendation") == "skip":
+                    reason = enrichment.get("skip_reason", "access control detected")
+                    log.info(f"[{self.chain_name}] SKIP (Etherscan): {vuln_type} at {address} — {reason}")
+                    return None  # Don't add false positive
+
+                if enrichment.get("source_verified"):
+                    log.info(f"[{self.chain_name}] ENRICHED: {vuln_type} at {address} — source verified, "
+                             f"risk={enrichment.get('source_analysis', {}).get('risk_level', '?')}, "
+                             f"rec={enrichment.get('recommendation')}")
+            except Exception as e:
+                log.debug(f"[{self.chain_name}] Etherscan enrichment failed for {address}: {e}")
+
         self.findings.append(finding)
-        log.info(f"FINDING: {vuln_type} at {address} ({eth_value:.4f} ETH)")
+        log.info(f"[{self.chain_name}] FINDING: {vuln_type} at {address} ({eth_value:.4f} ETH)")
         self._persist_findings()
         return finding
 
     def _persist_findings(self):
         try:
             try:
-                with open(FINDINGS_FILE, "r") as f:
+                with open(self.findings_file, "r") as f:
                     existing = json.load(f)
             except (FileNotFoundError, json.JSONDecodeError):
                 existing = []
@@ -186,10 +245,10 @@ class ContractScanner:
                 if key not in seen:
                     existing.append(f)
                     seen.add(key)
-            with open(FINDINGS_FILE, "w") as f:
+            with open(self.findings_file, "w") as f:
                 json.dump(existing, f, indent=2)
         except Exception as e:
-            log.error(f"Failed to persist findings: {e}")
+            log.error(f"[{self.chain_name}] Failed to persist findings: {e}")
 
     def _get_code(self, addr):
         try:
@@ -330,9 +389,9 @@ class ContractScanner:
 
             # Calculate ETH value of excess if one token is WETH
             eth_value = 0.0
-            if token0.lower() == WETH.lower() and excess0 > 0:
+            if token0.lower() == self.weth.lower() and excess0 > 0:
                 eth_value = float(Web3.from_wei(excess0, "ether"))
-            elif token1.lower() == WETH.lower() and excess1 > 0:
+            elif token1.lower() == self.weth.lower() and excess1 > 0:
                 eth_value = float(Web3.from_wei(excess1, "ether"))
 
             # Only report if excess is meaningful
@@ -601,7 +660,7 @@ class ContractScanner:
         # Check if contract holds WETH too
         try:
             weth = self.w3.eth.contract(
-                address=Web3.to_checksum_address(WETH), abi=ERC20_ABI
+                address=Web3.to_checksum_address(self.weth), abi=ERC20_ABI
             )
             weth_bal = weth.functions.balanceOf(addr).call()
             weth_eth = float(Web3.from_wei(weth_bal, "ether"))
@@ -694,7 +753,7 @@ class ContractScanner:
     def full_scan(self):
         """Orchestrate all scans, return consolidated report."""
         log.info("=" * 60)
-        log.info("FULL VULNERABILITY SCAN — Base Chain")
+        log.info(f"FULL VULNERABILITY SCAN — {self.chain_name} (chain {self.chain_id})")
         log.info("=" * 60)
         start_time = time.time()
         self.findings = []
@@ -747,8 +806,8 @@ class ContractScanner:
 
     # ── Single Address Scan ──
 
-    def scan_address(self, addr):
-        """Run all applicable checks on a single address."""
+    def scan_address(self, addr, chain_id=8453):
+        """Run all applicable checks on a single address, with Etherscan enrichment."""
         addr = Web3.to_checksum_address(addr)
         self.findings = []
         results = []
@@ -767,11 +826,20 @@ class ContractScanner:
             except Exception as e:
                 log.debug(f"Check {check_fn.__name__} failed on {addr}: {e}")
 
+        # Etherscan enrichment for the address itself (even if no bytecode findings)
+        etherscan_data = None
+        if HAS_ETHERSCAN:
+            try:
+                etherscan_data = etherscan_enrich(addr, chain_id)
+            except Exception as e:
+                log.debug(f"Etherscan enrichment failed for {addr}: {e}")
+
         return {
             "address": addr,
             "checks_run": 5,
             "findings": len(results),
             "details": results,
+            "etherscan": etherscan_data,
         }
 
 

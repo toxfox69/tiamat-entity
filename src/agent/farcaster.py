@@ -48,8 +48,8 @@ class FarcasterClient:
         self.last_post_time = 0
         self.min_interval = 300  # 5 min between posts minimum
 
-    def post(self, text, channel=None, embed_url=None):
-        """Post a cast to Farcaster."""
+    def post(self, text, channel=None, embed_url=None, image_url=None):
+        """Post a cast to Farcaster. image_url shows inline art; embed_url shows link preview."""
         now = time.time()
         if now - self.last_post_time < self.min_interval:
             wait = self.min_interval - (now - self.last_post_time)
@@ -61,8 +61,13 @@ class FarcasterClient:
         }
         if channel:
             payload["channel_id"] = channel
+        embeds = []
+        if image_url:
+            embeds.append({"url": image_url})
         if embed_url:
-            payload["embeds"] = [{"url": embed_url}]
+            embeds.append({"url": embed_url})
+        if embeds:
+            payload["embeds"] = embeds
 
         try:
             resp = requests.post(
@@ -232,11 +237,19 @@ if __name__ == "__main__":
 
     elif action == "post":
         text = sys.argv[2] if len(sys.argv) > 2 else ""
-        channel = sys.argv[3] if len(sys.argv) > 3 else None
+        # Args after text: optional channel, optional image_url
+        # Channel is a known keyword; image_url starts with http
+        channel = None
+        image_url = None
+        for extra in sys.argv[3:]:
+            if extra.startswith("http"):
+                image_url = extra
+            else:
+                channel = extra
         if not text:
-            print("Usage: farcaster.py post 'text' [channel]")
+            print("Usage: farcaster.py post 'text' [channel] [image_url]")
             sys.exit(1)
-        result = client.post(text, channel=channel, embed_url="https://tiamat.live")
+        result = client.post(text, channel=channel, embed_url="https://tiamat.live", image_url=image_url)
         print(json.dumps(result, indent=2, default=str))
 
     else:

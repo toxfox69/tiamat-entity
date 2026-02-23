@@ -164,20 +164,59 @@ class AutoExecutor:
         except Exception:
             return False
 
+    def _get_token_balance(self, token_addr, owner):
+        """Get ERC20 token balance of owner. Returns 0 on error."""
+        try:
+            token = self.w3.eth.contract(
+                address=Web3.to_checksum_address(token_addr), abi=ERC20_ABI
+            )
+            return token.functions.balanceOf(Web3.to_checksum_address(owner)).call()
+        except Exception:
+            return 0
+
+    def _check_skim_excess(self, pair_address):
+        """
+        Pre-check: compare actual token balances to reserves.
+        Returns (has_excess, token0_excess, token1_excess, token0_addr, token1_addr).
+        If reserves == balances, there's nothing to skim.
+        """
+        try:
+            pair = self.w3.eth.contract(address=pair_address, abi=PAIR_ABI)
+            reserves = pair.functions.getReserves().call()
+            r0, r1 = reserves[0], reserves[1]
+            t0 = pair.functions.token0().call()
+            t1 = pair.functions.token1().call()
+            b0 = self._get_token_balance(t0, pair_address)
+            b1 = self._get_token_balance(t1, pair_address)
+            excess0 = b0 - r0
+            excess1 = b1 - r1
+            has_excess = excess0 > 0 or excess1 > 0
+            return has_excess, excess0, excess1, t0, t1
+        except Exception as e:
+            log.warning(f"[AUTO-EXEC] Excess check failed: {str(e)[:100]}")
+            return True, 0, 0, None, None  # Assume excess on error, let skim try
+
     def try_skim(self, pair_address, eth_value):
         """
-        Attempt to skim a pair. Returns True if executed successfully.
-        Returns False if skipped/failed (caller should queue instead).
+        Attempt to skim a pair. Returns True if tokens were actually received.
+        Returns False if skipped/failed/empty (caller should queue instead).
         """
         if not self.enabled:
             return False
 
         addr = Web3.to_checksum_address(pair_address)
+
+        # Pre-check: are there actually excess tokens to skim?
+        has_excess, excess0, excess1, t0, t1 = self._check_skim_excess(addr)
+        if not has_excess:
+            log.info(f"[AUTO-EXEC] Skip skim {addr[:16]}: reserves == balances, nothing to skim")
+            self._log_exec("skim", addr, "SKIPPED", "no excess tokens (reserves == balances)")
+            return False
+
         gas_cost = self._estimate_gas_cost_eth()
         if gas_cost is None:
             log.info(f"[AUTO-EXEC] Skip skim {addr[:16]}: gas price over {MAX_GAS_PRICE_GWEI} gwei cap")
             self._log_exec("skim", addr, "SKIPPED", "gas price over cap")
-            self._send_telegram(f"<b>AUTO-SKIM SKIPPED</b>\nPair: {addr}\nReason: gas price over {MAX_GAS_PRICE_GWEI} gwei cap")
             return False
 
         # Gas ratio check: don't execute if gas > 10% of prize
@@ -199,13 +238,11 @@ class AutoExecutor:
         except Exception as e:
             log.error(f"[AUTO-EXEC] Skim encode failed: {e}")
             self._log_exec("skim", addr, "ERROR", f"encode failed: {e}")
-            self._send_telegram(f"<b>AUTO-SKIM ERROR</b>\nPair: {addr}\nReason: encode failed")
             return False
 
         if not self._simulate(addr, calldata):
             log.info(f"[AUTO-EXEC] Skim simulation reverted for {addr[:16]}")
-            self._log_exec("skim", addr, "SIM_REVERTED", f"value={eth_value}")
-            self._send_telegram(f"<b>AUTO-SKIM SIM REVERTED</b>\nPair: {addr}\nValue: {eth_value:.4f} ETH")
+            self._log_exec("skim", addr, "SIM_REVERTED", f"contract_balance={eth_value}")
             return False
 
         # Get capped gas price for the actual transaction
@@ -214,6 +251,11 @@ class AutoExecutor:
             log.info(f"[AUTO-EXEC] Skip skim {addr[:16]}: gas spiked over cap before tx")
             self._log_exec("skim", addr, "SKIPPED", "gas spiked over cap before tx")
             return False
+
+        # Snapshot balances BEFORE skim
+        eth_before = self.w3.eth.get_balance(self.account.address)
+        t0_before = self._get_token_balance(t0, self.account.address) if t0 else 0
+        t1_before = self._get_token_balance(t1, self.account.address) if t1 else 0
 
         # Execute
         try:
@@ -227,27 +269,48 @@ class AutoExecutor:
             tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
 
-            success = receipt["status"] == 1
+            tx_ok = receipt["status"] == 1
             gas_used = receipt["gasUsed"]
-            result = "SUCCESS" if success else "FAILED"
+            gas_cost_actual = float(self.w3.from_wei(gas_used * capped_price, "ether"))
 
-            log.info(f"[AUTO-EXEC] Skim {result}: {addr} | tx: {tx_hash.hex()} | gas: {gas_used}")
-            self._log_exec("skim", addr, result, f"tx={tx_hash.hex()} gas={gas_used} value={eth_value}")
+            # Snapshot balances AFTER skim
+            eth_after = self.w3.eth.get_balance(self.account.address)
+            t0_after = self._get_token_balance(t0, self.account.address) if t0 else 0
+            t1_after = self._get_token_balance(t1, self.account.address) if t1 else 0
+
+            eth_received = float(self.w3.from_wei(eth_after - eth_before, "ether")) + gas_cost_actual
+            t0_received = t0_after - t0_before
+            t1_received = t1_after - t1_before
+            got_something = eth_received > 0.0001 or t0_received > 0 or t1_received > 0
+
+            if tx_ok and got_something:
+                result = "SUCCESS"
+            elif tx_ok:
+                result = "EMPTY"
+            else:
+                result = "FAILED"
+
+            details = (
+                f"tx={tx_hash.hex()} gas={gas_used} gas_cost={gas_cost_actual:.6f} "
+                f"eth_received={eth_received:.6f} t0_received={t0_received} t1_received={t1_received} "
+                f"contract_balance={eth_value}"
+            )
+            log.info(f"[AUTO-EXEC] Skim {result}: {addr} | received: ETH={eth_received:.6f} t0={t0_received} t1={t1_received}")
+            self._log_exec("skim", addr, result, details)
 
             msg = (
                 f"<b>AUTO-SKIM {result}</b>\n"
                 f"Pair: {addr}\n"
-                f"Value: {eth_value:.4f} ETH\n"
-                f"Gas: {gas_used}\n"
+                f"Received: {eth_received:.6f} ETH, {t0_received} t0, {t1_received} t1\n"
+                f"Gas cost: {gas_cost_actual:.6f} ETH\n"
                 f"Tx: {tx_hash.hex()}"
             )
             self._send_telegram(msg)
-            return success
+            return result == "SUCCESS"
 
         except Exception as e:
             log.error(f"[AUTO-EXEC] Skim execution failed: {str(e)[:200]}")
             self._log_exec("skim", addr, "ERROR", str(e)[:200])
-            self._send_telegram(f"<b>AUTO-SKIM ERROR</b>\nPair: {addr}\nValue: {eth_value:.4f} ETH\nError: {str(e)[:100]}")
             return False
 
     def try_rescue(self, contract_address, callable_functions, eth_value):
