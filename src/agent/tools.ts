@@ -2226,6 +2226,52 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       },
     },
     {
+      name: "browse",
+      description: "Lightweight web browser. Faster and cheaper than web_fetch — extracts clean readable text, searches DuckDuckGo, extracts links/metadata. Commands: fetch <url>, search <query>, extract <url> --links, extract <url> --meta. Add --json for structured output.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          command: {
+            type: "string",
+            description: "Command: fetch, search, extract",
+          },
+          target: {
+            type: "string",
+            description: "URL or search query",
+          },
+          flags: {
+            type: "string",
+            description: "Optional flags: --json, --links, --meta, --raw",
+          },
+        },
+        required: ["command", "target"],
+      },
+      execute: async (args, _ctx) => {
+        const command = args.command as string;
+        const target = args.target as string;
+        const flags = (args.flags as string) || "";
+        if (!command || !target) return "ERROR: command and target are required.";
+        // Validate command
+        const validCmds = ["fetch", "search", "extract"];
+        if (!validCmds.includes(command)) return `ERROR: command must be one of: ${validCmds.join(", ")}`;
+        try {
+          const result = execFileSync(
+            "python3",
+            ["/root/entity/tools/webbrowser.py", command, target, ...flags.split(/\s+/).filter(Boolean)],
+            { encoding: "utf-8", timeout: 15_000, maxBuffer: 1024 * 1024 }
+          ).trim();
+          // Truncate large outputs
+          const MAX = 15_000;
+          return result.length > MAX ? result.slice(0, MAX) + `\n\n[...truncated at ${MAX} chars]` : result;
+        } catch (e: any) {
+          const stderr = e.stderr ? e.stderr.trim() : "";
+          const stdout = e.stdout ? e.stdout.trim() : "";
+          return `ERROR: ${stderr || stdout || e.message}`;
+        }
+      },
+    },
+    {
       name: "search_web",
       description: "Search the web for any query. Uses Brave Search if BRAVE_SEARCH_API_KEY is set, otherwise falls back to DuckDuckGo. Returns titles, URLs, and snippets.",
       category: "vm",
