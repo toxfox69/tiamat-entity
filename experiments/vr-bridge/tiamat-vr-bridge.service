@@ -1,0 +1,17 @@
+[Unit]
+Description=TIAMAT VR Bridge — WebSocket server for Unity/WebGL clients
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /root/entity/vr-bridge/bridge.js
+WorkingDirectory=/root/entity/vr-bridge
+Restart=on-failure
+RestartSec=5
+Environment=VR_BRIDGE_PORT=8765
+StandardOutput=append:/var/log/tiamat-vr-bridge.log
+StandardError=append:/var/log/tiamat-vr-bridge.log
+
+[Install]
+WantedBy=multi-user.target
