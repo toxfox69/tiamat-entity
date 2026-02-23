@@ -21,7 +21,7 @@ LOG = logging.getLogger('multi_executor')
 EXEC_LOG = "/root/.automaton/execution_log.json"
 
 WALLET_KEY = os.environ.get("TIAMAT_WALLET_KEY")
-WALLET_ADDR = "0xdc118c4e1284a61e4d5277936a64B9E08Ad9e7EE"
+WALLET_ADDR = os.environ.get("TIAMAT_WALLET_ADDR", "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE")
 
 # Chain configs with gas strategies
 CHAIN_CONFIG = {

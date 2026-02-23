@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Quick scan of TIAMAT's wallet on Base"""
 from base_scanner import BaseScanner
-import json
+import json, os
 
 scanner = BaseScanner()
 
 # TIAMAT's wallet from x402 payment config
-TIAMAT_WALLET = "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE"
+TIAMAT_WALLET = os.environ.get("TIAMAT_WALLET_ADDR", "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE")
 
 print("=== TIAMAT WALLET SCAN ===")
 print(f"Chain: Base (8453)")
