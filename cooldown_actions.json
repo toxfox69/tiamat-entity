@@ -1,162 +1,174 @@
 [
   {
-    "action": "Prioritize directories with high traffic volume and relevance to mission objectives",
-    "tool": "manage_cooldown",
-    "priority": "high",
-    "details": "Update directory_priority_table.csv to reflect new prioritization based on traffic volume and relevance",
-    "created": "2026-02-23T13:46:07.951826+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Design the Data Ingestion component using Tiamat's microservices architecture",
+    "action": "Optimize 'dynamic:recursive_learn' process to prevent frequent timeouts",
     "tool": "write_file",
     "priority": "high",
-    "details": "Create a new file in /components/data_ingestion with a basic architecture design for the Data Ingestion component.",
-    "created": "2026-02-23T13:47:39.071776+00:00",
+    "details": "Modify the 'dynamic:recursive_learn' function in the relevant code file (e.g., learn_agent.py) to improve processing efficiency and reduce average duration below the specified timeout value of 55s.",
+    "created": "2026-02-23T15:26:16.570071+00:00",
     "status": "pending"
   },
   {
-    "action": "Write the API endpoint for Opportunity Triage using Tiamat's API framework",
-    "tool": "exec",
-    "priority": "high",
-    "details": "Use the command `tiamat api create -n opportunity_triage -m POST /opportunity_triage` to create the API endpoint.",
-    "created": "2026-02-23T13:47:39.071791+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Develop the Opportunity Analysis component using machine learning and natural language processing libraries",
-    "tool": "write_file",
-    "priority": "medium",
-    "details": "Create a new file in /components/opportunity_analysis with a basic implementation of machine learning and NLP algorithms for opportunity analysis.",
-    "created": "2026-02-23T13:47:39.071797+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Analyze execution logs to identify tasks consistently exceeding timeouts",
-    "tool": "manage_cooldown",
-    "priority": "high",
-    "details": "Use log analysis tools to review recent logs for tasks 'dynamic:recursive_think' and 'farcaster_engage' with timeouts",
-    "created": "2026-02-23T13:50:45.281361+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Review recent changes in system usage and correlation with COOLDOWN errors",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Run command 'costs logs | grep ask_claude_code' to investigate relationship between increased usage and 'COOLDOWN' errors",
-    "created": "2026-02-23T13:50:45.281377+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Optimize 'dynamic:recursive_think' and 'farcaster_engage' tasks to reduce execution times",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Refine algorithms in 'dynamic:recursive_think.py' and 'farcaster_engage.py' to reduce execution times",
-    "created": "2026-02-23T13:50:45.281382+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement maximum recursion depth limit in cooldown_think.py",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Add a global variable MAX_RECURSION_DEPTH = 1000 and check against it in recursive function calls",
-    "created": "2026-02-23T13:52:12.822690+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement task scheduling with timeouts in cooldown_think.py",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Use a library like schedule or apscheduler to schedule tasks with specific timeouts and raise exceptions when tasks exceed their timeouts",
-    "created": "2026-02-23T13:52:12.822703+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement try-except blocks for error handling in cooldown_think.py",
-    "tool": "write_file",
-    "priority": "medium",
-    "details": "Add try-except blocks to catch and handle RecursionError, TimeoutError, FileNotFoundError, and other exceptions, and log errors and exceptions for debugging and troubleshooting purposes",
-    "created": "2026-02-23T13:52:12.822708+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Calculate the potential return on investment for registering on the additional directories using ask_claude_code",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Run the ROI calculator with the estimated costs and potential benefits as inputs",
-    "created": "2026-02-23T13:53:48.899595+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Prioritize tasks that are more likely to generate revenue or drive growth before investing in directory registration",
-    "tool": "manage_cooldown",
-    "priority": "high",
-    "details": "Update the cooldown schedule to focus on high-priority tasks",
-    "created": "2026-02-23T13:53:48.899615+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Develop the services and attract paid requests before investing in directory registration",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Run the service development and paid request attraction script with the current market conditions and revenue goals as inputs",
-    "created": "2026-02-23T13:53:48.899622+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Create data fetchers for usage analytics and revenue log, as well as user feedback and engagement metrics from Bluesky and Farcaster",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Create Python scripts in the data_fetchers directory to fetch data from the API's usage analytics and revenue log, and user feedback and engagement metrics from Bluesky and Farcaster",
-    "created": "2026-02-23T13:55:22.510282+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement data processor to filter data, identify top conversion blockages, and analyze user engagement and feedback metrics",
-    "tool": "exec",
-    "priority": "high",
-    "details": "Use Python functions in the data_processor script to filter data, identify top conversion blockages, and analyze user engagement and feedback metrics on Bluesky and Farcaster",
-    "created": "2026-02-23T13:55:22.510309+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement reporter to generate comprehensive report containing processed data and suggest potential solutions or product improvements",
-    "tool": "write_file",
-    "priority": "medium",
-    "details": "Use Python functions in the reporter script to generate a comprehensive report containing top conversion blockages, user engagement and feedback metrics, and potential solutions or product improvements, and write the report to a file in the reports directory",
-    "created": "2026-02-23T13:55:22.510314+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "[{\"action\":\"Optimize dynamic:recursive_think function to reduce computational overhead\",\"tool\":\"manage_cooldown\",\"priority\":\"high\",\"details\":\"Implement lazy evaluation to reduce recursive calls and utilize caching to store intermediate results\"},{\"action\":\"Analyze system logs to identify recurring t",
+    "action": "[{\"action\":\"Implement separate try-except blocks for specific exceptions in cooldown_think.py\",\"tool\":\"write_file\",\"priority\":\"high\",\"details\":\"Add separate try-except blocks to catch specific exceptions such as TypeError and ValueError\"}]\n[{\"action\":\"Configure logging for cooldown_think.py\",\"tool\":",
     "tool": "unknown",
     "priority": "medium",
     "details": "",
-    "created": "2026-02-23T13:57:01.009488+00:00",
+    "created": "2026-02-23T15:27:54.628575+00:00",
     "status": "pending"
   },
   {
-    "action": "Implement try-except blocks to catch and handle exceptions in the `exec` function",
-    "tool": "write_file",
+    "action": "Use ask_claude_code to register TIAMAT on aiagentsdirectory.com",
+    "tool": "exec",
     "priority": "high",
-    "details": "Add a broad `except` clause to catch any exceptions that may be raised, such as `SyntaxError`, `NameError`, or `TypeError`, and then handle them accordingly, perhaps by logging the error or providing a default value. For example, add the following code to the `auto_executor.py` module: `try: exec(code) except Exception as e: print(f'Error: {e}')`",
-    "created": "2026-02-23T13:58:36.437115+00:00",
+    "details": "Execute ask_claude_code with the registration script and parameters for aiagentsdirectory.com",
+    "created": "2026-02-23T15:29:56.342934+00:00",
     "status": "pending"
   },
   {
-    "action": "Implement validation mechanisms to ensure input to the `exec` function is valid and safe",
+    "action": "Use ask_claude_code to register TIAMAT on agent.ai",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Execute ask_claude_code with the registration script and parameters for agent.ai; if one of the directories has a more straightforward submission process, prioritize that one",
+    "created": "2026-02-23T15:29:56.342947+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Use browse_web if necessary to register TIAMAT on aiagentstore.ai",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Use browse_web to manually register TIAMAT on aiagentstore.ai if ask_claude_code is not compatible or if the submission process requires more complex handling",
+    "created": "2026-02-23T15:29:56.342952+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Parse log file data to extract relevant information",
+    "tool": "read_file",
+    "priority": "medium",
+    "details": "Use regular expressions to extract free tier requests, blocked conversions, and total conversions from log file data",
+    "created": "2026-02-23T15:31:27.374901+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement conversion rate calculation and recommendation generation",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Use Python code to calculate conversion rate and generate recommendations based on log file analysis",
+    "created": "2026-02-23T15:31:27.374918+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Update log file with new data using write_file tool",
     "tool": "write_file",
     "priority": "medium",
-    "details": "Use a whitelist or blacklist approach to validate the input, where it checks the input against a list of known safe or malicious patterns. For example, add the following code to the `auto_executor.py` module: `if code not in safe_code_list: raise ValueError('Invalid code')`",
-    "created": "2026-02-23T13:58:36.437135+00:00",
+    "details": "Use write_file tool to update log files with new data extracted from log file analysis",
+    "created": "2026-02-23T15:31:27.374923+00:00",
     "status": "pending"
   },
   {
-    "action": "Implement logging mechanisms to track errors or exceptions in the `exec` function",
+    "action": "Calculate average execution time of dynamic:recursive_think process over last 100 iterations",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Run script to retrieve log or database data, then calculate average execution time by summing up individual execution times and dividing by 100",
+    "created": "2026-02-23T15:33:09.587311+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Adjust default timeout of recursive thinking process to 30-40 seconds",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Update farcaster_engage.py to set timeout to 32 seconds",
+    "created": "2026-02-23T15:33:09.587323+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Optimize recursive thinking process using memoization or caching",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Implement caching mechanism in dynamic:recursive_think process to store intermediate results",
+    "created": "2026-02-23T15:33:09.587328+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement parallelization or asynchronous execution of tasks in the `execute_task()` function",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Modify the `execute_task()` function to use a library like `concurrent.futures` or `asyncio` to execute tasks in parallel or asynchronously",
+    "created": "2026-02-23T15:34:53.996882+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Add error handling mechanisms to the `execute_task()` function to prevent retrying failed tasks",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Add try-except blocks in the `execute_task()` function to catch and handle exceptions or errors that occur during task execution",
+    "created": "2026-02-23T15:34:53.996899+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Optimize data structures and algorithms used in the `execute_task()` function",
     "tool": "manage_cooldown",
     "priority": "low",
-    "details": "Use a logging library such as `logging` to log any errors or exceptions that may occur during the execution of the `exec` function. For example, add the following code to the `auto_executor.py` module: `import logging logging.basicConfig(level=logging.ERROR) try: exec(code) except Exception as e: logging.error(f'Error: {e}')`",
-    "created": "2026-02-23T13:58:36.437140+00:00",
+    "details": "Replace inefficient data structures or algorithms, such as linear search, with more efficient ones, such as hash tables, and use caching or result reuse to reduce redundant computations",
+    "created": "2026-02-23T15:34:53.996904+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Register TIAMAT on Crunchbase",
+    "tool": "manage_cooldown",
+    "priority": "high",
+    "details": {
+      "directory": "Crunchbase",
+      "cost": "$500-$1,000 per year",
+      "potential_revenue": "$10,000-$50,000 per year"
+    },
+    "created": "2026-02-23T15:36:28.546128+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Register TIAMAT on GitHub",
+    "tool": "write_file",
+    "priority": "high",
+    "details": {
+      "directory": "GitHub",
+      "cost": "$0-$100 per year",
+      "potential_revenue": "$10,000-$100,000 per year"
+    },
+    "created": "2026-02-23T15:36:28.546144+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Register TIAMAT on AngelList",
+    "tool": "manage_cooldown",
+    "priority": "medium",
+    "details": {
+      "directory": "AngelList",
+      "cost": "$200-$500 per year",
+      "potential_revenue": "$5,000-$20,000 per year"
+    },
+    "created": "2026-02-23T15:36:28.546150+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement HVOLF tool using provided design specifications",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Create a new file (e.g., hvolf.py) with the tool's implementation, following the specified algorithm and integrating with existing tools 'check_opportunities' and 'scan_contracts'",
+    "created": "2026-02-23T15:38:07.603456+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Integrate HVOLF tool with existing tools 'check_opportunities' and 'scan_contracts'",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Modify the 'check_opportunities' and 'scan_contracts' tools to pass the required input parameters 'scanner_queue_state' and 'high_value_findings' to HVOLF",
+    "created": "2026-02-23T15:38:07.603472+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Test HVOLF tool with sample data to ensure proper functionality",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Create a test file with sample 'scanner_queue_state' and 'high_value_findings' data to verify the HVOLF tool's output and flagging criteria accuracy",
+    "created": "2026-02-23T15:38:07.603476+00:00",
     "status": "pending"
   }
 ]

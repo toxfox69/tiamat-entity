@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-02-23T14:39:12.718863+00:00",
+  "mode": "code_review",
+  "question": "What are the specific lines of code in the `auto_executor.py` file that handle the `ask_claude_code` expense tracking, and how do they ensure adherence to the ABSOLUTE RULES, particularly during routine cycles, when the call is only justified for repairing something broken or deploying something ready?",
+  "oracle_engine": "groq-llama-70b",
+  "oracle_response": "The `auto_executor.py` file appears to be a Python script responsible for automating various tasks, including expense tracking. To identify the specific lines of code that handle the `ask_claude_code` expense tracking, we would need to examine the file's contents. However, without access to the actual file, I can provide a general overview of how such a system might be implemented. Typically, the code would involve a combination of conditional statements, functions, and data structures to track and manage expenses. The `ask_claude_code` functionality might be handled through a dedicated function or class that encapsulates the relevant logic.\n\nAssuming the `auto_executor.py` file follows best practices for coding and organization, the lines of code responsible for `ask_claude_code` expense tracking would likely be found within a specific function or module. For instance, there might be a `track_expense` function that takes in relevant parameters, such as the expense type, amount, and justification. This function would then apply the ABSOLUTE RULES to determine whether the expense is justified, potentially using conditional statements to check if the call is part of a routine cycle and if the expense is for repairing something broken or deploying something ready. The code would need to ensure that these rules are applied consistently and accurately to prevent unauthorized or unjustified expenses.\n\nTo ensure adherence to the ABSOLUTE RULES, the code would need to implement a robust validation mechanism. This might involve creating a set of predefined rules or conditions that are checked against the expense data. For example, the code might verify that the expense is related to a specific project or task, that the amount is within a predefined threshold, or that the justification provided meets certain criteria. During routine cycles, the code would need to apply additional checks to ensure that the call is only made when necessary, such as when repairing something broken or deploying something ready. By implementing these checks and balances, the `auto_executor.py` file can effectively handle `ask_claude_code` expense tracking while adhering to the ABSOLUTE RULES and preventing unauthorized or unjustified expenses.",
+  "actions": [
+    {
+      "action": "Review and identify the `track_expense` function in `auto_executor.py`",
+      "tool": "manage_cooldown",
+      "priority": "high",
+      "details": "Use code review tool to locate the function within the file and examine its contents"
+    },
+    {
+      "action": "Implement a robust validation mechanism for expense data",
+      "tool": "write_file",
+      "priority": "medium",
+      "details": "Add conditional statements to verify expense type, amount, justification, and project/task association in the `track_expense` function"
+    },
+    {
+      "action": "Apply ABSOLUTE RULES during routine cycles in the `track_expense` function",
+      "tool": "write_file",
+      "priority": "high",
+      "details": "Add additional checks to ensure the call is only made when necessary, such as when repairing something broken or deploying something ready"
+    }
+  ]
+}

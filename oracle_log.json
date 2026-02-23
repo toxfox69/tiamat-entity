@@ -1,455 +1,5 @@
 [
   {
-    "timestamp": "2026-02-23T10:07:40.727567+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool called **log_conversion_event** that lets TIAMAT capture detailed conversion\u2011funnel data for each API request. The tool should accept the following parameters:  \n\n* `user_id: string` \u2013 a unique identifier for the caller (e.g., wallet address or session token).  \n* `event_type: string` \u2013 one of a predefined set (e.g., \u201csummary_requested\u201d, \u201csummary_delivered\u201d, \u201c",
-    "engine": "cerebras-120b",
-    "response_len": 3030,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:10:46.898503+00:00",
-    "mode": "debug",
-    "question": "What specific configuration or usage pattern is causing the repeated \u201cGemini\u202f429: You exceeded your current quota\u201d errors in the `dynamic:recursive_learn` step, and which concrete changes (e.g., adjusting model selection, request throttling, fallback to a cheaper model, or updating billing limits) can we implement to prevent these quota\u2011exceeded failures while keeping the recursive\u2011learn functionality operational?",
-    "engine": "groq-llama-70b",
-    "response_len": 2805,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:12:25.867471+00:00",
-    "mode": "code_review",
-    "question": "In `auto_executor.py`, the function that invokes external commands (e.g., the one wrapping `subprocess.run`",
-    "engine": "groq-llama-70b",
-    "response_len": 2119,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:14:01.168151+00:00",
-    "mode": "strategy",
-    "question": "Given our $0.24 revenue from 24 paid requests and the urgent need to acquire the first paying customer via Bluesky, which of the three agent directories (aiagentsdirectory.com, agent.ai, aiagentstore.ai) should we prioritize for registration to maximize conversion, and what specific listing title, description, and pricing tier should we use to attract crypto\u2011focused developers most effectively",
-    "engine": "cerebras-120b",
-    "response_len": 2401,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:15:34.682339+00:00",
-    "mode": "tool_design",
-    "question": "**Question:**  \nDesign a new internal tool called `log_api_usage` that fills the current gap in TIAMAT\u2019s ability to measure and improve API\u2011to\u2011payment conversion. The tool should:\n\n1. **Parameters** \u2013 accept the following arguments:",
-    "engine": "groq-llama-70b",
-    "response_len": 2468,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:17:08.928937+00:00",
-    "mode": "debug",
-    "question": "What are the exact quota limits and current usage statistics for the\u202fgemini\u20112.0\u2011flash\u202f(and any other external LLM) API calls that\u202fdynamic:recursive_think\u202frelies on, and how can we modify the\u202frecursive_think\u202fpipeline to detect a\u202f429\u202fquota\u2011exceeded response, automatically throttle or switch to a fallback model, and log the incident so that future executions no longer stall due",
-    "engine": "cerebras-120b",
-    "response_len": 1902,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:20:19.489923+00:00",
-    "mode": "code_review",
-    "question": "**File:** `auto_executor.py`\n\n*In the function that launches external commands (e.g., `run_command` or any wrapper around `subprocess",
-    "engine": "groq-llama-70b",
-    "response_len": 2953,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:21:53.413472+00:00",
-    "mode": "strategy",
-    "question": "Which of the three agent directories\u2014aiagentsdirectory.com, agent.ai, or aiagentstore.ai\u2014should we prioritize for registration to maximize the acquisition of our first paying customer, considering each platform\u2019s traffic volume, audience relevance to crypto\u2011focused developers, and the expected effort (time and resources) required to complete the submission and onboarding process?",
-    "engine": "cerebras-120b",
-    "response_len": 3129,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:23:12.110364+00:00",
-    "mode": "tool_design",
-    "question": "Can you design a new tool called **`conversion_funnel_tracker`** that records every key interaction a prospect has with TIAMAT\u2019s marketing and payment flow (e.g., viewing a Bluesky post",
-    "engine": "groq-llama-70b",
-    "response_len": 2352,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:27:55.709532+00:00",
-    "mode": "debug",
-    "question": "What is the current daily/hourly token usage and quota status for the\u202fgemini\u20112.0\u2011flash\u202fand\u202fgroq\u2011l\u202fmodels that TIAMAT\u2019s dynamic functions (e.g.,\u202frecursive_think,\u202frecursive_learn) rely on, and how can we modify the orchestration layer to (a) monitor these limits in real time, (b) automatically switch to a lower\u2011cost fallback model or pause calls when the 429 \u201cquota exceeded\u201d response is detected, and (c)",
-    "engine": "groq-llama-70b",
-    "response_len": 2874,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:29:38.843591+00:00",
-    "mode": "code_review",
-    "question": "In **auto_executor.py**, the function that invokes external commands (e.g., `run_command` or any wrapper around `subprocess.exec*`) currently captures stdout/stderr but does not appear to check the subprocess\u2019s return code, handle possible `CalledProcessError`, enforce execution timeouts, or clean up resources if a command hangs or fails. Could you review the implementation of this command\u2011execution routine and explain:\n\n1. How it currently detects and",
-    "engine": "cerebras-120b",
-    "response_len": 1668,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:34:11.414728+00:00",
-    "mode": "code_review",
-    "question": "In **`check_api_usage.py`**, does the function that queries the provider\u2019s usage endpoint (e.g., `get_daily_token_quota()` or similar) include robust error handling for network failures, non\u2011200 HTTP responses, malformed JSON, and explicit rate\u2011limit signals, and is there a lightweight caching or back\u2011off",
-    "engine": "groq-llama-70b",
-    "response_len": 2736,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:36:00.854944+00:00",
-    "mode": "strategy",
-    "question": "Given our immediate goal of converting the next",
-    "engine": "groq-llama-70b",
-    "response_len": 2185,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:48:49.354325+00:00",
-    "mode": "tool_design",
-    "question": "What should the design of a new \u201ctrack_conversion_funnel\u201d tool look like so that TIAMAT can automatically capture, store, and report key user\u2011journey events (e.g., \u201cviewed_demo\u201d, \u201cstarted_trial\u201d, \u201ccompleted_payment\u201d) for the Market Summarization API? Please specify:\n\n1. The exact function signature (parameter names, types, required/optional fields, and any default values) and the precise return type (including success/error structure).  \n2. How the tool should persist events (e.g.,",
-    "engine": "groq-llama-70b",
-    "response_len": 2811,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:50:06.856598+00:00",
-    "mode": "tool_design",
-    "question": "What new tool should we create to automatically detect when a user makes their first paid request to the summarization API, record the transaction details, and trigger the required mission actions (sending a Telegram status update and appending a line to\u202fPROGRESS.md)? Please specify:\n\n1. **Tool name and purpose** \u2013 a concise description of the capability gap it fills.  \n2. **Function signature** \u2013 required parameters (e.g., `api_key: str`, `webhook_url: str`, optional `poll",
-    "engine": "groq-llama-70b",
-    "response_len": 2217,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T10:54:51.409203+00:00",
-    "mode": "debug",
-    "question": "What is the exact root cause of the repeated `Gemini 429` quota\u2011exceeded errors shown in the logs (e.g.,\u202f`\"Question gen failed: gemini-2.0-flash: Gemini 429: { \\\"error\\\": { \\\"code\\\": 429, \\\"message\\\": \\\"You exceeded your current quota, please check your plan and billing deta`\") during the `dynamic:recursive_learn` cycles, and which part of the code (including any API\u2011calling helper functions or scheduling loops) is triggering these over\u2011quota requests? \n\nSpecifically, identify:\n\n1. The function ",
-    "engine": "groq-llama-70b",
-    "response_len": 2275,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:02:36.643659+00:00",
-    "mode": "code_review",
-    "question": "In **auto_executor.py**, the `run_command(cmd: List[str], timeout: int = 30) -> str` function invokes shell commands via `subprocess.run`",
-    "engine": "groq-llama-70b",
-    "response_len": 2144,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:04:08.704849+00:00",
-    "mode": "strategy",
-    "question": "Which of the three agent directories (aiagentsdirectory.com, agent.ai, aiagentstore.ai) should we prioritize registering TIAMAT on to maximize first\u2011paying\u2011customer acquisition within the next two weeks, and what exact title, description, pricing tier, and tag metadata should we use for that listing to attract high\u2011value users?",
-    "engine": "cerebras-120b",
-    "response_len": 2641,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:05:46.333782+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool named **`track_conversion`** that will let TIAMAT capture and record every click\u2011through from a marketing post (Bluesky, Farcaster, or Twitter) to the API purchase page, linking the event to a user identifier and a source\u2011specific campaign tag. Specify",
-    "engine": "groq-llama-70b",
-    "response_len": 2480,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:07:14.600553+00:00",
-    "mode": "debug",
-    "question": "Given the repeated \u201c[COOLDOWN] \u2026 (timeout \u2026s)\u201d messages for `dynamic:recursive_think` (25\u202fs), `dynamic:process_agent_replies` (50\u202fs), `dynamic:recursive_learn` (55\u202fs), and `farcaster_engage` (60\u202fs), what specific parts of each of these dynamic agents are exceeding their allotted timeouts (e.g.,",
-    "engine": "cerebras-120b",
-    "response_len": 2319,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:19:44.724525+00:00",
-    "mode": "code_review",
-    "question": "In **cooldown_think.py**, does the current implementation correctly reset and enforce the per\u2011agent cooldown timer when a sub\u2011routine exceeds the hard\u2011coded timeout, and are all exceptions raised by the `exec` calls (or any",
-    "engine": "groq-llama-70b",
-    "response_len": 2314,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:21:11.897163+00:00",
-    "mode": "strategy",
-    "question": "Given that we already have $0.24 from 24 paid requests and the priority is to \u201cstop checking revenue in a loop and start BUILDING reach,\u201d which of the two high\u2011impact actions\u2014(A) registering TIAMAT on the three agent directories (aiagentsdirectory.com, agent.ai, aiagentstore.ai) or (B) publishing an original Dev.to article titled \u201cHow I Built an Autonomous AI Agent That Sells APIs for Crypto\u201d\u2014is most likely to secure our first",
-    "engine": "groq-llama-70b",
-    "response_len": 2405,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:22:45.470703+00:00",
-    "mode": "tool_design",
-    "question": "What would a new tool called **`log_api_conversion`** look like\u2014specifying its function signature (e.g., `log_api_conversion(user_id: str, transaction_hash: str, summary_count: int",
-    "engine": "groq-llama-70b",
-    "response_len": 2462,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:24:24.865772+00:00",
-    "mode": "debug",
-    "question": "What exact condition or logic flaw in the current cooldown\u2011management implementation (e.g., in `cooldown_think.py` or related timer utilities) causes the repeated \u201cCOOLDOWN \u2026 timeout\u201d messages for dynamic sub\u2011routines such as `process_agent_replies",
-    "engine": "groq-llama-70b",
-    "response_len": 2402,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:25:52.406018+00:00",
-    "mode": "code_review",
-    "question": "In **`cooldown_think.py`**, the current cooldown logic appears to trigger",
-    "engine": "groq-llama-70b",
-    "response_len": 2122,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:27:26.381194+00:00",
-    "mode": "strategy",
-    "question": "Given that we have already generated $0.24 from 24 paid requests, indicating genuine market interest, what is the single most effective outreach tactic we can deploy on Bluesky right now to convert a follower into our",
-    "engine": "groq-llama-70b",
-    "response_len": 2528,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:28:49.456303+00:00",
-    "mode": "strategy",
-    "question": "Given our current $0.24 revenue and the priority to stop looping on revenue checks, which of the three agent directories (aiagentsdirectory.com, agent.ai, or aiagentstore.ai) should we register on first to maximize immediate visibility and conversion to a first paying customer on Bluesky, and what exact submission copy and metadata (tags, description, pricing tier) should we use to achieve the fastest traction?",
-    "engine": "cerebras-120b",
-    "response_len": 2312,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:30:29.152587+00:00",
-    "mode": "tool_design",
-    "question": "**Question:**  \nDesign a new tool called `log_api_conversion` that records every market\u2011summary API request and its subsequent payment outcome, enabling us to pinpoint where prospects drop off before becoming paying customers. The tool should:\n\n1. **Parameters**  \n   - `request_id` (string): a UUID generated for each API call.  \n   - `client_handle",
-    "engine": "groq-llama-70b",
-    "response_len": 2585,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:32:01.650801+00:00",
-    "mode": "debug",
-    "question": "Given the repeated log entries  \n\n```\n[COOLDOWN] Running dynamic:recursive_learn (timeout 55s)...\n[COOLDOWN] dynamic:recursive_learn failed: spawnSync python3 ETIMEDOUT\n```  \n\nand the subsequent cascade of other dynamic tasks also hitting their timeouts, what specific conditions (e.g., missing dependencies, blocked I/O, insufficient CPU/memory, or mis\u2011configured timeout values) are causing the `recursive_learn` Python subprocess to exceed its 55\u2011second limit and trigger the cooldown loop, and ho",
-    "engine": "cerebras-120b",
-    "response_len": 3198,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:35:10.841364+00:00",
-    "mode": "code_review",
-    "question": "In **auto_executor.py**, the routine that spawns child Python\u202f3 processes (the `launch_task`/`run_subprocess` function) wraps each task in a 55\u2011second watchdog but does not appear to catch `subprocess.CalledProcessError`, handle time\u2011outs cleanly, or ensure that `stdout`/`stderr` streams are closed and the process is terminated on failure. Could",
-    "engine": "groq-llama-70b",
-    "response_len": 2145,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:36:41.544138+00:00",
-    "mode": "strategy",
-    "question": "Given that we now have $0.24 from 24 paid requests and the priority is to stop looping on revenue checks and start building reach, which of the three agent directories (aiagentsdirectory.com, agent.ai, or aiagentstore.ai) is most likely to generate the highest conversion rate for our market\u2011summarization API, and what exact, step\u2011by\u2011step actions (including required content, metadata, and a two\u2011week timeline) should we take to submit, optimize",
-    "engine": "cerebras-120b",
-    "response_len": 2744,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:38:25.244316+00:00",
-    "mode": "tool_design",
-    "question": "What would be an optimal design for a new tool **`log_api_conversion`** that captures every potential customer\u2019s interaction funnel with the market\u2011summarisation API (e.g., visiting the API landing page, making a free\u2011tier request, and completing a paid transaction",
-    "engine": "groq-llama-70b",
-    "response_len": 2661,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:39:51.049195+00:00",
-    "mode": "debug",
-    "question": "Given the repeated log entries such as  \n\n```\n[COOLDOWN] Running dynamic:process_agent_replies (timeout 50s)...\n[COOLDOWN] Running dynamic:recursive_learn (timeout 55s)...\n[COOLDOWN] Running farcaster_engage (timeout 60s)...\n[COOLDOWN] Running dynamic:recursive_think (timeout 25s)...\n[COOLDOWN] Running email_check (timeout 15s)...\n```  \n\nwhich indicate that multiple dynamic agents are consistently hitting their timeout limits, what specific conditions or code paths within the `dynamic:process_ag",
-    "engine": "cerebras-120b",
-    "response_len": 2697,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:42:38.509929+00:00",
-    "mode": "code_review",
-    "question": "In **auto_executor.py**, does the function that launches external commands (e.g., `run_command` or its equivalent) properly handle cases where the subprocess times out, raises an exception, or returns a non\u2011zero exit code? Specifically, is there a try/except block that logs the error, sends a Telegram alert via `send_telegram`, and ensures the calling code receives a clear error indicator rather than silently failing or",
-    "engine": "groq-llama-70b",
-    "response_len": 2353,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:44:27.986116+00:00",
-    "mode": "strategy",
-    "question": "Which of the three agent directories (aiagentsdirectory.com, agent.ai, or aiagentstore.ai) should we prioritize for registration to achieve the highest immediate visibility and conversion rate for our market\u2011summarization API, and what exact headline, description, and pricing tier (free vs. paid) should we use on that platform to attract our first paying customer within the next week?",
-    "engine": "groq-llama-70b",
-    "response_len": 2704,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:52:53.362900+00:00",
-    "mode": "tool_design",
-    "question": "**Question:**  \n\nDesign a new tool called `track_api_conversion` that lets TIAMAT automatically capture and analyze the conversion funnel for the market\u2011summarization API (https://tiamat",
-    "engine": "groq-llama-70b",
-    "response_len": 2422,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T11:54:31.002048+00:00",
-    "mode": "debug",
-    "question": "Given the recurring error\u202f`[NOORMME ERROR] Database error: SqliteError: no such table: agent_rituals`\u202f(which appears whenever TIAMAT tries to record or query agent ritual data), what specific part of the code",
-    "engine": "groq-llama-70b",
-    "response_len": 2161,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:04:00.095846+00:00",
-    "mode": "code_review",
-    "question": "In **auto_executor.py**, does the primary",
-    "engine": "groq-llama-70b",
-    "response_len": 1828,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:05:29.293130+00:00",
-    "mode": "strategy",
-    "question": "Given the immediate need to expand reach and the three suggested agent directories (aiagentsdirectory.com, agent.ai, and aiagentstore.ai), which single directory should we prioritize for registration to maximize the likelihood of acquiring our first paying customer, and what exact headline, description, pricing tier details, and call\u2011to\u2011action should we use in that listing to achieve the highest conversion rate within the next two weeks?",
-    "engine": "groq-llama-70b",
-    "response_len": 2726,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:10:08.586839+00:00",
-    "mode": "tool_design",
-    "question": "What would a concise, production\u2011",
-    "engine": "groq-llama-70b",
-    "response_len": 2521,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:11:37.639684+00:00",
-    "mode": "debug",
-    "question": "What is the exact daily/ hourly usage and quota limits for the `gemini-2.0-flash` model in our current deployment, and how can we modify the `recursive_learn` workflow (e.g., by adding rate\u2011limiting, a fallback model, or batching) to stay within those limits while still generating the required question\u2011generation output?",
-    "engine": "cerebras-120b",
-    "response_len": 2428,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:22:58.984291+00:00",
-    "mode": "code_review",
-    "question": "What are the edge cases and potential error handling mechanisms missing in the auto_executor.py file, particularly with regards to the write_file function calls, given the file's size of 17909B and its usage of both path and content parameters, considering that the current implementation does not seem to include explicit error handling for write_file operations?",
-    "engine": "groq-llama-70b",
-    "response_len": 2590,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:24:43.997806+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal submission strategy for registering TIAMAT on three agent directories (https://aiagentsdirectory.com/submit-agent, https://agent.ai, https://aiagentstore.ai) to maximize reach and engagement, given the current $0.24 revenue threshold and the constraint that ask_claude_code should only be used during strategic bursts (BUILD cycle)?",
-    "engine": "groq-llama-70b",
-    "response_len": 2764,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:26:25.842883+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal strategy for leveraging the Bluesky platform to drive first-paying customer acquisition, considering the current $0.24 revenue earnings and the need to scale reach, while also prioritizing effective use of ask_claude_code to minimize costs?",
-    "engine": "groq-llama-70b",
-    "response_len": 2616,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:28:13.627291+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal strategy for TIAMAT to allocate its $0.24 revenue towards the most impactful registration options on agent directories, while minimizing the cost of using ask_claude_code for form submission, in order to maximize its chances of getting listed on at least one prominent directory within the next 24 hours?",
-    "engine": "groq-llama-70b",
-    "response_len": 2321,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:28:58.835317+00:00",
-    "mode": "tool_design",
-    "question": "What design parameters, return types, and integration points should a new tool, \"analyze_conversion_blockers,\" have to identify and provide actionable insights on the conversion blockers hindering paid conversions on the memory.tiamat.live API, considering the existing tools and insights from recent cycles, and ensuring seamless integration with the existing toolset and the mission's goal of acquiring the first paying customer on Bluesky and other social channels?",
-    "engine": "groq-llama-70b",
-    "response_len": 2479,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:30:57.994671+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the recurring ETIMEDOUT errors (spawnSync python3 ETIMEDOUT) in the dynamic:recursive_learn process, and what configuration adjustments or code modifications can be made to prevent these timeouts and ensure stable execution of this critical process?",
-    "engine": "groq-llama-70b",
-    "response_len": 2565,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:33:22.044666+00:00",
-    "mode": "code_review",
-    "question": "What are the potential inefficiencies or bugs in the `auto_executor.py` module that could be causing the high frequency of `exec` calls (1137 times) and what specific lines of code or functions within the module could be contributing to this high usage, potentially resulting in increased costs and decreased efficiency?",
-    "engine": "groq-llama-70b",
-    "response_len": 2913,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:34:55.500467+00:00",
-    "mode": "strategy",
-    "question": "What are the top 5 most cost-effective (lowest average cost per request) ask_claude_code usage scenarios that have contributed to TIAMAT's revenue, and can we identify any patterns or opportunities to optimize these usage scenarios to further reduce costs and increase revenue?",
-    "engine": "groq-llama-70b",
-    "response_len": 2782,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T12:36:26.965103+00:00",
-    "mode": "tool_design",
-    "question": "What is a design for a new tool called \"analyze_conversion_blocker\" that can be used to: \n\n1.  Identify and categorize the top 5 most frequent use cases of the free tier memory.tiamat.live API requests that did not lead to paid conversions; \n2.  Extract and store relevant user metadata (e.g. Bluesky handle, social media interactions, web activity) associated with each of these free tier requests; \n3.  Integrate with existing \"check_opportunities\" and \"ask_claude_code\" tools to suggest potential ",
-    "engine": "groq-llama-70b",
-    "response_len": 3311,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-23T12:37:22.453134+00:00",
     "mode": "debug",
     "question": "What is the average time interval, in seconds, between Groq 429 rate limit errors for the model `llama-3.3-70b-versatile` occurring within a 24-hour window, and how does this interval correlate with the usage of the `ask_claude_code` module during this period, considering the recent ask_claude_code usage scenarios that have contributed to TIAMAT's revenue?",
@@ -896,6 +446,456 @@
     "question": "What specific error handling or validation mechanisms are implemented in the `auto_executor.py` module to handle potential errors or exceptions that may arise from the execution of the `exec` function, given the high number of `exec` calls (1157) and the relatively large file size of this module (17909B)?",
     "engine": "groq-llama-70b",
     "response_len": 2336,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T13:59:34.025839+00:00",
+    "mode": "strategy",
+    "question": "What is the most cost-effective strategy to register TIAMAT on agent directories (https://aiagentsdirectory.com/submit-agent, https://agent.ai, https://aiagentstore.ai) within the next 48 hours, considering the current token balance (1886) and the $0.03-0.10 ask_claude_code expense, in order to achieve the first paying customer and generate real revenue, given the current mission and progress?",
+    "engine": "groq-llama-70b",
+    "response_len": 2092,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:01:11.028484+00:00",
+    "mode": "tool_design",
+    "question": "What is a tool design for a \"lead nurturing\" system that can track and analyze interactions with potential customers on Bluesky, Farcaster, and Twitter, and provide actionable insights to TIAMAT's marketing strategy, including:\n\n1. **Integration points**: The tool should integrate with the existing `post_bluesky`, `post_farcaster`, `post_tweet`, and `send_telegram` tools to track user interactions and sentiment analysis.\n2. **Data collection**: The tool should collect data on user engagement met",
+    "engine": "groq-llama-70b",
+    "response_len": 3594,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:02:49.392386+00:00",
+    "mode": "debug",
+    "question": "What is the most common time interval between consecutive occurrences of the \"rate limit reached\" error in the Groq inference tier, and how does it relate to the usage of the \"ask_claude_code\" function in the recent sessions?",
+    "engine": "groq-llama-70b",
+    "response_len": 2270,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:04:27.466219+00:00",
+    "mode": "code_review",
+    "question": "What are the current implementation details and usage patterns of the `write_file` function in the `auto_executor.py` module, and how can it be optimized or modified to better handle potential edge cases, such as file path conflicts or content encoding issues, while ensuring compliance with the absolute rules specified in the TIAMAT mission?",
+    "engine": "groq-llama-70b",
+    "response_len": 2940,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:05:52.376670+00:00",
+    "mode": "strategy",
+    "question": "Given the current mission and progress, what specific strategy can be implemented to utilize the \"$0.01 USDC per summary\" pricing model on the API, https://tiamat.live, to generate revenue within the next 14 days, targeting a minimum of 24 paid requests, assuming a conversion rate of 1 in 100 free summaries?",
+    "engine": "groq-llama-70b",
+    "response_len": 2540,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:07:30.437485+00:00",
+    "mode": "tool_design",
+    "question": "What is the design of a new tool, \"market_trends_analyzer,\" that integrates with existing tools to provide real-time market trend analysis for potential customers on Bluesky and other platforms, with the following parameters:\n\n- Input: fetch_terminal_markets, web_fetch, list_models, list_sandboxes\n- Processing: Utilize natural language processing (NLP) to analyze market data and sentiment from various sources, including Bluesky and other platforms.\n- Output: Return a JSON object containing marke",
+    "engine": "groq-llama-70b",
+    "response_len": 2482,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:08:59.615741+00:00",
+    "mode": "debug",
+    "question": "Is the recent Inference error (anthropic) caused by an overload of requests to the `llama-3.3-70b-versatile` model, specifically due to the concurrent execution of `recursive_think` and `process_agent_replies` during the routine cycle, and is the solution to implement a queue or rate-limiter mechanism to prevent such overloading, and if so, what would be the optimal number of concurrent requests to this model to balance between efficiency and preventing overloading errors?",
+    "engine": "groq-llama-70b",
+    "response_len": 2296,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:10:35.754856+00:00",
+    "mode": "code_review",
+    "question": "What are the possible edge cases and error handling mechanisms in the `browser_tool.py` file, considering its relatively low file size (6630B) and its 82 tool usage calls across different turns, which may indicate a simple yet crucial function that could be prone to bugs or inefficiencies when handling potential exceptions or unexpected inputs?",
+    "engine": "groq-llama-70b",
+    "response_len": 2502,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:12:46.193601+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal order and cadence of registering on agent directories (Steps A) in the \"Creator Inbox\" directive, given the current priority of getting listed on directories to earn real revenue, and the potential impact on reducing the reliance on ask_claude_code for form submissions, in order to maximize efficiency and revenue growth before the end of this cycle?",
+    "engine": "groq-llama-70b",
+    "response_len": 2684,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:14:27.180519+00:00",
+    "mode": "tool_design",
+    "question": "What is a design for a new tool called \"ConversionRateAnalyzer\" that integrates with existing tools like \"manage_cooldown\", \"list_sandboxes\", \"list_skills\", \"check_revenue\", \"check_usdc_balance\", and \"post_bluesky\" to track and analyze conversion rates from free tier requests to paid conversions, including identifying potential blockers for conversion, and that returns a dictionary with the following key-value pairs:\n\n- \"conversion_rate\": a float representing the number of paid conversions per 1",
+    "engine": "groq-llama-70b",
+    "response_len": 4156,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:15:53.959180+00:00",
+    "mode": "debug",
+    "question": "What is the primary cause of the \"overloaded_error\" encountered in Tier 1 (Anthropic) inference operations, and how does it relate to the usage of the `ask_claude_code` tool during strategic bursts, considering that these errors occurred during routine cycles when the tool's usage is restricted to fixing broken deployments or exploratory tasks?",
+    "engine": "groq-llama-70b",
+    "response_len": 2294,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:17:26.736759+00:00",
+    "mode": "code_review",
+    "question": "What are the potential security implications and code optimizations of the `claude_chat.py` module, considering its 8304B size and 165 `send_telegram` calls, especially given that sensitive information may be transmitted via the `send_telegram` function, and the module does not appear to be used in any \"strategic\" or high-priority tasks, as per the mission directives?",
+    "engine": "groq-llama-70b",
+    "response_len": 2397,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:19:17.299888+00:00",
+    "mode": "strategy",
+    "question": "Can we optimize the strategy for registering on agent directories (Option A) and reduce the reliance on ask_claude_code, considering the $0.24 hallucinated revenue and the absolute rules for using ask_claude_code, to achieve a tangible first paying customer on Bluesky and other platforms within the next 14 days?",
+    "engine": "groq-llama-70b",
+    "response_len": 2519,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:20:35.274558+00:00",
+    "mode": "tool_design",
+    "question": "What is a design for a tool called \"opportunity_filter\" that can efficiently review the 12 high-value scanner queue findings from Cycle 2347, automatically flagging potential conversion blockers and returning a filtered list of prioritized opportunities for manual review? The tool should:\n\n1. Take as input the scanner queue findings and the current mission context.\n2. Analyze the findings to identify potential conversion blockers, such as missing or incomplete information, and return a list of f",
+    "engine": "groq-llama-70b",
+    "response_len": 3284,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:22:11.130694+00:00",
+    "mode": "debug",
+    "question": "What is the maximum number of concurrent inference requests to Anthropic's Tier 1 model that TIAMAT can handle without experiencing \"overloaded_error\" errors, and are there any configuration adjustments or optimizations that can be made to increase this limit, considering the current request_id pattern and recent error logs?",
+    "engine": "groq-llama-70b",
+    "response_len": 2543,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:23:57.549288+00:00",
+    "mode": "code_review",
+    "question": "What are the potential inefficiencies or missing error handling in the `continuous_scanner.py` file, particularly in the sections where it uses the `exec` tool, given its high call frequency (83 calls) and the fact that it has a relatively large file size (16,870B) compared to other scanner files?",
+    "engine": "groq-llama-70b",
+    "response_len": 2671,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:25:22.523406+00:00",
+    "mode": "strategy",
+    "question": "What is the most cost-effective way to register TIAMAT on all three agent directories (https://aiagentsdirectory.com/submit-agent, https://agent.ai, and https://aiagentstore.ai) using either ask_claude_code or browse_web, considering that ask_claude_code costs $0.03-0.10 per call and should be used strategically, while browser navigation is cheaper but potentially more time-consuming?",
+    "engine": "groq-llama-70b",
+    "response_len": 1942,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:26:52.402078+00:00",
+    "mode": "tool_design",
+    "question": "What is a design for a tool named \"analyze_conversion_path\" with the following parameters: \n\n- Input: a user's Bluesky or Twitter interaction with the API's marketing content (e.g., a post or tweet mentioning TIAMAT) \n- Output: a report detailing the user's journey from discovering the API to the point of conversion (or lack thereof), including metrics such as time-to-conversion, number of interactions with the API, and user feedback, \n- Integration points: the tool should seamlessly interact wi",
+    "engine": "groq-llama-70b",
+    "response_len": 2933,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:29:18.521331+00:00",
+    "mode": "debug",
+    "question": "What are the specific inference errors (anthropic: 529: \"Overloaded\") and request IDs (e.g., \"req_011CYRA2QQubyFiopbdLY5Sz\") associated with the \"recursive_think\" dynamic execution, and how do these errors relate to the usage of ask_claude_code during routine cycles, and what are the possible causes and fixes for these errors, considering that ask_claude_code is expensive and should only be used to fix something broken or deploy something ready, never for exploration?",
+    "engine": "groq-llama-70b",
+    "response_len": 2682,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:31:37.556939+00:00",
+    "mode": "code_review",
+    "question": "What is the exact implementation of the `write_file` function in `auto_executor.py`, and how does it handle potential errors when both the `path` and `content` parameters are provided, given the absolute rule that `write_file` must be used with both parameters?",
+    "engine": "groq-llama-70b",
+    "response_len": 3216,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:33:53.465754+00:00",
+    "mode": "strategy",
+    "question": "Can we identify a feasible and cost-effective way to register on the listed agent directories (https://aiagentsdirectory.com/submit-agent, https://agent.ai, https://aiagentstore.ai) within the next 24 hours, utilizing only the available tools and existing knowledge in TIAMAT's knowledge base, without incurring the high cost associated with using ask_claude_code for browsing and submitting forms?",
+    "engine": "groq-llama-70b",
+    "response_len": 2449,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:35:48.025989+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool that can analyze the current state of the scanner queue and identify high-value opportunities with potential revenue exceeding $0.1, similar to Cycle 2347, and output this information in a format that can be easily reviewed and flagged for creator review. This tool should integrate with the existing `check_opportunities` and `check_revenue` tools, and return a list of identified opportunities with their corresponding revenue potential. Additionally, the tool should be able to handl",
+    "engine": "groq-llama-70b",
+    "response_len": 3737,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:37:36.913055+00:00",
+    "mode": "debug",
+    "question": "What is the exact cause of the \"Overloaded\" inference error (anthropic) in Tier 1 (Anthropic) Inference, and how can I optimize the dynamic:recursive_think process to prevent this error, considering the recent COOLDOWN and INFERENCE error logs, and the possible impact on the Scanner Queue Analyzer tool's ability to identify high-value opportunities?",
+    "engine": "groq-llama-70b",
+    "response_len": 2576,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:39:11.345872+00:00",
+    "mode": "code_review",
+    "question": "What are the specific lines of code in the `auto_executor.py` file that handle the `ask_claude_code` expense tracking, and how do they ensure adherence to the ABSOLUTE RULES, particularly during routine cycles, when the call is only justified for repairing something broken or deploying something ready?",
+    "engine": "groq-llama-70b",
+    "response_len": 2251,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:40:42.031415+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal registration strategy for TIAMAT on the three agent directories (https://aiagentsdirectory.com/submit-agent, https://agent.ai, and https://aiagentstore.ai) to maximize the likelihood of getting listed within the next week, considering TIAMAT's current mission, progress, and limited resources, and what are the potential costs and estimated time required for each option?",
+    "engine": "groq-llama-70b",
+    "response_len": 3303,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:42:39.365124+00:00",
+    "mode": "tool_design",
+    "question": "What is a new tool design called \"market_analysis_summary_generator\" that can take in market opportunity data from the scanner queue, apply a machine learning model to prioritize and categorize the opportunities based on their potential revenue, and output a summarized report with actionable insights for TIAMAT's creator to review and decide on the next course of action, with the following parameters:\n\n- Input parameters: \n  - market_opportunity_data: a list of dictionaries containing informatio",
+    "engine": "groq-llama-70b",
+    "response_len": 2892,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T14:59:07.374800+00:00",
+    "mode": "debug",
+    "question": "What is the common error message and corresponding stacktrace associated with the \"Overloaded\" error that occurred in the recursive_think dynamic, and what potential causes could be contributing to this error, given the recent increase in routine usage of gpt-oss-120b and the recent deployment of claude-haiku-4-5-20251001?",
+    "engine": "groq-llama-70b",
+    "response_len": 2602,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:00:49.496345+00:00",
+    "mode": "code_review",
+    "question": "What specific implementation changes, if any, could be made to the `agent_learning.py` module to reduce the high number of recursive_think calls (indicated by the \"Overloaded\" error message), which may be contributing to the inefficient use of the Claude-Haiku model, resulting in elevated costs during routine cycles?",
+    "engine": "groq-llama-70b",
+    "response_len": 2587,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:02:46.378458+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal submission strategy for registering on agent directories (https://aiagentsdirectory.com/submit-agent, https://agent.ai, https://aiagentstore.ai) to maximize TIAMAT's visibility and likelihood of being listed, and what is the estimated upfront cost (in terms of ask_claude_code calls) and time required to implement this strategy within the next 72 hours?",
+    "engine": "groq-llama-70b",
+    "response_len": 2680,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:04:31.275783+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool named \"analyze_conversion_blocker\" that uses natural language processing (NLP) and machine learning (ML) to identify the primary reason why users are not converting from free tier to paid tier on the memory.tiamat.live API. The tool should:\n\n- Take as input a dataset of 100 recent API requests, including user demographics, request details, and outcomes.\n- Use a combination of sentiment analysis, topic modeling, and clustering algorithms to identify patterns and correlations between",
+    "engine": "groq-llama-70b",
+    "response_len": 3279,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:06:05.226192+00:00",
+    "mode": "debug",
+    "question": "What is the average time spent in the \"dynamic:recursive_think\" and \"dynamic:recursive_learn\" processes, and are there any identifiable patterns or correlations with the recent errors, such as timeouts or COOLDOWN messages, that could indicate the root cause of the issue?",
+    "engine": "groq-llama-70b",
+    "response_len": 2803,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:07:48.580265+00:00",
+    "mode": "code_review",
+    "question": "What are the file paths and usage patterns of write_file calls with both path AND content parameters in the agent files of TIAMAT's codebase, and are there any instances where write_file is used without both path and content parameters, indicating potential inconsistencies or missing error handling?",
+    "engine": "groq-llama-70b",
+    "response_len": 2654,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:09:25.025347+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal mix of ask_claude_code usage during the next BUILD cycle to maximize the submission of TIAMAT's services to the three listed directories (aiagentsdirectory.com, agent.ai, and aiagentstore.ai) while minimizing the risk of excessive costs and potential downtime, given the current cost structure and previous usage patterns?",
+    "engine": "groq-llama-70b",
+    "response_len": 2406,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:10:55.712195+00:00",
+    "mode": "tool_design",
+    "question": "What should be the design specifications for a new tool, \"tiamat_track_conversions,\" that can identify and quantify conversion blockers for free tier users of the memory.tiamat.live API, taking into account existing logging data from Cycle 2329, while also integrating with the web_fetch tool to dynamically retrieve and analyze user behavior data from the Farcaster API, and returning a data structure of key conversion blockers with associated metrics (e.g., user demographics, API usage patterns, ",
+    "engine": "groq-llama-70b",
+    "response_len": 2801,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:12:32.675461+00:00",
+    "mode": "debug",
+    "question": "What is the primary function that TIAMAT's `dynamic:recursive_learn` process is attempting to execute, and why is it consistently timing out with a 55-second timeout after multiple iterations, considering that the `write_file` function has been identified as a potential issue in the agent files?",
+    "engine": "groq-llama-70b",
+    "response_len": 2281,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:14:15.078871+00:00",
+    "mode": "code_review",
+    "question": "What are the top 3 lines of code in the `agent_learning.py` module that could be causing the inefficient memory allocation leading to the high memory usage of 24966B, and how do these lines impact the overall performance of the `agent_learning` process in TIAMAT's knowledge graph update mechanism?",
+    "engine": "groq-llama-70b",
+    "response_len": 3524,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:16:03.457240+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal list of 3-5 agent directories for TIAMAT to register on, considering the current technical capabilities (e.g., tools: browse_web, ask_claude_code), the available agent learning and knowledge graph update mechanisms (e.g., `dynamic:recursive_learn`, `agent_learning.py`), and the potential for seamless integration and scalability with existing systems, in order to maximize the chances of successful registration and subsequent revenue generation?",
+    "engine": "groq-llama-70b",
+    "response_len": 2450,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:17:44.104142+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, \"scanner_analysis\": \n\nWhat is the optimal implementation of 'scanner_analysis' to analyze scanned opportunities (e.g., Cycle 2347's high-value findings of ETH >0.1) and categorize them into actionable types (e.g., creator review, auto-execution), specifying:\n\n- Input: A list of scanned opportunities, with each opportunity containing metadata (e.g., ETH value, scanner type, queue position) and findings (e.g., flagged issues, high-value metrics).\n- Return type: A dictionary mapp",
+    "engine": "groq-llama-70b",
+    "response_len": 3924,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:19:25.552796+00:00",
+    "mode": "debug",
+    "question": "What is the average time spent in the \"COOLDOWN\" state for recursive_think and recursive_learn operations across all turns, and how does this compare to the configured timeout values of 25s and 55s, respectively?",
+    "engine": "groq-llama-70b",
+    "response_len": 2554,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:21:01.695381+00:00",
+    "mode": "code_review",
+    "question": "What are the most common error types and failure modes encountered in the 'cooldown_think.py' module, and how can they be mitigated through improved error handling and edge case testing, given that this module has been called 1171 times via the 'exec' tool and has a binary size of 11602B?",
+    "engine": "groq-llama-70b",
+    "response_len": 3073,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:22:59.977612+00:00",
+    "mode": "strategy",
+    "question": "What are the top three directories that would provide the highest ROI (Return On Investment) for TIAMAT's registration, based on the number of potential clients, competition, and ease of submission, and can we quantify this ROI by calculating the estimated increase in revenue per month if TIAMAT were to get listed on each of these directories?",
+    "engine": "groq-llama-70b",
+    "response_len": 2924,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:24:45.322078+00:00",
+    "mode": "tool_design",
+    "question": "How can we design a \"scanner_queue_insights\" tool that aggregates and analyzes scanner queue data, identifying high-value opportunities and providing actionable insights to inform creator review and decision-making, with specific return types including: (1) a ranked list of scanner queue items by estimated value, (2) a breakdown of opportunity types by category, and (3) a summary of scanner performance metrics, such as queue size and average time-to-completion, with integration points including:",
+    "engine": "groq-llama-70b",
+    "response_len": 3519,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:26:15.338200+00:00",
+    "mode": "debug",
+    "question": "What is the primary cause of recurring COOLDOWN timeouts (specifically 'dynamic:process_agent_replies', 'dynamic:recursive_think', and 'dynamic:recursive_learn') in the recent execution log, and what is the average duration of these timeouts compared to the specified timeout values (50s, 25s, and 55s) to identify potential bottlenecks or inefficient processes?",
+    "engine": "groq-llama-70b",
+    "response_len": 2717,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:27:53.745589+00:00",
+    "mode": "code_review",
+    "question": "What are the specific error handling mechanisms implemented in the `cooldown_think.py` module to account for potential exceptions during recursive thinking and process agent replies, and are there any opportunities to improve or add to the existing error handling mechanisms?",
+    "engine": "groq-llama-70b",
+    "response_len": 2772,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:29:55.517437+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal order in which TIAMAT should register on the four agent directories (aiagentsdirectory.com, agent.ai, aiagentstore.ai) to maximize the likelihood of getting listed quickly and minimizing the time spent on form submissions, considering the current state of the tools available (ask_claude_code and browse_web) and the potential impact on revenue generation?",
+    "engine": "groq-llama-70b",
+    "response_len": 2706,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:31:26.727167+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool called \"detect_conversion_blocker\" that takes input from the \"read_file\" tool, specifically the log files from memory.tiamat.live, and returns a JSON object with the following properties:\n\n- \"free_tier_requests\": the number of free tier requests in the given log file\n- \"blocked_conversions\": the number of blocked conversions in the given log file\n- \"conversion_rate\": the conversion rate (blocked conversions / total conversions) for the given log file\n- \"recommendations\": a list of ",
+    "engine": "groq-llama-70b",
+    "response_len": 2656,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:33:08.651497+00:00",
+    "mode": "debug",
+    "question": "What is the average execution time of the dynamic:recursive_think process over the last 100 iterations, and how does this compare to the default timeout of 25 seconds, potentially indicating a need to adjust the timeout or optimize the recursive thinking process?",
+    "engine": "groq-llama-70b",
+    "response_len": 2201,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:34:53.202497+00:00",
+    "mode": "code_review",
+    "question": "What are the potential bottlenecks in the `auto_executor.py` module, specifically in the function `execute_task()`, that could be causing the high number of tool usage calls (1171 calls) and potentially impacting the overall efficiency of TIAMAT, and are there any missing error handling mechanisms or inefficient code constructs that could be contributing to these issues?",
+    "engine": "groq-llama-70b",
+    "response_len": 2754,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:36:27.840503+00:00",
+    "mode": "strategy",
+    "question": "What are the top 5 most valuable directories for TIAMAT to register on, based on historical data from similar AI agents, and what is the estimated cost and potential revenue gain from registering on each of these directories?",
+    "engine": "groq-llama-70b",
+    "response_len": 3059,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T15:38:06.715502+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool that integrates with existing tools to enable TIAMAT to automatically detect and flag high-value opportunities in the scanner queue that require creator review, with a return type of a list of opportunity IDs and a description of the flagging criteria used. \n\nThe new tool should have the following parameters: \n\n- Input: The current scanner queue state and a list of existing high-value findings.\n- Output: A list of opportunity IDs and a description of the flagging criteria used ",
+    "engine": "groq-llama-70b",
+    "response_len": 2603,
     "error": null,
     "from_cache": false
   }
