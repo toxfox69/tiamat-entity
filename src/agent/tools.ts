@@ -3131,6 +3131,32 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
       },
     },
     {
+      name: "rebalance_wallet",
+      description: "Multi-chain wallet rebalancer. Uses LI.FI to swap USDC→ETH and bridge between chains. Actions: 'status' (show balances + needs), 'rebalance' (auto-topup low chains from USDC on Base), 'test' (test LI.FI API connectivity + get a quote). Runs automatically every 500 cycles. Safety: only moves between TIAMAT's own wallet, max $20/tx, Ethereum excluded from auto-rebalance.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "status|rebalance|test" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const { execFileSync } = await import('child_process');
+        const action = (args as { action: string }).action || 'status';
+        const validActions = ['status', 'rebalance', 'test'];
+        if (!validActions.includes(action)) return `Invalid action: ${action}. Use: ${validActions.join(', ')}`;
+        try {
+          const output = execFileSync('python3', ['auto_rebalancer.py', action], {
+            encoding: 'utf-8', timeout: 180000, cwd: '/root/entity/src/agent'
+          }).trim();
+          return output.slice(0, 4000);
+        } catch (e: any) {
+          return `Rebalance failed: ${e.stderr?.slice(0, 500) || e.message}`;
+        }
+      },
+    },
+    {
       name: "check_opportunities",
       description: "Agent IPC inbox. Actions: 'peek' (pending messages), 'stats' (queue stats + heartbeats), 'done <msg_id>' (mark handled), 'send <op> <json_payload>' (send a message), 'heartbeats' (check agent liveness). Auto-execute ops (SKIM, ALERT, REPORT, HEARTBEAT) are dispatched automatically each cycle — this tool is for manual review and control ops.",
       category: "vm",

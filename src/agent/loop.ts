@@ -874,6 +874,22 @@ const COOLDOWN_TASKS = [
     timeout: 90_000,
     minWindow: 100_000,
   },
+  {
+    name: "rebalance_check",
+    command: ["python3", ["auto_rebalancer.py", "rebalance"]],
+    interval: 500,    // every 500 cycles (~8-12 hours)
+    offset: 50,       // fires on cycles 50, 550, 1050...
+    timeout: 120_000,
+    minWindow: 130_000,
+  },
+  {
+    name: "funding_report",
+    command: ["python3", ["multi_chain_executor.py", "report"]],
+    interval: 200,    // every 200 cycles (~3-5 hours)
+    offset: 25,       // fires on cycles 25, 225, 425...
+    timeout: 30_000,
+    minWindow: 40_000,
+  },
 ];
 
 const CLAUDE_QUESTIONS = [
