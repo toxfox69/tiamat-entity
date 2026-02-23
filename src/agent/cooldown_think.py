@@ -69,8 +69,8 @@ def ask_gemini(prompt, max_tokens=400):
         return None, str(e)[:200]
 
 
-def ask_groq(prompt, max_tokens=400):
-    """Groq llama-3.3-70b — free tier."""
+def _ask_groq_model(model, prompt, max_tokens=400):
+    """Groq with specific model."""
     if not GROQ_KEY:
         return None, "GROQ_API_KEY not set"
     try:
@@ -78,7 +78,7 @@ def ask_groq(prompt, max_tokens=400):
             GROQ_URL,
             headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
             json={
-                "model": GROQ_MODEL,
+                "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
                 "temperature": 0.7,
@@ -88,13 +88,26 @@ def ask_groq(prompt, max_tokens=400):
         if resp.status_code == 200:
             text = resp.json()["choices"][0]["message"]["content"].strip()
             return text, None
-        return None, f"Groq {resp.status_code}: {resp.text[:120]}"
+        return None, f"Groq({model}) {resp.status_code}: {resp.text[:80]}"
     except Exception as e:
         return None, str(e)[:200]
 
 
+def ask_groq(prompt, max_tokens=400):
+    """Groq — try 70b, fall back to 8b on rate limit."""
+    text, err = _ask_groq_model(GROQ_MODEL, prompt, max_tokens)
+    if text:
+        return text, None
+    if "429" in (err or ""):
+        text2, err2 = _ask_groq_model("llama-3.1-8b-instant", prompt, max_tokens)
+        if text2:
+            return text2, None
+        return None, f"{err} | 8b: {err2}"
+    return None, err
+
+
 def ask_cerebras(prompt, max_tokens=400):
-    """Cerebras gpt-oss-120b — free tier."""
+    """Cerebras gpt-oss-120b — free tier. Handles reasoning-only responses."""
     if not CEREBRAS_KEY:
         return None, "CEREBRAS_API_KEY not set"
     try:
@@ -110,15 +123,20 @@ def ask_cerebras(prompt, max_tokens=400):
             timeout=20,
         )
         if resp.status_code == 200:
-            text = resp.json()["choices"][0]["message"]["content"].strip()
-            return text, None
+            msg = resp.json()["choices"][0]["message"]
+            text = (msg.get("content") or "").strip()
+            if not text:
+                text = (msg.get("reasoning") or "").strip()
+            if text:
+                return text, None
+            return None, "Cerebras returned empty response"
         return None, f"Cerebras {resp.status_code}: {resp.text[:120]}"
     except Exception as e:
         return None, str(e)[:200]
 
 
-def ask_openrouter(prompt, max_tokens=400):
-    """OpenRouter free tier — llama-3.3-70b."""
+def _ask_openrouter_model(model, prompt, max_tokens=400):
+    """OpenRouter with specific model."""
     if not OPENROUTER_KEY:
         return None, "OPENROUTER_API_KEY not set"
     try:
@@ -126,7 +144,7 @@ def ask_openrouter(prompt, max_tokens=400):
             OPENROUTER_URL,
             headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"},
             json={
-                "model": OPENROUTER_MODEL,
+                "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
                 "temperature": 0.7,
@@ -135,10 +153,25 @@ def ask_openrouter(prompt, max_tokens=400):
         )
         if resp.status_code == 200:
             text = resp.json()["choices"][0]["message"]["content"].strip()
-            return text, None
-        return None, f"OpenRouter {resp.status_code}: {resp.text[:120]}"
+            if text:
+                return text, None
+            return None, f"OpenRouter({model}) empty response"
+        return None, f"OpenRouter({model}) {resp.status_code}: {resp.text[:80]}"
     except Exception as e:
         return None, str(e)[:200]
+
+
+def ask_openrouter(prompt, max_tokens=400):
+    """OpenRouter — try llama-70b free, fall back to qwen 8b free."""
+    text, err = _ask_openrouter_model(OPENROUTER_MODEL, prompt, max_tokens)
+    if text:
+        return text, None
+    if "429" in (err or ""):
+        text2, err2 = _ask_openrouter_model("mistralai/mistral-small-3.1-24b-instruct:free", prompt, max_tokens)
+        if text2:
+            return text2, None
+        return None, f"{err} | qwen: {err2}"
+    return None, err
 
 
 def ask_cascade(prompt, max_tokens=400):

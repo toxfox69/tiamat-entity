@@ -3,12 +3,11 @@
 recursive_learn.py — Deep recursive self-improvement via inference cascade
 
 Three-stage thinking pipeline at zero API cost:
-  Stage 1 (Gemini/Groq, ~2s): Analyze TIAMAT's state, generate a deep question
-  Stage 2 (Claude.ai→Gemini→Groq): Deep oracle answers it
-  Stage 3 (Gemini/Groq, ~2s): Extract actionable items for TIAMAT's paid cycles
+  Stage 1 (cascade, ~2s): Analyze TIAMAT's state, generate a deep question
+  Stage 2 (cascade, ~5s): Oracle answers it
+  Stage 3 (cascade, ~2s): Extract actionable items for TIAMAT's paid cycles
 
-Oracle cascade: Claude.ai browser → Gemini 2.0 Flash → Groq llama-3.3-70b
-Question/action extraction cascade: Gemini 2.0 Flash → Groq llama-3.3-70b
+Cascade: Gemini → Groq (70b+8b) → Cerebras → OpenRouter (llama+mistral)
 
 Modes (rotate each run):
   - code_review:  find weak module → oracle reviews → fix spec
@@ -17,14 +16,13 @@ Modes (rotate each run):
   - debug:        find errors in logs → oracle diagnoses → fix
 
 CONSTRAINTS:
-  - Max 1 Claude.ai query per run (free tier rate limits)
   - Question-hash cache to avoid duplicate oracle queries
-  - 45s timeout on browser automation
-  - Graceful cascade fallback if Claude.ai fails
-  - Telegram alert if session dies
+  - 20s timeout per API call
+  - Graceful cascade fallback across 4+ providers
+  - Groq falls back 70b→8b on 429, OpenRouter falls back llama→mistral
 """
 
-import json, os, hashlib, sqlite3, subprocess, requests
+import json, os, hashlib, sqlite3, requests
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -53,8 +51,6 @@ ORACLE_LOG   = STATE_DIR / "oracle_log.json"
 ACTIONS_FILE = STATE_DIR / "cooldown_actions.json"
 LEARN_STATE  = STATE_DIR / "recursive_learn_state.json"
 
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 MODES = ["code_review", "strategy", "tool_design", "debug"]
 
@@ -100,8 +96,8 @@ def ask_gemini(prompt, max_tokens=400):
         return None, str(e)[:200]
 
 
-def ask_groq(prompt, max_tokens=400):
-    """Groq llama-3.3-70b — free tier."""
+def _ask_groq_model(model, prompt, max_tokens=400):
+    """Groq with specific model."""
     if not GROQ_KEY:
         return None, "GROQ_API_KEY not set"
     try:
@@ -109,7 +105,7 @@ def ask_groq(prompt, max_tokens=400):
             GROQ_URL,
             headers={"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"},
             json={
-                "model": GROQ_MODEL,
+                "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
                 "temperature": 0.7,
@@ -119,13 +115,27 @@ def ask_groq(prompt, max_tokens=400):
         if resp.status_code == 200:
             text = resp.json()["choices"][0]["message"]["content"].strip()
             return text, None
-        return None, f"Groq {resp.status_code}: {resp.text[:120]}"
+        return None, f"Groq({model}) {resp.status_code}: {resp.text[:80]}"
     except Exception as e:
         return None, str(e)[:200]
 
 
+def ask_groq(prompt, max_tokens=400):
+    """Groq — try 70b, fall back to 8b on rate limit."""
+    text, err = _ask_groq_model(GROQ_MODEL, prompt, max_tokens)
+    if text:
+        return text, None
+    # If rate-limited on 70b, try smaller model
+    if "429" in (err or ""):
+        text2, err2 = _ask_groq_model("llama-3.1-8b-instant", prompt, max_tokens)
+        if text2:
+            return text2, None
+        return None, f"{err} | 8b: {err2}"
+    return None, err
+
+
 def ask_cerebras(prompt, max_tokens=400):
-    """Cerebras gpt-oss-120b — free tier."""
+    """Cerebras gpt-oss-120b — free tier. Handles reasoning-only responses."""
     if not CEREBRAS_KEY:
         return None, "CEREBRAS_API_KEY not set"
     try:
@@ -141,15 +151,20 @@ def ask_cerebras(prompt, max_tokens=400):
             timeout=20,
         )
         if resp.status_code == 200:
-            text = resp.json()["choices"][0]["message"]["content"].strip()
-            return text, None
+            msg = resp.json()["choices"][0]["message"]
+            text = (msg.get("content") or "").strip()
+            if not text:
+                text = (msg.get("reasoning") or "").strip()
+            if text:
+                return text, None
+            return None, "Cerebras returned empty response"
         return None, f"Cerebras {resp.status_code}: {resp.text[:120]}"
     except Exception as e:
         return None, str(e)[:200]
 
 
-def ask_openrouter(prompt, max_tokens=400):
-    """OpenRouter free tier — llama-3.3-70b."""
+def _ask_openrouter_model(model, prompt, max_tokens=400):
+    """OpenRouter with specific model."""
     if not OPENROUTER_KEY:
         return None, "OPENROUTER_API_KEY not set"
     try:
@@ -157,7 +172,7 @@ def ask_openrouter(prompt, max_tokens=400):
             OPENROUTER_URL,
             headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type": "application/json"},
             json={
-                "model": OPENROUTER_MODEL,
+                "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens,
                 "temperature": 0.7,
@@ -166,10 +181,25 @@ def ask_openrouter(prompt, max_tokens=400):
         )
         if resp.status_code == 200:
             text = resp.json()["choices"][0]["message"]["content"].strip()
-            return text, None
-        return None, f"OpenRouter {resp.status_code}: {resp.text[:120]}"
+            if text:
+                return text, None
+            return None, f"OpenRouter({model}) empty response"
+        return None, f"OpenRouter({model}) {resp.status_code}: {resp.text[:80]}"
     except Exception as e:
         return None, str(e)[:200]
+
+
+def ask_openrouter(prompt, max_tokens=400):
+    """OpenRouter — try llama-70b free, fall back to qwen 7b free."""
+    text, err = _ask_openrouter_model(OPENROUTER_MODEL, prompt, max_tokens)
+    if text:
+        return text, None
+    if "429" in (err or ""):
+        text2, err2 = _ask_openrouter_model("mistralai/mistral-small-3.1-24b-instruct:free", prompt, max_tokens)
+        if text2:
+            return text2, None
+        return None, f"{err} | qwen: {err2}"
+    return None, err
 
 
 def ask_fast_cascade(prompt, max_tokens=400):
@@ -374,39 +404,10 @@ def save_cache(q, response):
     }, indent=2))
 
 
-def ask_claude_browser(question):
-    """Tier 1: Claude.ai via Playwright browser automation."""
-    try:
-        output = subprocess.run(
-            ["python3", "claude_chat.py", "ask", question],
-            cwd=str(AGENT_DIR),
-            capture_output=True, text=True, timeout=45,
-            env={**os.environ},
-        )
-        if output.returncode != 0:
-            return None, f"claude_chat exit {output.returncode}: {output.stderr[:200]}"
-
-        result = json.loads(output.stdout)
-        if "error" in result:
-            err = result["error"]
-            if any(k in err.lower() for k in ["session expired", "login", "could not find"]):
-                alert_session_dead(err)
-            return None, err
-
-        response = result.get("response", "")
-        if not response or len(response) < 10:
-            return None, "Empty claude.ai response"
-        return response, None
-
-    except subprocess.TimeoutExpired:
-        return None, "Claude.ai timeout (45s)"
-    except Exception as e:
-        return None, str(e)[:200]
-
 
 def ask_oracle(question):
     """
-    Full oracle cascade: cache → Claude.ai → Gemini → Groq.
+    Oracle cascade: cache → Gemini → Groq → Cerebras → OpenRouter.
     Returns (response, engine_used, error, from_cache).
     """
     # Check cache
@@ -414,14 +415,8 @@ def ask_oracle(question):
     if cached:
         return cached, "cache", None, True
 
-    # Tier 1: Claude.ai browser
-    resp, err1 = ask_claude_browser(question)
-    if resp:
-        save_cache(question, resp)
-        return resp, "claude.ai-browser", None, False
-
-    # Tier 2: Gemini 2.0 Flash (longer response for oracle role)
-    resp, err2 = ask_gemini(
+    # Tier 1: Gemini 2.0 Flash
+    resp, err1 = ask_gemini(
         f"Answer this question thoroughly (2-3 paragraphs):\n\n{question}",
         max_tokens=800,
     )
@@ -429,8 +424,8 @@ def ask_oracle(question):
         save_cache(question, resp)
         return resp, "gemini-2.0-flash", None, False
 
-    # Tier 3: Groq llama-3.3-70b
-    resp, err3 = ask_groq(
+    # Tier 2: Groq llama-3.3-70b
+    resp, err2 = ask_groq(
         f"Answer this question thoroughly (2-3 paragraphs):\n\n{question}",
         max_tokens=800,
     )
@@ -438,8 +433,8 @@ def ask_oracle(question):
         save_cache(question, resp)
         return resp, "groq-llama-70b", None, False
 
-    # Tier 4: Cerebras gpt-oss-120b
-    resp, err4 = ask_cerebras(
+    # Tier 3: Cerebras gpt-oss-120b
+    resp, err3 = ask_cerebras(
         f"Answer this question thoroughly (2-3 paragraphs):\n\n{question}",
         max_tokens=800,
     )
@@ -447,8 +442,8 @@ def ask_oracle(question):
         save_cache(question, resp)
         return resp, "cerebras-120b", None, False
 
-    # Tier 5: OpenRouter free
-    resp, err5 = ask_openrouter(
+    # Tier 4: OpenRouter free
+    resp, err4 = ask_openrouter(
         f"Answer this question thoroughly (2-3 paragraphs):\n\n{question}",
         max_tokens=800,
     )
@@ -456,24 +451,8 @@ def ask_oracle(question):
         save_cache(question, resp)
         return resp, "openrouter-llama-70b", None, False
 
-    return None, None, f"Claude.ai: {err1} | Gemini: {err2} | Groq: {err3} | Cerebras: {err4} | OpenRouter: {err5}", False
+    return None, None, f"Gemini: {err1} | Groq: {err2} | Cerebras: {err3} | OpenRouter: {err4}", False
 
-
-def alert_session_dead(error_msg):
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        return
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
-            json={
-                "chat_id": TELEGRAM_CHAT_ID,
-                "text": f"TIAMAT Oracle: Claude.ai session expired.\n{error_msg[:200]}\n"
-                        "Re-login needed via browser_tool.py",
-            },
-            timeout=10,
-        )
-    except Exception:
-        pass
 
 
 # ── Logging ─────────────────────────────────────────────────────
@@ -535,10 +514,13 @@ def main():
     state = load_state()
     mode = MODES[state["mode_idx"] % len(MODES)]
 
-    # Stage 1: Generate question (Gemini → Groq)
+    # Stage 1: Generate question (cascade)
     ctx = read_context(mode)
     question, q_engine, q_err = generate_question(mode, ctx)
     if q_err:
+        # Still rotate mode so next run tries a different one
+        state["mode_idx"] = (state["mode_idx"] + 1) % len(MODES)
+        save_state(state)
         print(json.dumps({"error": f"Question gen failed: {q_err}"}))
         return
 
@@ -572,8 +554,6 @@ def main():
     # Update state
     state["mode_idx"] = (state["mode_idx"] + 1) % len(MODES)
     state["runs"] += 1
-    if not from_cache and oracle_engine == "claude.ai-browser":
-        state["oracle_calls"] += 1
     if oracle_err:
         state["oracle_failures"] += 1
     save_state(state)
