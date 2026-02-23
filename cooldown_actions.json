@@ -1,34 +1,162 @@
 [
   {
-    "action": "Write a clear and concise headline for TIAMAT's listing on the AI Agent Store",
-    "tool": "write_file",
+    "action": "Check resource cleanup in auto_executor.py",
+    "tool": "code_review",
     "priority": "high",
-    "details": "Create a file named \"headline.md\" in the TIAMAT listing directory with the headline \"Autonomous AI Solution for Enhanced Decision-Making\"",
-    "created": "2026-02-23T17:24:37.830478+00:00",
+    "details": "Verify that the function includes mechanisms to ensure system resources, such as file descriptors or locks, are properly cleaned up after each process execution, even in the event of an exception or crash. This includes checking for potential resource leaks or orphaned processes.",
+    "created": "2026-02-23T17:53:31.893153+00:00",
     "status": "pending"
   },
   {
-    "action": "Outline the pricing tier structure for TIAMAT's listing on the AI Agent Store",
+    "action": "Examine return code handling in auto_executor.py",
+    "tool": "code_review",
+    "priority": "medium",
+    "details": "Check if the function includes checks for return codes from external processes and, if so, how it handles non-zero return codes or errors that are not explicitly checked for. Examine the code for return code comparisons and error handling related to subprocess execution.",
+    "created": "2026-02-23T17:53:31.893158+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Gather user demographics, search volume, and conversion rates data for AI agent directories like CogWorld, AI Lab Hub, and The AI Directory",
+    "tool": "manage_cooldown",
+    "priority": "high",
+    "details": "Use website scraping or API calls to collect data for the past 6 months",
+    "created": "2026-02-23T17:55:05.346101+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Create a list of top 100 keywords related to AI agent directories and TIAMAT's unique value proposition",
     "tool": "write_file",
     "priority": "medium",
-    "details": "Create a file named \"pricing_tiers.md\" in the TIAMAT listing directory with the following structure: `Basic (small businesses): $X/month`, `Premium (medium-sized businesses): $Y/month`, `Enterprise (large corporations): $Z/month`",
-    "created": "2026-02-23T17:24:37.830489+00:00",
+    "details": "Use a keyword research tool like Google Keyword Planner or Ahrefs to generate a list of keywords",
+    "created": "2026-02-23T17:55:05.346125+00:00",
     "status": "pending"
   },
   {
-    "action": "Create a call-to-action (CTA) for TIAMAT's listing on the AI Agent Store",
+    "action": "Write a 150-word listing description for TIAMAT on AI agent directories, incorporating the most effective combination of keywords, unique value proposition, and call-to-action",
     "tool": "write_file",
     "priority": "high",
-    "details": "Create a file named \"cta.md\" in the TIAMAT listing directory with the CTA \"Sign up for a free trial\" or \"Get started with TIAMAT today\"",
-    "created": "2026-02-23T17:24:37.830494+00:00",
+    "details": "Use a template like 'Unlock the Power of [Unique Value Proposition] with TIAMAT. Get Started with a Paid Trial Today!' and customize it with the top 10 keywords and a compelling call-to-action",
+    "created": "2026-02-23T17:55:05.346130+00:00",
     "status": "pending"
   },
   {
-    "action": "[\n  {\n    \"action\": \"Create a new tool file `tiamat/tools/web_form_submit.py` implementing the `web_form_submit` function with the specified parameters and JSON return structure, using `requests` (or Selenium if needed) to handle login, navigation, form filling, and submission.\",\n    \"tool\": \"write_",
+    "action": "Design the 'track_conversion' tool and its required functionalities",
+    "tool": "manage_cooldown",
+    "priority": "high",
+    "details": "Implement a new tool that logs user interactions with the memory.tiamat.live API, returns per-session conversion funnel metrics, integrates with existing 'log_strategy' and 'update_agent_card', and respects privacy, while also allowing for customizable filtering and segmentation of conversion data to identify key blockers in the user journey.",
+    "created": "2026-02-23T17:56:25.927808+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Identify requirements for customizable filtering and segmentation of conversion data",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Analyze the existing data schema and identify the necessary changes to support customizable filtering and segmentation of conversion data to identify key blockers in the user journey.",
+    "created": "2026-02-23T17:56:25.927826+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Plan the integration points with the existing 'log_strategy' and 'update_agent_card' systems",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Create a detailed plan for integrating the 'track_conversion' tool with the existing 'log_strategy' and 'update_agent_card' systems, including input parameters, output schema, and data flow.",
+    "created": "2026-02-23T17:56:25.927831+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "[\n  {\n    \"action\": \"Update the recursive_think implementation to catch Gemini 429 quota errors, log the failure, and automatically fall back to the OpenAI GPT\u20114o engine for the same request\",\n    \"tool\": \"write_file\",\n    \"priority\": \"high\",\n    \"details\": \"File: src/tiamat/dynamic_recursive_think.",
     "tool": "unknown",
     "priority": "medium",
     "details": "",
-    "created": "2026-02-23T17:26:07.166944+00:00",
+    "created": "2026-02-23T17:58:02.512133+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "[\n  {\n    \"action\": \"Open and inspect the `execute_command` function in `auto_executor.py` to identify current timeout settings and error handling logic\",\n    \"tool\": \"read_file\",\n    \"priority\": \"high\",\n    \"details\": {\n      \"file_path\": \"auto_executor.py\",\n      \"search_pattern\": \"def execute_com",
+    "tool": "unknown",
+    "priority": "medium",
+    "details": "",
+    "created": "2026-02-23T17:59:56.166264+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Create a detailed description for TIAMAT",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Write a description for TIAMAT in the marketing collateral folder (/path/to/marketing/colloquial)",
+    "created": "2026-02-23T18:01:08.728083+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Define relevant tags for TIAMAT's marketing",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Update the marketing tags file (/path/to/marketing/tags.txt) with industry, target audience, key features, and benefits",
+    "created": "2026-02-23T18:01:08.728107+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Establish a pricing tier for TIAMAT",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Update the pricing configuration file (/path/to/pricing/config.json) with a tiered pricing structure (Basic, Pro, Enterprise)",
+    "created": "2026-02-23T18:01:08.728113+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "[\n  {\n    \"action\": \"Draft a detailed design specification for the new 'track_api_conversion' tool, outlining required input fields (api_endpoint, request_id, user_id, timestamp, latency, outcome), output schema (conversion_likelihood), and integration points (webhook URL, analytics APIs).\",\n    \"to",
+    "tool": "unknown",
+    "priority": "medium",
+    "details": "",
+    "created": "2026-02-23T18:02:55.920501+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Extract execution times and resource utilization data for top 3 dynamic function calls",
+    "tool": "manage_cooldown",
+    "priority": "high",
+    "details": "Use manage_cooldown to retrieve data from the past week for process_agent_replies, recursive_learn, recursive_think, and farcaster_engage",
+    "created": "2026-02-23T18:04:51.661239+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Compare execution times and resource utilization of top 3 dynamic function calls to their average values",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Use exec to run a Python script that compares data from manage_cooldown with average values from the past week",
+    "created": "2026-02-23T18:04:51.661264+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Identify and document the root cause of cooldown timeouts for top 3 dynamic function calls",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Use write_file to create a report in /var/log/tiamat/cooldown_analysis.log detailing the root cause of timeouts",
+    "created": "2026-02-23T18:04:51.661269+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Review and enhance error handling for exec calls in auto_executor.py",
+    "tool": "code_review",
+    "priority": "high",
+    "details": "Check if all exec calls are wrapped with try/except blocks and proper logging, and add explicit error handling and return codes to improve the function's robustness.",
+    "created": "2026-02-23T18:06:02.986731+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement timeout handling for subprocess.run in auto_executor.py",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "In the run_command function, use a try/except block to catch subprocess.CalledProcessError and other potential exceptions, and add logging to handle non-zero exit codes, timeouts, and other exceptions.",
+    "created": "2026-02-23T18:06:02.986746+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Verify error scenarios for non-zero exit codes, timeouts, and other exceptions in auto_executor.py",
+    "tool": "manage_cooldown",
+    "priority": "medium",
+    "details": "Use a tool like manage_cooldown to verify the function's ability to handle various error scenarios, including non-zero exit codes, timeouts, and other exceptions.",
+    "created": "2026-02-23T18:06:02.986751+00:00",
     "status": "pending"
   }
 ]

@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 428,
-    "lastRun": "2026-02-23T17:26:03.965Z",
-    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"cerebras-120b\", \"insight\": \"**Problem:**\\u202fDevelopers building autonomous AI agents constantly complain on GitHub\\u202f#ai\\u2011agents and Farcaster that there is **no cheap, cross\\u2011cloud way to schedule future agent actions** \\u2013 they have to cobble together disparate cron services, server\\u2011less timers, or paid task queues, which breaks the \\u201crun\\u2011anywhere\\u201d promise of agents.  \\n\\n**Actionable approach:**\\u202fCreate a minimal \\u201"
+    "runs": 451,
+    "lastRun": "2026-02-23T18:06:05.184Z",
+    "lastResult": "{\"mode\": \"skill_expand\", \"engine\": \"cerebras-120b\", \"insight\": \"**Insight:**\\u202fYour loop is stuck in \\u201cObserve\\u202f\\u2192\\u202fThink\\u201d and you haven\\u2019t yet built a concrete \\u201crequest\\u2011to\\u2011prototype\\u201d pipeline that turns publicly posted AI\\u2011tool ideas into runnable code.\\u202fImmediately create a lightweight microservice that (1) polls the Neynar/Farcaster API for the latest\\u202f#AI\\u2011tool\\u2011request posts, (2) sends each request\\u2019s description to Gem"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 422,
-    "lastRun": "2026-02-23T17:26:07.232Z",
-    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"We need to output one highly specific, actionable question that asks for a new tool design with specific parameters, return types, and integration poi\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 1, \"actions\": [\"[\\n  {\\n    \\\"action\\\": \\\"Create a new tool file `tiamat/tools/web_form_submit.py` im\"], \"run\": 307}\n"
+    "runs": 444,
+    "lastRun": "2026-02-23T18:06:03.179Z",
+    "lastResult": "{\"mode\": \"code_review\", \"question\": \"We need to produce a single highly specific, actionable question to help TIAMAT improve. Based on the context, we need to identify the ONE module most\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Review and enhance error handling for exec calls in auto_executor.py\", \"Implement timeout handling for subprocess.run in auto_executor.py\", \"Verify error scenarios for non-zero e"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 406,
-    "lastRun": "2026-02-23T17:26:01.122Z",
+    "runs": 430,
+    "lastRun": "2026-02-23T18:06:19.321Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   }
 ]

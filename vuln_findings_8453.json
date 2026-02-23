@@ -1689,5 +1689,64 @@
     "chain": "base",
     "chain_id": 8453,
     "action": "Log for review. Submit to Immunefi if bounty-eligible."
+  },
+  {
+    "type": "skimmable_pair",
+    "address": "0x74e64225BeA68795Db70E508Ef5065f2cE442a8e",
+    "details": {
+      "token0": "0x4200000000000000000000000000000000000006",
+      "token1": "0x55C876E4016Ab9BC5f64b0F572047db229109BA3",
+      "reserve0": "5452286576728824059",
+      "reserve1": "202341841942603684943508259",
+      "balance0": "5490683021971883671",
+      "balance1": "200931077142263093548165890",
+      "excess0": "38396445243059612",
+      "excess1": "-1410764800340591395342369",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "eth_value": 0.038396445243059615,
+    "timestamp": "2026-02-23T17:56:45.598697+00:00",
+    "chain": "base",
+    "chain_id": 8453,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x74e64225BeA68795Db70E508Ef5065f2cE442a8e",
+      "chain_id": 8453,
+      "source_verified": true,
+      "source_analysis": {
+        "has_access_control": false,
+        "access_patterns": [],
+        "vulnerabilities": [],
+        "functions": [
+          "name",
+          "symbol",
+          "decimals",
+          "totalSupply",
+          "balanceOf",
+          "allowance",
+          "approve",
+          "transfer",
+          "transferFrom",
+          "DOMAIN_SEPARATOR",
+          "PERMIT_TYPEHASH",
+          "nonces",
+          "permit",
+          "MINIMUM_LIQUIDITY",
+          "factory",
+          "token0",
+          "token1",
+          "getReserves",
+          "price0CumulativeLast",
+          "price1CumulativeLast"
+        ],
+        "risk_level": "high"
+      },
+      "creator": null,
+      "deployer_reputation": null,
+      "abi_available": true,
+      "recommendation": "execute",
+      "confidence": "high",
+      "contract_name": "UniswapV2Pair"
+    }
   }
 ]
