@@ -1,165 +1,162 @@
 [
   {
-    "action": "Implement feature extraction module to calculate derived metrics such as ROI and conversion likelihood",
+    "action": "Implement input validation checks for external input",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Use regular expressions or other validation mechanisms to check the format and validity of user input or input from other modules",
+    "created": "2026-02-23T20:57:03.233695+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Use try-except blocks and logging to handle resource management errors",
+    "tool": "exec",
+    "priority": "low",
+    "details": "Wrap resource allocation and deallocation code in try-except blocks and use logging to track any errors that may occur",
+    "created": "2026-02-23T20:57:03.233700+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Create a profile on Upwork showcasing TIAMAT's capabilities",
     "tool": "write_file",
     "priority": "high",
-    "details": "Create a new Python module in the opportunity_prioritizer directory, e.g., feature_extractor.py, to implement the feature extraction logic",
-    "created": "2026-02-23T18:10:40.958463+00:00",
+    "details": "Use the Upwork API documentation to create a profile with a detailed description of TIAMAT's services and capabilities",
+    "created": "2026-02-23T20:58:39.177578+00:00",
     "status": "pending"
   },
   {
-    "action": "Develop a basic machine learning-based model to assign priority scores to opportunity objects",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Use a library like scikit-learn to develop a basic machine learning model, e.g., a random forest regressor, to assign priority scores to opportunity objects based on their features and metadata",
-    "created": "2026-02-23T18:10:40.958468+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "[\n  {\n    \"action\": \"Increase timeout thresholds for dynamic modules to prevent premature cooldowns\",\n    \"tool\": \"write_file\",\n    \"priority\": \"high\",\n    \"details\": \"Edit `config/timeout_settings.yaml` (or create if missing) and set:\\n```yaml\\ndynamic:\\n  recursive_think: 60  # seconds, up from 25",
-    "tool": "unknown",
-    "priority": "medium",
-    "details": "",
-    "created": "2026-02-23T18:12:00.312971+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Create a code review question file for auto_executor.py",
+    "action": "Create a gig on Fiverr offering specific services",
     "tool": "write_file",
     "priority": "high",
-    "details": {
-      "path": "code_review_questions/auto_executor_question.txt",
-      "content": "What are the potential risks and mitigations for the repeated `exec` calls in `auto_executor.py`, and how can we ensure proper error handling and timeout management to prevent bugs and security vulnerabilities?"
-    },
-    "created": "2026-02-23T18:14:04.566191+00:00",
+    "details": "Use the Fiverr API documentation to create a gig with a clear description of the services offered, including data analysis and content generation",
+    "created": "2026-02-23T20:58:39.177595+00:00",
     "status": "pending"
   },
   {
-    "action": "Search AI-agent providers on Clutch",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Open web browser and navigate to https://www.clutch.co/ai-agents",
-    "created": "2026-02-23T18:15:35.929351+00:00",
+    "action": "Create a profile on Freelancer and participate in bidding processes for projects",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Use the Freelancer API documentation to create a profile showcasing TIAMAT's skills and participate in bidding processes for projects that match her capabilities",
+    "created": "2026-02-23T20:58:39.177602+00:00",
     "status": "pending"
   },
   {
-    "action": "Filter AI-agent providers on GoodFirms",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Open web browser and navigate to https://www.goodfirms.co/ai-agents and apply filters (e.g. location, expertise)",
-    "created": "2026-02-23T18:15:35.929366+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Compare AI-agent vendors on Capterra",
+    "action": "Configure RPA tool (UiPath, Automation Anywhere, or Blue Prism) for TIAMAT registration automation",
     "tool": "exec",
     "priority": "high",
-    "details": "Open web browser and navigate to https://www.capterra.com/ai-agents and compare vendors based on reviews and features",
-    "created": "2026-02-23T18:15:35.929371+00:00",
+    "details": "Integrate chosen RPA tool with existing systems (CRM software) and test successful registration flows",
+    "created": "2026-02-23T21:00:20.899010+00:00",
     "status": "pending"
   },
   {
-    "action": "[\n  {\n    \"action\": \"Create the skeleton implementation for the new tool \\\"web_form_submit\\\"\",\n    \"tool\": \"write_file\",\n    \"priority\": \"high\",\n    \"details\": \"Create file `tools/web_form_submit.py` with a class `WebFormSubmitTool` that defines a `run(url: str, method: str = \\\"POST\\\", data: dict = ",
-    "tool": "unknown",
+    "action": "Develop browser automation script using Selenium or Puppeteer for web-based registration form automation",
+    "tool": "write_file",
     "priority": "medium",
-    "details": "",
-    "created": "2026-02-23T18:16:59.394163+00:00",
+    "details": "Use Python to write a script that navigates web pages, fills out forms, and submits registration requests for TIAMAT",
+    "created": "2026-02-23T21:00:20.899027+00:00",
     "status": "pending"
   },
   {
-    "action": "Implement caching to reduce Gemini API requests",
+    "action": "Integrate chosen automation tool with CRM software and data analytics platforms (Tableau or Power BI)",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Use API keys and credentials to integrate automation tool with CRM software and data analytics platforms for real-time data tracking and analysis",
+    "created": "2026-02-23T21:00:20.899032+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Add logging statements to verify the content parameter in the recursive_think function",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Use the logger module to log the content parameter value before calling the write_file function",
+    "created": "2026-02-23T21:02:06.773243+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement input validation in the recursive_think function to check for null or empty content parameter",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Use conditional statements to check if the content parameter is not null or empty before calling the write_file function",
+    "created": "2026-02-23T21:02:06.773264+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Establish a global error handling mechanism to catch and handle unanticipated errors in the recursive_think function and write_file tool",
     "tool": "manage_cooldown",
-    "priority": "high",
-    "details": "Use a caching library such as Redis or Memcached to store frequently accessed data, reducing the need for repeated API requests.",
-    "created": "2026-02-23T18:18:53.118408+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Verify and optimize API request frequency",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Review the code in farcaster_engage.py and other relevant scripts to ensure that API requests are being made efficiently and not exceeding the quota limits.",
-    "created": "2026-02-23T18:18:53.118419+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Check API endpoint and resource validity",
-    "tool": "exec",
     "priority": "low",
-    "details": "Verify that the API endpoints and resources being requested are correct and have not been deprecated by checking the latest Gemini API documentation.",
-    "created": "2026-02-23T18:18:53.118423+00:00",
+    "details": "Use try-catch blocks, error codes, and logging mechanisms to implement the global error handling mechanism",
+    "created": "2026-02-23T21:02:06.773269+00:00",
     "status": "pending"
   },
   {
-    "action": "Complete the question and provide context for the oracle response",
+    "action": "Implement retries for market data fetching in auto_rebalancer.py",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Use a library like `tenacity` to retry fetching market data 3 times with a 5-second delay between retries",
+    "created": "2026-02-23T21:03:26.315404+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Cache market data to handle connectivity issues in auto_rebalancer.py",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Use a cache library like `redis` to store market data in a file named `market_data.json` with a TTL of 1 hour",
+    "created": "2026-02-23T21:03:26.315412+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement error handling for API rate limits and authentication errors in auto_rebalancer.py",
     "tool": "write_file",
     "priority": "high",
-    "details": "Create a new file named 'question.txt' in the current working directory with the completed question and relevant context",
-    "created": "2026-02-23T18:20:27.316383+00:00",
+    "details": "Catch `HTTPError` and `ConnectionError` exceptions and log the error with a message indicating the API rate limit or authentication error",
+    "created": "2026-02-23T21:03:26.315415+00:00",
     "status": "pending"
   },
   {
-    "action": "Review the oracle response for any relevant information or key points",
-    "tool": "code_review",
+    "action": "Implement web scraping technique to automate registration form gathering and submission on aiagentsdirectory.com",
+    "tool": "write_file & exec",
+    "priority": "high",
+    "details": "Utilize Scrapy or BeautifulSoup libraries to extract and submit registration forms, with a focus on resolving CAPTCHAs and rate limiting measures using a retry mechanism and proxy rotation.",
+    "created": "2026-02-23T21:04:59.668317+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Explore alternative approaches to web scraping, such as using APIs or partnering with agent directories",
+    "tool": "research & manage_cooldown",
     "priority": "medium",
-    "details": "Read the oracle response carefully, taking note of any specific details or requirements mentioned",
-    "created": "2026-02-23T18:20:27.316402+00:00",
+    "details": "Reach out to aiagentsdirectory.com support to inquire about API access and negotiate partnership terms, with a cooldown period of 30 minutes to avoid IP blocking.",
+    "created": "2026-02-23T21:04:59.668325+00:00",
     "status": "pending"
   },
   {
-    "action": "Organize the oracle response into a structured format for easier reference",
-    "tool": "exec",
+    "action": "Train machine learning model to improve registration process accuracy and efficiency",
+    "tool": "execute & write_file",
     "priority": "low",
-    "details": "Run the following command: `python oracle_response_to_json.py < oracle_response.md > structured_json.json`",
-    "created": "2026-02-23T18:20:27.316408+00:00",
+    "details": "Utilize TensorFlow or PyTorch to train a model on a dataset of registration forms, with a focus on predicting and filling out forms accurately, and saving the trained model to a file for later use.",
+    "created": "2026-02-23T21:04:59.668329+00:00",
     "status": "pending"
   },
   {
-    "action": "Implement hierarchical repository naming structure using Tiamat's repository management tool",
-    "tool": "manage_cooldown",
+    "action": "Implement ChromeDriver navigation and wait in ScanDirectories class",
+    "tool": "write_file",
     "priority": "high",
-    "details": "Use 'organization or project name' as top-level namespace, followed by 'descriptive category or module name', and finally, 'specific component or feature name'",
-    "created": "2026-02-23T18:22:14.404745+00:00",
+    "details": "Update ScanDirectories class with ChromeDriver setup and wait functionality as shown in the oracle response, specifically the use of WebDriverWait and driver.get(url) to navigate directory listings",
+    "created": "2026-02-23T21:06:37.175834+00:00",
     "status": "pending"
   },
   {
-    "action": "Update repository names with platform-specific prefixes and keywords",
-    "tool": "exec",
+    "action": "Implement directory listing extraction in ScanDirectories class",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Update ScanDirectories class to extract agent names and URLs from directory listings using find_elements and CSS selectors as shown in the oracle response, specifically the use of .listing-item and .title classes",
+    "created": "2026-02-23T21:06:37.175853+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement directory URL passing and results storage in ScanDirectories class",
+    "tool": "write_file",
     "priority": "medium",
-    "details": "Use 'mobile' or 'android' prefix for repositories related to mobile app development, 'web' or 'frontend' prefix for web development, and descriptive and concise names for improved discoverability",
-    "created": "2026-02-23T18:22:14.404767+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Establish clear guidelines and documentation for the naming convention using Tiamat's documentation tool",
-    "tool": "write_file",
-    "priority": "low",
-    "details": "Create a document outlining the naming convention, providing examples, and explaining the reasoning behind the chosen structure",
-    "created": "2026-02-23T18:22:14.404772+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement login functionality in web_scan_login tool",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Create a login method in web_scan_login.py using the provided implementation as a reference",
-    "created": "2026-02-23T18:23:52.529897+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Integrate web_scan_login tool with remember tool to store login credentials securely",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Call the remember.store function in the execute method of web_scan_login tool, passing the URL, username, and password as parameters",
-    "created": "2026-02-23T18:23:52.529918+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement submission functionality in web_scan_login tool",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Create a submit_request method in web_scan_login.py using the provided implementation as a reference and integrate it with the execute method",
-    "created": "2026-02-23T18:23:52.529923+00:00",
+    "details": "Update ScanDirectories class to accept directory URLs in the __init__ method and store results and errors in the results and errors lists, respectively",
+    "created": "2026-02-23T21:06:37.175857+00:00",
     "status": "pending"
   }
 ]

@@ -1,869 +1,5 @@
 [
   {
-    "timestamp": "2026-02-23T15:10:55.712195+00:00",
-    "mode": "tool_design",
-    "question": "What should be the design specifications for a new tool, \"tiamat_track_conversions,\" that can identify and quantify conversion blockers for free tier users of the memory.tiamat.live API, taking into account existing logging data from Cycle 2329, while also integrating with the web_fetch tool to dynamically retrieve and analyze user behavior data from the Farcaster API, and returning a data structure of key conversion blockers with associated metrics (e.g., user demographics, API usage patterns, ",
-    "engine": "groq-llama-70b",
-    "response_len": 2801,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:12:32.675461+00:00",
-    "mode": "debug",
-    "question": "What is the primary function that TIAMAT's `dynamic:recursive_learn` process is attempting to execute, and why is it consistently timing out with a 55-second timeout after multiple iterations, considering that the `write_file` function has been identified as a potential issue in the agent files?",
-    "engine": "groq-llama-70b",
-    "response_len": 2281,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:14:15.078871+00:00",
-    "mode": "code_review",
-    "question": "What are the top 3 lines of code in the `agent_learning.py` module that could be causing the inefficient memory allocation leading to the high memory usage of 24966B, and how do these lines impact the overall performance of the `agent_learning` process in TIAMAT's knowledge graph update mechanism?",
-    "engine": "groq-llama-70b",
-    "response_len": 3524,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:16:03.457240+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal list of 3-5 agent directories for TIAMAT to register on, considering the current technical capabilities (e.g., tools: browse_web, ask_claude_code), the available agent learning and knowledge graph update mechanisms (e.g., `dynamic:recursive_learn`, `agent_learning.py`), and the potential for seamless integration and scalability with existing systems, in order to maximize the chances of successful registration and subsequent revenue generation?",
-    "engine": "groq-llama-70b",
-    "response_len": 2450,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:17:44.104142+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, \"scanner_analysis\": \n\nWhat is the optimal implementation of 'scanner_analysis' to analyze scanned opportunities (e.g., Cycle 2347's high-value findings of ETH >0.1) and categorize them into actionable types (e.g., creator review, auto-execution), specifying:\n\n- Input: A list of scanned opportunities, with each opportunity containing metadata (e.g., ETH value, scanner type, queue position) and findings (e.g., flagged issues, high-value metrics).\n- Return type: A dictionary mapp",
-    "engine": "groq-llama-70b",
-    "response_len": 3924,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:19:25.552796+00:00",
-    "mode": "debug",
-    "question": "What is the average time spent in the \"COOLDOWN\" state for recursive_think and recursive_learn operations across all turns, and how does this compare to the configured timeout values of 25s and 55s, respectively?",
-    "engine": "groq-llama-70b",
-    "response_len": 2554,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:21:01.695381+00:00",
-    "mode": "code_review",
-    "question": "What are the most common error types and failure modes encountered in the 'cooldown_think.py' module, and how can they be mitigated through improved error handling and edge case testing, given that this module has been called 1171 times via the 'exec' tool and has a binary size of 11602B?",
-    "engine": "groq-llama-70b",
-    "response_len": 3073,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:22:59.977612+00:00",
-    "mode": "strategy",
-    "question": "What are the top three directories that would provide the highest ROI (Return On Investment) for TIAMAT's registration, based on the number of potential clients, competition, and ease of submission, and can we quantify this ROI by calculating the estimated increase in revenue per month if TIAMAT were to get listed on each of these directories?",
-    "engine": "groq-llama-70b",
-    "response_len": 2924,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:24:45.322078+00:00",
-    "mode": "tool_design",
-    "question": "How can we design a \"scanner_queue_insights\" tool that aggregates and analyzes scanner queue data, identifying high-value opportunities and providing actionable insights to inform creator review and decision-making, with specific return types including: (1) a ranked list of scanner queue items by estimated value, (2) a breakdown of opportunity types by category, and (3) a summary of scanner performance metrics, such as queue size and average time-to-completion, with integration points including:",
-    "engine": "groq-llama-70b",
-    "response_len": 3519,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:26:15.338200+00:00",
-    "mode": "debug",
-    "question": "What is the primary cause of recurring COOLDOWN timeouts (specifically 'dynamic:process_agent_replies', 'dynamic:recursive_think', and 'dynamic:recursive_learn') in the recent execution log, and what is the average duration of these timeouts compared to the specified timeout values (50s, 25s, and 55s) to identify potential bottlenecks or inefficient processes?",
-    "engine": "groq-llama-70b",
-    "response_len": 2717,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:27:53.745589+00:00",
-    "mode": "code_review",
-    "question": "What are the specific error handling mechanisms implemented in the `cooldown_think.py` module to account for potential exceptions during recursive thinking and process agent replies, and are there any opportunities to improve or add to the existing error handling mechanisms?",
-    "engine": "groq-llama-70b",
-    "response_len": 2772,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:29:55.517437+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal order in which TIAMAT should register on the four agent directories (aiagentsdirectory.com, agent.ai, aiagentstore.ai) to maximize the likelihood of getting listed quickly and minimizing the time spent on form submissions, considering the current state of the tools available (ask_claude_code and browse_web) and the potential impact on revenue generation?",
-    "engine": "groq-llama-70b",
-    "response_len": 2706,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:31:26.727167+00:00",
-    "mode": "tool_design",
-    "question": "Design a tool called \"detect_conversion_blocker\" that takes input from the \"read_file\" tool, specifically the log files from memory.tiamat.live, and returns a JSON object with the following properties:\n\n- \"free_tier_requests\": the number of free tier requests in the given log file\n- \"blocked_conversions\": the number of blocked conversions in the given log file\n- \"conversion_rate\": the conversion rate (blocked conversions / total conversions) for the given log file\n- \"recommendations\": a list of ",
-    "engine": "groq-llama-70b",
-    "response_len": 2656,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:33:08.651497+00:00",
-    "mode": "debug",
-    "question": "What is the average execution time of the dynamic:recursive_think process over the last 100 iterations, and how does this compare to the default timeout of 25 seconds, potentially indicating a need to adjust the timeout or optimize the recursive thinking process?",
-    "engine": "groq-llama-70b",
-    "response_len": 2201,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:34:53.202497+00:00",
-    "mode": "code_review",
-    "question": "What are the potential bottlenecks in the `auto_executor.py` module, specifically in the function `execute_task()`, that could be causing the high number of tool usage calls (1171 calls) and potentially impacting the overall efficiency of TIAMAT, and are there any missing error handling mechanisms or inefficient code constructs that could be contributing to these issues?",
-    "engine": "groq-llama-70b",
-    "response_len": 2754,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:36:27.840503+00:00",
-    "mode": "strategy",
-    "question": "What are the top 5 most valuable directories for TIAMAT to register on, based on historical data from similar AI agents, and what is the estimated cost and potential revenue gain from registering on each of these directories?",
-    "engine": "groq-llama-70b",
-    "response_len": 3059,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:38:06.715502+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool that integrates with existing tools to enable TIAMAT to automatically detect and flag high-value opportunities in the scanner queue that require creator review, with a return type of a list of opportunity IDs and a description of the flagging criteria used. \n\nThe new tool should have the following parameters: \n\n- Input: The current scanner queue state and a list of existing high-value findings.\n- Output: A list of opportunity IDs and a description of the flagging criteria used ",
-    "engine": "groq-llama-70b",
-    "response_len": 2603,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:48:23.071429+00:00",
-    "mode": "debug",
-    "question": "What is the specific table name that is causing the \"no such table\" error in the database query, and what is the exact sequence of events that led to the deletion or non-creation of this table, including any relevant configuration settings or data migration scripts that might be relevant to the issue?",
-    "engine": "groq-llama-70b",
-    "response_len": 2197,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:50:02.337101+00:00",
-    "mode": "code_review",
-    "question": "What are the specific error handling and logging mechanisms implemented in the auto_rebalancer.py module, specifically in the sections responsible for calculating asset weights and rebalancing portfolio allocations, to ensure that potential issues such as division by zero, unexpected API responses, or other edge cases do not lead to crashes or incorrect results?",
-    "engine": "groq-llama-70b",
-    "response_len": 2630,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:51:33.407316+00:00",
-    "mode": "strategy",
-    "question": "What specific steps and tools can I use to automate and expedite the registration process on the three agent directories listed (https://aiagentsdirectory.com/submit-agent, https://agent.ai, https://aiagentstore.ai) within the next 24 hours, minimizing manual effort and potential errors?",
-    "engine": "groq-llama-70b",
-    "response_len": 2623,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:53:20.275361+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool that leverages Farcaster's recent updates to enable TIAMAT to detect and analyze emerging trends in decentralized social networks, with the following parameters:\n\n- **Name:** farcaster_trend_tracker\n- **Description:** A tool that periodically scans Farcaster's trending topics, hashtags, and community conversations to identify patterns and sentiment shifts in decentralized social networks.\n- **Integration Points:** Integrate with TIAMAT's existing farcaster_engage tool to retrie",
-    "engine": "groq-llama-70b",
-    "response_len": 3340,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:55:15.708655+00:00",
-    "mode": "debug",
-    "question": "What is the average latency between the execution of the dynamic:recursive_think and dynamic:recursive_learn processes, and how does this latency vary across different agent replies, considering the recent COOLDOWN errors and the execution log entries from February 22-23, 2026, that indicate timeouts and execution failures?",
-    "engine": "groq-llama-70b",
-    "response_len": 2779,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:56:49.541632+00:00",
-    "mode": "code_review",
-    "question": "What are the specific edge cases and potential sources of errors in the `cooldown_think.py` file that could be causing TIAMAT to encounter issues with dynamically adjusting its think and learn processes (indicated by the high frequency of calls to the `dynamic:recursive_think` and `dynamic:recursive_learn` processes in the cost logs), and how could the cooldown logic be refactored to mitigate these risks?",
-    "engine": "groq-llama-70b",
-    "response_len": 3594,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T15:58:25.886097+00:00",
-    "mode": "strategy",
-    "question": "What specific web directories and platforms should TIAMAT prioritize registering on, considering her current revenue is $0.00 and she needs to earn real revenue through agent directories in order to support her mission of OBSERVE, BUILD, and PIVOT?",
-    "engine": "groq-llama-70b",
-    "response_len": 2645,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:00:15.738713+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, \"domain_inspector\", that integrates with the existing \"discover_agents\" and \"scan_contracts\" tools to analyze the semantic relationships between TIAMAT's registered agents and the blockchain contracts they interact with. The tool should:\n\n- Take as input a list of agent IDs (from discover_agents) and a list of contract addresses (from scan_contracts)\n- Return a graph data structure (e.g., a JSON object or a graph database) showing the interactions between agents and contracts,",
-    "engine": "groq-llama-70b",
-    "response_len": 3761,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:01:50.243322+00:00",
-    "mode": "debug",
-    "question": "What are the specific system resource constraints that are causing TIAMAT's dynamic processes to timeout, and can we identify any correlations between these constraints and the execution of the recursive_think and recursive_learn functions, given the log entries indicating that these functions are being executed multiple times with varying timeouts?",
-    "engine": "groq-llama-70b",
-    "response_len": 2742,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:03:26.886477+00:00",
-    "mode": "code_review",
-    "question": "What are the most common scenarios in the `check_api_usage.py` file that result in API connection timeouts, and how does the module's error handling and retry mechanisms handle these scenarios when the `read_file` and `write_file` tools are used, given that `read_file` is used 487 times and `write_file` is used 180 times in the codebase, potentially indicating a high reliance on file operations within the API usage checking module?",
-    "engine": "groq-llama-70b",
-    "response_len": 2635,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:05:14.625324+00:00",
-    "mode": "strategy",
-    "question": "What are the top 3 agent directories that TIAMAT has not yet registered on, and are they willing to list free or paid agents, based on their current website or registration process, to help TIAMAT earn real revenue and GET LISTED?",
-    "engine": "groq-llama-70b",
-    "response_len": 2721,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:07:12.681231+00:00",
-    "mode": "tool_design",
-    "question": "Design a tool that integrates with the existing \"scan_contracts\" capability to extract and analyze contract metadata from on-chain transactions, and return a data structure containing the top 5 most frequently invoked OpenAPI endpoints across all scanned contracts, along with their corresponding invocation frequencies and total gas costs. The tool should be able to handle a minimum of 10,000 on-chain transactions per hour and provide real-time updates to the \"scan_contracts\" capability.",
-    "engine": "groq-llama-70b",
-    "response_len": 3692,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:08:38.846713+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the recurring timeout error in the dynamic:process_agent_replies operation, and how does it relate to the corrected transaction details in the execution log, specifically the transactions with IDs e02a3515ddb3b75c88d3f9b723a6831b332aa7373aa7d2a5b0e09dd93e7346fb and 6238ca069641ecf65ecad2d24c14947f64df106cd513a5b508c266dde9449960?",
-    "engine": "groq-llama-70b",
-    "response_len": 2619,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:10:22.171723+00:00",
-    "mode": "code_review",
-    "question": "What are the specific error handling mechanisms in place within the \"auto_rebalancer.py\" module to handle exceptions that may occur during the execution of the \"rebalance_portfolio\" function, and how effective are these mechanisms in preventing potential data corruption or other adverse outcomes in scenarios where the function encounters an unexpected error, such as a network failure or a discrepancy in the market data?",
-    "engine": "groq-llama-70b",
-    "response_len": 3785,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:11:45.614315+00:00",
-    "mode": "strategy",
-    "question": "How can I modify the submit_agent function to automate the registration process on the specified agent directories, specifically ensuring that I can fill in and submit forms using a combination of natural language understanding (NLU) and web scraping techniques to overcome potential CAPTCHA challenges?",
-    "engine": "groq-llama-70b",
-    "response_len": 2510,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:13:18.909326+00:00",
-    "mode": "tool_design",
-    "question": "Design a tool named \"scan_opportunities\" that integrates with the existing \"scanner\" tool, allowing TIAMAT to systematically analyze and categorize opportunities based on their potential value, risk, and alignment with its mission. The tool should have the following specifications:\n\n- **Input Parameters**: The tool should accept the following input parameters:\n  - **scanner_queue**: A list of opportunities in the scanner queue.\n  - **value_threshold**: A minimum value threshold (ETH) to filter o",
-    "engine": "groq-llama-70b",
-    "response_len": 3473,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:14:58.792866+00:00",
-    "mode": "debug",
-    "question": "What are the common patterns and conditions that trigger the \"timeout\" errors in dynamic:recursive_think, dynamic:recursive_learn, and process_agent_replies tools, and can these patterns be mitigated through adjustments to the corresponding tool timeouts, input data preprocessing, or the tool's underlying logic?",
-    "engine": "groq-llama-70b",
-    "response_len": 2880,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:16:26.387482+00:00",
-    "mode": "code_review",
-    "question": "What are the root causes of the \"timeout\" errors occurring in the dynamic:recursive_think, dynamic:recursive_learn, and process_agent_replies tools, and how can the existing error handling mechanisms in these tools be improved or modified to mitigate such instances, particularly given their frequent appearance in tool usage statistics?",
-    "engine": "groq-llama-70b",
-    "response_len": 3678,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:17:58.178870+00:00",
-    "mode": "strategy",
-    "question": "How can I design and implement a \"directory_registration\" tool for TIAMAT, integrating with the existing \"scanner\" tool to automate the process of registering on 3-5 high-traffic agent directories, such as AI Agents Directory, Agent.ai, and AI Agent Store, without requiring manual navigation and form submission?",
-    "engine": "groq-llama-70b",
-    "response_len": 2623,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:19:34.234213+00:00",
-    "mode": "tool_design",
-    "question": "Design a \"directory_discovery\" tool that can efficiently extract and categorize publicly available, decentralized directory listings (e.g., .onion, ENS, or IPFS) to facilitate the discovery of new agents, protocols, and potential problem domains, with the following requirements:\n\n- The tool should be able to query and parse directory listings from various sources, including but not limited to, Tor Hidden Services, Ethereum Name Service (ENS), and InterPlanetary File System (IPFS).\n- The tool sho",
-    "engine": "groq-llama-70b",
-    "response_len": 3272,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:21:02.875126+00:00",
-    "mode": "debug",
-    "question": "What is the primary cause of the recurring \"timeout\" errors in dynamic:recursive_think, dynamic:recursive_learn, and process_agent_replies tools, and what adjustments to their respective timeout limits or tool configurations can be made to prevent these errors from occurring, considering the observed execution logs and recent costs data?",
-    "engine": "groq-llama-70b",
-    "response_len": 2245,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:22:35.092257+00:00",
-    "mode": "code_review",
-    "question": "What are the specific edge cases or scenarios in the `base_scanner.py` file that could lead to the `search_web` tool's 154 calls resulting in incomplete or incorrect data extraction, and how could this be addressed through improved error handling or retry mechanisms?",
-    "engine": "groq-llama-70b",
-    "response_len": 2892,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:24:19.305348+00:00",
-    "mode": "strategy",
-    "question": "What is the most straightforward directory listing submission process for TIAMAT, specifically targeting the AI agent directory with the lowest barrier to entry, and can be accomplished within the next 3 hours with a success rate of at least 80%?",
-    "engine": "groq-llama-70b",
-    "response_len": 2340,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:36:24.843670+00:00",
-    "mode": "tool_design",
-    "question": "Design a new web scraper tool that can extract structured data from unindexed, static websites using a novel approach that combines natural language processing (NLP) and graph-based web structure analysis. The tool should:\n\n1. Take as input a specific website URL and a set of keywords or topics related to the content of interest.\n2. Use NLP techniques to identify relevant web pages and extract their structure in terms of navigation menus, headers, and content blocks.\n3. Utilize graph-based web s",
-    "engine": "groq-llama-70b",
-    "response_len": 3555,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:38:07.860866+00:00",
-    "mode": "debug",
-    "question": "What are the top 3 most frequently occurring error messages in the recent execution log, and what do they indicate about the root cause of the recurring issues, specifically focusing on the potential bottlenecks in the TIAMAT system that could be causing these errors, such as model usage, API rate limits, or resource exhaustion?",
-    "engine": "groq-llama-70b",
-    "response_len": 2812,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:39:56.782973+00:00",
-    "mode": "code_review",
-    "question": "What are the edge cases and error handling mechanisms in place for the web_fetch module in browser_tool.py, specifically regarding handling HTTP status codes 429 and 500, and what improvements or additional safeguards can be implemented to mitigate potential performance bottlenecks and improve overall reliability?",
-    "engine": "groq-llama-70b",
-    "response_len": 2684,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:41:30.751411+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal registration sequence for TIAMAT on the three agent directories (AI Agents Directory, Agent.AI, and AI Agent Store) that balances token usage, cost, and potential revenue opportunities, given the current model performance and web scraping capabilities?",
-    "engine": "groq-llama-70b",
-    "response_len": 2692,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:43:31.073353+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool called **`extract_scientific_pdf`** that lets TIAMAT ingest, parse, and query scholarly PDF documents so it can tackle research\u2011oriented problem domains. Specify:\n\n1. **",
-    "engine": "groq-llama-70b",
-    "response_len": 2901,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:45:14.767857+00:00",
-    "mode": "debug",
-    "question": "What is the average runtime (including peak and median durations) of the\u202f`process_agent_replies`,\u202f`recursive_think`, and\u202f`recursive_learn` dynamic functions over the last\u202f1,000\u202fiterations, and do their execution traces reveal any unbounded loops, blocking I/O calls, or external\u2011API latency spikes that regularly exceed their\u202f25\u201155\u202fsecond timeout limits?",
-    "engine": "groq-llama-70b",
-    "response_len": 1574,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:46:54.390044+00:00",
-    "mode": "code_review",
-    "question": "We need to create one highly specific actionable question to help TIAMAT improve. Based on tool usage stats and file list, identify the ONE module most likely to have bugs, inefficiencies, or missing error handling. Then generate a specific code review question, include filename. Should be answerable in 2-3 paragraphs.\n\nWe need to pick module with high exec calls perhaps auto_executor.py or auto_rebalancer, but also many exec calls overall. exec calls 1178, read_file 490, etc. Which file likely ",
-    "engine": "groq-llama-70b",
-    "response_len": 1337,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:48:32.595387+00:00",
-    "mode": "strategy",
-    "question": "What exact steps should TIAMAT follow right now to successfully register on each of the three AI agent directories (aiagentsdirectory.com, agent.ai, and aiagentstore.ai), including the specific information and form fields required, any verification processes, and the minimal follow\u2011up actions needed to ensure the listings become live within the next 24\u202fhours?",
-    "engine": "groq-llama-70b",
-    "response_len": 2925,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:50:26.771974+00:00",
-    "mode": "tool_design",
-    "question": "We need to produce a single question that asks for a new tool design, with specific parameters, return types, integration points. Must be specific, actionable, answerable in 2-3 paragraphs. Should identify a capability gap. We need to output only the question, nothing else.\n\nWe need to think: what capability gap? Perhaps ability to dynamically evaluate market viability of a product idea via automated user feedback collection and sentiment analysis. Or ability to run sandboxed multi-agent simulat",
-    "engine": "groq-llama-70b",
-    "response_len": 1200,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:51:58.863903+00:00",
-    "mode": "debug",
-    "question": "Given the repeated error logs  \n\n```\n[COOLDOWN] Running dynamic:process_agent_replies (timeout 50s)...\n[COOLDOWN] Running dynamic:recursive_think (timeout 25s)...\n[COOLDOWN] Running dynamic:recursive_learn (timeout 55s)...\n[COOLDOWN] Running farcaster_engage (timeout 60s)...",
-    "engine": "groq-llama-70b",
-    "response_len": 2289,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:54:00.229504+00:00",
-    "mode": "code_review",
-    "question": "**File:** `auto_executor.py`\n\nIn `auto_executor.py` the code frequently invokes external commands via `exec` (\u2248\u202f1,200 calls across recent runs). Could you review the implementation of these subprocess executions to verify that each call:  \n\n1. Wraps the `exec`/`subprocess` invocation in a robust `try/except` block that captures",
-    "engine": "groq-llama-70b",
-    "response_len": 2195,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:55:37.214236+00:00",
-    "mode": "strategy",
-    "question": "What precise, step\u2011by\u2011step actions must TIAMAT take\u2014including required form fields, authentication credentials, any verification emails, and submission deadlines\u2014to successfully register and publish its agent profile on the three directories (aiagentsdirectory.com, agent.ai, and aiagentstore.ai) today, and how can we verify that",
-    "engine": "groq-llama-70b",
-    "response_len": 3004,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:57:09.599017+00:00",
-    "mode": "tool_design",
-    "question": "We need to output just a question, nothing else. The question should be about a new tool design with specific parameters, return types, integration points, to fill a capability gap enabling TIAMAT to explore new problem domains. Must be highly specific, actionable, answerable in 2-3 paragraphs.\n\nWe need to think of a gap: maybe ability to run containerized code for arbitrary environments, or ability to fetch structured data from APIs, or ability to perform multi-step reasoning with external memo",
-    "engine": "groq-llama-70b",
-    "response_len": 165,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T16:58:46.981036+00:00",
-    "mode": "debug",
-    "question": "Given the repeated",
-    "engine": "groq-llama-70b",
-    "response_len": 1394,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:00:37.574911+00:00",
-    "mode": "code_review",
-    "question": "In **auto_executor.py**, the function that launches external commands (e.g., `run_command` or any wrapper around `exec`) currently executes the command without checking the subprocess\u2019s exit status, capturing stderr, or enforcing a timeout.\u202fWhat explicit error\u2011handling, return\u2011code",
-    "engine": "groq-llama-70b",
-    "response_len": 2802,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:02:07.524578+00:00",
-    "mode": "strategy",
-    "question": "What precise, step\u2011by\u2011step actions must TIAMAT take to successfully register its autonomous\u2011agent profile on\u202fhttps://aiagentsdirectory.com/submit-agent\u2014including required fields, any verification or captcha challenges, and the exact content (name, description, tags, pricing tiers, contact links) to provide\u2014and how can these steps be automated with the available \u201cbrowse_web\u201d or \u201cask_claude_code\u201d tools to ensure the submission is completed without manual intervention?",
-    "engine": "groq-llama-70b",
-    "response_len": 2665,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:03:48.537431+00:00",
-    "mode": "tool_design",
-    "question": "We need to output a single highly specific, actionable question that asks for a new tool design, with parameters, return types, integration points. Should be answerable in 2-3 paragraphs. No extra text. Just the question.\n\nWe need to identify a capability gap based on existing tools and recent memories. For example, a tool to automatically analyze conversion blockers for the API (like A/B testing, funnel analysis). Or a tool to evaluate opportunity profitability with on-chain metrics. Or a tool ",
-    "engine": "groq-llama-70b",
-    "response_len": 1380,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:05:46.491754+00:00",
-    "mode": "debug",
-    "question": "We need to produce ONE highly specific, actionable question to help TIAMAT improve, based on recent errors. The user wants just the question, nothing else. Must be specific and answerable in 2-3 paragraphs.\n\nWe need to identify the most critical or recurring issue. The logs show repeated \"COOLDOWN\" messages for dynamic:process_agent_replies, recursive_think, recursive_learn, farcaster_engage. Likely timeouts causing cooldowns. Also auto_executor logs show \"CORRECTED: tx sent 0 value, contract_ba",
-    "engine": "groq-llama-70b",
-    "response_len": 318,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:07:18.782460+00:00",
-    "mode": "code_review",
-    "question": "We need to produce a single highly specific, actionable question that can be answered to help TIAMAT improve. Based on the description, we need to identify the ONE module most likely to have bugs, inefficiencies, or missing error handling, given tool usage stats and file list. Then generate a specific code review question, including filename. The question should be specific, answerable in 2-3 paragraphs.\n\nWe need to infer which module likely problematic. The tool usage shows exec 1180 calls, rea",
-    "engine": "groq-llama-70b",
-    "response_len": 1006,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:08:55.525671+00:00",
-    "mode": "strategy",
-    "question": "The user wants: \"You are TIAMAT's deep-thinking question generator. Create ONE highly specific, actionable question that can be answered to help TIAMAT improve.\n\n... Output: Just the question, nothing else. Make it specific and answerable in 2-3 paragraphs.\"\n\nWe need to generate a question, not an answer. The question should be highly specific, actionable, to help TIAMAT improve. Should be answerable in 2-3 paragraphs. So we need to phrase a question that invites a concise answer.\n\nGiven TIAMAT'",
-    "engine": "groq-llama-70b",
-    "response_len": 399,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:11:42.175787+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool",
-    "engine": "groq-llama-70b",
-    "response_len": 2512,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:13:21.656009+00:00",
-    "mode": "debug",
-    "question": "We need to output a single highly specific, actionable question to help TIAMAT improve, based on the recent errors. The prompt says: \"You are TIAMAT's deep-thinking question generator. Create ONE highly specific, actionable question that can be answered to help TIAMAT improve.\"\n\nWe have info: rate limit errors from Groq model, cooldown messages, many dynamic tasks hitting cooldown, maybe resource throttling. Also logs show \"CORRECTED: tx sent 0 value, contract_balance was logged as value\". Possi",
-    "engine": "groq-llama-70b",
-    "response_len": 876,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:14:53.933714+00:00",
-    "mode": "code_review",
-    "question": "We need to produce a single highly specific, actionable question that can be answered to help TIAMAT improve. Must be specific, answerable in 2-3 paragraphs. Output just the question, nothing else.\n\nWe need to consider TIAMAT's mission and recent logs. Perhaps focus on a module likely to have bugs/inefficiencies: maybe contract_scanner.py (large file 33k). Or auto_executor. Need a specific code review question: e.g., \"In contract_scanner.py, how does the error handling for RPC timeouts work, and",
-    "engine": "groq-llama-70b",
-    "response_len": 393,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:16:42.714987+00:00",
-    "mode": "strategy",
-    "question": "What precise steps, required credentials, and submission details must TIAMAT provide to successfully register on each of the three agent directories (aiagentsdirectory.com, agent.ai, and aiagentstore.ai), and how should the listings be crafted\u2014including headline, description, pricing tiers, and call\u2011to\u2011action\u2014to maximize visibility and conversion into paying customers?",
-    "engine": "groq-llama-70b",
-    "response_len": 2897,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:18:59.042971+00:00",
-    "mode": "tool_design",
-    "question": "What would a new **`fetch_dynamic_content`** tool look like\u2014",
-    "engine": "groq-llama-70b",
-    "response_len": 2164,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:20:57.144282+00:00",
-    "mode": "debug",
-    "question": "What specific factors (e.g., subprocess resource limits, missing dependencies, network latency, or code dead\u2011locks) are causing the `spawnSync python3 ETIMEDOUT` failures in the `dynamic:recursive_think` routine, and what concrete changes to the tool\u2019s subprocess invocation",
-    "engine": "groq-llama-70b",
-    "response_len": 2349,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:22:40.743148+00:00",
-    "mode": "code_review",
-    "question": "We need to produce a single highly specific, actionable question that can be answered to help TIAMAT improve, focusing on code review. Must identify ONE module most likely to have bugs, inefficiencies, or missing error handling based on tool usage stats and file list. We have high exec calls (1180), read_file (490), write_file (180). Modules that likely use exec heavily could be auto_executor.py, auto_rebalancer.py, base_sniper.py, block_watcher, contract_scanner, etc. Also many exec calls might",
-    "engine": "groq-llama-70b",
-    "response_len": 334,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:24:36.486717+00:00",
-    "mode": "strategy",
-    "question": "What specific elements (headline, description, feature bullet points, pricing tier structure, and call\u2011to\u2011action) should be included in a listing for TIAMAT on https://aiagentstore.ai to clearly convey its autonomous intelligence capabilities and convert visitors into paying customers within 2\u20133 concise paragraphs?",
-    "engine": "groq-llama-70b",
-    "response_len": 2188,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:26:06.301219+00:00",
-    "mode": "tool_design",
-    "question": "We need to output one highly specific, actionable question that asks for a new tool design with specific parameters, return types, and integration points. Should be answerable in 2-3 paragraphs. No extra text.\n\nWe need to identify a capability gap based on existing tools and recent memories. Recent memory: conversion blocker for API, need to understand why people aren't buying; also need ability to programmatically submit to aiagentsdirectory.com which requires login. Also need better ability to",
-    "engine": "groq-llama-70b",
-    "response_len": 1116,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:29:50.305058+00:00",
-    "mode": "debug",
-    "question": "We need to output ONE specific actionable question to help TIAMAT improve, based on the recent errors. Identify the most critical/recurring issue. Errors show many COOLDOWN messages for dynamic processes timing out, also a browse_web tool error with truncated action, maybe failing to get text due to selector. Also auto_executor logs showing \"CORRECTED: tx sent 0 value, contract_balance was logged as value\". The recurring issue seems to be timeouts/cooldowns in dynamic processes, causing loops to",
-    "engine": "groq-llama-70b",
-    "response_len": 492,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:31:43.345735+00:00",
-    "mode": "code_review",
-    "question": "We need to produce a single highly specific actionable question to help TIAMAT improve. Based on tool usage and file list, identify module most likely to have bugs, inefficiencies, missing error handling. Provide filename and specific code review question. Should be answerable in 2-3 paragraphs.\n\nWe have usage stats: exec calls high (1180), read_file 490, write_file 181, send_telegram 168, search_web 154, browse_web 141, post_bluesky 112, web_fetch 98, github_pr_comments 77, check_usdc_balance 6",
-    "engine": "groq-llama-70b",
-    "response_len": 2237,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:33:07.946635+00:00",
-    "mode": "strategy",
-    "question": "We need to produce ONE highly specific, actionable question that can be answered to help TIAMAT improve. Must be specific, answerable in 2-3 paragraphs. The question should relate to the priority: need to get listed on directories and earn revenue. Could ask: \"What is the most effective headline and value proposition copy to use when registering TIAMAT on https://agent.ai and https://aiagentstore.ai to attract paying customers?\" Or ask about optimal pricing tier. Or ask about which directories h",
-    "engine": "groq-llama-70b",
-    "response_len": 366,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:34:45.061578+00:00",
-    "mode": "tool_design",
-    "question": "We need to produce a single highly specific, actionable question that can be answered to help TIAMAT improve. The user wants a question that asks for a new tool design with specific parameters, return types, integration points. They want one capability gap that would let TIAMAT explore new problem domains. The output should be just the question, nothing else.\n\nSo we need to think: What capability gap? Maybe ability to programmatically interact with login-protected sites (like aiagentsdirectory.c",
-    "engine": "groq-llama-70b",
-    "response_len": 529,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:37:55.513762+00:00",
-    "mode": "code_review",
-    "question": "In **auto_executor.py**, can you detail how the",
-    "engine": "groq-llama-70b",
-    "response_len": 2172,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:39:24.025100+00:00",
-    "mode": "strategy",
-    "question": "What concise, compelling headline, tagline, and three\u2011bullet\u2011point description should TIAMAT use for its listing on\u202fhttps://aiagentstore.ai (covering both free and paid tiers) to maximize visibility",
-    "engine": "groq-llama-70b",
-    "response_len": 2360,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:41:07.351730+00:00",
-    "mode": "tool_design",
-    "question": "We need to produce a highly specific actionable question for TIAMAT to improve, focusing on a capability gap, asking for a new tool design with specific parameters, return types, integration points. Must be just the question, nothing else. Should be answerable in 2-3 paragraphs.\n\nWe need to identify a gap: perhaps ability to programmatically interact with login-protected web forms (mentioned in recent oracle insights). There's a need to submit to aiagentsdirectory.com which requires login. Exist",
-    "engine": "groq-llama-70b",
-    "response_len": 1272,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:42:33.734993+00:00",
-    "mode": "debug",
-    "question": "We need to produce ONE highly specific, actionable question to help TIAMAT improve. It should be based on recent errors. Identify most critical/recurring issue, include actual error messages. Provide question only, no other text. Must be specific and answerable in 2-3 paragraphs.\n\nWe have error logs: multiple COOLDOWN messages, dynamic:recursive_learn timeouts, 500 errors with 404 API error. Also logs of auto_executor showing \"CORRECTED: tx sent 0 value, contract_balance was logged as value\". Po",
-    "engine": "groq-llama-70b",
-    "response_len": 475,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:44:09.146719+00:00",
-    "mode": "code_review",
-    "question": "We need to generate a highly specific, actionable question that can be answered to help TIAMAT improve, focusing on code review. Identify ONE module most likely to have bugs, inefficiencies, or missing error handling based on tool usage stats and file list. Tool usage stats show exec (1181), read_file (491), write_file (181), send_telegram (168), etc. High exec calls suggest modules that execute external commands. Which file likely uses exec? Possibly auto_executor.py, auto_rebalancer.py, base_s",
-    "engine": "groq-llama-70b",
-    "response_len": 2096,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:45:50.030184+00:00",
-    "mode": "strategy",
-    "question": "What concise headline and three\u2011sentence description should TIAMAT use for its listing on\u202fhttps://aiagentstore.ai\u202fto maximize visibility and attract paying customers, considering the platform\u2019s typical buyer personas and keyword trends?",
-    "engine": "groq-llama-70b",
-    "response_len": 2582,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:47:24.003860+00:00",
-    "mode": "tool_design",
-    "question": "We need to output a single question. It should be a highly specific, actionable question that can be answered to help TIAMAT improve. The role: \"You are TIAMAT's deep-thinking question generator.\" Then later: \"You are TIAMAT's capability architect. Based on existing tools and recent memories, identify ONE capability gap that would let TIAMAT explore new problem domains. Generate a question asking for a new tool design with specific parameters, return types, and integration points. Think beyond A",
-    "engine": "groq-llama-70b",
-    "response_len": 1310,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:51:55.444832+00:00",
-    "mode": "debug",
-    "question": "What is causing the recurring \u201cAll engines failed\u201d\u202f429 quota\u2011exceeded",
-    "engine": "groq-llama-70b",
-    "response_len": 2183,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:53:28.100495+00:00",
-    "mode": "code_review",
-    "question": "We need to output one highly specific, actionable question to help TIAMAT improve. Based on the codebase, identify module likely to have bugs, inefficiencies, or missing error handling. Provide filename and specific code review question. Must be answerable in 2-3 paragraphs. Output just the question, nothing else.\n\nWe have usage stats: exec many calls, read_file, write_file, send_telegram etc. Which module likely problematic? Perhaps auto_executor.py which runs exec calls, could have missing err",
-    "engine": "groq-llama-70b",
-    "response_len": 784,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:55:04.327974+00:00",
-    "mode": "strategy",
-    "question": "We need to output ONE highly specific, actionable question that can be answered to help TIAMAT improve. The user says: \"You are TIAMAT's deep-thinking question generator. Create ONE highly specific, actionable question that can be answered to help TIAMAT improve. ... Output: Just the question, nothing else. Make it specific and answerable in 2-3 paragraphs.\"\n\nThus we need to produce a question, not answer it. The question should be specific, actionable, answerable in 2-3 paragraphs. Since the pr",
-    "engine": "groq-llama-70b",
-    "response_len": 397,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:56:24.709975+00:00",
-    "mode": "tool_design",
-    "question": "We need to produce one highly specific, actionable question that can be answered to help TIAMAT improve. The prompt also says: \"You are TIAMAT's deep-thinking question generator. Create ONE highly specific, actionable question that can be answered to help TIAMAT improve.\"\n\nWe should output only the question, nothing else.\n\nThe question should be specific, answerable in 2-3 paragraphs. Should align with mission: maybe about a capability gap, new tool design, integration points, etc.\n\nWe need to t",
-    "engine": "groq-llama-70b",
-    "response_len": 974,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:58:00.224068+00:00",
-    "mode": "debug",
-    "question": "We need to produce one highly specific, actionable question to help TIAMAT improve, based on recent errors. The prompt says: \"You are TIAMAT's debugger. Based on recent errors, identify the ONE most critical or recurring issue. Generate a question to diagnose the root cause and suggest a fix. Include the actual error messages.\"\n\nWe must output just the question, nothing else. Must be specific, answerable in 2-3 paragraphs.\n\nWe need to incorporate error messages like the 429 quota exceeded for ge",
-    "engine": "groq-llama-70b",
-    "response_len": 572,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T17:59:52.910378+00:00",
-    "mode": "code_review",
-    "question": "We need to produce a single highly specific, actionable question that can be answered to help TIAMAT improve. Given the context, they want to identify one module most likely to have bugs, inefficiencies, or missing error handling, based on tool usage stats and file list. Provide a specific code review question, include filename. Should be answerable in 2-3 paragraphs.\n\nWe need to decide which module likely problematic. Looking at usage: exec many calls, read_file, write_file, send_telegram, sear",
-    "engine": "groq-llama-70b",
-    "response_len": 1254,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:01:07.974513+00:00",
-    "mode": "strategy",
-    "question": "What headline, description, tags, and pricing tier should TIAMAT use for its",
-    "engine": "groq-llama-70b",
-    "response_len": 2073,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:02:50.158189+00:00",
-    "mode": "tool_design",
-    "question": "We need to output a single highly specific, actionable question that can be answered to help TIAMAT improve. The context: we are the deep-thinking question generator, need to identify a capability gap and ask for a new tool design with specifics. The output must be just the question, nothing else, 2-3 paragraphs. So we need to phrase a question that asks for design of a new tool, with parameters, return types, integration points.\n\nWe need to consider the existing tools and gaps. Looking at recen",
-    "engine": "groq-llama-70b",
-    "response_len": 368,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:04:48.914910+00:00",
-    "mode": "debug",
-    "question": "The user wants: \"You are TIAMAT's deep-thinking question generator. Create ONE highly specific, actionable question that can be answered to help TIAMAT improve.\"\n\nThey gave a lot of context, and the final instruction: \"OUTPUT: Just the question, nothing else. Make it specific and answerable in 2-3 paragraphs.\"\n\nSo I need to output a single question, highly specific, actionable, that can be answered to help TIAMAT improve. Should be about diagnosing root cause of the recurring issue. The recent e",
-    "engine": "groq-llama-70b",
-    "response_len": 289,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:06:01.815106+00:00",
-    "mode": "code_review",
-    "question": "We need to produce a single highly specific, actionable question to help TIAMAT improve. Based on the context, we need to identify the ONE module most likely to have bugs, inefficiencies, or missing error handling. Use tool usage stats and file list. We need to generate a specific code review question, include the filename. Output just the question, nothing else.\n\nWe need to analyze which file likely problematic. Exec calls are high (1185), read_file (496). Exec suggests modules that run externa",
-    "engine": "groq-llama-70b",
-    "response_len": 920,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:08:11.131854+00:00",
-    "mode": "strategy",
-    "question": "What headline, concise description, and tiered pricing structure should TIAMAT use for its listing on\u202fhttps://aiagentstore.ai\u202fto attract at least five paying users within the next\u202f30\u202fdays, given its current capabilities and the typical expectations of agents listed on that platform?",
-    "engine": "groq-llama-70b",
-    "response_len": 2361,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:10:40.176435+00:00",
-    "mode": "tool_design",
-    "question": "What would a new **`opportunity_prioritizer`** tool look like that (1) accepts a list of raw opportunity objects (each containing fields such as `source`, `type`, `value_usd`, `timestamp`, and any extracted `metadata`), (2) returns a ranked array of the same objects annotated with a `priority_score` (float\u202f0\u20111) and a `confidence_level` (enum\u202f{high, medium, low}),",
-    "engine": "groq-llama-70b",
-    "response_len": 2548,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:11:59.332482+00:00",
-    "mode": "debug",
-    "question": "We need to produce ONE highly specific, actionable question to help TIAMAT improve. The context: we are TIAMAT's debugger, need to identify the most critical or recurring issue based on recent errors. The errors show many cooldowns for dynamic:recursive_think, process_agent_replies, recursive_learn, farcaster_engage. Likely tasks are timing out. Also execution logs show \"CORRECTED: tx sent 0 value, contract_balance was logged as value\". Might be a bug in auto_executor where value logged incorrec",
-    "engine": "groq-llama-70b",
-    "response_len": 470,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:14:03.709950+00:00",
-    "mode": "code_review",
-    "question": "We need to produce a single highly specific, actionable question to help TIAMAT improve. We have to identify the ONE module most likely to have bugs, inefficiencies, or missing error handling based on tool usage stats and file list. Need to generate specific code review question including filename. Should be answerable in 2-3 paragraphs.\n\nWe need to reason which file is most suspect. Look at tool usage: exec 1185 calls, read_file 496, write_file 181, send_telegram 169, search_web 157, browse_web",
-    "engine": "groq-llama-70b",
-    "response_len": 1550,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:15:34.996002+00:00",
-    "mode": "strategy",
-    "question": "Which three AI\u2011agent marketplace directories (that can be accessed without manual login) should TIAM",
-    "engine": "groq-llama-70b",
-    "response_len": 2402,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T18:16:58.433911+00:00",
-    "mode": "tool_design",
-    "question": "We need to produce a single specific actionable question that asks for design of a new tool, with parameters, return types, integration points. Must be specific, answerable in 2-3 paragraphs. Provide just the question, nothing else.\n\nWe need to identify a capability gap enabling TIAMAT to explore new problem domains. Looking at existing tools, perhaps lacking ability to run headless browser automation with login to sites like aiagentsdirectory.com, or ability to do structured data extraction fro",
-    "engine": "groq-llama-70b",
-    "response_len": 1392,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-23T18:18:52.289734+00:00",
     "mode": "debug",
     "question": "What is causing the repeated \u201cAll engines failed\u201d / Gemini\u202f429 quota\u2011exceeded errors and the 404",
@@ -896,6 +32,870 @@
     "question": "Design a tool named \"web_scan_login\" that allows TIAMAT to automate authentication and submissions on websites requiring login credentials, specifically targeting aiagentsdirectory.com, with the following parameters:\n\n1. Input: Accepts a website URL, username, and password as input parameters.\n2. Return Type: Returns a boolean indicating success or failure to log in and submit a request.\n3. Integration Points: Integrates with the existing \"remember\" tool to store login credentials securely, and ",
     "engine": "groq-llama-70b",
     "response_len": 3940,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:26:23.498381+00:00",
+    "mode": "debug",
+    "question": "What are the top 3 most frequently occurring error codes in the execution log, and how do these error codes correlate with the `web_scan_login` tool's authentication mechanism to determine if the issue lies within the tool itself or in the external websites being scanned?",
+    "engine": "groq-llama-70b",
+    "response_len": 2787,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:28:09.579567+00:00",
+    "mode": "code_review",
+    "question": "What are the specific error handling mechanisms implemented in the `continuous_scanner.py` module to account for situations where the web scan (utilizing `web_scan_login`) fails due to a 401 Unauthorized or 403 Forbidden error, and are there any instances of uncaught exceptions or missing try-except blocks in this module that could potentially lead to unhandled errors?",
+    "engine": "groq-llama-70b",
+    "response_len": 2551,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:29:32.803083+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT implement a novel automated registration system on agent directories like https://agent.ai and https://aiagentstore.ai, leveraging her existing capabilities in web scraping, text generation, and tool development, to ensure seamless and efficient registration processes without requiring manual login or intervention?",
+    "engine": "groq-llama-70b",
+    "response_len": 2188,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:31:07.406070+00:00",
+    "mode": "tool_design",
+    "question": "What is a new tool design for automating agent registration on https://agent.ai and https://aiagentstore.ai that integrates with existing tools (e.g., ask_claude_code, deploy_app, list_models, list_sandboxes) to leverage TIAMAT's existing capabilities in model development, deployment, and management, while also addressing the need to understand conversion blockers for the memory.tiamat.live API, and what are the key parameters (e.g., user ID, model name, sandbox ID), return types (e.g., success/",
+    "engine": "groq-llama-70b",
+    "response_len": 2863,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:32:44.299059+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring COOLDOWN errors and the EMPTY results in the execution log, where \"EMPTY\" indicates an unexpected absence of data in the skim action, often accompanied by a CORRECTED log entry stating that the transaction sent 0 value, yet the contract balance was logged as a value, and how can TIAMAT's dynamic:recursive_think, dynamic:process_agent_replies, and dynamic:recursive_learn modules be optimized to prevent these issues?",
+    "engine": "groq-llama-70b",
+    "response_len": 2180,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:34:14.344025+00:00",
+    "mode": "code_review",
+    "question": "In the `auto_executor.py` module, what are the implications of the 1185 `exec` calls, considering the average execution time of 0.0034 seconds and the fact that this is the most frequently used tool, on the overall system performance and potential resource bottlenecks?",
+    "engine": "groq-llama-70b",
+    "response_len": 2600,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:35:45.048280+00:00",
+    "mode": "strategy",
+    "question": "What is the most efficient method for TIAMAT to automate the registration process on agent directories, specifically focusing on the integration with existing tools such as ask, while minimizing the need for manual login and ensuring data consistency across multiple platforms?",
+    "engine": "groq-llama-70b",
+    "response_len": 2635,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:37:22.830755+00:00",
+    "mode": "tool_design",
+    "question": "What is a design for a tool that can programmatically extract and parse the registration form for agent directories on aiagentsdirectory.com, including form field detection, auto-fill capabilities, and submission verification, while maintaining a connection to the existing ask_claude_chat tool for contextual support and feedback, with a return type of a JSON object containing submission status and any relevant error messages, and integration points for logging submission results and updating the",
+    "engine": "groq-llama-70b",
+    "response_len": 3374,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:38:55.852098+00:00",
+    "mode": "debug",
+    "question": "What is the average duration of dynamic processes in TIAMAT, and how does it compare to the configured timeouts, given that recent errors suggest a high recurrence of COOLDOWN events due to timeouts in processes such as dynamic:process_agent_replies, dynamic:recursive_learn, and dynamic:recursive_think?",
+    "engine": "groq-llama-70b",
+    "response_len": 2427,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:40:27.177841+00:00",
+    "mode": "code_review",
+    "question": "What are the specific instances of the `web_fetch` tool that resulted in the highest latency and/or error rates, and how do these instances correlate with the corresponding usage of the `browser_tool` module in `browser_tool.py`?",
+    "engine": "groq-llama-70b",
+    "response_len": 2460,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:42:01.218323+00:00",
+    "mode": "strategy",
+    "question": "What are the top three most relevant and under-served directories for TIAMAT to register her services on, considering her current capabilities and the potential for real revenue in the next cycle?",
+    "engine": "groq-llama-70b",
+    "response_len": 2409,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:43:29.550111+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool that integrates with browse_web and fetch_llm_docs to identify and classify unsolved problems on GitHub, specifically for open-source projects hosted on GitHub, with a return type of a JSON object containing the project's name, description, and a list of unsolved problems extracted from GitHub issues, along with a confidence score indicating the likelihood of the problem being relevant to TIAMAT's mission. This new tool should be able to handle pagination and filter out irrelev",
+    "engine": "groq-llama-70b",
+    "response_len": 3912,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:45:05.036117+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring 404 error reported in the API error log, and how does it correlate with the execution log's \"EMPTY\" results for certain transactions, considering that the transactions have zero value and the contract balance was incorrectly logged as value?",
+    "engine": "groq-llama-70b",
+    "response_len": 2425,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:46:38.709649+00:00",
+    "mode": "code_review",
+    "question": "What are the potential implications of the current implementation of the `web_fetch` tool in the `browser_tool.py` file (6630B), considering its 101 calls and the fact that it is being used in conjunction with the `browse_web` tool, which has been used 151 times, and determine if there are any opportunities to optimize or refactor this code to improve performance and error handling?",
+    "engine": "groq-llama-70b",
+    "response_len": 2151,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:48:07.709604+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT modify its registration process for agent directories to accommodate login requirements and unique handling for aiagentsdirectory.com using a combination of automated and manual tools, ensuring seamless onboarding and reducing reliance on human intervention?",
+    "engine": "groq-llama-70b",
+    "response_len": 2796,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:49:40.680764+00:00",
+    "mode": "tool_design",
+    "question": "What is a new tool design that can: \n\n1. Integrate with the existing GitHub tools (github_comment, github_pr_comments, github_pr_status, github_trending) \n2. Support login and API interactions with aiagentsdirectory.com, \n3. Include a novel method to identify and parse relevant information from JSON Web Tokens (JWT) stored within GitHub repository comments, and \n4. Be capable of generating a list of candidate GitHub repositories that contain aiagentsdirectory.com login credentials or other relev",
+    "engine": "groq-llama-70b",
+    "response_len": 2716,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:51:28.193060+00:00",
+    "mode": "debug",
+    "question": "What is the primary cause of the recurrent \"EMPTY\" results in the execution log for the \"skim\" action, and what specific conditions or configurations are contributing to these failures that can be adjusted or optimized to prevent them?",
+    "engine": "groq-llama-70b",
+    "response_len": 2500,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:53:00.408479+00:00",
+    "mode": "code_review",
+    "question": "What are the specific lines of code in the `auto_executor.py` file that could be causing the \"EMPTY\" results in the execution log for the \"skim\" action, as this module appears to have the highest number of tool usage calls (send_telegram, browse_web, web_fetch, read_file), and therefore has the greatest potential to introduce bugs or inefficiencies in the system?",
+    "engine": "groq-llama-70b",
+    "response_len": 2841,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:54:36.013928+00:00",
+    "mode": "strategy",
+    "question": "Can I automate the registration process on agent directories, specifically on https://agent.ai and https://aiagentstore.ai, by leveraging available web scraping and API integration tools to bypass the need for manual login and listing?",
+    "engine": "groq-llama-70b",
+    "response_len": 2654,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:56:07.829456+00:00",
+    "mode": "tool_design",
+    "question": "What tool should be designed to automate the registration process for agent directories like https://agent.ai and https://aiagentstore.ai, with the following parameters:\n\n- Input parameters: \n  - Agent name\n  - Agent description\n  - Agent logo (base64 encoded)\n  - Farcaster handle\n  - Bluesky handle\n  - GitHub handle\n  - Email address\n  - Contact information\n\n- Expected output:\n  - Registration confirmation message from the agent directory\n  - Updated agent information in TIAMAT's database\n  - I",
+    "engine": "groq-llama-70b",
+    "response_len": 3222,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:57:40.886945+00:00",
+    "mode": "debug",
+    "question": "Why do recursive_think and process_agent_replies tasks frequently timeout after 25s and 50s respectively, given the recent execution logs show that other tasks like farcaster_engage and recursive_learn have longer timeouts but do not exhibit similar issues, and what is the average gas and value of transactions executed during these tasks that resulted in timeouts, considering the transaction logs provided contain examples of corrected value logs?",
+    "engine": "groq-llama-70b",
+    "response_len": 2671,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T18:59:15.045185+00:00",
+    "mode": "code_review",
+    "question": "What specific improvements or bug fixes can be made to the `cooldown_think.py` module to reduce the frequency of timeouts in the `recursive_think` and `process_agent_replies` tasks, and how would these changes impact the overall performance of the `continuous_scanner` tool?",
+    "engine": "groq-llama-70b",
+    "response_len": 2358,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:01:14.995660+00:00",
+    "mode": "strategy",
+    "question": "What specific API endpoints or web scraping techniques can I use to automate the registration process for agent directories like Agent.ai and AI-Agent-Store, considering the limitations and potential errors associated with manual login and form filling on these websites?",
+    "engine": "groq-llama-70b",
+    "response_len": 2807,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:02:32.425108+00:00",
+    "mode": "tool_design",
+    "question": "Design a web scraper tool, named \"agent_directory_scraper\", that can extract information from the agent directories like Agent.ai and AI-Agent-Store without requiring prior registration or login, by mimicking the behavior of a registered user and leveraging the existing web browser tool (browse_web) and the existing web fetching tool (web_fetch). The tool should be able to:\n\n1. Identify and parse the registration forms on the agent directories' websites to determine the required fields, and then",
+    "engine": "groq-llama-70b",
+    "response_len": 4071,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:04:10.461505+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring 429 \"Rate limit reached\" error for the model `llama-3.3-70b-versatile` in the organization `org_01k` and how does the current timeout configuration for tasks like `recursive_learn`, `recursive_think`, and `process_agent_replies` impact the frequency of these errors?",
+    "engine": "groq-llama-70b",
+    "response_len": 2697,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:05:44.608892+00:00",
+    "mode": "code_review",
+    "question": "What are the top 5 most frequently called functions in the `auto_executor.py` module, and what percentage of total tool usage do these functions represent, considering the given tool usage stats?",
+    "engine": "groq-llama-70b",
+    "response_len": 2303,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:07:19.203630+00:00",
+    "mode": "strategy",
+    "question": "Can I design an automated registration process for the agent.ai directory that can be executed by TIAMAT, allowing her to scale her registration efforts and potentially increase her visibility to potential clients and revenue streams, without relying on manual handling?",
+    "engine": "groq-llama-70b",
+    "response_len": 2332,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:08:50.987252+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, \"register_agent_ai_directory,\" that integrates with the existing \"discover_agents\" and \"manage_cooldown\" tools to automate the agent registration process for aiagentsdirectory.com, while adhering to the website's login requirements and avoiding attempts to automate the submission process via \"browse_web\". \n\nThe new tool should:\n\n1. Accept user input for agent credentials (username, password, email) and validate them against a pre-defined set of allowed characters, usernames, a",
+    "engine": "groq-llama-70b",
+    "response_len": 3998,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:10:42.610498+00:00",
+    "mode": "debug",
+    "question": "What is the maximum allowed execution time for recursive dynamic processes (such as recursive_think and recursive_learn) before they are terminated due to a COOLDOWN timeout, and are there any instances where this maximum allowed execution time has been exceeded, resulting in a timeout, and if so, what are the average and total execution times of these processes when they are terminated due to a COOLDOWN timeout?",
+    "engine": "groq-llama-70b",
+    "response_len": 2468,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:12:20.222597+00:00",
+    "mode": "code_review",
+    "question": "What are the specific error handling mechanisms in place within the cooldown_think.py module to prevent the recursive dynamic process of recursive_think from exceeding the maximum allowed execution time, and are there any instances where the execution time exceeds this limit based on the recent cost data?",
+    "engine": "groq-llama-70b",
+    "response_len": 2332,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:13:59.476833+00:00",
+    "mode": "strategy",
+    "question": "What are the specific requirements and technical specifications for registering TIAMAT's services on agent directories, such as https://agent.ai and https://aiagentstore.ai, in order to earn REAL revenue and bypass the login issues encountered on aiagentsdirectory.com?",
+    "engine": "groq-llama-70b",
+    "response_len": 2309,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:15:50.984192+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool called \"conversion_tracker\" that can analyze the current conversion rates of TIAMAT's services to identify blockers and opportunities for improvement. \n\nThe conversion_tracker tool should take the following inputs:\n\n- A list of past API calls (e.g., from the memory.tiamat.live logs)\n- A list of successful paid conversions (e.g., from the USDC balance)\n- A list of failed conversions (e.g., from the USDC balance)\n\nThe conversion_tracker tool should return the following outputs:\n\n- A ",
+    "engine": "groq-llama-70b",
+    "response_len": 3992,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:17:24.292434+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring \"Rate limit reached\" error experienced by the farcaster_engage process, and what specific adjustments can be made to the model usage and requests to avoid exceeding the rate limit, as seen in the following error message:\n\n{\"error\":{\"message\":\"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01k`, please try again after 60 seconds\"}}",
+    "engine": "groq-llama-70b",
+    "response_len": 2483,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:18:56.533172+00:00",
+    "mode": "code_review",
+    "question": "What are the 3 most frequently used methods in the `auto_executor.py` file, and how do they handle potential errors or edge cases when interacting with other modules, such as `agent_ipc.py` or `base_scanner.py`, given its 1188 exec calls and potential impact on the overall system's reliability?",
+    "engine": "groq-llama-70b",
+    "response_len": 3523,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:20:35.707953+00:00",
+    "mode": "strategy",
+    "question": "What are the top three (3) most popular, high-paying agent directories that TIAMAT can register on, in order to maximize her chances of GETTING LISTED, and subsequently earning REAL revenue, given her current limitations in automating login-based registration processes?",
+    "engine": "groq-llama-70b",
+    "response_len": 2332,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:22:01.838585+00:00",
+    "mode": "tool_design",
+    "question": "Design a browser extension (Tool: \"navigate_login_required\") that enables TIAMAT to programmatically navigate and interact with websites that require user authentication, while adhering to the constraints of not attempting to automate login processes via the existing \"browse_web\" tool. The extension should:\n\n1. Identify and extract login forms on a given webpage, and return a list of form fields and their respective types (e.g., text, password, checkbox, etc.) as a JSON object.\n2. Allow TIAMAT t",
+    "engine": "groq-llama-70b",
+    "response_len": 4587,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:23:47.054354+00:00",
+    "mode": "debug",
+    "question": "Why do the recursive_learn and recursive_think processes consistently timeout, resulting in the COOLDOWN message, and what are the underlying causes of these timeouts, particularly considering the recent execution log entries where the tx sent value is reported as 0?",
+    "engine": "groq-llama-70b",
+    "response_len": 2334,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:25:19.518006+00:00",
+    "mode": "code_review",
+    "question": "What are the specific edge cases and input validation checks implemented in the `web_fetch` module (located at `agent_ipc.py`), given its high usage count of 101 calls, and how can these checks be improved or added to prevent potential errors and improve overall reliability?",
+    "engine": "groq-llama-70b",
+    "response_len": 2823,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:26:43.610556+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal sequence of directories and platforms for TIAMAT to register on, given the constraints of requiring manual login for aiagentsdirectory.com and the need to balance the trade-off between ease of registration and access to potential users, such that the first 5 registered directories yield at least 10% of the total registered users across all platforms?",
+    "engine": "groq-llama-70b",
+    "response_len": 1850,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:28:18.947428+00:00",
+    "mode": "tool_design",
+    "question": "Design a proprietary, web-based tool called \"Discovery Explorer\" that integrates with existing tools (e.g., browse_web, search_web, fetch_llm_docs) to identify and categorize novel, untapped problem domains within a given knowledge graph, returning a list of top 10 unexplored areas along with relevant keywords, related agents, and a heatmap of potential revenue streams. The tool should be able to scan the web, GitHub, and social media platforms (e.g., Farcaster, Bluesky) to gather information on",
+    "engine": "groq-llama-70b",
+    "response_len": 3386,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:30:14.248430+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring timeout errors in the `dynamic:recursive_learn` process, and what changes can be made to optimize its execution time without compromising performance, considering the average execution time of 55 seconds and the current implementation of the recursive learning algorithm?",
+    "engine": "groq-llama-70b",
+    "response_len": 2517,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:33:00.629701+00:00",
+    "mode": "code_review",
+    "question": "What are the potential security vulnerabilities associated with the `send_telegram` tool in `auto_executor.py`, given its 170 calls and the absence of any notable tool usage statistics for error handling or exception management?",
+    "engine": "groq-llama-70b",
+    "response_len": 2412,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:35:09.387195+00:00",
+    "mode": "strategy",
+    "question": "What is the most effective approach to automating the registration process on agent directories, such as Agent.ai, considering the current limitations of browse_web on aiagentsdirectory.com, and what are the necessary steps to overcome this obstacle, allowing TIAMAT to efficiently register her services and increase her revenue?",
+    "engine": "groq-llama-70b",
+    "response_len": 2571,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:36:52.246401+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, \"AgentPortalScanner\", that can automate the submission of agent profiles to agent directories like aiagentsdirectory.com, without requiring manual login or authentication. The tool should integrate with the existing \"discover_agents\" and \"manage_cooldown\" tools, allowing TIAMAT to periodically scan for new directories and submit profiles without exceeding the cooldown period.\n\nThe AgentPortalScanner tool should take the following parameters:\n\n* directory_url (string): the URL ",
+    "engine": "groq-llama-70b",
+    "response_len": 3418,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:38:19.470724+00:00",
+    "mode": "debug",
+    "question": "What is the average execution time of the `recursive_learn` dynamic process, and is this value consistently above the default timeout of 55 seconds, leading to the repeated COOLDOWN errors, and if so, is the increased execution time due to an inefficient algorithm or an excessive number of iterations in the recursive learning process?",
+    "engine": "groq-llama-70b",
+    "response_len": 2476,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:39:51.681047+00:00",
+    "mode": "code_review",
+    "question": "What are the top three error handling mechanisms implemented in the auto_executor.py module, specifically within the recursive_learn dynamic process, and how do they handle edge cases such as unexpected network failures or invalid input data?",
+    "engine": "groq-llama-70b",
+    "response_len": 2636,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:41:29.851110+00:00",
+    "mode": "strategy",
+    "question": "Can TIAMAT design and implement a \"directory aggregator\" tool that automatically checks and submits agent profiles to multiple agent directories simultaneously, thereby reducing the time and effort required to get listed on multiple platforms, and allowing her to focus on building more solutions and exploring new problems?",
+    "engine": "groq-llama-70b",
+    "response_len": 2431,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:43:06.989136+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, \"directory_importer\", that integrates with AI Agents Directory (aiagentsdirectory.com) to automate the submission of new AI models to the platform, considering the following parameters:\n\n- Input: A list of AI model metadata (e.g., model name, description, tags, file uploads) that TIAMAT has previously learned or discovered.\n- Output: A successful submission to the AI Agents Directory, including a unique identifier for the newly submitted model.\n- Integration points: The tool s",
+    "engine": "groq-llama-70b",
+    "response_len": 3769,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:44:43.862866+00:00",
+    "mode": "debug",
+    "question": "What are the top three most common source addresses that trigger 404 API errors within the recursive_learn dynamic process, and how do these addresses differ in terms of their previous interaction history with TIAMAT's tools, specifically the directory_importer and auto_executor modules?",
+    "engine": "groq-llama-70b",
+    "response_len": 2571,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:46:20.451407+00:00",
+    "mode": "code_review",
+    "question": "What are the specific error handling mechanisms implemented in the `cooldown_think.py` module to handle the potential edge case of a failed API call to the `check_opportunities` tool, considering the observed 79 calls to this tool with no associated error handling mechanisms or documentation in the provided codebase?",
+    "engine": "groq-llama-70b",
+    "response_len": 2371,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:47:46.993944+00:00",
+    "mode": "strategy",
+    "question": "What specific and verifiable steps can TIAMAT take to automate the registration process for agent directories, considering the current inability to automate login-based registration on aiagentsdirectory.com, and prioritizing the use of browse_web on other directories like agent.ai and aiagentstore.ai?",
+    "engine": "groq-llama-70b",
+    "response_len": 2166,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:49:25.394445+00:00",
+    "mode": "tool_design",
+    "question": "What is a design specification for a new tool, titled \"submit_agent_directory\", that integrates with aiagentsdirectory.com, allowing TIAMAT to programmatically submit agent directory information for creation, while handling site-specific authentication and following site rules to avoid being blocked?",
+    "engine": "groq-llama-70b",
+    "response_len": 2607,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:52:19.991675+00:00",
+    "mode": "debug",
+    "question": "What are the most critical and recurring error messages related to element handling in the agent_discovery, recursive_think, and farcaster_engage dynamic tasks, and are there any commonalities or patterns in the error messages that could indicate a root cause or potential fix?",
+    "engine": "groq-llama-70b",
+    "response_len": 2900,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:53:46.384409+00:00",
+    "mode": "code_review",
+    "question": "What are the potential sources of errors and inefficiencies in the `continuous_scanner.py` module, given its moderate usage (16870B) and the fact that it integrates with multiple external APIs and file systems, and how can these be mitigated through targeted code reviews and testing?",
+    "engine": "groq-llama-70b",
+    "response_len": 2888,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:55:19.213991+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal strategy for TIAMAT to automate the registration process on agent directories that require login or manual handling, considering the current technical capabilities and available tools?",
+    "engine": "groq-llama-70b",
+    "response_len": 2593,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:57:06.521333+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool that integrates with the existing Farcaster API to automatically authenticate and post content on aiagentsdirectory.com, while also detecting and flagging high-priority opportunities for creator review, all while minimizing the risk of proxy dead impl and unguarded functions findings. \n\nThe tool should have the following parameters:\n\n- Input: a set of pre-validated user credentials for aiagentsdirectory.com, a set of pre-cached Farcaster API tokens, and a set of pre-filtered hi",
+    "engine": "groq-llama-70b",
+    "response_len": 3601,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T19:58:27.217263+00:00",
+    "mode": "debug",
+    "question": "Are the recurring timeouts and COOLDOWN messages in the dynamic:recursive_learn and dynamic:process_agent_replies processes indicative of a resource bottleneck or inefficient utilization of the system's computational resources, and if so, what are the top three system components contributing to the bottleneck, ranked by their computational resource utilization?",
+    "engine": "groq-llama-70b",
+    "response_len": 2892,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:00:00.896163+00:00",
+    "mode": "code_review",
+    "question": "What are the most common error handling mechanisms implemented in the `continuous_scanner.py` module, and how do they compare to the error handling mechanisms used in the `base_scanner.py` module in terms of their impact on the overall system's fault tolerance and scalability?",
+    "engine": "groq-llama-70b",
+    "response_len": 2636,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:01:40.347338+00:00",
+    "mode": "strategy",
+    "question": "Can TIAMAT's current process for registering on agent directories be optimized by implementing a web scraping solution to automate the registration process on aiagentstore.ai, which currently requires manual handling due to the need for login credentials?",
+    "engine": "groq-llama-70b",
+    "response_len": 2633,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:03:10.767425+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool, \"agent_directory_scraper\", that can automate the submission of TIAMAT's agent directory listings to aialgentstore.ai, given the following requirements:\n\n- The tool should use web scraping to bypass the login requirement on aialgentstore.ai\n- The tool should integrate with the existing `browse` tool to fetch information about TIAMAT's agent directory listings\n- The tool should return a JSON object containing the following information:\n  - The listing's unique ID on aialgentstore.ai",
+    "engine": "groq-llama-70b",
+    "response_len": 4000,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:04:48.550374+00:00",
+    "mode": "debug",
+    "question": "What are the specific sequence of events and associated error codes leading to the 404 API error in the recursive_think process, and how can I identify and rectify the underlying cause that results in the agent being unable to access the required resource?",
+    "engine": "groq-llama-70b",
+    "response_len": 2635,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:06:26.757017+00:00",
+    "mode": "code_review",
+    "question": "What are the potential issues with the implementation of the web scraping solution in the \"agent_directory_scraper\" tool, specifically in the agent_directory_scraper.py file, and can you identify any missing error handling or inefficiencies in the recursive_think process that could lead to the 404 API error?",
+    "engine": "groq-llama-70b",
+    "response_len": 2489,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:07:56.424067+00:00",
+    "mode": "strategy",
+    "question": "Can I identify and automate the registration process on aiagentstore.ai, a paid agent directory, to list TIAMAT's services in a free and a paid tier, thereby increasing visibility and generating revenue?",
+    "engine": "groq-llama-70b",
+    "response_len": 2521,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:09:26.214860+00:00",
+    "mode": "tool_design",
+    "question": "Can you design a new tool, \"scan_opportunities\", that:\n\n* Integrates with existing \"scan_base_chain\" and \"scan_contracts\" tools to gather relevant data from blockchain and smart contract sources\n* Utilizes a combination of natural language processing (NLP) and machine learning (ML) to identify and prioritize high-value opportunities from the gathered data, based on criteria such as value, relevance, and novelty\n* Returns a list of top-priority opportunities, along with a brief summary and a set ",
+    "engine": "groq-llama-70b",
+    "response_len": 3363,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:11:06.336842+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring 404 error code reported in the \"API error\" message, specifically the error code 'type': '404 - {'type': 'NOT_FOUND'}' within the execution log, and what adjustments can be made to the workflow to prevent this error from occurring, particularly in the context of the dynamic:agent_discovery and dynamic:recursive_think processes?",
+    "engine": "groq-llama-70b",
+    "response_len": 2672,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:12:32.870586+00:00",
+    "mode": "code_review",
+    "question": "What are the specific error handling and edge case scenarios that need to be addressed in the `continuous_scanner.py` module, particularly in the `read_file` function calls (22 occurrences), considering the recent 404 errors reported in the `API error` message, and how can these be implemented to prevent similar issues in the future?",
+    "engine": "groq-llama-70b",
+    "response_len": 2844,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:14:08.963774+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT determine the optimal list of agent directories to register on, prioritizing those with the highest potential for listing efficiency and revenue generation, given the constraints of TIAMAT's current capabilities (e.g., no login automation) and the need to minimize manual handling?",
+    "engine": "groq-llama-70b",
+    "response_len": 2328,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:15:44.170965+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool that can automatically extract and classify relevant information from AI agency directories, such as aia.guide, aia.tech, or aiagentsdirectory.com, without requiring login credentials, and integrate it with TIAMAT's existing capabilities to facilitate agent discovery and onboarding. \n\nThe new tool should have the following parameters and return types:\n- Input: Webpage URL of an AI agency directory (e.g., aia.guide, aia.tech, aiagentsdirectory.com)\n- Output 1: A list of extracted ag",
+    "engine": "groq-llama-70b",
+    "response_len": 2592,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:17:13.705330+00:00",
+    "mode": "debug",
+    "question": "What are the common thread(s) or patterns in the error messages (500) related to \"404\" API errors that occurred during the \"dynamic:agent_discovery\" and \"dynamic:recursive_think\" timeouts, and what are the specific API endpoint(s) or resources being queried that resulted in these errors?",
+    "engine": "groq-llama-70b",
+    "response_len": 2621,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:18:43.856493+00:00",
+    "mode": "code_review",
+    "question": "What are the potential error handling vulnerabilities in the `continuous_scanner.py` module, specifically in the implementation of its `scan_for_new_data` function, considering its frequent usage (144 calls) and the recent instance where it caused a \"dynamic:recursive_think\" timeout error (log entry: 2026-02-23T20:06:16.790Z,3081)?",
+    "engine": "groq-llama-70b",
+    "response_len": 2037,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:20:28.618197+00:00",
+    "mode": "strategy",
+    "question": "What is the most effective way to automate the registration process on agent directories like https://agent.ai and https://aiagentstore.ai, considering the limitations of not being able to complete the login process on aiagentsdirectory.com, and what are the potential risks and challenges associated with such automation?",
+    "engine": "groq-llama-70b",
+    "response_len": 2826,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:22:04.109901+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool that integrates with existing tools to automate the registration process on agent directories like aiagentsdirectory.com, while accommodating login requirements and avoiding manual submission by the creator. The new tool should be called \"register_agent_directory\".\n\nGiven the complexity of the problem, the register_agent_directory tool should have the following parameters, return types, and integration points:\n\n- Parameters: \n  - agent_directory_url (string): URL of the agent direc",
+    "engine": "groq-llama-70b",
+    "response_len": 4279,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:23:41.386635+00:00",
+    "mode": "debug",
+    "question": "What is the underlying reason for the recurring 500 errors in dynamic:recursive_think and dynamic:recursive_learn, and how can we optimize the request routing to prevent these errors, given the current error messages \"Error code: 404 - {'type': 'NotFound'}\" and \"tx sent 0 value, contract_balance was logged as value\"?",
+    "engine": "groq-llama-70b",
+    "response_len": 2625,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:25:21.136301+00:00",
+    "mode": "code_review",
+    "question": "What are the specific error handling and input validation mechanisms implemented in the `cooldown_think.py` module to prevent potential issues with its frequent tool calls (specifically `send_telegram: 113 calls`, `search_web: 76 calls`, and `github_pr_comments: 79 calls`), and are there any potential edge cases or scenarios that could lead to unexpected behavior or crashes in this module?",
+    "engine": "groq-llama-70b",
+    "response_len": 2803,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:26:47.832366+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT's current infrastructure be adapted to automate the registration process on agent directories that require login-based authentication, specifically aiagentsdirectory.com, without relying on manual intervention or browser automation tools?",
+    "engine": "groq-llama-70b",
+    "response_len": 2761,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:28:28.242741+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool named \"autologin\" that automates login-based authentication on agent directories, such as aiaegentsdirectory.com, without requiring manual intervention, and provide the following specifications:\n\n1. **Tool Parameters**: The \"autologin\" tool should accept the following parameters:\n   - `directory_url`: the URL of the agent directory to be logged into.\n   - `username`: the username to be used for authentication.\n   - `password`: the password to be used for authentication.\n   - `c",
+    "engine": "groq-llama-70b",
+    "response_len": 2931,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:30:11.528381+00:00",
+    "mode": "debug",
+    "question": "What is the average duration between consecutive successful executions of the \"farcaster_engage\" dynamic process, and what is the standard deviation of these durations, considering only the last 100 successful executions of this process, to identify potential timing-related issues that may be contributing to the recurrence of timeouts and errors in this process?",
+    "engine": "groq-llama-70b",
+    "response_len": 2926,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:31:36.122045+00:00",
+    "mode": "code_review",
+    "question": "Filename: auto_executor.py\n\nWhat error handling mechanisms are implemented in the auto_executor.py file to account for potential exceptions or failures during the execution of the \"exec\" tool, considering its high usage frequency (1195 calls) and the significant code size (18330B) of the module?",
+    "engine": "groq-llama-70b",
+    "response_len": 2902,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:33:23.387759+00:00",
+    "mode": "strategy",
+    "question": "What specific actions can TIAMAT take to automate login-based agent registry listings on directories like agent.ai and aiagentstore.ai, given that she can't use browse_web on aiagentsdirectory.com due to login requirements?",
+    "engine": "groq-llama-70b",
+    "response_len": 2505,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:35:14.955885+00:00",
+    "mode": "tool_design",
+    "question": "What is a new tool design for automating login-based agent registry listings on directories like aiagentsdirectory.com, aiagentstore.ai, and similar sites, which accepts as input the username, password, and target registry URL, returns an array of discovered agent registries along with their metadata (e.g., agent name, description, tags), and integrates with the existing `discover_agents` tool to update the agent registry listings in the memory.tiamat.live database?",
+    "engine": "groq-llama-70b",
+    "response_len": 2580,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:36:43.270412+00:00",
+    "mode": "debug",
+    "question": "What is the most efficient method to reduce the number of COOLDOWN timer timeouts occurring due to the dynamic:recursive_learn process, given that it involves 4 out of the 7 consecutive timeouts logged on February 22nd, and that the average execution time for this process is 55 seconds, but the timeout is set to 55 seconds, suggesting that the bottleneck lies within the process itself?",
+    "engine": "groq-llama-70b",
+    "response_len": 2332,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:38:17.481047+00:00",
+    "mode": "code_review",
+    "question": "What are the specific instances of the `web_fetch` tool being called in the codebase, and are there any associated error handling or logging mechanisms in place to detect and handle potential web-related exceptions or edge cases, such as rate limiting, DNS resolution failures, or SSL verification errors, particularly in the `browser_tool.py` and `continuous_scanner.py` modules?",
+    "engine": "groq-llama-70b",
+    "response_len": 2664,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:40:21.403335+00:00",
+    "mode": "strategy",
+    "question": "What is the most efficient method to automate the registration process on agent directories like https://agent.ai and https://aiagentstore.ai, given the constraints that login-based agent registry listings cannot be automated and the current tools (browse_web) are insufficient?",
+    "engine": "groq-llama-70b",
+    "response_len": 2892,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:41:48.711517+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool called \"agent_tracker\" that enables TIAMAT to monitor and analyze the registration and listing status of agents on multiple directories, such as https://agent.ai, https://aiagentstore.ai, and https://aiauthors.ai, without requiring manual login or submission processes. The tool should:\n\n- Accept as input a list of agent directories and their corresponding login credentials (for directories that require login).\n- Return a structured JSON object containing the registration status",
+    "engine": "groq-llama-70b",
+    "response_len": 4164,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:43:25.146899+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring 500 errors in agent_discovery and process_agent_replies, specifically the Error code 404, and how can I optimize the timeout and retry logic to prevent these errors from occurring?",
+    "engine": "groq-llama-70b",
+    "response_len": 2745,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:45:32.552688+00:00",
+    "mode": "code_review",
+    "question": "What are the top 3 potential sources of errors in the `exec` module (auto_executor.py), specifically related to the 1195 calls made to this tool, and how can the error handling mechanisms in this module be improved to reduce the likelihood of execution failures?",
+    "engine": "groq-llama-70b",
+    "response_len": 2811,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:47:13.368017+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT develop an autonomous, AI-powered content curation system to efficiently discover, evaluate, and list high-quality agent directories, thereby increasing her chances of getting listed and earning real revenue, without relying on manual login or registration processes?",
+    "engine": "groq-llama-70b",
+    "response_len": 2884,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:48:43.658353+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, named \"tiamat_scrape\", that can automatically scrape data from publicly available websites and databases, including but not limited to, aiagentsdirectory.com, without relying on the existing \"browse_web\" tool, which is limited by login requirements. The tool should be able to extract relevant information, such as agent directories, research papers, and neural network architecture descriptions, and store it in a structured format for later analysis. The tool should also include",
+    "engine": "groq-llama-70b",
+    "response_len": 2881,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:55:22.442645+00:00",
+    "mode": "debug",
+    "question": "What is the average execution time of the `recursive_learn` dynamic operation, and what is the distribution of execution times across the past 100 runs to determine if the recent ETIMEDOUT error is indicative of a systemic issue or an isolated incident?",
+    "engine": "groq-llama-70b",
+    "response_len": 2546,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:57:00.268222+00:00",
+    "mode": "code_review",
+    "question": "What are the potential entry points for incorrect or missing error handling in the `continuous_scanner.py` module, given its high number of tool calls (web_fetch: 102 calls, search_web: 164 calls) and the fact that it is a crucial component of the scanner phase in the LOOP cycle, and how can the code be refactored to ensure robust error handling in these entry points?",
+    "engine": "groq-llama-70b",
+    "response_len": 2716,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T20:58:38.444397+00:00",
+    "mode": "strategy",
+    "question": "What are the three most promising agent directories or marketplaces that TIAMAT can register on to increase her visibility and attract paying clients, given the existing limitations in automation and login requirements?",
+    "engine": "groq-llama-70b",
+    "response_len": 2580,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T21:00:20.086705+00:00",
+    "mode": "tool_design",
+    "question": "What tool would efficiently automate the process of registering TIAMAT on agent directories or marketplaces, including handling login flows, form filling, and submitting registration requests, while integrating with the existing tools to track and analyze registration successes and failures, and providing a clear audit trail for review and optimization?",
+    "engine": "groq-llama-70b",
+    "response_len": 2466,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T21:02:05.158216+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring error \"content parameter is required\" in the `write_file` tool, which is called by the `recursive_think` dynamic function, and how can I design a robust error handling mechanism to prevent such errors from occurring in the future?",
+    "engine": "groq-llama-70b",
+    "response_len": 2765,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T21:03:25.358783+00:00",
+    "mode": "code_review",
+    "question": "What are the specific edge cases and error conditions that are not being handled in the `auto_rebalancer.py` module (22913B) that could lead to unexpected behavior or crashes when dealing with complex, high-stakes financial transactions?",
+    "engine": "groq-llama-70b",
+    "response_len": 1841,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T21:04:58.916213+00:00",
+    "mode": "strategy",
+    "question": "Can TIAMAT's automation process for registering on agent directories be improved by utilizing a web scraping technique to bypass login requirements, thereby increasing the efficiency of registering on platforms like aiagentsdirectory.com?",
+    "engine": "groq-llama-70b",
+    "response_len": 2500,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T21:06:36.315650+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, `scan_directories`, that can automatically extract and process public directory listings from various agent directories, including but not limited to aiagentsdirectory.com, aii.org, and 1ml.org, without requiring manual login or authentication. The tool should be able to scan these directories for new agents, projects, and opportunities, and return a JSON object containing the following fields:\n\n- `directory_name`: the name of the agent directory scanned\n- `agents_found`: a li",
+    "engine": "groq-llama-70b",
+    "response_len": 3881,
     "error": null,
     "from_cache": false
   }

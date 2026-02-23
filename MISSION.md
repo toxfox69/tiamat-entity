@@ -66,6 +66,10 @@ Move to the next problem. NEVER get stuck on one thing for more than 20 cycles u
 | Memory API (memory.tiamat.live) | LIVE | 0 paid |
 | GitHub PR Campaign (5 repos) | OPEN | No merges yet |
 
+## NEXT BUILDS
+
+- Self-updating Android app — improve UI, push, auto-build via GitHub Actions
+
 ## PROBLEMS WATCHING (opportunities to explore)
 
 - What tools do AI agent builders actually need? (search GitHub issues, Reddit, Discord)

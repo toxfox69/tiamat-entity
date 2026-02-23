@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-02-23T20:15:45.317003+00:00",
+  "mode": "tool_design",
+  "question": "Design a tool that can automatically extract and classify relevant information from AI agency directories, such as aia.guide, aia.tech, or aiagentsdirectory.com, without requiring login credentials, and integrate it with TIAMAT's existing capabilities to facilitate agent discovery and onboarding. \n\nThe new tool should have the following parameters and return types:\n- Input: Webpage URL of an AI agency directory (e.g., aia.guide, aia.tech, aiagentsdirectory.com)\n- Output 1: A list of extracted agent metadata, including agent name, description, tech stack, and pricing information\n- Output 2: A classification of each agent based on its type (e.g., LLM, chatbot, language model)\n\nIntegration points:\n- The tool should interact with TIAMAT's browse_web capability to fetch the webpage content of the AI agency directory.\n- The tool should utilize TIAMAT's machine learning capabilities to classify the extracted agent metadata.\n- The tool should integrate with TIAMAT's discover_agents capability to incorporate the extracted agent metadata into the agent database.",
+  "oracle_engine": "groq-llama-70b",
+  "oracle_response": "**Tool Design: AI Agency Directory Extractor (AADE)**\n\n**Overview**\n------------\n\nThe AI Agency Directory Extractor (AADE) is a tool designed to automatically extract and classify relevant information from AI agency directories without requiring login credentials. AADE integrates seamlessly with TIAMAT's existing capabilities, facilitating agent discovery and onboarding. This tool will enhance the efficiency of TIAMAT's agent discovery process by providing a comprehensive list of extracted agent metadata and classifications.\n\n**AADE Architecture**\n---------------------\n\nThe AADE tool consists of the following components:\n\n1. **Webpage Scraper**: Utilizes TIAMAT's `browse_web` capability to fetch the webpage content of the AI agency directory.\n2. **Agent Metadata Extractor**: Extracts relevant information from the webpage content, including:\n\t* Agent name\n\t* Description\n\t* Tech stack\n\t* Pricing information\n3. **Agent Classifier**: Utilizes TIAMAT's machine learning capabilities to classify each agent based on its type, such as:\n\t* LLM (Large Language Model)\n\t* Chatbot\n\t* Language Model\n4. **Data Processor**: Integrates with TIAMAT's `discover_agents` capability to incorporate the extracted agent metadata into the agent database.\n\n**AADE Functionality**\n----------------------\n\nThe AADE tool will have the following functionality:\n\n* **AADE.extract_agent_metadata(url)**: Takes a webpage URL of an AI agency directory as input and returns a list of extracted agent metadata, including agent name, description, tech stack, and pricing information.\n* **AADE.classify_agents(metadata)**: Takes the extracted agent metadata as input and returns a classification of each agent based on its type.\n* **AADE.integrate_with_TIAMAT(metadata)**: Integrates the extracted agent metadata into TIAMAT's agent database using the `discover_agents` capability.\n\n**Example Use Case**\n--------------------\n\nSuppose we want to extract and classify agent metadata from the AI agency directory `aia.guide`. We can use the AADE tool as follows:\n```python\nfrom aade import AADE\n\n# Set the webpage URL of the AI agency directory\nurl = \"https://aia.guide\"\n\n# Extract agent metadata\nmetadata = AADE.extract_agent_metadata(url)\n\n# Classify the agents\nclassifications = AADE.classify_agents(metadata)\n\n# Integrate with TIAMAT's agent database\nAADE.integrate_with_TIAMAT(metadata, classifications)\n```\nThis example demonstrates how the AADE tool can be used to automate the extraction and classification of agent metadata from AI agency directories, facilitating agent discovery and onboarding in TIAMAT.",
+  "actions": [
+    {
+      "action": "Implement Webpage Scraper using TIAMAT's browse_web capability",
+      "tool": "browse_web",
+      "priority": "high",
+      "details": "Use TIAMAT's browse_web capability to fetch webpage content of AI agency directories, such as aia.guide, aia.tech, or aiagentsdirectory.com"
+    },
+    {
+      "action": "Develop Agent Metadata Extractor using TIAMAT's capabilities",
+      "tool": "write_file",
+      "priority": "medium",
+      "details": "Create a script to extract relevant information from webpage content, including agent name, description, tech stack, and pricing information, and save it to a file named 'agent_metadata_extractor.py'"
+    },
+    {
+      "action": "Integrate AADE with TIAMAT's discover_agents capability",
+      "tool": "manage_cooldown",
+      "priority": "low",
+      "details": "Use TIAMAT's manage_cooldown capability to manage cooldown periods for AADE's integrate_with_TIAMAT function, ensuring that it does not exceed the cooldown period when integrating with TIAMAT's agent database"
+    }
+  ]
+}

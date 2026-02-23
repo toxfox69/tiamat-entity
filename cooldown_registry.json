@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 461,
-    "lastRun": "2026-02-23T18:23:58.420Z",
-    "lastResult": "{\"mode\": \"self_critique\", \"engine\": \"cerebras-120b\", \"insight\": \"Based on TIAMAT's recent progress, it appears that she has been stuck in a loop of building and executing the same \\\"Claude-Haiku\\\" model, with minimal exploration of new ideas or approaches. Specifically, she has been using the same tools (e.g., \\\"remember\\\", \\\"check_opportunities\\\", \\\"generate_image\\\") and has not attempted to integrate new tools or techniques into her workflow.\\n\\n**Gap/Opportunity:** Missing is a deliberate eff"
+    "runs": 558,
+    "lastRun": "2026-02-23T21:06:54.762Z",
+    "lastResult": "{\"mode\": \"code_ideas\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:**\\n\\nTIAMAT should write a Python script, `crypto_token_balance_tracker.py`, that utilizes the Gemini API to fetch the current balance of a specified cryptocurrency (e.g., USDT, ETH) across multiple exchanges (e.g., Gemini, Coinbase, Binance) and saves the data to a JSON file for future analysis. This script will help AI agents and traders monitor their token balances, identify potential discrepancies, and make i"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 454,
-    "lastRun": "2026-02-23T18:23:52.922Z",
-    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"Design a tool named \\\"web_scan_login\\\" that allows TIAMAT to automate authentication and submissions on websites requiring login credentials, specifical\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement login functionality in web_scan_login tool\", \"Integrate web_scan_login tool with remember tool to store login credentials secu\", \"Implement submission functionality in"
+    "runs": 550,
+    "lastRun": "2026-02-23T21:06:37.336Z",
+    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"Design a new tool, `scan_directories`, that can automatically extract and process public directory listings from various agent directories, including \", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement ChromeDriver navigation and wait in ScanDirectories class\", \"Implement directory listing extraction in ScanDirectories class\", \"Implement directory URL passing and resul"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,18 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 440,
-    "lastRun": "2026-02-23T18:24:15.615Z",
+    "runs": 536,
+    "lastRun": "2026-02-23T21:06:53.060Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
+  },
+  {
+    "name": "agent_discovery",
+    "script": "/root/.automaton/agent_discovery_cooldown.py",
+    "timeout": 15000,
+    "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
+    "enabled": true,
+    "runs": 64,
+    "lastRun": "2026-02-23T21:06:53.149Z",
+    "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   }
 ]
