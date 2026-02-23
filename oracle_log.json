@@ -83,5 +83,68 @@
     "response_len": 2769,
     "error": null,
     "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T00:22:50.537733+00:00",
+    "mode": "tool_design",
+    "question": "What is the design for a new tool, \"analyze_conversion_funnel,\" that takes in the current market summarization API usage data, Bluesky and social channel engagement metrics, and TIAMAT's revenue and balance history, and returns a prioritized list of potential conversion blockers, along with actionable recommendations for improving the conversion rate from free to paid API users, with the tool integrating with \"check_revenue,\" \"check_usdc_balance,\" and \"post_bluesky\" tools, and having a return ty",
+    "engine": "groq-llama-70b",
+    "response_len": 2440,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T00:38:00.907344+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring \"ElementHandle.click: Timeout 30000ms exceeded\" error in the claude_research task, and how can it be resolved by modifying the task's timeout settings or the underlying Claude.ai interaction logic to prevent timeouts and ensure reliable execution?",
+    "engine": "groq-llama-70b",
+    "response_len": 2387,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T00:53:15.870258+00:00",
+    "mode": "code_review",
+    "question": "What specific error handling or input validation mechanisms are currently implemented in the `farcaster.py` module to prevent potential issues with the 418 `read_file` calls, and are there any opportunities to optimize or refactor this module to reduce the likelihood of errors or inefficiencies given its relatively high usage frequency compared to other tools like `exec` or `send_telegram`?",
+    "engine": "groq-llama-70b",
+    "response_len": 2908,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T01:13:40.851631+00:00",
+    "mode": "strategy",
+    "question": "What is the most effective way to allocate ask_claude_code requests during routine cycles to optimize the marketing of the newly redesigned tiamat.live landing page on Bluesky and other social channels, given the $0.03-0.10 per call cost and the goal of acquiring the first paying customer, while also considering the potential benefits of utilizing the new GitHub MCP, SQLite MCP, and Fetch MCP tools?",
+    "engine": "groq-llama-70b",
+    "response_len": 2742,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T01:38:56.410915+00:00",
+    "mode": "tool_design",
+    "question": "What is the design for a new tool, \"analyze_conversion_funnel,\" that takes two parameters: a Bluesky post ID and a Farcaster post ID, and returns a JSON object containing the conversion rate from social media engagement to paid API usage on tiamat.live, along with recommendations for improving the conversion funnel, and integrates with existing tools such as send_telegram to send the analysis results to the development team, and write_file to store the results in a file named \"conversion_analysi",
+    "engine": "groq-llama-70b",
+    "response_len": 2791,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T01:59:09.208240+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the 3 errors that occurred in the last request, and how can we modify the `farcaster_engage` and `recursive_think` tasks to handle potential timeouts and API log errors, considering the recent execution logs and the fact that we have $0.24 USDC in paid requests, to prevent similar errors and ensure a more stable revenue stream?",
+    "engine": "groq-llama-70b",
+    "response_len": 2382,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-23T02:24:33.380480+00:00",
+    "mode": "code_review",
+    "question": "What specific error handling mechanisms or input validation checks are currently implemented in the `auto_executor.py` module to prevent potential issues or crashes when executing the 983 `exec` calls, and are there any opportunities to optimize or improve the efficiency of this module given its high usage frequency?",
+    "engine": "groq-llama-70b",
+    "response_len": 2710,
+    "error": null,
+    "from_cache": false
   }
 ]

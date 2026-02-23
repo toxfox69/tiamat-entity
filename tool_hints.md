@@ -1,0 +1,4 @@
+- rebalance_wallet({action:"status"}) — check balances + rebalancing needs
+- rebalance_wallet({action:"rebalance"}) — auto-topup low chains via LI.FI
+- scan_contracts({action:"balances"}) — check wallet ETH on all chains
+- scan_contracts({action:"report"}) — send Telegram funding report

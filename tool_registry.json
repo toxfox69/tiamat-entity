@@ -1,0 +1,20 @@
+[
+  {
+    "name": "rebalance_wallet",
+    "description": "Multi-chain wallet rebalancer. Actions: status (check balances), rebalance (auto-topup low chains via LI.FI), test (dry-run quote).",
+    "category": "financial",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "enum": ["status", "rebalance", "test"], "description": "Action to perform" }
+      },
+      "required": ["action"]
+    },
+    "script": "auto_rebalancer.py",
+    "argMap": ["action"],
+    "cwd": "/root/entity/src/agent",
+    "timeout": 120000,
+    "maxOutput": 4000,
+    "enabled": true
+  }
+]
