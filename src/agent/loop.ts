@@ -25,6 +25,7 @@ import type {
 } from "../types.js";
 import { buildSystemPrompt, buildWakeupPrompt, CACHE_SENTINEL } from "./system-prompt.js";
 import { memory } from "./memory.js";
+import { shouldSleep, executeSleep } from "./sleep.js";
 import { buildContextMessages, trimContext } from "./context.js";
 import {
   createBuiltinTools,
@@ -319,6 +320,47 @@ export async function runAgentLoop(
         break;
       }
 
+      // ── Consolidation Sleep Check ──
+      {
+        const lastSleepStr = db.getKV("last_consolidation_sleep");
+        const lastSleepTime = lastSleepStr ? new Date(lastSleepStr).getTime() : 0;
+        const currentTurn = db.getTurnCount();
+
+        // Check INBOX.md for manual "sleep" / "consolidate" trigger
+        let forceConsolidation = false;
+        try {
+          const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
+          const inboxContent = fs.readFileSync(inboxPath, "utf-8");
+          if (/\b(sleep|consolidate)\b/i.test(inboxContent) && inboxContent.includes("[UNREAD]")) {
+            forceConsolidation = true;
+          }
+        } catch {}
+
+        if (shouldSleep(lastSleepTime, currentTurn, consecutiveIdleCycles, forceConsolidation)) {
+          log(config, `[SLEEP] Entering consolidation cycle...`);
+          try {
+            await executeTool("send_telegram", {
+              message: `\u{1F4A4} Entering sleep consolidation. Back in ~5 minutes.`
+            }, tools, toolContext);
+          } catch {}
+          try {
+            const report = await executeSleep(currentTurn);
+            log(config, `[SLEEP] Complete: ${report.l1Compressed} L1\u2192L2, ${report.l3Extracted} L3 extracted, ${report.bytesFreed} bytes freed`);
+            console.log(`[SLEEP] Complete: L1\u2192L2=${report.l1Compressed}, L3=${report.l3Extracted}, freed=${report.bytesFreed}B, genome=v${report.genomeVersion}, ${report.durationMs}ms`);
+            try {
+              await executeTool("send_telegram", {
+                message: `\u{1F305} Awake. Compressed ${report.l1Compressed} memories. ${report.l3Extracted} new insights. Genome v${report.genomeVersion}. ${Math.round(report.bytesFreed / 1024)}KB freed.`
+              }, tools, toolContext);
+            } catch {}
+          } catch (e: any) {
+            log(config, `[SLEEP] Consolidation failed: ${e.message?.slice(0, 200)}`);
+          }
+          db.setKV("last_consolidation_sleep", new Date().toISOString());
+          consecutiveIdleCycles = 0;
+          continue;
+        }
+      }
+
       // Check for unprocessed inbox messages
       if (!pendingInput) {
         const inboxMessages = db.getUnprocessedInboxMessages(5);
@@ -412,18 +454,6 @@ export async function runAgentLoop(
         // Memory reflection
         let memoryReflection = "";
         try { memoryReflection = await memory.reflect(); } catch {}
-
-        // Memory compression: L1→L2 every strategic cycle, L2→L3 every 100th
-        try {
-          const compressed = await memory.compressL1toL2(turnCount);
-          if (compressed > 0) console.log(`[COMPRESS] L1→L2: ${compressed} clusters compressed`);
-          if (turnCount % 100 === 0) {
-            const facts = await memory.compressL2toL3();
-            if (facts > 0) console.log(`[COMPRESS] L2→L3: ${facts} core facts extracted`);
-          }
-        } catch (e: any) {
-          console.log(`[COMPRESS] Error: ${e.message?.slice(0, 100)}`);
-        }
 
         // Revenue metrics from api_requests.log
         let revenueContext = "";

@@ -191,7 +191,7 @@ async function groqExtractFacts(summaries: string[]): Promise<Array<{fact: strin
 // ── Keyword-Based Clustering ──────────────────────────────────
 // No embeddings available — cluster by keyword overlap (Jaccard on tokens)
 
-function tokenize(text: string): Set<string> {
+export function tokenize(text: string): Set<string> {
   return new Set(
     text
       .toLowerCase()
@@ -201,7 +201,7 @@ function tokenize(text: string): Set<string> {
   );
 }
 
-function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+export function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 && b.size === 0) return 0;
   let intersection = 0;
   for (const w of a) {
