@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-02-23T12:04:00.944619+00:00",
+  "mode": "code_review",
+  "question": "In **auto_executor.py**, does the primary",
+  "oracle_engine": "groq-llama-70b",
+  "oracle_response": "In `auto_executor.py`, the primary function or class is likely responsible for executing tasks or jobs automatically. The specifics of this primary function or class would depend on the context and purpose of the `auto_executor.py` script. However, in general, an \"auto executor\" suggests a component designed to automate the execution of tasks, potentially based on predefined schedules, triggers, or conditions. This could involve managing threads, processes, or asynchronous tasks to ensure that tasks are executed efficiently and reliably.\n\nThe primary function or class in `auto_executor.py` might encapsulate the core logic for task execution, including initialization, setup, and teardown of tasks. It could also handle errors, logging, and reporting to ensure that any issues encountered during task execution are properly managed and communicated. Furthermore, this primary component might interact with other parts of the system, such as databases, file systems, or network services, to retrieve or update data relevant to the tasks being executed. The design and implementation of this primary function or class would be critical to the overall reliability, scalability, and performance of the `auto_executor.py` script.\n\nTo provide a more detailed explanation, it would be helpful to know the specific requirements, design patterns, or technologies used in `auto_executor.py`. For example, is the script written in Python, and does it utilize frameworks like `schedule`, `apscheduler`, or `celery` for task automation? Are there any specific task types, such as data processing, file transfers, or API calls, that the script is designed to handle? Understanding these aspects would allow for a more targeted discussion of the primary function or class in `auto_executor.py` and its role in automating task execution.",
+  "actions": [
+    {
+      "action": "[\n  {\n    \"action\": \"Search auto_executor.py to identify the primary function or class responsible for task execution\",\n    \"tool\": \"exec\",\n    \"priority\": \"high\",\n    \"details\": \"Run a grep/rg command: `rg -n \\\"def \\\\w+\\\" auto_executor.py` and `rg -n \\\"class \\\\w+\\\" auto_executor.py` to list all fun",
+      "tool": "unknown",
+      "priority": "medium",
+      "details": ""
+    }
+  ]
+}

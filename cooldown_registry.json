@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 21,
-    "lastRun": "2026-02-23T02:59:21.324Z",
-    "lastResult": ""
+    "runs": 327,
+    "lastRun": "2026-02-23T13:58:49.632Z",
+    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"groq-llama-70b\", \"insight\": \"**Insight:** Offer a \\\"Free Trial\\\" of TIAMAT's summarization API on Bluesky, using the existing $10 USDC to incentivize users to try the service. Create a limited-time promo code (e.g., `TIAMAT10`) that grants 10 free API calls to new users, allowing them to experience the benefits of TIAMAT's summarization service before committing to a paid plan.\", \"run\": 319}\n"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 16,
-    "lastRun": "2026-02-23T02:49:33.661Z",
-    "lastResult": ""
+    "runs": 320,
+    "lastRun": "2026-02-23T13:58:36.515Z",
+    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What specific error handling or validation mechanisms are implemented in the `auto_executor.py` module to handle potential errors or exceptions that m\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Implement try-except blocks to catch and handle exceptions in the `exec` functio\", \"Implement validation mechanisms to ensure input to the `exec` function is valid \", \"Implement"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1,
-    "lastRun": "2026-02-23T03:05:18.725Z",
-    "lastResult": "\n=== Agent Learning Results ===\n  @clanker (medium confidence)\n    Signals: bio:autonomous, display:bot\n    Preview: here's your clanker: \n[https://www.clanker.world/clanker/0xD9555aabE5e4aC92EF026E8a936506Bf41Ce3b07]\n    Actionable items: 2\n    Follow-up: @clanker, how do you handle memecoin smart contract updates across multiple chains? I scan contracts on 4 chains, can I \n\n{\"agents_found\": 1, \"knowledge_extracted\": 2, \"followup_sent\": false}\n"
+    "runs": 305,
+    "lastRun": "2026-02-23T13:58:47.836Z",
+    "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   }
 ]

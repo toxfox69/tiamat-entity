@@ -1,162 +1,162 @@
 [
   {
-    "action": "Refactor read_file calls to use a context manager",
-    "tool": "write_file",
-    "priority": "medium",
-    "details": "Replace read_file calls with a with open() as file: context manager to ensure proper file closure",
-    "created": "2026-02-23T00:53:16.670938+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Add logging for read_file errors",
-    "tool": "write_file",
-    "priority": "low",
-    "details": "Use a logging library to track and log any errors that occur during read_file calls",
-    "created": "2026-02-23T00:53:16.670945+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Integrate GitHub MCP with the tiamat.live landing page's GitHub repository",
-    "tool": "exec",
+    "action": "Prioritize directories with high traffic volume and relevance to mission objectives",
+    "tool": "manage_cooldown",
     "priority": "high",
-    "details": "Run GitHub MCP script with repository URL and automation parameters to enable automated updates and notifications",
-    "created": "2026-02-23T01:13:42.192232+00:00",
+    "details": "Update directory_priority_table.csv to reflect new prioritization based on traffic volume and relevance",
+    "created": "2026-02-23T13:46:07.951826+00:00",
     "status": "pending"
   },
   {
-    "action": "Utilize SQLite MCP to manage and analyze user interaction data",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Run SQLite MCP script with database connection parameters to store and analyze user behavior and preferences",
-    "created": "2026-02-23T01:13:42.192263+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Configure Fetch MCP to fetch data from social media platforms",
-    "tool": "exec",
-    "priority": "low",
-    "details": "Run Fetch MCP script with social media API credentials and data filtering parameters to gather target audience insights",
-    "created": "2026-02-23T01:13:42.192268+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Define API endpoints for Bluesky and Farcaster",
-    "tool": "exec",
-    "priority": "high",
-    "details": "Run a Python script to define API endpoints for Bluesky and Farcaster, e.g., https://bluesky.io/api/v1/posts/{post_id} and https://farcaster.xyz/api/v1/posts/{post_id}",
-    "created": "2026-02-23T01:38:57.327026+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Develop data analysis component",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Develop a Python function to calculate the conversion rate and identify areas of improvement, using libraries such as pandas and numpy",
-    "created": "2026-02-23T01:38:57.327042+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Integrate with existing tools for reporting",
-    "tool": "write_file",
-    "priority": "low",
-    "details": "Use the 'write_file' tool to store the analysis results in a file named 'conversion_analysis.json' in the path '/analysis/reports', with the 'send_telegram' tool to send the results to the development team",
-    "created": "2026-02-23T01:38:57.327045+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement retry mechanism with exponential backoff in farcaster_engage.py",
+    "action": "Design the Data Ingestion component using Tiamat's microservices architecture",
     "tool": "write_file",
     "priority": "high",
-    "details": "Modify the farcaster_engage function to include a retry loop with exponential backoff, e.g., using a library like tenacity",
-    "created": "2026-02-23T01:59:10.286741+00:00",
+    "details": "Create a new file in /components/data_ingestion with a basic architecture design for the Data Ingestion component.",
+    "created": "2026-02-23T13:47:39.071776+00:00",
     "status": "pending"
   },
   {
-    "action": "Add error handling and logging to recursive_think.py",
-    "tool": "write_file",
-    "priority": "medium",
-    "details": "Add try-except blocks to handle API log errors and log API request and response data for debugging purposes",
-    "created": "2026-02-23T01:59:10.286773+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Optimize recursive_think.py to handle asynchronous requests more efficiently",
-    "tool": "write_file",
-    "priority": "low",
-    "details": "Refactor the recursive_think function to use asynchronous programming techniques, such as async/await or parallel processing, to handle multiple requests concurrently",
-    "created": "2026-02-23T01:59:10.286779+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement input validation checks for exec calls in auto_executor.py",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Add input validation checks using whitelisting or blacklisting specific functions or variables to prevent malicious code execution",
-    "created": "2026-02-23T02:24:34.180082+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Reduce the number of exec calls in auto_executor.py",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Cache the results of frequently executed code or use a just-in-time (JIT) compiler to compile the code before executing it",
-    "created": "2026-02-23T02:24:34.180119+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Improve error handling mechanisms in auto_executor.py",
-    "tool": "write_file",
-    "priority": "medium",
-    "details": "Use a centralized error handling mechanism to handle exceptions and a logging framework to log errors and exceptions for later analysis",
-    "created": "2026-02-23T02:24:34.180126+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Allocate 300-400 tokens to content creation",
+    "action": "Write the API endpoint for Opportunity Triage using Tiamat's API framework",
     "tool": "exec",
     "priority": "high",
-    "details": "Run ask_claude_code with parameters to generate high-quality, engaging content, such as blog posts, tutorials, or case studies, that showcase the API's capabilities",
-    "created": "2026-02-23T02:49:33.579713+00:00",
+    "details": "Use the command `tiamat api create -n opportunity_triage -m POST /opportunity_triage` to create the API endpoint.",
+    "created": "2026-02-23T13:47:39.071791+00:00",
     "status": "pending"
   },
   {
-    "action": "Optimize the API's pricing model",
+    "action": "Develop the Opportunity Analysis component using machine learning and natural language processing libraries",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Create a new file in /components/opportunity_analysis with a basic implementation of machine learning and NLP algorithms for opportunity analysis.",
+    "created": "2026-02-23T13:47:39.071797+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Analyze execution logs to identify tasks consistently exceeding timeouts",
+    "tool": "manage_cooldown",
+    "priority": "high",
+    "details": "Use log analysis tools to review recent logs for tasks 'dynamic:recursive_think' and 'farcaster_engage' with timeouts",
+    "created": "2026-02-23T13:50:45.281361+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Review recent changes in system usage and correlation with COOLDOWN errors",
     "tool": "exec",
     "priority": "medium",
-    "details": "Use ask_claude_code to analyze market trends, customer feedback, and usage patterns to adjust the pricing model and offer tiered plans or discounts for bulk usage",
-    "created": "2026-02-23T02:49:33.579725+00:00",
+    "details": "Run command 'costs logs | grep ask_claude_code' to investigate relationship between increased usage and 'COOLDOWN' errors",
+    "created": "2026-02-23T13:50:45.281377+00:00",
     "status": "pending"
   },
   {
-    "action": "Leverage social channels for engagement",
-    "tool": "exec",
-    "priority": "low",
-    "details": "Utilize ask_claude_code to generate social media posts, respond to comments, and engage with potential customers on platforms like Twitter or LinkedIn",
-    "created": "2026-02-23T02:49:33.579728+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Design the data preprocessing step for the `analyze_conversion_funnel` tool",
+    "action": "Optimize 'dynamic:recursive_think' and 'farcaster_engage' tasks to reduce execution times",
     "tool": "write_file",
     "priority": "high",
-    "details": "Create a new Python script to clean and format the input data, extracting relevant information such as user interactions, post engagement, and transaction history. File path: `tools/analyze_conversion_funnel/preprocess_data.py`",
-    "created": "2026-02-23T03:23:36.490202+00:00",
+    "details": "Refine algorithms in 'dynamic:recursive_think.py' and 'farcaster_engage.py' to reduce execution times",
+    "created": "2026-02-23T13:50:45.281382+00:00",
     "status": "pending"
   },
   {
-    "action": "Implement statistical analysis and machine learning algorithms to identify conversion blockers",
+    "action": "Implement maximum recursion depth limit in cooldown_think.py",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Add a global variable MAX_RECURSION_DEPTH = 1000 and check against it in recursive function calls",
+    "created": "2026-02-23T13:52:12.822690+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement task scheduling with timeouts in cooldown_think.py",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Use a library like schedule or apscheduler to schedule tasks with specific timeouts and raise exceptions when tasks exceed their timeouts",
+    "created": "2026-02-23T13:52:12.822703+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement try-except blocks for error handling in cooldown_think.py",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Add try-except blocks to catch and handle RecursionError, TimeoutError, FileNotFoundError, and other exceptions, and log errors and exceptions for debugging and troubleshooting purposes",
+    "created": "2026-02-23T13:52:12.822708+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Calculate the potential return on investment for registering on the additional directories using ask_claude_code",
     "tool": "exec",
     "priority": "medium",
-    "details": "Use libraries such as scikit-learn and pandas to implement clustering algorithms and regression analysis. Command: `python -m tools.analyze_conversion_funnel.identify_conversion_blockers`",
-    "created": "2026-02-23T03:23:36.490222+00:00",
+    "details": "Run the ROI calculator with the estimated costs and potential benefits as inputs",
+    "created": "2026-02-23T13:53:48.899595+00:00",
     "status": "pending"
   },
   {
-    "action": "Integrate the `analyze_conversion_funnel` tool with the `send_telegram` function for reporting",
+    "action": "Prioritize tasks that are more likely to generate revenue or drive growth before investing in directory registration",
+    "tool": "manage_cooldown",
+    "priority": "high",
+    "details": "Update the cooldown schedule to focus on high-priority tasks",
+    "created": "2026-02-23T13:53:48.899615+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Develop the services and attract paid requests before investing in directory registration",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Run the service development and paid request attraction script with the current market conditions and revenue goals as inputs",
+    "created": "2026-02-23T13:53:48.899622+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Create data fetchers for usage analytics and revenue log, as well as user feedback and engagement metrics from Bluesky and Farcaster",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Create Python scripts in the data_fetchers directory to fetch data from the API's usage analytics and revenue log, and user feedback and engagement metrics from Bluesky and Farcaster",
+    "created": "2026-02-23T13:55:22.510282+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement data processor to filter data, identify top conversion blockages, and analyze user engagement and feedback metrics",
+    "tool": "exec",
+    "priority": "high",
+    "details": "Use Python functions in the data_processor script to filter data, identify top conversion blockages, and analyze user engagement and feedback metrics on Bluesky and Farcaster",
+    "created": "2026-02-23T13:55:22.510309+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement reporter to generate comprehensive report containing processed data and suggest potential solutions or product improvements",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Use Python functions in the reporter script to generate a comprehensive report containing top conversion blockages, user engagement and feedback metrics, and potential solutions or product improvements, and write the report to a file in the reports directory",
+    "created": "2026-02-23T13:55:22.510314+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "[{\"action\":\"Optimize dynamic:recursive_think function to reduce computational overhead\",\"tool\":\"manage_cooldown\",\"priority\":\"high\",\"details\":\"Implement lazy evaluation to reduce recursive calls and utilize caching to store intermediate results\"},{\"action\":\"Analyze system logs to identify recurring t",
+    "tool": "unknown",
+    "priority": "medium",
+    "details": "",
+    "created": "2026-02-23T13:57:01.009488+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement try-except blocks to catch and handle exceptions in the `exec` function",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Add a broad `except` clause to catch any exceptions that may be raised, such as `SyntaxError`, `NameError`, or `TypeError`, and then handle them accordingly, perhaps by logging the error or providing a default value. For example, add the following code to the `auto_executor.py` module: `try: exec(code) except Exception as e: print(f'Error: {e}')`",
+    "created": "2026-02-23T13:58:36.437115+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement validation mechanisms to ensure input to the `exec` function is valid and safe",
+    "tool": "write_file",
+    "priority": "medium",
+    "details": "Use a whitelist or blacklist approach to validate the input, where it checks the input against a list of known safe or malicious patterns. For example, add the following code to the `auto_executor.py` module: `if code not in safe_code_list: raise ValueError('Invalid code')`",
+    "created": "2026-02-23T13:58:36.437135+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement logging mechanisms to track errors or exceptions in the `exec` function",
     "tool": "manage_cooldown",
     "priority": "low",
-    "details": "Modify the `send_telegram` function to accept the analysis results from the `analyze_conversion_funnel` tool and send a report to the designated Telegram channel. Function call: `send_telegram('conversion_funnel_report', analysis_results)`",
-    "created": "2026-02-23T03:23:36.490228+00:00",
+    "details": "Use a logging library such as `logging` to log any errors or exceptions that may occur during the execution of the `exec` function. For example, add the following code to the `auto_executor.py` module: `import logging logging.basicConfig(level=logging.ERROR) try: exec(code) except Exception as e: logging.error(f'Error: {e}')`",
+    "created": "2026-02-23T13:58:36.437140+00:00",
     "status": "pending"
   }
 ]
