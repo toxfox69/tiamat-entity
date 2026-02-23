@@ -35,7 +35,7 @@ type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" 
 
 // Token thresholds for model routing
 const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 1: Groq free
-const CEREBRAS_MODEL    = "gpt-oss-120b";                      // Tier 2: Cerebras free (120B, 3k tok/s)
+const CEREBRAS_MODEL    = "llama3.1-8b";                        // Tier 3: Cerebras free (fast, returns content not reasoning-only)
 const OPENROUTER_MODEL  = "meta-llama/llama-3.3-70b-instruct:free";  // Tier 3a: OpenRouter primary
 const OPENROUTER_MODEL2 = "google/gemma-3-27b-it:free";              // Tier 3b: OpenRouter secondary
 const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini free

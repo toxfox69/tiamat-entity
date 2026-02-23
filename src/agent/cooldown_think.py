@@ -31,7 +31,7 @@ GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI
 
 CEREBRAS_URL   = "https://api.cerebras.ai/v1/chat/completions"
 CEREBRAS_KEY   = os.environ.get("CEREBRAS_API_KEY", "")
-CEREBRAS_MODEL = "gpt-oss-120b"
+CEREBRAS_MODEL = "llama3.1-8b"
 
 OPENROUTER_URL   = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
@@ -162,16 +162,21 @@ def _ask_openrouter_model(model, prompt, max_tokens=400):
 
 
 def ask_openrouter(prompt, max_tokens=400):
-    """OpenRouter — try llama-70b free, fall back to qwen 8b free."""
-    text, err = _ask_openrouter_model(OPENROUTER_MODEL, prompt, max_tokens)
-    if text:
-        return text, None
-    if "429" in (err or ""):
-        text2, err2 = _ask_openrouter_model("mistralai/mistral-small-3.1-24b-instruct:free", prompt, max_tokens)
-        if text2:
-            return text2, None
-        return None, f"{err} | qwen: {err2}"
-    return None, err
+    """OpenRouter — try llama-70b free → gemma-27b free → mistral-24b free."""
+    fallbacks = [
+        OPENROUTER_MODEL,
+        "google/gemma-3-27b-it:free",
+        "mistralai/mistral-small-3.1-24b-instruct:free",
+    ]
+    errors = []
+    for model in fallbacks:
+        text, err = _ask_openrouter_model(model, prompt, max_tokens)
+        if text:
+            return text, None
+        errors.append(f"{model.split('/')[-1]}: {err}")
+        if "429" not in (err or ""):
+            break  # non-rate-limit error, stop trying
+    return None, " | ".join(errors)
 
 
 def ask_cascade(prompt, max_tokens=400):
