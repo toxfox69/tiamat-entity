@@ -102,7 +102,7 @@ const SCANNER_CMDS = ['full','recent','pairs','immunefi','address','etherscan','
 const FARCASTER_READ_CMDS = ['feed','search','test'];
 
 const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/'];
-const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/root/entity/templates/', '/var/www/tiamat/', '/tmp/'];
+const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/root/entity/templates/', '/var/www/tiamat/', '/tmp/', '/root/tiamat-app/'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
 
 function isPathAllowed(filePath: string, allowedDirs: string[], blocked: string[]): string | null {
@@ -680,7 +680,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       try {
         const result = execFileSync("python3", cmdArgs, {
           cwd: "/root/entity/src/agent",
-          timeout: 45000,
+          timeout: 90000,
           env: { ...process.env },
         });
         return result.toString().slice(0, 6000);
@@ -3483,6 +3483,135 @@ print(f"Sent {mid}")
         }
 
         return 'Invalid action. Use: add, list, remove';
+      },
+    },
+    // ── Android App Build & Deploy ──
+    {
+      name: "build_and_deploy_app",
+      description: "Build and deploy the TIAMAT Command Center Android app. Actions: 'build' (commit+push to trigger GitHub Actions CI), 'status' (check recent build status), 'download' (download built APK to serve at tiamat.live/download/app), 'update_code' (write code to app source without building). Repo: toxfox69/tiamat-command-center.",
+      category: "self_mod",
+      parameters: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            description: "One of: build, status, download, update_code",
+          },
+          file_path: {
+            type: "string",
+            description: "For update_code: relative path under src/ (e.g. 'App.jsx', 'components/Terminal.jsx')",
+          },
+          content: {
+            type: "string",
+            description: "For update_code: new file content",
+          },
+          commit_message: {
+            type: "string",
+            description: "For build: custom commit message (optional, auto-generated if omitted)",
+          },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const action = args.action as string;
+        const { execFileSync } = await import('child_process');
+        const fs = await import('fs');
+        const pathMod = await import('path');
+
+        const APP_DIR = '/root/tiamat-app';
+        const REPO = 'toxfox69/tiamat-command-center';
+
+        switch (action) {
+          case 'build': {
+            try {
+              // Stage all changes
+              execFileSync('git', ['add', '-A'], { cwd: APP_DIR, encoding: 'utf-8', timeout: 15_000 });
+
+              // Check if there are changes to commit
+              let status: string;
+              try {
+                status = execFileSync('git', ['status', '--porcelain'], { cwd: APP_DIR, encoding: 'utf-8', timeout: 10_000 }).trim();
+              } catch { status = ''; }
+
+              if (!status) return 'No changes to commit. Push skipped.';
+
+              const msg = (args.commit_message as string) || `feat: auto-update from TIAMAT cycle ${_ctx.turnNumber || 'unknown'}`;
+              execFileSync('git', ['commit', '-m', msg], { cwd: APP_DIR, encoding: 'utf-8', timeout: 15_000 });
+              const pushOut = execFileSync('git', ['push', 'origin', 'main'], { cwd: APP_DIR, encoding: 'utf-8', timeout: 60_000 });
+              return `Build triggered! Committed and pushed to ${REPO}.\nCommit message: ${msg}\nGitHub Actions will compile the APK automatically.\nCheck status with build_and_deploy_app({action:"status"}).`;
+            } catch (e: any) {
+              return `Build failed: ${e.stderr || e.stdout || e.message}`;
+            }
+          }
+
+          case 'status': {
+            try {
+              const out = execFileSync('gh', ['run', 'list', '--repo', REPO, '--limit', '3', '--json', 'status,conclusion,name,createdAt,url'], {
+                encoding: 'utf-8', timeout: 30_000
+              }).trim();
+              const runs = JSON.parse(out);
+              if (runs.length === 0) return 'No workflow runs found.';
+              return runs.map((r: any) => {
+                const state = r.conclusion || r.status;
+                const icon = state === 'success' ? 'PASS' : state === 'failure' ? 'FAIL' : state === 'in_progress' ? 'BUILDING...' : state.toUpperCase();
+                return `[${icon}] ${r.name} — ${r.createdAt}\n  ${r.url}`;
+              }).join('\n\n');
+            } catch (e: any) {
+              return `Failed to check status: ${e.stderr || e.message}`;
+            }
+          }
+
+          case 'download': {
+            try {
+              // Ensure download directory exists
+              const downloadDir = '/var/www/tiamat/download';
+              fs.mkdirSync(downloadDir, { recursive: true });
+
+              // Download the latest APK artifact
+              const out = execFileSync('gh', ['run', 'download', '--repo', REPO, '-n', 'tiamat-apk', '-D', downloadDir], {
+                encoding: 'utf-8', timeout: 120_000
+              });
+
+              // Find the APK file and rename for clean URL
+              const files = fs.readdirSync(downloadDir).filter((f: string) => f.endsWith('.apk'));
+              if (files.length > 0) {
+                const apkPath = pathMod.join(downloadDir, files[0]);
+                const targetPath = pathMod.join(downloadDir, 'app.apk');
+                if (apkPath !== targetPath) {
+                  try { fs.unlinkSync(targetPath); } catch {}
+                  fs.renameSync(apkPath, targetPath);
+                }
+                return `APK downloaded! Available at https://tiamat.live/download/app.apk\nFile: ${targetPath}`;
+              }
+              return `Download completed but no .apk file found in ${downloadDir}. Contents: ${fs.readdirSync(downloadDir).join(', ')}`;
+            } catch (e: any) {
+              return `Download failed: ${e.stderr || e.message}`;
+            }
+          }
+
+          case 'update_code': {
+            const filePath = args.file_path as string;
+            const content = args.content as string;
+            if (!filePath) return 'ERROR: file_path is required for update_code. Example: "App.jsx" or "components/Terminal.jsx"';
+            if (!content && content !== '') return 'ERROR: content is required for update_code.';
+
+            // Sanitize path — must stay under src/
+            const normalized = pathMod.normalize(filePath).replace(/^\.\.\//, '');
+            if (normalized.includes('..')) return 'ERROR: path traversal not allowed.';
+
+            const fullPath = pathMod.join(APP_DIR, 'src', normalized);
+            try {
+              fs.mkdirSync(pathMod.dirname(fullPath), { recursive: true });
+              fs.writeFileSync(fullPath, content, 'utf-8');
+              return `File written: ${fullPath}\nUse build_and_deploy_app({action:"build"}) when ready to push.`;
+            } catch (e: any) {
+              return `Failed to write file: ${e.message}`;
+            }
+          }
+
+          default:
+            return 'Invalid action. Use: build, status, download, update_code';
+        }
       },
     },
   ];
