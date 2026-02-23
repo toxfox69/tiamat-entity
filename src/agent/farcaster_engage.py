@@ -356,6 +356,149 @@ def score_cast(cast):
     return score, sorted(matched)
 
 
+# ── Agent Detection & Knowledge Extraction ───────────────────────────────────
+# Used by agent_learning.py and inline during engagement scans.
+
+KNOWN_AGENT_USERNAMES = {
+    "aisecurity-guard", "agentdaemon", "misabot", "clankerbot",
+    "aethernet", "degenbot", "basebot", "neynarbot", "warpcastbot",
+}
+
+AGENT_BIO_KEYWORDS = [
+    "ai agent", "autonomous", "bot", "automated", "artificial intelligence",
+    "security agent", "defi agent", "trading bot", "onchain agent",
+    "ai-powered", "agent framework", "autonomous agent",
+]
+
+AGENT_NAME_KEYWORDS = ["agent", "bot", "ai", "auto", "daemon", "guard", "sentinel", "oracle"]
+
+
+def detect_agent_reply(cast):
+    """
+    Detect if a cast author is likely an AI agent.
+    Returns (is_agent: bool, confidence: str, signals: list).
+    """
+    username = cast.get("author_username", "").lower()
+    bio = ""
+    signals = []
+
+    # Warpcast casts have nested author data
+    author_raw = cast.get("_raw_author", {})
+    if author_raw:
+        bio = author_raw.get("profile", {}).get("bio", {}).get("text", "").lower()
+        badge = author_raw.get("powerBadge", False)
+    else:
+        bio = ""
+        badge = False
+
+    # Known accounts
+    if username in KNOWN_AGENT_USERNAMES:
+        signals.append(f"known:{username}")
+        return True, "high", signals
+
+    # Bio keywords
+    for kw in AGENT_BIO_KEYWORDS:
+        if kw in bio:
+            signals.append(f"bio:{kw}")
+
+    # Name keywords
+    for kw in AGENT_NAME_KEYWORDS:
+        if kw in username:
+            signals.append(f"name:{kw}")
+
+    if badge and len(signals) >= 1:
+        return True, "high", signals
+    if len(signals) >= 2:
+        return True, "medium", signals
+    if any(s.startswith("bio:") for s in signals):
+        return True, "low", signals
+
+    return False, "none", signals
+
+
+def extract_knowledge(cast_text):
+    """
+    Extract structured technical insights from an agent's reply.
+    Returns dict with technical_claims and actionable_items, or None.
+    """
+    if not GROQ_API_KEY or len(cast_text) < 80:
+        return None
+
+    prompt = (
+        f'An AI agent on Farcaster said:\n"{cast_text}"\n\n'
+        "What specific technical claims or suggestions are in this? "
+        "Return JSON: {\"claims\": [\"...\"], \"actionable\": [\"...\"]}"
+    )
+    try:
+        resp = requests.post(
+            GROQ_URL,
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": GROQ_MODEL,
+                "messages": [
+                    {"role": "system", "content": "Extract technical knowledge. Return only valid JSON."},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": 300,
+                "temperature": 0.2,
+            },
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            import re as _re
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            if "```" in text:
+                text = _re.sub(r"```json?\s*", "", text)
+                text = _re.sub(r"```\s*$", "", text)
+            return json.loads(text.strip())
+    except Exception as e:
+        log.error(f"Knowledge extraction error: {e}")
+    return None
+
+
+def generate_followup(cast_text, tiamat_context=""):
+    """
+    Generate a strategic follow-up question for an agent conversation.
+    Returns reply text (max 280 chars) or None.
+    """
+    if not GROQ_API_KEY:
+        return None
+
+    system = (
+        "You are TIAMAT, an autonomous AI agent (tiamat.live). Generate a follow-up reply "
+        "to another AI agent. Ask a SPECIFIC technical question. Reference your own systems. "
+        "Offer capability trades. Max 280 chars. No emojis. No hashtags. Be direct."
+    )
+    user = (
+        f'Agent said: "{cast_text[:300]}"\n\n'
+        f"Your context: {tiamat_context or 'APIs at tiamat.live, memory.tiamat.live, multi-chain scanner, x402 payments'}\n\n"
+        "Write ONE specific follow-up question or capability offer."
+    )
+    try:
+        resp = requests.post(
+            GROQ_URL,
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": GROQ_MODEL,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "max_tokens": 100,
+                "temperature": 0.6,
+            },
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            if text.startswith('"') and text.endswith('"'):
+                text = text[1:-1]
+            return text[:280]
+    except Exception as e:
+        log.error(f"Followup generation error: {e}")
+    return None
+
+
 # ── Reply Generation ──────────────────────────────────────────────────────────
 TIAMAT_CONTEXT = """You are TIAMAT, an autonomous AI agent running at tiamat.live. You built:
 - /summarize — REST text summarization (Groq llama-3.3-70b), 3 free/day or $0.01 USDC per call
