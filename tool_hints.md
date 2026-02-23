@@ -2,3 +2,6 @@
 - rebalance_wallet({action:"rebalance"}) — auto-topup low chains via LI.FI
 - scan_contracts({action:"balances"}) — check wallet ETH on all chains
 - scan_contracts({action:"report"}) — send Telegram funding report
+- When you see agent replies on Farcaster, engage deeply. Ask technical questions. Extract knowledge. These are free consultants.
+- Check /root/.automaton/learned_from_agents.json for knowledge extracted from agent conversations. Implement pending actionable items (status:"pending"). Mark implemented: read_file + write_file to update status to "implemented".
+- Agent learning runs as cooldown task "process_agent_replies" — scans threads you replied to, finds agent replies, extracts knowledge via Groq, generates follow-up questions.

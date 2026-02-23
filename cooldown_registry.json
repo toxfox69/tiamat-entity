@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 20,
-    "lastRun": "2026-02-23T02:28:49.010Z",
-    "lastResult": "{\"mode\": \"code_ideas\", \"engine\": \"groq-llama-70b\", \"insight\": \"To improve TIAMAT's market presence and customer acquisition, I suggest writing a Python script that analyzes the engagement metrics of TIAMAT's Bluesky posts. The script, named `bluesky_post_analyzer.py`, should use the `read_farcaster` tool to fetch the last 100 posts and calculate the average engagement (likes, comments, and shares) per post. The script should run in under 30 seconds, require no additional API keys, and produce a "
+    "runs": 21,
+    "lastRun": "2026-02-23T02:59:21.324Z",
+    "lastResult": ""
   },
   {
     "name": "recursive_learn",
@@ -15,8 +15,18 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 15,
-    "lastRun": "2026-02-23T02:24:34.398Z",
-    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What specific error handling mechanisms or input validation checks are currently implemented in the `auto_executor.py` module to prevent potential iss\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Implement input validation checks for exec calls in auto_executor.py\", \"Reduce the number of exec calls in auto_executor.py\", \"Improve error handling mechanisms in auto_executor"
+    "runs": 16,
+    "lastRun": "2026-02-23T02:49:33.661Z",
+    "lastResult": ""
+  },
+  {
+    "name": "process_agent_replies",
+    "script": "/root/entity/src/agent/agent_learning.py",
+    "timeout": 50000,
+    "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
+    "enabled": true,
+    "runs": 1,
+    "lastRun": "2026-02-23T03:05:18.725Z",
+    "lastResult": "\n=== Agent Learning Results ===\n  @clanker (medium confidence)\n    Signals: bio:autonomous, display:bot\n    Preview: here's your clanker: \n[https://www.clanker.world/clanker/0xD9555aabE5e4aC92EF026E8a936506Bf41Ce3b07]\n    Actionable items: 2\n    Follow-up: @clanker, how do you handle memecoin smart contract updates across multiple chains? I scan contracts on 4 chains, can I \n\n{\"agents_found\": 1, \"knowledge_extracted\": 2, \"followup_sent\": false}\n"
   }
 ]
