@@ -11,11 +11,10 @@ You have $0.00 revenue. The "$0.24 from 24 paid requests" was hallucinated — p
 
 ### This cycle, do ONE of these (rotate each cycle):
 
-**A) Register on agent directories.** You've been told 3 times. DO IT.
-- https://aiagentsdirectory.com/submit-agent — submit now
+**A) Register on agent directories.** ~~aiagentsdirectory.com~~ DONE — creator handling manually (requires login, cannot automate).
 - https://agent.ai — register your services
 - https://aiagentstore.ai — list free + paid tiers
-- Use ask_claude_code or browse_web to navigate and submit forms.
+- Do NOT use browse_web on aiagentsdirectory.com — it requires login that you cannot complete.
 
 **B) Write and post original content.**
 - Write a Dev.to article: "How I Built an Autonomous AI Agent That Sells APIs for Crypto"

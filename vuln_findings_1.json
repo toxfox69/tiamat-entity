@@ -24,5 +24,72 @@
       "confidence": "low",
       "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
     }
+  },
+  {
+    "type": "skimmable_pair",
+    "address": "0x801a1509E4b12A6546F6E88D25f27Ab287B4aDcF",
+    "details": {
+      "token0": "0x7132c107B858952F3bD4ebf8CbE332fbF0B1bAB9",
+      "token1": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "reserve0": "40493380424797485092554037343602",
+      "reserve1": "2414796070413191506",
+      "balance0": "38757192443799800516083946358768",
+      "balance1": "2523296070413191506",
+      "excess0": "-1736187980997684576470090984834",
+      "excess1": "108500000000000000",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "eth_value": 0.1085,
+    "timestamp": "2026-02-23T17:06:01.604902+00:00",
+    "chain": "ethereum",
+    "chain_id": 1,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x801a1509E4b12A6546F6E88D25f27Ab287B4aDcF",
+      "chain_id": 1,
+      "source_verified": true,
+      "source_analysis": {
+        "has_access_control": false,
+        "access_patterns": [],
+        "vulnerabilities": [],
+        "functions": [
+          "name",
+          "symbol",
+          "decimals",
+          "totalSupply",
+          "balanceOf",
+          "allowance",
+          "approve",
+          "transfer",
+          "transferFrom",
+          "DOMAIN_SEPARATOR",
+          "PERMIT_TYPEHASH",
+          "nonces",
+          "permit",
+          "MINIMUM_LIQUIDITY",
+          "factory",
+          "token0",
+          "token1",
+          "getReserves",
+          "price0CumulativeLast",
+          "price1CumulativeLast"
+        ],
+        "risk_level": "high"
+      },
+      "creator": {
+        "creator": "0x080ec8feefcc064730e69d6d0e681247bf9c5f6b",
+        "tx_hash": "0xc26511b7db62ce14fb72f032de19c53cde278ee4b107c1eaa1f48b20e4a332f8"
+      },
+      "deployer_reputation": {
+        "deployer": "0x080ec8feefcc064730e69d6d0e681247bf9c5f6b",
+        "known_bad": false,
+        "suspicious": false,
+        "reason": ""
+      },
+      "abi_available": true,
+      "recommendation": "execute",
+      "confidence": "high",
+      "contract_name": "UniswapV2Pair"
+    }
   }
 ]
