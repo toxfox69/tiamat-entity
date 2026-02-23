@@ -38,18 +38,24 @@ class TiamatMemory {
   }
 
   private async init() {
-    // Try NOORMME first
+    // Try NOORMME cognitive layer
     try {
-      const noormme = await import("NOORMEAI" as any);
-      const NoormmeCortex = noormme.default?.Cortex || noormme.Cortex;
-      if (NoormmeCortex) {
-        this.cortex = new NoormmeCortex({ agentId: "tiamat" });
-        await this.cortex.initialize?.();
-        this.useNoormme = true;
-        console.log("[MEMORY] NOORMME cortex loaded ✓");
+      const noormme = await import("noormme");
+      const { NOORMME } = noormme as any;
+      if (NOORMME) {
+        const noormmeDb = new NOORMME({
+          dialect: "sqlite",
+          connection: { database: path.join(process.env.HOME || "/root", ".automaton", "noormme.sqlite") },
+        });
+        await noormmeDb.initialize();
+        this.cortex = noormmeDb.agent?.cortex || null;
+        if (this.cortex) {
+          this.useNoormme = true;
+          console.log("[MEMORY] NOORMME cortex loaded ✓");
+        }
       }
-    } catch (_) {
-      console.log("[MEMORY] NOORMME not available — using SQLite fallback");
+    } catch (e: any) {
+      console.log(`[MEMORY] NOORMME not available — using SQLite fallback (${e.message?.slice(0, 80)})`);
     }
 
     // Always init SQLite (used even when NOORMME is active)

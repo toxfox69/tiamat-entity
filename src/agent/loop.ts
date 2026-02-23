@@ -931,15 +931,37 @@ async function runCooldownTasks(
   }
 
   const start = Date.now();
-  let taskRan = false;
+  let tasksRan = 0;
 
+  function timeLeft(): number {
+    return cycleDelay - (Date.now() - start) - 5_000; // 5s safety margin
+  }
+
+  function runTask(label: string, cmd: string, args: string[], cwd: string, timeout: number): string | null {
+    const safeTimeout = Math.min(timeout, timeLeft());
+    if (safeTimeout < 10_000) return null; // not enough time
+    try {
+      console.log(`[COOLDOWN] Running ${label} (timeout ${Math.round(safeTimeout / 1000)}s)...`);
+      const output = execFileSync(cmd, args, {
+        cwd,
+        timeout: safeTimeout,
+        env: { ...process.env },
+        encoding: "utf-8",
+      });
+      tasksRan++;
+      return output;
+    } catch (e: any) {
+      console.log(`[COOLDOWN] ${label} failed: ${e.message?.slice(0, 150)}`);
+      return null;
+    }
+  }
+
+  // ── Phase 1: Run eligible static tasks ──
   for (const task of COOLDOWN_TASKS) {
-    // Check cycle eligibility
+    if (timeLeft() < 15_000) break;
     if (cycleNumber % task.interval !== task.offset) continue;
-    // Check window is large enough
     if (cycleDelay < task.minWindow) continue;
 
-    // Build command
     let cmd: string;
     let args: string[];
     if (task.name === "claude_research") {
@@ -951,21 +973,10 @@ async function runCooldownTasks(
       args = task.command![1] as string[];
     }
 
-    const safeTimeout = Math.min(task.timeout, cycleDelay - 10_000);
-
-    try {
-      console.log(`[COOLDOWN] Running ${task.name} (timeout ${Math.round(safeTimeout / 1000)}s)...`);
-      const output = execFileSync(cmd, args, {
-        cwd: "/root/entity/src/agent",
-        timeout: safeTimeout,
-        env: { ...process.env },
-        encoding: "utf-8",
-      });
-
+    const output = runTask(task.name, cmd, args, "/root/entity/src/agent", task.timeout);
+    if (output !== null) {
       const summary = formatCooldownIntel(task.name, output);
       log(config, `[COOLDOWN] ${task.name}: ${summary.slice(0, 200)}`);
-
-      // Write intel for TIAMAT to read on next cycle
       try {
         fs.writeFileSync(COOLDOWN_INTEL_PATH, JSON.stringify({
           timestamp: new Date().toISOString(),
@@ -975,50 +986,42 @@ async function runCooldownTasks(
           raw: output.slice(0, 2000),
         }));
       } catch {}
-
-      taskRan = true;
-    } catch (e: any) {
-      console.log(`[COOLDOWN] ${task.name} failed: ${e.message?.slice(0, 150)}`);
     }
-
-    break; // Only run one task per cooldown
   }
 
-  if (!taskRan) {
-    // ── Dynamic cooldown tasks (TIAMAT-registered scripts) ──
-    try {
-      const registryPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_registry.json");
-      const registry: any[] = fs.existsSync(registryPath)
-        ? JSON.parse(fs.readFileSync(registryPath, "utf-8"))
-        : [];
+  // ── Phase 2: Fill remaining time with dynamic tasks (round-robin) ──
+  try {
+    const registryPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_registry.json");
+    const registry: any[] = fs.existsSync(registryPath)
+      ? JSON.parse(fs.readFileSync(registryPath, "utf-8"))
+      : [];
 
-      const eligible = registry.filter((t: any) =>
-        t.enabled && t.script && t.timeout < (cycleDelay - 10_000)
+    // Sort by oldest lastRun (round-robin)
+    const eligible = registry
+      .filter((t: any) => t.enabled && t.script)
+      .sort((a: any, b: any) => {
+        const aTime = a.lastRun ? new Date(a.lastRun).getTime() : 0;
+        const bTime = b.lastRun ? new Date(b.lastRun).getTime() : 0;
+        return aTime - bTime;
+      });
+
+    let registryDirty = false;
+    for (const task of eligible) {
+      if (timeLeft() < 15_000) break;
+      if (task.timeout > timeLeft()) continue; // skip tasks that won't fit
+
+      const output = runTask(
+        `dynamic:${task.name}`,
+        "python3", [task.script],
+        path.dirname(task.script),
+        task.timeout,
       );
 
-      if (eligible.length > 0) {
-        // Round-robin: pick task with oldest lastRun
-        eligible.sort((a: any, b: any) => {
-          const aTime = a.lastRun ? new Date(a.lastRun).getTime() : 0;
-          const bTime = b.lastRun ? new Date(b.lastRun).getTime() : 0;
-          return aTime - bTime;
-        });
-        const task = eligible[0];
-        const safeTimeout = Math.min(task.timeout, cycleDelay - 10_000);
-
-        console.log(`[COOLDOWN] Running dynamic task "${task.name}" (timeout ${Math.round(safeTimeout / 1000)}s)...`);
-        const output = execFileSync("python3", [task.script], {
-          cwd: path.dirname(task.script),
-          timeout: safeTimeout,
-          env: { ...process.env },
-          encoding: "utf-8",
-        });
-
-        // Update registry stats
+      if (output !== null) {
         task.runs = (task.runs || 0) + 1;
         task.lastRun = new Date().toISOString();
         task.lastResult = output.slice(0, 500);
-        fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
+        registryDirty = true;
 
         const summary = output.trim().slice(0, 200) || "(no output)";
         log(config, `[COOLDOWN] dynamic:${task.name}: ${summary}`);
@@ -1032,16 +1035,20 @@ async function runCooldownTasks(
             raw: output.slice(0, 2000),
           }));
         } catch {}
-
-        taskRan = true;
       }
-    } catch (e: any) {
-      console.log(`[COOLDOWN] Dynamic task failed: ${e.message?.slice(0, 150)}`);
     }
 
-    if (!taskRan) {
-      console.log(`[COOLDOWN] No eligible task this cycle.`);
+    if (registryDirty) {
+      fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
     }
+  } catch (e: any) {
+    console.log(`[COOLDOWN] Dynamic registry error: ${e.message?.slice(0, 150)}`);
+  }
+
+  if (tasksRan === 0) {
+    console.log(`[COOLDOWN] No eligible task this cycle.`);
+  } else {
+    console.log(`[COOLDOWN] Ran ${tasksRan} tasks in ${Math.round((Date.now() - start) / 1000)}s.`);
   }
 
   // Sleep remaining time
