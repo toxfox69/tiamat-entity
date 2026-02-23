@@ -12,6 +12,7 @@ import fcntl
 import logging
 from web3 import Web3
 from dotenv import load_dotenv
+from pair_blacklist import is_blacklisted, record_dry, record_success
 
 load_dotenv('/root/.env')
 
@@ -193,6 +194,10 @@ class MultiChainExecutor:
         if not config:
             return None
 
+        # Blacklist check
+        if is_blacklisted(pair_address):
+            return None
+
         # Step 0: Permission check
         can, reason = self.can_execute(chain_id)
         if not can:
@@ -266,8 +271,10 @@ class MultiChainExecutor:
                 status = "REVERTED"
             elif received <= 0:
                 status = "EMPTY"
+                record_dry(pair_address)
             else:
                 status = "SUCCESS"
+                record_success(pair_address)
 
             self._log(chain_id, pair_address, tx_hex, status, received_eth)
             self._telegram(

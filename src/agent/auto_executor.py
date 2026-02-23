@@ -21,6 +21,7 @@ import urllib.request
 from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 from eth_account import Account
+from pair_blacklist import is_blacklisted, record_dry, record_success
 
 log = logging.getLogger("vuln_scanner")
 
@@ -124,6 +125,7 @@ class AutoExecutor:
         try:
             entry = {
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "source": "auto_executor",
                 "action": action,
                 "address": address,
                 "result": result,
@@ -206,10 +208,16 @@ class AutoExecutor:
 
         addr = Web3.to_checksum_address(pair_address)
 
+        # Blacklist check: skip pairs that consistently come back dry
+        if is_blacklisted(addr):
+            return False
+
         # Pre-check: are there actually excess tokens to skim?
         has_excess, excess0, excess1, t0, t1 = self._check_skim_excess(addr)
         if not has_excess:
-            log.info(f"[AUTO-EXEC] Skip skim {addr[:16]}: reserves == balances, nothing to skim")
+            now_blacklisted = record_dry(addr)
+            suffix = " — NOW BLACKLISTED" if now_blacklisted else ""
+            log.info(f"[AUTO-EXEC] Skip skim {addr[:16]}: reserves == balances{suffix}")
             self._log_exec("skim", addr, "SKIPPED", "no excess tokens (reserves == balances)")
             return False
 
@@ -285,8 +293,10 @@ class AutoExecutor:
 
             if tx_ok and got_something:
                 result = "SUCCESS"
+                record_success(addr)
             elif tx_ok:
                 result = "EMPTY"
+                record_dry(addr)
             else:
                 result = "FAILED"
 

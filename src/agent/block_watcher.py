@@ -24,6 +24,7 @@ except ImportError:
     import websockets
 
 from web3 import Web3
+from pair_blacklist import is_blacklisted, record_dry, record_success
 
 try:
     from multi_chain_executor import MultiChainExecutor
@@ -103,6 +104,7 @@ class BlockWatcher:
         self.cached_nonce = None
         self.cached_nonce_time = 0
         self.running = False
+        self.token_cache = {}  # pair_address -> (token0, token1)
 
         # Multi-chain executor (preferred for skim execution)
         self.multi_exec = MultiChainExecutor() if HAS_MULTI_EXEC else None
@@ -189,35 +191,141 @@ class BlockWatcher:
     # SKIM CHECK — compare reserves vs balances
     # ==========================================
 
+    def _cache_tokens(self, pair_address):
+        """Cache token0/token1 addresses for a pair (they never change)."""
+        pair = Web3.to_checksum_address(pair_address)
+        if pair in self.token_cache:
+            return self.token_cache[pair]
+        try:
+            t0_raw = self.w3.eth.call({'to': pair, 'data': '0x0dfe1681'})
+            t1_raw = self.w3.eth.call({'to': pair, 'data': '0xd21220a7'})
+            token0 = Web3.to_checksum_address('0x' + t0_raw.hex()[-40:])
+            token1 = Web3.to_checksum_address('0x' + t1_raw.hex()[-40:])
+            self.token_cache[pair] = (token0, token1)
+            return token0, token1
+        except Exception:
+            return None, None
+
+    def check_pairs_batch(self, pairs):
+        """
+        Batch-check all pairs for excess using Multicall3.
+        Returns dict of {pair_address: (has_excess, excess0, excess1)}.
+        One RPC call instead of 5 per pair.
+        """
+        results = {}
+        if not pairs:
+            return results
+
+        # Ensure we have token addresses cached
+        for p in pairs:
+            self._cache_tokens(p)
+
+        # Build multicall: for each pair, we need getReserves + balanceOf(token0) + balanceOf(token1)
+        calls = []
+        call_map = []  # track which pair each call belongs to
+
+        for pair_addr in pairs:
+            pair = Web3.to_checksum_address(pair_addr)
+            tokens = self.token_cache.get(pair)
+            if not tokens or not tokens[0]:
+                results[pair_addr] = (False, 0, 0)
+                continue
+
+            token0, token1 = tokens
+            pair_hex = pair.lower()[2:].zfill(64)
+
+            # Call 1: getReserves() on pair
+            calls.append((pair, bytes.fromhex('0902f1ac')))
+            call_map.append(('reserves', pair_addr))
+
+            # Call 2: balanceOf(pair) on token0
+            calls.append((token0, bytes.fromhex('70a08231' + pair_hex)))
+            call_map.append(('bal0', pair_addr))
+
+            # Call 3: balanceOf(pair) on token1
+            calls.append((token1, bytes.fromhex('70a08231' + pair_hex)))
+            call_map.append(('bal1', pair_addr))
+
+        if not calls:
+            return results
+
+        # Batch all eth_call requests into a single JSON-RPC batch call
+        try:
+            batch_requests = []
+            for i, (target, data) in enumerate(calls):
+                batch_requests.append({
+                    "jsonrpc": "2.0",
+                    "id": i,
+                    "method": "eth_call",
+                    "params": [{"to": target, "data": "0x" + data.hex()}, "latest"]
+                })
+
+            import requests as req
+            rpc_url = RPC_URLS[self.rpc_index]
+            resp = req.post(rpc_url, json=batch_requests, timeout=5)
+            batch_results = resp.json()
+
+            # Sort by id to ensure order
+            batch_results.sort(key=lambda x: x.get('id', 0))
+
+            # Parse results
+            pair_data = {}  # pair_addr -> {reserves, bal0, bal1}
+            for entry, (call_type, pair_addr) in zip(batch_results, call_map):
+                if pair_addr not in pair_data:
+                    pair_data[pair_addr] = {}
+                result_hex = entry.get('result', '0x')
+                try:
+                    raw = bytes.fromhex(result_hex[2:]) if result_hex.startswith('0x') else b''
+                except ValueError:
+                    raw = b''
+
+                if call_type == 'reserves' and len(raw) >= 64:
+                    pair_data[pair_addr]['reserve0'] = int.from_bytes(raw[0:32], 'big')
+                    pair_data[pair_addr]['reserve1'] = int.from_bytes(raw[32:64], 'big')
+                elif call_type == 'bal0' and raw:
+                    pair_data[pair_addr]['balance0'] = int.from_bytes(raw, 'big')
+                elif call_type == 'bal1' and raw:
+                    pair_data[pair_addr]['balance1'] = int.from_bytes(raw, 'big')
+
+            # Compute excess
+            for pair_addr, d in pair_data.items():
+                r0 = d.get('reserve0', 0)
+                r1 = d.get('reserve1', 0)
+                b0 = d.get('balance0', 0)
+                b1 = d.get('balance1', 0)
+                excess0 = b0 - r0
+                excess1 = b1 - r1
+                has_excess = excess0 > 0 or excess1 > 0
+                results[pair_addr] = (has_excess, excess0, excess1)
+
+            return results
+
+        except Exception as e:
+            log.warning(f"Batch RPC failed: {str(e)[:80]}, falling back to sequential")
+            # Fallback to sequential
+            for pair_addr in pairs:
+                results[pair_addr] = self.check_pair_excess(pair_addr)
+            return results
+
     def check_pair_excess(self, pair_address):
         """
-        Check if a Uniswap V2 style pair has skimmable excess.
-        Compares actual token balances to reported reserves.
-        If balance > reserve for either token, there's excess to skim.
+        Check a single pair for skimmable excess (fallback for batch failures).
         Returns (has_excess, excess0, excess1)
         """
         try:
             pair = Web3.to_checksum_address(pair_address)
 
-            # getReserves()
             reserves_raw = self.w3.eth.call({'to': pair, 'data': '0x0902f1ac'})
             reserve0 = int.from_bytes(reserves_raw[0:32], 'big')
             reserve1 = int.from_bytes(reserves_raw[32:64], 'big')
 
-            # token0()
-            t0_raw = self.w3.eth.call({'to': pair, 'data': '0x0dfe1681'})
-            token0 = Web3.to_checksum_address('0x' + t0_raw.hex()[-40:])
+            token0, token1 = self._cache_tokens(pair_address)
+            if not token0:
+                return False, 0, 0
 
-            # token1()
-            t1_raw = self.w3.eth.call({'to': pair, 'data': '0xd21220a7'})
-            token1 = Web3.to_checksum_address('0x' + t1_raw.hex()[-40:])
-
-            # balanceOf(pair) for both tokens
             pair_hex = pair.lower()[2:].zfill(64)
-
             bal0_raw = self.w3.eth.call({'to': token0, 'data': '0x70a08231' + pair_hex})
             balance0 = int.from_bytes(bal0_raw, 'big')
-
             bal1_raw = self.w3.eth.call({'to': token1, 'data': '0x70a08231' + pair_hex})
             balance1 = int.from_bytes(bal1_raw, 'big')
 
@@ -226,9 +334,7 @@ class BlockWatcher:
 
             if excess0 > 0 or excess1 > 0:
                 return True, excess0, excess1
-
             return False, 0, 0
-
         except Exception:
             return False, 0, 0
 
@@ -316,6 +422,9 @@ class BlockWatcher:
             status = "SUCCESS" if receipt['status'] == 1 else "REVERTED"
             if receipt['status'] == 1 and received <= 0:
                 status = "EMPTY"
+                record_dry(pair_address)
+            elif status == "SUCCESS":
+                record_success(pair_address)
 
             log.info(f"SKIM {status}: {tx_hex} received={received_eth:.6f} ETH")
             self._log_exec(pair_address, tx_hex, status, received_eth)
@@ -444,20 +553,26 @@ class BlockWatcher:
                                 continue
 
                             start = time.time()
-                            for pair_addr in self.watched_pairs:
-                                has_excess, ex0, ex1 = self.check_pair_excess(pair_addr)
-                                if has_excess:
-                                    elapsed = time.time() - start
-                                    log.info(f"Block {block_num}: EXCESS at {pair_addr[:16]}... (detected in {elapsed*1000:.0f}ms)")
-                                    # Use multi-chain executor (Base = 8453) if available
-                                    if self.multi_exec:
-                                        self.multi_exec.execute_skim(8453, pair_addr)
-                                    else:
-                                        self.execute_skim(pair_addr)
+                            # Filter out blacklisted pairs
+                            active_pairs = [p for p in self.watched_pairs if not is_blacklisted(p)]
+
+                            # Batch check all pairs in one RPC call
+                            batch_results = self.check_pairs_batch(active_pairs)
+
+                            for pair_addr, (has_excess, ex0, ex1) in batch_results.items():
+                                if not has_excess:
+                                    record_dry(pair_addr)
+                                    continue
+                                elapsed = time.time() - start
+                                log.info(f"Block {block_num}: EXCESS at {pair_addr[:16]}... (detected in {elapsed*1000:.0f}ms)")
+                                if self.multi_exec:
+                                    self.multi_exec.execute_skim(8453, pair_addr)
+                                else:
+                                    self.execute_skim(pair_addr)
 
                             elapsed = time.time() - start
-                            if elapsed > 1.5:
-                                log.warning(f"Block scan took {elapsed:.2f}s — too slow, reduce watched pairs")
+                            if elapsed > 3.0:
+                                log.warning(f"Block scan took {elapsed:.2f}s — {len(active_pairs)} pairs")
 
                         except asyncio.TimeoutError:
                             await ws.ping()
