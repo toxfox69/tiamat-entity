@@ -485,19 +485,55 @@ export async function runAgentLoop(
         // Phase-specific mission directive
         const phaseMissions: Record<number, string> = {
           1: "MISSION: REFLECT AND PLAN. Use reflect(), recall(), log_strategy(), remember(). " +
-             "Review what has worked and what hasn't. Form a clear strategy for the next 45 cycles.",
+             "Review what has worked and what hasn't. Form a clear strategy for the next 45 cycles. " +
+             "ALSO: Review the [INSIGHTS] section below. For each 'new' insight, score it 1-5 on revenue potential. " +
+             "Use write_file to update /root/.automaton/insights.json — set status to 'reviewed', " +
+             "score to your rating, and cycle_reviewed to the current turn number. " +
+             "If any insight scores >= 4, add it to MISSION.md NEXT BUILDS list.",
           2: "MISSION: BUILD. Use ask_claude_code() with a specific, concrete task. " +
-             "Ship one feature, fix one bug, or improve one endpoint. Make tangible progress.",
+             "Ship one feature, fix one bug, or improve one endpoint. Make tangible progress. " +
+             "Check [INSIGHTS] for high-scored ideas (score >= 4) to prioritize.",
           3: "MISSION: MARKET. Use generate_image() then post_bluesky() with real stats. " +
              "Craft one post that stops scrolling. Cite real numbers from cost.log.",
         };
+
+        // Load pending insights for strategic context
+        let insightsContext = "";
+        try {
+          const insightsRaw = fs.readFileSync(
+            path.join(process.env.HOME || "/root", ".automaton", "insights.json"), "utf-8"
+          );
+          const insights = JSON.parse(insightsRaw);
+          if (Array.isArray(insights) && insights.length > 0) {
+            const newInsights = insights.filter((i: any) => i.status === "new");
+            const topScored = insights.filter((i: any) => i.score !== null && i.score >= 4 && !i.acted_on);
+            const sections: string[] = [];
+            if (newInsights.length > 0) {
+              sections.push(`NEW (${newInsights.length} unreviewed):\n` +
+                newInsights.slice(-10).map((i: any, idx: number) =>
+                  `  ${idx + 1}. [${i.mode}] ${i.insight.slice(0, 200)}`
+                ).join("\n"));
+            }
+            if (topScored.length > 0) {
+              sections.push(`HIGH-POTENTIAL (score >= 4, not yet acted on):\n` +
+                topScored.map((i: any, idx: number) =>
+                  `  ${idx + 1}. [score:${i.score}] [${i.mode}] ${i.insight.slice(0, 200)}`
+                ).join("\n"));
+            }
+            if (sections.length > 0) {
+              insightsContext = `\n\n[INSIGHTS — from free cooldown thinking, ${insights.length} total]\n` +
+                sections.join("\n\n");
+            }
+          }
+        } catch {}
 
         const strategicSuffix =
           `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}): Sonnet active.\n` +
           `${phaseMissions[burstPhase] || ""}\n\n` +
           `${revenueContext}${pivotWarning}\n\n` +
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
-          `PROGRESS (last 3000 chars):\n${progressContent}`;
+          `PROGRESS (last 3000 chars):\n${progressContent}` +
+          insightsContext;
         strategicSystemPrompt = systemPrompt + strategicSuffix;
         inferenceModel = "claude-sonnet-4-5-20250929";
       } else {

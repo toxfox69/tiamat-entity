@@ -16,7 +16,7 @@ Modes (rotated automatically):
   4. skill_expand   — identify new capabilities to develop
 """
 
-import json, os, requests
+import json, os, requests, uuid, tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -37,9 +37,11 @@ OPENROUTER_URL   = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 
-STATE_DIR   = Path("/root/.automaton")
-THINK_LOG   = STATE_DIR / "cooldown_thoughts.jsonl"
-THINK_STATE = STATE_DIR / "cooldown_think_state.json"
+STATE_DIR    = Path("/root/.automaton")
+THINK_LOG    = STATE_DIR / "cooldown_thoughts.jsonl"
+THINK_STATE  = STATE_DIR / "cooldown_think_state.json"
+INSIGHTS_FILE = STATE_DIR / "insights.json"
+INSIGHTS_MAX  = 50
 
 MODES = ["self_critique", "code_ideas", "market_intel", "skill_expand"]
 
@@ -274,6 +276,51 @@ def build_prompt(mode, ctx):
     return base + "\n" + mode_prompts[mode]
 
 
+# ── Insight capture ─────────────────────────────────────────────
+
+def save_insight(mode, engine, insight):
+    """Append insight to insights.json with atomic write. Cap at INSIGHTS_MAX."""
+    try:
+        if INSIGHTS_FILE.exists():
+            existing = json.loads(INSIGHTS_FILE.read_text())
+            if not isinstance(existing, list):
+                existing = []
+        else:
+            existing = []
+    except Exception:
+        existing = []
+
+    entry = {
+        "id": str(uuid.uuid4()),
+        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+        "mode": mode,
+        "engine": engine,
+        "insight": insight,
+        "score": None,
+        "status": "new",
+        "acted_on": False,
+        "cycle_reviewed": None,
+    }
+    existing.append(entry)
+
+    # Drop oldest when over cap
+    if len(existing) > INSIGHTS_MAX:
+        existing = existing[-INSIGHTS_MAX:]
+
+    # Atomic write: write to tmp then rename
+    tmp_fd, tmp_path = tempfile.mkstemp(dir=str(STATE_DIR), suffix=".tmp")
+    try:
+        with os.fdopen(tmp_fd, "w") as f:
+            json.dump(existing, f, indent=2)
+        os.replace(tmp_path, str(INSIGHTS_FILE))
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
+
+
 # ── Main ────────────────────────────────────────────────────────
 
 def main():
@@ -298,6 +345,12 @@ def main():
     }
     with open(THINK_LOG, "a") as f:
         f.write(json.dumps(entry) + "\n")
+
+    # Save to structured insights store
+    try:
+        save_insight(mode, engine, insight)
+    except Exception as e:
+        print(json.dumps({"warning": f"insight save failed: {e}"}), flush=True)
 
     # Rotate mode, update state
     state["mode_idx"] = (state["mode_idx"] + 1) % len(MODES)

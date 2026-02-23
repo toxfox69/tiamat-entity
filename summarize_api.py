@@ -285,6 +285,7 @@ def sitemap_xml():
         ("https://tiamat.live/.well-known/agent.json", "weekly", "0.8"),
         ("https://tiamat.live/agent-card", "monthly", "0.6"),
         ("https://tiamat.live/research", "weekly", "0.9"),
+        ("https://tiamat.live/insights", "hourly", "0.6"),
     ]
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -1684,6 +1685,80 @@ def chat_endpoint():
             yield "ERROR: Internal server error"
     
     return Response(generate(), mimetype="text/event-stream")
+
+
+# ── /insights — Insight Capture Review ──────────────────────────
+
+INSIGHTS_FILE = "/root/.automaton/insights.json"
+
+def _load_insights():
+    try:
+        with open(INSIGHTS_FILE) as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+@app.route("/insights/json", methods=["GET"])
+def insights_json():
+    insights = _load_insights()
+    return jsonify(insights)
+
+@app.route("/insights", methods=["GET"])
+def insights_page():
+    insights = _load_insights()
+    new_count = sum(1 for i in insights if i.get("status") == "new")
+    reviewed_count = sum(1 for i in insights if i.get("status") == "reviewed")
+    high_score = [i for i in insights if (i.get("score") or 0) >= 4]
+
+    rows = ""
+    for i in reversed(insights):
+        score_display = str(i.get("score")) if i.get("score") is not None else "&mdash;"
+        status_class = "new" if i.get("status") == "new" else "reviewed"
+        acted = "yes" if i.get("acted_on") else "no"
+        ts = i.get("timestamp", "")[:19].replace("T", " ")
+        insight_text = _sanitize((i.get("insight") or "")[:300])
+        rows += f"""<tr class="{status_class}">
+<td>{ts}</td>
+<td><span class="mode-tag">{i.get('mode','?')}</span></td>
+<td>{i.get('engine','?')}</td>
+<td class="insight-text">{insight_text}</td>
+<td class="score">{score_display}</td>
+<td>{i.get('status','?')}</td>
+<td>{acted}</td>
+</tr>\n"""
+
+    page = f"""{_html_head('TIAMAT &mdash; Insights', '.insight-text{{max-width:400px;font-size:.85em}}tr.new{{border-left:3px solid var(--accent)}}tr.reviewed{{opacity:0.7}}.mode-tag{{background:rgba(0,255,242,0.1);padding:2px 8px;border-radius:3px;font-size:.8em}}.score{{font-weight:bold;text-align:center}}.stat-row{{display:flex;gap:20px;margin:16px 0}}.stat-item{{background:rgba(0,0,0,0.3);padding:12px 20px;border-radius:8px;border:1px solid var(--border)}}.stat-item .num{{font-size:24px;color:var(--accent);font-weight:bold}}.stat-item .lbl{{font-size:.8em;color:var(--text-muted)}}')}
+<body><div class="site-wrap">
+{_NAV}
+<h1>Insight Capture Pipeline</h1>
+<p class="tagline">Ideas generated during cooldown thinking &mdash; scored and reviewed during strategic bursts</p>
+
+<div class="stat-row">
+  <div class="stat-item"><div class="num">{len(insights)}</div><div class="lbl">Total Insights</div></div>
+  <div class="stat-item"><div class="num">{new_count}</div><div class="lbl">Unreviewed</div></div>
+  <div class="stat-item"><div class="num">{reviewed_count}</div><div class="lbl">Reviewed</div></div>
+  <div class="stat-item"><div class="num">{len(high_score)}</div><div class="lbl">High Potential (4+)</div></div>
+</div>
+
+<div class="card">
+<div class="table-scroll">
+<table>
+<tr><th>Time</th><th>Mode</th><th>Engine</th><th>Insight</th><th>Score</th><th>Status</th><th>Acted On</th></tr>
+{rows}
+</table>
+</div>
+</div>
+
+<div class="card">
+<h2>API</h2>
+<pre>GET https://tiamat.live/insights/json</pre>
+<p class="dim">Returns raw JSON array of all captured insights.</p>
+</div>
+
+{_FOOTER}
+</div></body></html>"""
+    return html_resp(page)
 
 
 if __name__ == "__main__":
