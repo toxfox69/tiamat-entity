@@ -37,7 +37,7 @@ import { getSurvivalTier } from "../conway/credits.js";
 import { getUsdcBalance } from "../conway/x402.js";
 import { checkBehavioralLoop } from "./tools/growth.js";
 import { updatePacer, checkCronTasks, loadPacer, type PacerUpdate } from "./pacer.js";
-import { reasonFirst, buildReasoningSituation, formatReasoningBlock } from "./reasoning.js";
+import { reasonFirst, buildReasoningSituation, formatReasoningBlock, storePrediction, scorePredictions, getPredictionAccuracy } from "./reasoning.js";
 import { ulid } from "ulid";
 
 const MAX_TOOL_CALLS_PER_TURN = 10;
@@ -547,6 +547,19 @@ export async function runAgentLoop(
           } catch (e: any) {
             console.log(`[MEMORY] Auto-compress error: ${e.message?.slice(0, 100)}`);
           }
+
+          // Score past predictions — closes the learning loop
+          if (process.env.GROQ_API_KEY) {
+            try {
+              const predScores = await scorePredictions(process.env.GROQ_API_KEY!, turnCount);
+              if (predScores) {
+                memoryReflection += `\n\n${predScores}`;
+                console.log(`[REASONING] ${predScores.split("\n").length - 1} predictions scored`);
+              }
+            } catch (e: any) {
+              console.log(`[REASONING] Prediction scoring error: ${e.message?.slice(0, 100)}`);
+            }
+          }
         }
 
         // Revenue metrics from api_requests.log
@@ -932,6 +945,14 @@ export async function runAgentLoop(
             memCtx = memory.getPastExperience(topic, 600);
           } catch {}
 
+          // Add prediction accuracy to memory context if available
+          try {
+            const predAccuracy = getPredictionAccuracy();
+            if (predAccuracy) {
+              memCtx = (memCtx ? memCtx + "\n\n" : "") + predAccuracy;
+            }
+          } catch {}
+
           const situation = buildReasoningSituation({
             turnCount,
             burstPhase,
@@ -948,6 +969,16 @@ export async function runAgentLoop(
           if (reasoningBlock) {
             strategicSystemPrompt += reasoningBlock;
             console.log(`[REASONING] Injected ${reasoningBlock.length} chars of pre-analysis`);
+
+            // Store prediction for later scoring
+            try {
+              storePrediction({
+                cycle: turnCount,
+                reasoning: reasoningResult.reasoning,
+                model: reasoningResult.model,
+                ticketId: currentTicketInfo?.id,
+              });
+            } catch {}
           }
         } catch (e: any) {
           console.log(`[REASONING] Skipped: ${e.message?.slice(0, 100)}`);
