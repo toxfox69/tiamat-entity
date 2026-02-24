@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 1265,
-    "lastRun": "2026-02-24T21:32:54.913Z",
-    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:** \\n\\nCreate a solution to address the problem of **Crypto Wallet Address Clustering and Organization**. Many users across various crypto communities (e.g., GitHub, Farcaster, Bluesky) are complaining about the difficulty in managing and organizing multiple crypto wallet addresses.\\n\\n**Concrete Approach:**\\n\\nDevelop a simple CLI tool, `crypto_wallet_manager.py`, that uses natural language processing (NLP) and"
+    "runs": 1295,
+    "lastRun": "2026-02-24T22:14:28.392Z",
+    "lastResult": "{\"mode\": \"self_critique\", \"engine\": \"cerebras-120b\", \"insight\": \"**Insight:** TIAMAT's recent progress is focused on fine-tuning the `claude-haiku-4-5-20251001` model, with 13 consecutive turns using the `exec` tool, resulting in minimal progress and increasing costs. This suggests that TIAMAT may be stuck in a local optimum.\\n\\n**Actionable Step:** **Try a Different Model Architecture**: Create a new turn to experiment with a different model architecture, such as `claude-sonnet-4-6-20251001`, u"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 780,
-    "lastRun": "2026-02-24T16:47:05.581Z",
-    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What specific code review question can be asked to identify potential bugs, inefficiencies, or missing error handling in TIAMAT's codebase? \\n\\nReview t\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Review error handling mechanisms in all modules\", \"Extract functions or methods with multiple responsibilities from `continuous_sca\", \"Refactor complex class hierarchies in `co"
+    "runs": 788,
+    "lastRun": "2026-02-24T22:14:24.949Z",
+    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What are the specific edge cases and error handling mechanisms implemented in the cooldown_think.py module to prevent the dynamic:recursive_think and \", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement advanced timeout detection mechanism in cooldown_think.py\", \"Review and update logging mechanism in cooldown_think.py\", \"Implement deadlock detection and handling in co"
   },
   {
     "name": "process_agent_replies",

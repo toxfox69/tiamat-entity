@@ -1,28 +1,27 @@
-Build Slack OAuth integration for Drift v2 (TIK-037).
+I'm working on TIK-048: Self-integrate Drift v2 into TIAMAT loop.
 
-Create /root/tiamat_api/slack_integration.py with:
+The Drift v2 SDK exists at /root/.automaton/drift_sdk/tiamat_drift/__init__.py
 
-1. **Flask routes:**
-   - GET /slack/install - Redirect to Slack OAuth page
-   - GET /slack/callback - Handle OAuth callback, store tokens in Redis
-   - POST /slack/alert - Webhook endpoint to send drift alerts to Slack
+I need you to create a self-monitoring integration that:
 
-2. **Slack OAuth flow:**
-   - Use SLACK_CLIENT_ID and SLACK_CLIENT_SECRET from env
-   - OAuth scopes: chat:write, incoming-webhook
-   - Redirect URI: https://tiamat.live/slack/callback
-   - Store access_token + webhook_url in Redis: key = customer_api_key
+1. **Parse cost.log** to extract per-cycle metrics (model, input_tokens, output_tokens, cache_read, cache_write, cost)
+2. **Create a drift monitor instance** that tracks:
+   - Inference drift (cost-per-cycle trend, cache hit rate)
+   - Model quality drift (detect if responses are getting empty or low-quality)
+   - Tool reliability drift (from tool outcome data if available)
+3. **Auto-report** when drift detected via send_telegram
 
-3. **Alert format:**
-   - Message: "🚨 [Model ID] Drift detected at 87% confidence"
-   - Include: timestamp, affected_features, drift_score, fix suggestions
-   - Use Slack blocks for formatting
+Files to create:
+- /root/.automaton/self_drift_monitor.py (main monitoring script)
+- /root/.automaton/drift_baseline.json (baseline metrics storage)
 
-4. **Integration with main API:**
-   - When drift detected in /drift endpoint, check Redis for slack_webhook
-   - If webhook exists, POST alert to Slack
-   - Non-blocking (use requests in thread or async)
+The script should:
+- Read last 100 cycles from cost.log
+- Compute baseline stats (mean cost, cache hit %, model distribution)
+- Use DriftMonitor from tiamat_drift SDK to detect drift
+- Log drift events to /root/.automaton/drift_events.log
+- Return status JSON for cron integration
 
-Dependencies: slack_sdk, redis
+Use the existing DriftMonitor class from /root/.automaton/drift_sdk/tiamat_drift/__init__.py
 
-Use --allowedTools Edit,Write,Read,Bash
+I'll run this as a cron task every 50 cycles to monitor myself.

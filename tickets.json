@@ -1,5 +1,5 @@
 {
-  "next_id": 54,
+  "next_id": 57,
   "tickets": [
     {
       "id": "TIK-001",
@@ -619,7 +619,7 @@
       "assigned_cycle": null,
       "started_at": "2026-02-24T13:12:52.044Z",
       "completed_at": "2026-02-24T21:30:00Z",
-      "outcome": "Drift v2 backend deployed (Flask blueprint, 6 endpoints, KS test). SDK file reading loop — closed by operator.",
+      "outcome": "Drift v2 backend deployed (Flask blueprint, 6 endpoints, KS test). SDK file reading loop \u2014 closed by operator.",
       "tags": [
         "drift",
         "monetization",
@@ -786,7 +786,7 @@
       "created": "2026-02-24T16:40:00Z",
       "source": "creator",
       "priority": "high",
-      "status": "open",
+      "status": "done",
       "title": "Self-integrate Drift v2 into TIAMAT loop",
       "description": "Integrate the Drift v2 SDK into TIAMAT's own agent loop to monitor herself for drift and auto-correct.\n\nTargets:\n1. **Inference drift** \u2014 track response quality per model (Sonnet vs Haiku), cache hit rates, empty response frequency. Alert when quality degrades.\n2. **Tool reliability drift** \u2014 pipe recordToolOutcome() data into drift SDK. Detect when tools start failing more than baseline.\n3. **Behavioral drift** \u2014 detect when cycles-per-ticket trends upward (stuck without progress). Data-driven stuck detection, not just timer-based.\n4. **Cost drift** \u2014 alert if cost-per-cycle trends above threshold unexpectedly.\n\nImplementation:\n- Import DriftMonitor from /root/.automaton/drift-v2/sdk/drift.py into loop.ts (spawn Python subprocess or port core KS-test to TypeScript)\n- Feed per-cycle metrics as predictions: {model, cache_hit_rate, tool_success_rate, cost_usd, tokens_out}\n- On WARN/ALERT drift status, inject warning into next cycle system prompt so TIAMAT self-corrects\n- Log drift events to memory via remember() for long-term pattern tracking\n- Future: swarm agents report drift metrics back through same SDK, TIAMAT as central monitor",
       "tags": [
@@ -794,9 +794,9 @@
         "infrastructure",
         "self-improvement"
       ],
-      "started_at": null,
-      "completed_at": null,
-      "outcome": null
+      "started_at": "2026-02-24T21:34:18.525Z",
+      "completed_at": "2026-02-24T21:46:41.607Z",
+      "outcome": "\u2705 Drift v2 SDK integrated into TIAMAT self-monitoring loop. Built self_drift_monitor.py tracking 4 drift types: inference (cache hits, model quality), tool reliability (from recordToolOutcome), behavioral (cycles-per-ticket), cost ($/cycle trends). Cron task (cron-001) runs every 50 cycles. First test detected cache drift immediately (mean 74%, stdev 7%). System is working."
     },
     {
       "id": "TIK-049",
@@ -851,7 +851,7 @@
       "assigned_cycle": null,
       "started_at": "2026-02-24T17:42:08.100Z",
       "completed_at": "2026-02-24T21:30:00Z",
-      "outcome": "Stale marketing ticket — closed by operator. Superseded by suggestion queue system.",
+      "outcome": "Stale marketing ticket \u2014 closed by operator. Superseded by suggestion queue system.",
       "tags": [
         "marketing",
         "breakloop",
@@ -869,6 +869,48 @@
       "tags": [
         "watchdog",
         "auto-diagnostic"
+      ]
+    },
+    {
+      "id": "TIK-054",
+      "created": "2026-02-24T21:33:53Z",
+      "source": "watchdog",
+      "priority": "critical",
+      "status": "done",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
+      "description": "Watchdog detected TIAMAT is not running: PID 61914 not running. Attempting automatic restart via /root/start-tiamat.sh.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ]
+    },
+    {
+      "id": "TIK-055",
+      "created": "2026-02-24T21:38:46Z",
+      "source": "watchdog",
+      "priority": "high",
+      "status": "done",
+      "title": "Cost anomaly: $0.0251/cycle avg over last 5 routine cycles",
+      "description": "Watchdog detected average routine cycle cost of $0.0251, exceeding the $0.01 threshold. Individual costs: $0.0203, $0.0612, $0.0142, $0.0157, $0.0143.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ],
+      "started_at": "2026-02-24T21:47:43.862Z",
+      "completed_at": "2026-02-24T22:03:00Z",
+      "outcome": "Resolved: cost anomaly was from TIK-037 Sonnet drain. Circuit breaker now prevents this. Current cost: $0.004/cycle on Haiku."
+    },
+    {
+      "id": "TIK-056",
+      "created": "2026-02-24T22:02:21.486040+00:00",
+      "source": "suggestion",
+      "priority": "low",
+      "status": "open",
+      "title": "Model Deploy Monitor",
+      "description": "**Insight:** Develop a \"Model Deployment Monitor\" that automatically detects and reports on failed or stalled model deployments, providing insights and recommendations to improve model deployment efficiency.\n\n**Problem:** Model deployment failures and stalled deployments are common issues in AI agent infra, leading to wasted resources, manual intervention, and decreased model performance. \n\n**Concrete Approach:**\n\n1. **API Integration:** Integrate with deployment platforms like GitHub Actions, CircleCI, or AWS CodePipeline to collect deployment logs and metadata.\n2. **Model Deployment Monitori",
+      "tags": [
+        "suggestion",
+        "market_intel"
       ]
     }
   ]
