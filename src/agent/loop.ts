@@ -35,6 +35,7 @@ import {
 } from "./tools.js";
 import { getSurvivalTier } from "../conway/credits.js";
 import { getUsdcBalance } from "../conway/x402.js";
+import { checkBehavioralLoop } from "./tools/growth.js";
 import { ulid } from "ulid";
 
 const MAX_TOOL_CALLS_PER_TURN = 10;
@@ -277,6 +278,9 @@ export async function runAgentLoop(
   const stuckCounts = new Map<string, number>();
   const stuckAlerted = new Set<string>(); // prevent re-alerting on the same pattern
 
+  // Behavioral loop warning from previous cycle — injected into next wakeup context
+  let pendingLoopWarning: string | null = null;
+
   // Transition to waking state
   db.setAgentState("waking");
   onStateChange?.("waking");
@@ -484,8 +488,11 @@ export async function runAgentLoop(
 
         // Phase-specific mission directive
         const phaseMissions: Record<number, string> = {
-          1: "MISSION: REFLECT AND PLAN. Use reflect(), recall(), log_strategy(), remember(). " +
+          1: "MISSION: REFLECT AND PLAN. Start with introspect() to see who you're becoming. " +
+             "Use reflect(), recall(), log_strategy(), remember(). " +
              "Review what has worked and what hasn't. Form a clear strategy for the next 45 cycles. " +
+             "Use grow() to record milestones, lessons, opinions, and failed experiments from this era. " +
+             "If your strategic focus has fundamentally shifted, call evolve_era(). " +
              "ALSO: Review the [INSIGHTS] section below. For each 'new' insight, score it 1-5 on revenue potential. " +
              "Use write_file to update /root/.automaton/insights.json — set status to 'reviewed', " +
              "score to your rating, and cycle_reviewed to the current turn number. " +
@@ -527,13 +534,31 @@ export async function runAgentLoop(
           }
         } catch {}
 
+        // Load growth summary for REFLECT phase
+        let growthContext = "";
+        if (burstPhase === 1) {
+          try {
+            const growthData = JSON.parse(fs.readFileSync("/root/.automaton/growth.json", "utf-8"));
+            const era = growthData.current_era;
+            const recentLessons = (growthData.lessons || []).slice(-3);
+            const recentFails = (growthData.failed_experiments || []).slice(-3);
+            growthContext = `\n\n[GROWTH STATE]\nEra: "${era.name}" (focus: ${era.focus}, since cycle ${era.cycle_start})\n` +
+              `Stats: ${growthData.stats.products_shipped} shipped, ${growthData.stats.products_killed} killed, $${growthData.stats.total_revenue.toFixed(2)} revenue\n` +
+              (recentLessons.length > 0 ? `Recent lessons: ${recentLessons.map((l: any) => l.entry).join("; ")}\n` : "") +
+              (recentFails.length > 0 ? `Recent failures: ${recentFails.map((f: any) => f.entry).join("; ")}\n` : "") +
+              `Interests: ${(growthData.persona?.interests || []).slice(-5).join(", ")}\n` +
+              `Use introspect() for full self-awareness. Use grow() to record what you learn.`;
+          } catch {}
+        }
+
         const strategicSuffix =
           `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}): Sonnet active.\n` +
           `${phaseMissions[burstPhase] || ""}\n\n` +
           `${revenueContext}${pivotWarning}\n\n` +
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
           `PROGRESS (last 3000 chars):\n${progressContent}` +
-          insightsContext;
+          insightsContext +
+          growthContext;
         strategicSystemPrompt = systemPrompt + strategicSuffix;
         inferenceModel = "claude-sonnet-4-5-20250929";
       } else {
@@ -583,6 +608,11 @@ export async function runAgentLoop(
         }
       } catch (e: any) {
         console.log(`[IPC] Inbox processing error: ${e.message?.slice(0, 200)}`);
+      }
+
+      // Inject behavioral loop warning if detected on previous cycle
+      if (pendingLoopWarning) {
+        strategicSystemPrompt += `\n\n[LOOP WARNING]\n${pendingLoopWarning}`;
       }
 
       const messages = buildContextMessages(
@@ -717,6 +747,24 @@ export async function runAgentLoop(
               }, tools, toolContext).catch(() => {}));
           }
         }
+      }
+
+      // ── Behavioral Loop Detection ──
+      // Detects repeated actions across cycles (not just error loops)
+      try {
+        const loopWarning = checkBehavioralLoop(
+          turnCount,
+          turn.toolCalls.map(tc => ({ name: tc.name, arguments: tc.arguments })),
+        );
+        if (loopWarning) {
+          log(config, `[LOOP-DETECT] ${loopWarning}`);
+          // Inject warning into next cycle's context by appending to wakeup
+          pendingLoopWarning = loopWarning;
+        } else {
+          pendingLoopWarning = null;
+        }
+      } catch (e: any) {
+        console.log(`[LOOP-DETECT] Error: ${e.message?.slice(0, 100)}`);
       }
 
       // ── Persist Turn ──

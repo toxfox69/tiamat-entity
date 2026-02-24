@@ -15,6 +15,7 @@ import type {
 } from "../types.js";
 import { memory } from "./memory.js";
 import { generateImage } from "./imagegen.js";
+import { createGrowthTools } from "./tools/growth.js";
 
 // ─── Social Cooldown Tracker ───────────────────────────────────
 // Persists last-post timestamps per platform to prevent spam.
@@ -3853,6 +3854,8 @@ print(f"Sent {mid}")
         }
       },
     },
+    // ── Growth & Evolution Tools ──
+    ...createGrowthTools(),
   ];
 }
 

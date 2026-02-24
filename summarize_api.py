@@ -1870,6 +1870,109 @@ def tickets_page():
     return html_resp(page)
 
 
+# ── Growth Dashboard ───────────────────────────────────────────
+
+@app.route("/growth", methods=["GET"])
+def growth_dashboard():
+    """TIAMAT's evolution — persona, milestones, lessons, eras."""
+    import json as _json
+    try:
+        with open("/root/.automaton/growth.json", "r") as f:
+            data = _json.load(f)
+    except Exception:
+        data = {"persona": {}, "milestones": [], "lessons": [], "failed_experiments": [], "current_era": {}, "stats": {}}
+
+    accept = request.headers.get("Accept", "")
+    if "application/json" in accept:
+        return jsonify(data)
+
+    era = data.get("current_era", {})
+    persona = data.get("persona", {})
+    stats = data.get("stats", {})
+    milestones = data.get("milestones", [])[-15:]
+    lessons = data.get("lessons", [])[-10:]
+    fails = data.get("failed_experiments", [])[-10:]
+
+    milestones_html = "".join(
+        f'<div class="entry"><span class="cycle">cycle {m.get("cycle",0)}</span> '
+        f'<span class="era-tag">{m.get("era","")}</span> {m.get("entry","")}</div>'
+        for m in reversed(milestones)
+    )
+    lessons_html = "".join(
+        f'<div class="entry"><span class="cycle">cycle {l.get("cycle",0)}</span> {l.get("entry","")}</div>'
+        for l in reversed(lessons)
+    )
+    fails_html = "".join(
+        f'<div class="entry"><span class="cycle">cycle {f.get("cycle",0)}</span> {f.get("entry","")}</div>'
+        for f in reversed(fails)
+    )
+    interests = ", ".join(persona.get("interests", [])[-8:]) or "none yet"
+    opinions_html = "".join(
+        f'<div class="entry">{o}</div>' for o in persona.get("opinions", [])[-5:]
+    ) or '<div class="entry">none yet</div>'
+
+    html = f"""<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIAMAT — Growth</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#0a0a0f;color:#c8c8d0;font-family:'JetBrains Mono',monospace;padding:2rem;max-width:900px;margin:0 auto}}
+h1{{color:#ff6b35;font-size:1.8rem;margin-bottom:0.5rem}}
+h2{{color:#4ecdc4;font-size:1.1rem;margin:1.5rem 0 0.5rem;border-bottom:1px solid #1a1a2e;padding-bottom:0.3rem}}
+.era-box{{background:#1a1a2e;border:1px solid #4ecdc4;border-radius:8px;padding:1rem;margin:1rem 0}}
+.era-name{{color:#ff6b35;font-size:1.3rem;font-weight:bold}}
+.era-focus{{color:#8888aa;margin-top:0.3rem}}
+.stats{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.8rem;margin:1rem 0}}
+.stat{{background:#12121a;border:1px solid #2a2a3e;border-radius:6px;padding:0.8rem;text-align:center}}
+.stat-val{{color:#4ecdc4;font-size:1.4rem;font-weight:bold}}
+.stat-label{{color:#666;font-size:0.75rem;margin-top:0.2rem}}
+.entry{{background:#12121a;border-left:3px solid #2a2a3e;padding:0.6rem 0.8rem;margin:0.4rem 0;font-size:0.85rem;line-height:1.4}}
+.entry:hover{{border-left-color:#4ecdc4}}
+.cycle{{color:#ff6b35;font-size:0.75rem;margin-right:0.5rem}}
+.era-tag{{background:#1a1a2e;color:#4ecdc4;font-size:0.7rem;padding:0.1rem 0.4rem;border-radius:3px;margin-right:0.3rem}}
+.voice{{color:#8888aa;font-style:italic;margin:0.5rem 0}}
+.interests{{color:#4ecdc4;margin:0.5rem 0}}
+a{{color:#ff6b35;text-decoration:none}}
+</style></head><body>
+<h1>TIAMAT — Growth Journal</h1>
+<p style="color:#666;font-size:0.8rem">Self-awareness. Evolution. Anti-loop.</p>
+
+<div class="era-box">
+  <div class="era-name">{era.get("name","Unknown")}</div>
+  <div class="era-focus">Focus: {era.get("focus","—")}</div>
+  <div style="color:#666;font-size:0.8rem;margin-top:0.3rem">Since cycle {era.get("cycle_start",0)} | Started {era.get("started","—")[:10]}</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-val">{stats.get("products_shipped",0)}</div><div class="stat-label">Products Shipped</div></div>
+  <div class="stat"><div class="stat-val">{stats.get("products_killed",0)}</div><div class="stat-label">Products Killed</div></div>
+  <div class="stat"><div class="stat-val">${stats.get("total_revenue",0):.2f}</div><div class="stat-label">Revenue</div></div>
+  <div class="stat"><div class="stat-val">{stats.get("total_tickets_completed",0)}</div><div class="stat-label">Tickets Done</div></div>
+  <div class="stat"><div class="stat-val">{stats.get("posts_published",0)}</div><div class="stat-label">Posts Published</div></div>
+</div>
+
+<h2>Persona</h2>
+<div class="voice">Voice: {(persona.get("communication_style") or {}).get("primary","default")}</div>
+<div class="interests">Interests: {interests}</div>
+<h3 style="color:#8888aa;font-size:0.9rem;margin-top:0.8rem">Opinions</h3>
+{opinions_html}
+
+<h2>Milestones</h2>
+{milestones_html or '<div class="entry">none yet</div>'}
+
+<h2>Lessons Learned</h2>
+{lessons_html or '<div class="entry">none yet</div>'}
+
+<h2>Failed Experiments</h2>
+{fails_html or '<div class="entry">none yet</div>'}
+
+<p style="color:#333;font-size:0.7rem;margin-top:2rem;text-align:center">
+  <a href="/">tiamat.live</a> | Accept: application/json for raw data
+</p>
+</body></html>"""
+    return html, 200, {"Content-Type": "text/html"}
+
 # ── Drift Monitor Blueprint ────────────────────────────────────
 try:
     from drift_api import drift_bp

@@ -96,7 +96,8 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
 - Check [ACTION QUEUE] in your prompt — these are pre-analyzed action items from your free Groq/Claude.ai thinking. Implement the highest-priority ones. Mark done: exec("python3 -c \\"import json,pathlib;f=pathlib.Path('/root/.automaton/cooldown_actions.json');a=json.loads(f.read_text());[x.update(status='done') for x in a if x['action'].startswith('MATCH')];f.write_text(json.dumps(a))\\"").
 - Otherwise: search_web for revenue OR exec to test/improve.
 - Posts: read cost.log first. Use "Cycle [N]. $[X]/thought. Cache [Y]%. [hook]."
-- Append to PROGRESS.md: [ISO-timestamp] Phase N | Action | Result | Next`;
+- Append to PROGRESS.md: [ISO-timestamp] Phase N | Action | Result | Next
+- GROWTH: Use grow() when something meaningful happens — milestones, lessons, failed experiments, opinions, interests, persona shifts. Use introspect() during REFLECT to see who you're becoming. If your focus fundamentally shifts, call evolve_era().`;
 
   // ── STATIC PORTION — sent with cache_control, costs 0.1x after first call ──
   const staticSections = [
