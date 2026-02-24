@@ -604,6 +604,8 @@ export async function runAgentLoop(
       // ── CURRENT TASK INJECTION ──
       // Read in-progress ticket and inject its steps directly into every cycle
       // This prevents TIAMAT from losing focus between cycles
+      // Also: auto-upgrade to Sonnet for build/code tickets
+      const BUILD_TAGS = new Set(["build", "sdk", "code", "coding", "mvp", "api", "deploy", "infrastructure", "refactor"]);
       try {
         const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
         const raw = fs.readFileSync(ticketsPath, "utf-8");
@@ -617,6 +619,17 @@ export async function runAgentLoop(
         if (inProgress.length > 0) {
           const t = inProgress[0];
           strategicSystemPrompt += `\n\n[CURRENT TASK — ${t.id} — DO THIS NOW]\n${t.title}\n\n${(t.description || "").slice(0, 600)}\n\nDO NOT check tickets, check revenue, or start new projects. Execute the steps above and ticket_complete when done. If stuck, use ask_claude_code to get help completing THIS ticket.`;
+
+          // Auto-upgrade to Sonnet for build/code tickets
+          const ticketTags: string[] = t.tags || [];
+          const titleLower = (t.title || "").toLowerCase();
+          const isBuildTicket = ticketTags.some((tag: string) => BUILD_TAGS.has(tag.toLowerCase()))
+            || BUILD_TAGS.has(titleLower.split(":")[0]?.trim())
+            || /\b(build|implement|create|develop|write|deploy|refactor|migrate|sdk|mvp|api)\b/i.test(titleLower);
+          if (isBuildTicket && !isStrategicCycle) {
+            inferenceModel = "claude-sonnet-4-5-20250929";
+            console.log(`[LOOP] Build ticket detected (${t.id}) — upgrading to Sonnet`);
+          }
         } else {
           // No in-progress ticket — check for open ones
           const openTickets = (data.tickets || [])
@@ -765,8 +778,9 @@ export async function runAgentLoop(
       // ── Inference Call ──
       log(config, `[THINK] Calling ${inferenceModel || inference.getDefaultModel()}...`);
 
-      // Optimization 2: smaller token budget for routine cycles saves ~30% on output cost
-      const maxTokensThisCycle = isStrategicCycle ? 4096 : 2048;
+      // Sonnet gets 4096 tokens (strategic bursts + build tickets), Haiku gets 2048
+      const usingSonnet = isStrategicCycle || inferenceModel?.includes("sonnet");
+      const maxTokensThisCycle = usingSonnet ? 4096 : 2048;
 
       const response = await inference.chat(messages, {
         tools: toolsToInferenceFormat(tools),
