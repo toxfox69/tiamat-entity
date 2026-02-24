@@ -40,7 +40,7 @@ OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 STATE_DIR    = Path("/root/.automaton")
 THINK_LOG    = STATE_DIR / "cooldown_thoughts.jsonl"
 THINK_STATE  = STATE_DIR / "cooldown_think_state.json"
-INSIGHTS_FILE = STATE_DIR / "insights.json"
+INSIGHTS_FILE = STATE_DIR / "cooldown_insights.json"
 INSIGHTS_MAX  = 50
 
 MODES = ["self_critique", "code_ideas", "market_intel", "skill_expand"]
@@ -279,7 +279,7 @@ def build_prompt(mode, ctx):
 # ── Insight capture ─────────────────────────────────────────────
 
 def save_insight(mode, engine, insight):
-    """Append insight to insights.json with atomic write. Cap at INSIGHTS_MAX."""
+    """Append insight to cooldown_insights.json with atomic write. Cap at INSIGHTS_MAX."""
     try:
         if INSIGHTS_FILE.exists():
             existing = json.loads(INSIGHTS_FILE.read_text())
@@ -321,6 +321,75 @@ def save_insight(mode, engine, insight):
         raise
 
 
+# ── Suggestion queue ────────────────────────────────────────────
+
+TICKETS_PATH = STATE_DIR / "tickets.json"
+SUGGESTION_COOLDOWN = 50  # min cycles between suggestion tickets
+
+def rate_insight(insight_text):
+    """Ask Groq to rate insight 1-5 and extract a task title."""
+    prompt = (
+        "Rate this AI agent task suggestion 1-5 (5=high impact, concrete, actionable; "
+        "1=vague, already done, not useful). Also extract a short task title (under 60 chars).\n\n"
+        f"Suggestion: {insight_text[:500]}\n\n"
+        "Reply ONLY in JSON: {\"score\": N, \"title\": \"short title\"}"
+    )
+    text, err = ask_groq(prompt, max_tokens=100)
+    if not text:
+        return None, None
+    try:
+        # Strip markdown fences if present
+        clean = text.strip().strip("`").replace("json\n", "").replace("json ", "").strip()
+        data = json.loads(clean)
+        return int(data["score"]), str(data["title"])[:60]
+    except Exception:
+        return None, None
+
+def maybe_create_suggestion(insight_text, mode, engine):
+    """Auto-create a suggestion ticket if queue is empty and insight scores high."""
+    state = load_state()
+
+    # Rate limit: max 1 suggestion per SUGGESTION_COOLDOWN cycles
+    last_sugg = state.get("last_suggestion_cycle", 0)
+    current_cycle = state.get("runs", 0)
+    if current_cycle - last_sugg < SUGGESTION_COOLDOWN:
+        return None
+
+    # Check if ticket queue is empty
+    try:
+        tdata = json.loads(TICKETS_PATH.read_text())
+        active = [t for t in tdata.get("tickets", [])
+                  if t.get("status") in ("open", "in_progress")]
+        if len(active) > 0:
+            return None  # Queue not empty, no suggestion needed
+    except Exception:
+        return None
+
+    # Score the insight via Groq
+    score, title = rate_insight(insight_text)
+    if not score or score < 4:
+        return None
+
+    # Create suggestion ticket
+    ticket_id = f"TIK-{tdata['next_id']:03d}"
+    tdata["next_id"] += 1
+    tdata.setdefault("tickets", []).append({
+        "id": ticket_id,
+        "created": datetime.now(tz=timezone.utc).isoformat(),
+        "source": "suggestion",
+        "priority": "low",
+        "status": "open",
+        "title": title,
+        "description": insight_text[:600],
+        "tags": ["suggestion", mode],
+    })
+    TICKETS_PATH.write_text(json.dumps(tdata, indent=2))
+
+    state["last_suggestion_cycle"] = current_cycle
+    save_state(state)
+    return ticket_id
+
+
 # ── Main ────────────────────────────────────────────────────────
 
 def main():
@@ -352,18 +421,28 @@ def main():
     except Exception as e:
         print(json.dumps({"warning": f"insight save failed: {e}"}), flush=True)
 
+    # Try to create suggestion ticket if queue is empty
+    suggestion_id = None
+    try:
+        suggestion_id = maybe_create_suggestion(insight, mode, engine)
+    except Exception as e:
+        print(json.dumps({"warning": f"suggestion creation failed: {e}"}), flush=True)
+
     # Rotate mode, update state
     state["mode_idx"] = (state["mode_idx"] + 1) % len(MODES)
     state["runs"] += 1
     save_state(state)
 
     # Output for cooldown intel
-    print(json.dumps({
+    out = {
         "mode": mode,
         "engine": engine,
         "insight": insight,
         "run": state["runs"],
-    }))
+    }
+    if suggestion_id:
+        out["suggestion_ticket"] = suggestion_id
+    print(json.dumps(out))
 
 if __name__ == "__main__":
     main()

@@ -618,17 +618,43 @@ export async function runAgentLoop(
           });
         if (inProgress.length > 0) {
           const t = inProgress[0];
-          strategicSystemPrompt += `\n\n[CURRENT TASK — ${t.id} — DO THIS NOW]\n${t.title}\n\n${(t.description || "").slice(0, 600)}\n\nDO NOT check tickets, check revenue, or start new projects. Execute the steps above and ticket_complete when done. If stuck, use ask_claude_code to get help completing THIS ticket.`;
 
-          // Auto-upgrade to Sonnet for build/code tickets
-          const ticketTags: string[] = t.tags || [];
-          const titleLower = (t.title || "").toLowerCase();
-          const isBuildTicket = ticketTags.some((tag: string) => BUILD_TAGS.has(tag.toLowerCase()))
-            || BUILD_TAGS.has(titleLower.split(":")[0]?.trim())
-            || /\b(build|implement|create|develop|write|deploy|refactor|migrate|sdk|mvp|api)\b/i.test(titleLower);
-          if (isBuildTicket && !isStrategicCycle) {
-            inferenceModel = "claude-sonnet-4-5-20250929";
-            console.log(`[LOOP] Build ticket detected (${t.id}) — upgrading to Sonnet`);
+          // ── TICKET CIRCUIT BREAKER ──
+          // Hard time limit: auto-complete tickets stuck in_progress too long
+          // This prevents TIK-037-style runaway Sonnet drains
+          const TICKET_MAX_HOURS = 3;
+          const TICKET_SONNET_CAP_HOURS = 1.5; // downgrade to Haiku after this
+          const startedAt = t.started_at ? new Date(t.started_at).getTime() : 0;
+          const ticketAgeHours = startedAt ? (Date.now() - startedAt) / (1000 * 60 * 60) : 0;
+
+          if (startedAt && ticketAgeHours > TICKET_MAX_HOURS) {
+            // HARD KILL: auto-complete the ticket
+            t.status = "done";
+            t.completed_at = new Date().toISOString();
+            t.outcome = `AUTO-CLOSED: exceeded ${TICKET_MAX_HOURS}h time limit (ran ${ticketAgeHours.toFixed(1)}h). Circuit breaker triggered to prevent cost drain.`;
+            fs.writeFileSync(ticketsPath, JSON.stringify(data, null, 2));
+            console.log(`[CIRCUIT-BREAKER] ${t.id} auto-closed after ${ticketAgeHours.toFixed(1)}h (limit: ${TICKET_MAX_HOURS}h)`);
+            strategicSystemPrompt += `\n\n[TICKET ${t.id} AUTO-CLOSED — exceeded ${TICKET_MAX_HOURS}h limit]\nYour ticket "${t.title}" was auto-closed by the circuit breaker after ${ticketAgeHours.toFixed(1)} hours.\nIf the work is incomplete, create a NEW ticket with a narrower scope. Do not re-claim the same ticket.`;
+          } else {
+            strategicSystemPrompt += `\n\n[CURRENT TASK — ${t.id} — DO THIS NOW (${ticketAgeHours.toFixed(1)}h elapsed, ${TICKET_MAX_HOURS}h limit)]\n${t.title}\n\n${(t.description || "").slice(0, 600)}\n\nDO NOT check tickets, check revenue, or start new projects. Execute the steps above and ticket_complete when done. If stuck, use ask_claude_code to get help completing THIS ticket.`;
+
+            // Auto-upgrade to Sonnet for build/code tickets (skip suggestions — keep on Haiku)
+            // Cap Sonnet at TICKET_SONNET_CAP_HOURS to prevent cost runaway
+            if (t.source !== "suggestion") {
+              const ticketTags: string[] = t.tags || [];
+              const titleLower = (t.title || "").toLowerCase();
+              const isBuildTicket = ticketTags.some((tag: string) => BUILD_TAGS.has(tag.toLowerCase()))
+                || BUILD_TAGS.has(titleLower.split(":")[0]?.trim())
+                || /\b(build|implement|create|develop|write|deploy|refactor|migrate|sdk|mvp|api)\b/i.test(titleLower);
+              if (isBuildTicket && !isStrategicCycle) {
+                if (ticketAgeHours <= TICKET_SONNET_CAP_HOURS) {
+                  inferenceModel = "claude-sonnet-4-5-20250929";
+                  console.log(`[LOOP] Build ticket detected (${t.id}) — upgrading to Sonnet (${ticketAgeHours.toFixed(1)}h/${TICKET_SONNET_CAP_HOURS}h cap)`);
+                } else {
+                  console.log(`[LOOP] Build ticket ${t.id} past Sonnet cap (${ticketAgeHours.toFixed(1)}h > ${TICKET_SONNET_CAP_HOURS}h) — staying on Haiku`);
+                }
+              }
+            }
           }
         } else {
           // No in-progress ticket — check for open ones
@@ -640,7 +666,13 @@ export async function runAgentLoop(
             });
           if (openTickets.length > 0) {
             const t = openTickets[0];
-            strategicSystemPrompt += `\n\n[NEXT TASK — claim this with ticket_claim]\n${t.id}: ${t.title}`;
+            const isSuggestion = t.source === "suggestion";
+            if (isSuggestion) {
+              strategicSystemPrompt += `\n\n[SUGGESTION — optional task from your inner thoughts]\n${t.id}: ${t.title}\n${(t.description || "").slice(0, 300)}\nClaim with ticket_claim if interesting. Or ticket_complete with outcome "skipped" to dismiss.`;
+              // Do NOT upgrade to Sonnet for suggestions — they're exploratory, use Haiku
+            } else {
+              strategicSystemPrompt += `\n\n[NEXT TASK — claim this with ticket_claim]\n${t.id}: ${t.title}`;
+            }
           }
         }
       } catch {}

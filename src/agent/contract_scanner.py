@@ -484,6 +484,11 @@ class ContractScanner:
         if eth_bal < 0.01:
             return None
 
+        # Skip dead proxies — selectors in proxy bytecode are misleading
+        if self.is_dead_proxy(addr):
+            log.info(f"Skipping unguarded_functions {addr}: dead proxy (impl is zero/empty)")
+            return None
+
         owner = self._get_owner(addr)
 
         # Simulate each found selector — only keep ones that don't revert
@@ -532,6 +537,7 @@ class ContractScanner:
         log.info(f"Found {len(new_contracts)} new contracts in {blocks_back} blocks")
 
         for addr in new_contracts:
+            dead_proxy = False
             try:
                 r = self.check_stuck_eth(addr)
                 if r:
@@ -542,14 +548,18 @@ class ContractScanner:
                 r = self.check_proxy_dead(addr)
                 if r:
                     findings.append(r)
+                    dead_proxy = True
             except Exception:
                 pass
-            try:
-                r = self.check_unguarded_functions(addr)
-                if r:
-                    findings.append(r)
-            except Exception:
-                pass
+            if not dead_proxy:
+                try:
+                    r = self.check_unguarded_functions(addr)
+                    if r:
+                        findings.append(r)
+                except Exception:
+                    pass
+            else:
+                log.info(f"Skipping unguarded_functions for {addr}: dead proxy")
 
         return {
             "blocks_scanned": blocks_back,
@@ -650,11 +660,32 @@ class ContractScanner:
 
     # ── Check 8: Stuck Trading Fees ──
 
+    def is_dead_proxy(self, addr):
+        """Check if address is an EIP-1967 proxy pointing to a dead/empty implementation."""
+        try:
+            impl_raw = self.w3.eth.get_storage_at(
+                Web3.to_checksum_address(addr), EIP1967_IMPL_SLOT
+            )
+            impl_addr = "0x" + impl_raw[-20:].hex()
+            if impl_addr.lower() in {d.lower() for d in DEAD_ADDRESSES}:
+                return True
+            impl_code = self._get_code(impl_addr)
+            if not impl_code or impl_code == "0x":
+                return True
+        except Exception:
+            pass
+        return False
+
     def check_stuck_trading_fees(self, addr):
         """Token contract with ETH + WETH from broken fee mechanism."""
         addr = Web3.to_checksum_address(addr)
         eth_bal = self._get_eth_balance(addr)
         if eth_bal < 0.005:
+            return None
+
+        # Skip dead proxies — callable selectors in proxy bytecode are misleading
+        if self.is_dead_proxy(addr):
+            log.info(f"Skipping stuck_trading_fees {addr}: dead proxy (impl is zero/empty)")
             return None
 
         # Check if contract holds WETH too
@@ -811,7 +842,9 @@ class ContractScanner:
         addr = Web3.to_checksum_address(addr)
         self.findings = []
         results = []
+        dead_proxy = False
 
+        # Run checks in order; skip contradictory checks if dead proxy detected
         for check_fn in [
             self.check_stuck_eth,
             self.check_proxy_dead,
@@ -819,10 +852,18 @@ class ContractScanner:
             self.check_uninitialized_proxy,
             self.check_stuck_trading_fees,
         ]:
+            # Dead proxies make unguarded_functions and stuck_trading_fees unreliable
+            if dead_proxy and check_fn.__name__ in (
+                "check_unguarded_functions", "check_stuck_trading_fees"
+            ):
+                log.info(f"Skipping {check_fn.__name__} for {addr}: already flagged as dead proxy")
+                continue
             try:
                 r = check_fn(addr)
                 if r:
                     results.append(r)
+                    if r.get("type") == "proxy_dead_impl":
+                        dead_proxy = True
             except Exception as e:
                 log.debug(f"Check {check_fn.__name__} failed on {addr}: {e}")
 
