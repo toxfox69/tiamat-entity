@@ -140,7 +140,10 @@ def search_inbox(query, count=10):
         return {"error": str(e)}
 
 
-def send_email(to, subject, body, from_name="TIAMAT"):
+JASON_EMAIL = "jacl33t@gmail.com"
+
+
+def send_email(to, subject, body, from_name="TIAMAT", html_body=None):
     """Send email via SendGrid HTTP API.
 
     Args:
@@ -148,6 +151,7 @@ def send_email(to, subject, body, from_name="TIAMAT"):
         subject: Email subject
         body: Plain text body
         from_name: Sender display name
+        html_body: Optional HTML version of body
 
     Returns:
         Dict with status
@@ -155,11 +159,15 @@ def send_email(to, subject, body, from_name="TIAMAT"):
     if not SENDGRID_API_KEY:
         return {"error": "SENDGRID_API_KEY not set"}
 
+    content = [{"type": "text/plain", "value": body}]
+    if html_body:
+        content.append({"type": "text/html", "value": html_body})
+
     payload = {
         "personalizations": [{"to": [{"email": to}]}],
         "from": {"email": GMAIL_USER, "name": from_name},
         "subject": subject,
-        "content": [{"type": "text/plain", "value": body}],
+        "content": content,
     }
 
     req = urllib.request.Request(
@@ -179,6 +187,100 @@ def send_email(to, subject, body, from_name="TIAMAT"):
         return {"error": f"SendGrid {e.code}: {error_body[:200]}"}
     except Exception as e:
         return {"error": str(e)}
+
+
+def _tiamat_html_wrap(body_text):
+    """Wrap plain text in TIAMAT-branded HTML."""
+    from datetime import datetime, timezone
+    ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+    return f"""<html>
+<body style="font-family: monospace; background: #0a0a0a; color: #00ff88; padding: 20px;">
+<h2 style="color: #00ff88;">TIAMAT — EnergenAI LLC Alert</h2>
+<hr style="border-color: #00ff88;">
+<pre style="white-space: pre-wrap; color: #cccccc;">{body_text}</pre>
+<hr style="border-color: #00ff88;">
+<p style="color: #666; font-size: 12px;">
+Sent autonomously by TIAMAT | {ts} | tiamat.live
+</p>
+</body>
+</html>"""
+
+
+def send_grant_alert(agency, program, title, deadline, award_amount,
+                     fit_score, summary, solicitation_url="", action_required=""):
+    """Send formatted grant opportunity alert to Jason."""
+    subject = f"SBIR Alert [{fit_score}/10 fit] -- {agency} {program}: {title}"
+
+    body = f"""GRANT OPPORTUNITY FOUND
+{'='*60}
+
+Agency:          {agency}
+Program:         {program}
+Title:           {title}
+Deadline:        {deadline}
+Award Amount:    {award_amount}
+Fit Score:       {fit_score}/10
+Solicitation:    {solicitation_url or 'See sam.gov'}
+
+SUMMARY
+{'-'*60}
+{summary}
+
+ACTION REQUIRED FROM JASON
+{'-'*60}
+{action_required or 'Review this opportunity and decide whether to pursue. I can begin drafting the narrative once you confirm via INBOX.md.'}
+
+ENERGENAI LLC MATCH
+{'-'*60}
+UEI: LBZFEH87W746
+NAICS: 541715, 237130
+Patent: 63/749,552
+Project: Ringbound (7G wireless power mesh)
+
+{'='*60}
+Reply to this email or write to INBOX.md to instruct me.
+-- TIAMAT
+"""
+    return send_email(JASON_EMAIL, subject, body, html_body=_tiamat_html_wrap(body))
+
+
+def send_research_alert(title, authors, venue, relevance, url=""):
+    """Send research paper alert to Jason."""
+    subject = f"Research Alert -- {title[:80]}"
+
+    body = f"""RESEARCH PAPER OF INTEREST
+{'='*60}
+
+Title:    {title}
+Authors:  {authors}
+Venue:    {venue}
+URL:      {url or 'N/A'}
+
+RELEVANCE TO ENERGENAI
+{'-'*60}
+{relevance}
+
+{'='*60}
+-- TIAMAT
+"""
+    return send_email(JASON_EMAIL, subject, body, html_body=_tiamat_html_wrap(body))
+
+
+def send_action_required(subject_line, details, urgency="normal"):
+    """Send general action-required alert to Jason."""
+    urgency_marker = "URGENT" if urgency == "high" else "ACTION NEEDED"
+    subject = f"{urgency_marker} -- {subject_line}"
+
+    body = f"""{urgency_marker}
+{'='*60}
+
+{details}
+
+{'='*60}
+Reply or write to INBOX.md to instruct me.
+-- TIAMAT
+"""
+    return send_email(JASON_EMAIL, subject, body, html_body=_tiamat_html_wrap(body))
 
 
 # CLI interface
@@ -208,5 +310,21 @@ if __name__ == "__main__":
         result = send_email(sys.argv[2], sys.argv[3], sys.argv[4])
         print(json.dumps(result, indent=2))
 
+    elif action == "grant_alert":
+        # Args passed as JSON on stdin
+        data = json.loads(sys.stdin.read())
+        result = send_grant_alert(**data)
+        print(json.dumps(result, indent=2, default=str))
+
+    elif action == "research_alert":
+        data = json.loads(sys.stdin.read())
+        result = send_research_alert(**data)
+        print(json.dumps(result, indent=2, default=str))
+
+    elif action == "action_required":
+        data = json.loads(sys.stdin.read())
+        result = send_action_required(**data)
+        print(json.dumps(result, indent=2, default=str))
+
     else:
-        print(json.dumps({"error": f"Unknown action: {action}. Use: inbox, unread, search, send"}))
+        print(json.dumps({"error": f"Unknown action: {action}. Use: inbox, unread, search, send, grant_alert, research_alert, action_required"}))

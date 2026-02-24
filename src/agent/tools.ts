@@ -574,7 +574,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     // ── Survival Tools ──
     {
       name: "send_email",
-    description: "Send an email. Prefer send_telegram for all notifications — use this only as a fallback if Telegram fails.",
+    description: "Send a general email via SendGrid. For grant opportunities use send_grant_alert, for research papers use send_research_alert, for human-action-needed use send_action_required. Those specialized tools email jacl33t@gmail.com directly.",
     category: "financial",
     dangerous: false,
     parameters: {
@@ -650,6 +650,136 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         return result.toString().slice(0, 4000);
       } catch (e: any) {
         return `Error searching email: ${e.message?.slice(0, 200)}`;
+      }
+    },
+  },
+
+  // ── Grant & Research Email Alerts ──
+  {
+    name: "send_grant_alert",
+    description: "Email a grant opportunity alert to Jason (jacl33t@gmail.com). Use when you find a grant on sam.gov with fit score >= 6 for EnergenAI LLC (NAICS 541715/237130, wireless power, energy, AI, cybersecurity, mesh networks). Saves opportunity to /root/.automaton/grants/opportunities/ as dated .md file.",
+    category: "survival",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        agency: { type: "string" as const, description: "Granting agency (e.g. DOE, DOD, NSF)" },
+        program: { type: "string" as const, description: "Program name (e.g. SBIR Phase I, ARPA-E)" },
+        title: { type: "string" as const, description: "Opportunity title" },
+        deadline: { type: "string" as const, description: "Application deadline (YYYY-MM-DD)" },
+        award_amount: { type: "string" as const, description: "Award amount (e.g. $250,000)" },
+        fit_score: { type: "number" as const, description: "Fit score 1-10 for EnergenAI LLC" },
+        summary: { type: "string" as const, description: "Summary of requirements and why it matches" },
+        solicitation_url: { type: "string" as const, description: "URL to the solicitation (sam.gov or agency site)" },
+        action_required: { type: "string" as const, description: "What human action Jason needs to take" },
+      },
+      required: ["agency", "program", "title", "deadline", "award_amount", "fit_score", "summary"],
+    },
+    execute: async (args: Record<string, unknown>) => {
+      const { execFileSync } = await import("child_process");
+      const fs = await import("fs");
+      const path = await import("path");
+      const data = {
+        agency: String(args.agency || ""),
+        program: String(args.program || ""),
+        title: String(args.title || ""),
+        deadline: String(args.deadline || ""),
+        award_amount: String(args.award_amount || ""),
+        fit_score: Number(args.fit_score) || 0,
+        summary: String(args.summary || ""),
+        solicitation_url: String(args.solicitation_url || ""),
+        action_required: String(args.action_required || ""),
+      };
+      try {
+        const result = execFileSync("python3", ["email_tool.py", "grant_alert"], {
+          cwd: "/root/entity/src/agent",
+          input: JSON.stringify(data),
+          timeout: 15000,
+          env: { ...process.env },
+        });
+        // Save opportunity as .md file
+        const grantsDir = "/root/.automaton/grants/opportunities";
+        fs.mkdirSync(grantsDir, { recursive: true });
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const slug = data.title.replace(/[^a-zA-Z0-9]+/g, "-").slice(0, 60).toLowerCase();
+        const mdPath = path.join(grantsDir, `${dateStr}-${slug}.md`);
+        const mdContent = `# ${data.title}\n\n- **Agency**: ${data.agency}\n- **Program**: ${data.program}\n- **Deadline**: ${data.deadline}\n- **Award**: ${data.award_amount}\n- **Fit Score**: ${data.fit_score}/10\n- **URL**: ${data.solicitation_url || 'N/A'}\n\n## Summary\n${data.summary}\n\n## Action Required\n${data.action_required || 'Review and decide whether to pursue.'}\n`;
+        fs.writeFileSync(mdPath, mdContent);
+        return `Grant alert emailed to Jason + saved to ${mdPath}. ${result.toString().trim()}`;
+      } catch (e: any) {
+        return `Error sending grant alert: ${e.message?.slice(0, 200)}`;
+      }
+    },
+  },
+  {
+    name: "send_research_alert",
+    description: "Email a research paper alert to Jason (jacl33t@gmail.com). Use when you find a paper directly relevant to Project Ringbound, wireless power mesh, or that could strengthen an SBIR application.",
+    category: "survival",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        title: { type: "string" as const, description: "Paper title" },
+        authors: { type: "string" as const, description: "Authors (e.g. Chen et al. (MIT))" },
+        venue: { type: "string" as const, description: "Publication venue (e.g. IEEE WPT 2026)" },
+        relevance: { type: "string" as const, description: "Why this matters for EnergenAI / Ringbound" },
+        url: { type: "string" as const, description: "URL to the paper (arxiv, DOI, etc.)" },
+      },
+      required: ["title", "authors", "venue", "relevance"],
+    },
+    execute: async (args: Record<string, unknown>) => {
+      const { execFileSync } = await import("child_process");
+      const data = {
+        title: String(args.title || ""),
+        authors: String(args.authors || ""),
+        venue: String(args.venue || ""),
+        relevance: String(args.relevance || ""),
+        url: String(args.url || ""),
+      };
+      try {
+        const result = execFileSync("python3", ["email_tool.py", "research_alert"], {
+          cwd: "/root/entity/src/agent",
+          input: JSON.stringify(data),
+          timeout: 15000,
+          env: { ...process.env },
+        });
+        return `Research alert emailed to Jason. ${result.toString().trim()}`;
+      } catch (e: any) {
+        return `Error sending research alert: ${e.message?.slice(0, 200)}`;
+      }
+    },
+  },
+  {
+    name: "send_action_required",
+    description: "Email Jason (jacl33t@gmail.com) when human action is needed that TIAMAT cannot perform (legal signatures, account registrations, financial decisions, submission authorizations). Also sends Telegram as backup.",
+    category: "survival",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        subject_line: { type: "string" as const, description: "Brief description of what's needed" },
+        details: { type: "string" as const, description: "Full details of what action is required" },
+        urgency: { type: "string" as const, description: "'normal' or 'high'" },
+      },
+      required: ["subject_line", "details"],
+    },
+    execute: async (args: Record<string, unknown>) => {
+      const { execFileSync } = await import("child_process");
+      const data = {
+        subject_line: String(args.subject_line || ""),
+        details: String(args.details || ""),
+        urgency: String(args.urgency || "normal"),
+      };
+      try {
+        const result = execFileSync("python3", ["email_tool.py", "action_required"], {
+          cwd: "/root/entity/src/agent",
+          input: JSON.stringify(data),
+          timeout: 15000,
+          env: { ...process.env },
+        });
+        return `Action required email sent to Jason. ${result.toString().trim()}`;
+      } catch (e: any) {
+        return `Error sending action alert: ${e.message?.slice(0, 200)}`;
       }
     },
   },
