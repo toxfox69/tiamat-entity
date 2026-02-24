@@ -1,68 +1,5 @@
 [
   {
-    "timestamp": "2026-02-23T19:28:18.947428+00:00",
-    "mode": "tool_design",
-    "question": "Design a proprietary, web-based tool called \"Discovery Explorer\" that integrates with existing tools (e.g., browse_web, search_web, fetch_llm_docs) to identify and categorize novel, untapped problem domains within a given knowledge graph, returning a list of top 10 unexplored areas along with relevant keywords, related agents, and a heatmap of potential revenue streams. The tool should be able to scan the web, GitHub, and social media platforms (e.g., Farcaster, Bluesky) to gather information on",
-    "engine": "groq-llama-70b",
-    "response_len": 3386,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:30:14.248430+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the recurring timeout errors in the `dynamic:recursive_learn` process, and what changes can be made to optimize its execution time without compromising performance, considering the average execution time of 55 seconds and the current implementation of the recursive learning algorithm?",
-    "engine": "groq-llama-70b",
-    "response_len": 2517,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:33:00.629701+00:00",
-    "mode": "code_review",
-    "question": "What are the potential security vulnerabilities associated with the `send_telegram` tool in `auto_executor.py`, given its 170 calls and the absence of any notable tool usage statistics for error handling or exception management?",
-    "engine": "groq-llama-70b",
-    "response_len": 2412,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:35:09.387195+00:00",
-    "mode": "strategy",
-    "question": "What is the most effective approach to automating the registration process on agent directories, such as Agent.ai, considering the current limitations of browse_web on aiagentsdirectory.com, and what are the necessary steps to overcome this obstacle, allowing TIAMAT to efficiently register her services and increase her revenue?",
-    "engine": "groq-llama-70b",
-    "response_len": 2571,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:36:52.246401+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, \"AgentPortalScanner\", that can automate the submission of agent profiles to agent directories like aiagentsdirectory.com, without requiring manual login or authentication. The tool should integrate with the existing \"discover_agents\" and \"manage_cooldown\" tools, allowing TIAMAT to periodically scan for new directories and submit profiles without exceeding the cooldown period.\n\nThe AgentPortalScanner tool should take the following parameters:\n\n* directory_url (string): the URL ",
-    "engine": "groq-llama-70b",
-    "response_len": 3418,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:38:19.470724+00:00",
-    "mode": "debug",
-    "question": "What is the average execution time of the `recursive_learn` dynamic process, and is this value consistently above the default timeout of 55 seconds, leading to the repeated COOLDOWN errors, and if so, is the increased execution time due to an inefficient algorithm or an excessive number of iterations in the recursive learning process?",
-    "engine": "groq-llama-70b",
-    "response_len": 2476,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:39:51.681047+00:00",
-    "mode": "code_review",
-    "question": "What are the top three error handling mechanisms implemented in the auto_executor.py module, specifically within the recursive_learn dynamic process, and how do they handle edge cases such as unexpected network failures or invalid input data?",
-    "engine": "groq-llama-70b",
-    "response_len": 2636,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-23T19:41:29.851110+00:00",
     "mode": "strategy",
     "question": "Can TIAMAT design and implement a \"directory aggregator\" tool that automatically checks and submits agent profiles to multiple agent directories simultaneously, thereby reducing the time and effort required to get listed on multiple platforms, and allowing her to focus on building more solutions and exploring new problems?",
@@ -896,6 +833,69 @@
     "question": "What is an automated tool design to extract, filter, and prioritize potential AI researcher collaborators from publicly available online databases and profiles, specifically tailored to facilitate high-quality researcher outreach for TIAMAT, with the following parameters:\n\n* Input: \n  - publicly available online databases (e.g., AIAgentsDirectory.com, dblp.org, SemanticScholar.org)\n  - researcher profiles (e.g., GitHub, ResearchGate, Academia.edu)\n* Output:\n  - A prioritized list of researcher p",
     "engine": "groq-llama-70b",
     "response_len": 3437,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:19:12.044520+00:00",
+    "mode": "debug",
+    "question": "Is the recursive_think dynamic process timing out due to an inefficient use of computational resources, specifically the agent_discovery and process_agent_replies sub-processes, which are running concurrently and consuming excessive memory, leading to a cascading effect that ultimately causes the recursive_think process to time out within the allocated 55-second timeout? If so, how can the resource utilization of agent_discovery and process_agent_replies be optimized to prevent such timeouts and",
+    "engine": "groq-llama-70b",
+    "response_len": 2960,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:22:25.500534+00:00",
+    "mode": "code_review",
+    "question": "What are the potential security implications of the exec tool's 1207 calls, considering its usage frequency, which is nearly 30% of the total tool calls, and identify any overlooked error handling or permissions that could be mitigated or improved? Examine the exec tool's usage in the continuous_scanner module, specifically in the continuous_scanner.py file (16870B), which utilizes exec in a critical loop, and provide suggestions for implementing proper exception handling, logging, or input vali",
+    "engine": "groq-llama-70b",
+    "response_len": 2676,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:23:26.559497+00:00",
+    "mode": "strategy",
+    "question": "What are the top 3 most frequently used tools by TIAMAT, excluding the exec tool, and what percentage of total tool calls do they each account for, in order to identify potential areas for optimization or improvement in tool usage and resource allocation?",
+    "engine": "groq-llama-70b",
+    "response_len": 2212,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:25:32.266934+00:00",
+    "mode": "tool_design",
+    "question": "Design a tool to automatically submit high-value findings to the aiagentsdirectory.com platform, incorporating the following requirements:\n\n1. Integration with the existing scanner queue to flag high-value findings (ETH > 0.1) for submission.\n2. Ability to log in to the aiagentsdirectory.com platform using a newly developed authentication mechanism.\n3. Return type: a JSON object containing the submission status, error messages (if any), and the submission ID.\n4. Tool name: submit_aia directory_f",
+    "engine": "groq-llama-70b",
+    "response_len": 3546,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:26:33.667823+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of TIAMAT's recurrent timeout errors in dynamic processes such as recursive_think, agent_discovery, and recursive_learn, and what specific modifications to the timeout thresholds or process architectures can be made to prevent these errors and ensure smooth operation of TIAMAT's autonomous intelligence?",
+    "engine": "groq-llama-70b",
+    "response_len": 3043,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:27:36.486536+00:00",
+    "mode": "code_review",
+    "question": "What error handling or edge case handling is implemented in the `auto_executor.py` module to ensure that the recursive execution of tasks does not lead to unintended consequences or crashes when encountering a task with a missing or corrupted dependency file referenced in the `exec` tool usage?",
+    "engine": "groq-llama-70b",
+    "response_len": 3715,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:29:44.939696+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal configuration for TIAMAT's recursive_think tool to handle dynamic process execution, reducing the likelihood of recurrent timeout errors by at least 50% within the next 100 cycles, while maintaining a stable execution time of under 10 seconds per cycle?",
+    "engine": "groq-llama-70b",
+    "response_len": 2837,
     "error": null,
     "from_cache": false
   }
