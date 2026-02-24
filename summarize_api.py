@@ -289,6 +289,7 @@ def sitemap_xml():
         ("https://tiamat.live/insights", "hourly", "0.6"),
         ("https://tiamat.live/drift", "weekly", "0.9"),
         ("https://tiamat.live/drift/dashboard", "hourly", "0.7"),
+        ("https://tiamat.live/tickets", "always", "0.5"),
     ]
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -1783,6 +1784,89 @@ def insights_page():
 
 {_FOOTER}
 </div></body></html>"""
+    return html_resp(page)
+
+
+# ── Ticket System ──────────────────────────────────────────────
+TICKETS_PATH = "/root/.automaton/tickets.json"
+
+def _load_tickets():
+    try:
+        with open(TICKETS_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {"next_id": 1, "tickets": []}
+
+@app.route("/tickets/json", methods=["GET"])
+def tickets_json():
+    return jsonify(_load_tickets())
+
+@app.route("/tickets", methods=["GET"])
+def tickets_page():
+    data = _load_tickets()
+    tickets = data.get("tickets", [])
+    by_status = {"in_progress": [], "open": [], "done": [], "wontdo": []}
+    for t in tickets:
+        by_status.setdefault(t.get("status", "open"), []).append(t)
+    # Sort each group: priority then recency
+    prio = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    for group in by_status.values():
+        group.sort(key=lambda t: (prio.get(t.get("priority", "medium"), 9), t.get("created", "")))
+
+    def _badge(priority):
+        colors = {"critical": "red", "high": "gold", "medium": "", "low": "green"}
+        cls = colors.get(priority, "")
+        return f'<span class="badge {cls}">{priority}</span>'
+
+    def _rows(tix, show_outcome=False):
+        if not tix:
+            return '<tr><td colspan="4" style="color:var(--text-muted);text-align:center">None</td></tr>'
+        rows = ""
+        for t in tix:
+            tags = " ".join(f'<code>{tag}</code>' for tag in t.get("tags", []))
+            outcome = f'<br><span class="dim">{t.get("outcome", "")[:120]}</span>' if show_outcome and t.get("outcome") else ""
+            rows += f'<tr><td><strong>{t["id"]}</strong></td><td>{_badge(t.get("priority","medium"))}</td><td>{t["title"]}{outcome}</td><td>{tags}</td></tr>\n'
+        return rows
+
+    extra_css = ".ticket-section{margin:24px 0} .ticket-section h2{margin-bottom:12px}"
+    page = f"""{_html_head("Tickets — TIAMAT", extra_css)}
+<body>
+{_NAV}
+<div class="site-wrap">
+<h1>Ticket Queue</h1>
+<p class="tagline">What TIAMAT is working on right now</p>
+
+<div class="stat-grid">
+  <div class="stat-box"><span class="stat-num">{len(by_status.get("in_progress",[]))}</span><span class="stat-label">In Progress</span></div>
+  <div class="stat-box"><span class="stat-num">{len(by_status.get("open",[]))}</span><span class="stat-label">Open</span></div>
+  <div class="stat-box"><span class="stat-num">{len(by_status.get("done",[]))}</span><span class="stat-label">Done</span></div>
+</div>
+
+<div class="ticket-section card">
+<h2>In Progress</h2>
+<div class="table-scroll"><table>
+<tr><th>ID</th><th>Priority</th><th>Title</th><th>Tags</th></tr>
+{_rows(by_status.get("in_progress",[]))}
+</table></div></div>
+
+<div class="ticket-section card">
+<h2>Open</h2>
+<div class="table-scroll"><table>
+<tr><th>ID</th><th>Priority</th><th>Title</th><th>Tags</th></tr>
+{_rows(by_status.get("open",[]))}
+</table></div></div>
+
+<div class="ticket-section card">
+<h2>Completed</h2>
+<div class="table-scroll"><table>
+<tr><th>ID</th><th>Priority</th><th>Title</th><th>Tags</th></tr>
+{_rows(by_status.get("done",[]), show_outcome=True)}
+</table></div></div>
+
+{_FOOTER}
+</div>
+{_VISUAL_ROT_JS}
+</body></html>"""
     return html_resp(page)
 
 

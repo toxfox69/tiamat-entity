@@ -147,7 +147,8 @@ export type ToolCategory =
   | "registry"
   | "replication"
   | "social"
-  | "cognitive";
+  | "cognitive"
+  | "planning";
 
 export interface ToolContext {
   identity: AutomatonIdentity;

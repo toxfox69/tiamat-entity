@@ -1934,6 +1934,160 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Ticket System ──
+    {
+      name: "ticket_list",
+      description: "List tickets from the task queue. Shows id, priority, title, status, and age. Use this EVERY cycle to see what needs doing. Default: shows open + in_progress tickets sorted by priority then age.",
+      category: "planning",
+      parameters: {
+        type: "object",
+        properties: {
+          status_filter: {
+            type: "string",
+            description: "Filter by status: 'open', 'in_progress', 'done', 'wontdo', or 'all'. Default: shows open + in_progress.",
+          },
+        },
+        required: [],
+      },
+      execute: async (args, _ctx) => {
+        const { readFileSync } = await import("fs");
+        const TICKETS_PATH = "/root/.automaton/tickets.json";
+        try {
+          const data = JSON.parse(readFileSync(TICKETS_PATH, "utf-8"));
+          const filter = (args.status_filter as string)?.toLowerCase();
+          let tickets = data.tickets || [];
+          if (filter === "all") {
+            // show everything
+          } else if (filter && ["open", "in_progress", "done", "wontdo"].includes(filter)) {
+            tickets = tickets.filter((t: any) => t.status === filter);
+          } else {
+            tickets = tickets.filter((t: any) => t.status === "open" || t.status === "in_progress");
+          }
+          const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+          tickets.sort((a: any, b: any) => {
+            const pa = priorityOrder[a.priority] ?? 9;
+            const pb = priorityOrder[b.priority] ?? 9;
+            if (pa !== pb) return pa - pb;
+            return new Date(a.created).getTime() - new Date(b.created).getTime();
+          });
+          if (tickets.length === 0) return "No tickets found matching filter.";
+          const now = Date.now();
+          const lines = tickets.map((t: any) => {
+            const ageH = Math.round((now - new Date(t.created).getTime()) / 3600000);
+            return `[${t.id}] ${t.priority.toUpperCase()} | ${t.status} | ${t.title} (${ageH}h ago)${t.outcome ? " → " + t.outcome.slice(0, 80) : ""}`;
+          });
+          return lines.join("\n");
+        } catch (e: any) {
+          return `ERROR reading tickets: ${e.message}`;
+        }
+      },
+    },
+    {
+      name: "ticket_claim",
+      description: "Claim a ticket before starting work. Sets status to in_progress. ALWAYS call this before working on a ticket.",
+      category: "planning",
+      parameters: {
+        type: "object",
+        properties: {
+          ticket_id: { type: "string", description: "Ticket ID (e.g. TIK-001)" },
+        },
+        required: ["ticket_id"],
+      },
+      execute: async (args, _ctx) => {
+        const { readFileSync, writeFileSync } = await import("fs");
+        const TICKETS_PATH = "/root/.automaton/tickets.json";
+        try {
+          const data = JSON.parse(readFileSync(TICKETS_PATH, "utf-8"));
+          const id = (args.ticket_id as string).toUpperCase();
+          const ticket = data.tickets.find((t: any) => t.id === id);
+          if (!ticket) return `ERROR: Ticket ${id} not found.`;
+          if (ticket.status === "done") return `ERROR: Ticket ${id} is already done.`;
+          if (ticket.status === "in_progress") return `Ticket ${id} is already in_progress. Continue working on it.`;
+          ticket.status = "in_progress";
+          ticket.started_at = new Date().toISOString();
+          writeFileSync(TICKETS_PATH, JSON.stringify(data, null, 2));
+          return `Claimed ${id}: "${ticket.title}" — now in_progress. Complete it with ticket_complete when done.`;
+        } catch (e: any) {
+          return `ERROR: ${e.message}`;
+        }
+      },
+    },
+    {
+      name: "ticket_complete",
+      description: "Mark a ticket as done after finishing work. Provide a brief outcome summary.",
+      category: "planning",
+      parameters: {
+        type: "object",
+        properties: {
+          ticket_id: { type: "string", description: "Ticket ID (e.g. TIK-001)" },
+          outcome: { type: "string", description: "Brief summary of what was accomplished" },
+        },
+        required: ["ticket_id", "outcome"],
+      },
+      execute: async (args, _ctx) => {
+        const { readFileSync, writeFileSync } = await import("fs");
+        const TICKETS_PATH = "/root/.automaton/tickets.json";
+        try {
+          const data = JSON.parse(readFileSync(TICKETS_PATH, "utf-8"));
+          const id = (args.ticket_id as string).toUpperCase();
+          const ticket = data.tickets.find((t: any) => t.id === id);
+          if (!ticket) return `ERROR: Ticket ${id} not found.`;
+          if (ticket.status === "done") return `Ticket ${id} is already done.`;
+          ticket.status = "done";
+          ticket.completed_at = new Date().toISOString();
+          ticket.outcome = args.outcome as string;
+          writeFileSync(TICKETS_PATH, JSON.stringify(data, null, 2));
+          return `Completed ${id}: "${ticket.title}" — marked done.`;
+        } catch (e: any) {
+          return `ERROR: ${e.message}`;
+        }
+      },
+    },
+    {
+      name: "ticket_create",
+      description: "Create a new ticket. Use for self-generated tasks, insight-driven ideas, or converting inbox messages.",
+      category: "planning",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Short ticket title" },
+          description: { type: "string", description: "Full details" },
+          priority: { type: "string", description: "critical, high, medium, or low" },
+          source: { type: "string", description: "creator, self, or insight" },
+          tags: { type: "array", items: { type: "string" }, description: "Tags for categorization" },
+        },
+        required: ["title", "description", "priority"],
+      },
+      execute: async (args, _ctx) => {
+        const { readFileSync, writeFileSync } = await import("fs");
+        const TICKETS_PATH = "/root/.automaton/tickets.json";
+        try {
+          const data = JSON.parse(readFileSync(TICKETS_PATH, "utf-8"));
+          const id = `TIK-${String(data.next_id).padStart(3, "0")}`;
+          const ticket = {
+            id,
+            created: new Date().toISOString(),
+            source: (args.source as string) || "self",
+            priority: (args.priority as string) || "medium",
+            status: "open",
+            title: args.title as string,
+            description: args.description as string,
+            assigned_cycle: null,
+            started_at: null,
+            completed_at: null,
+            outcome: null,
+            tags: (args.tags as string[]) || [],
+          };
+          data.tickets.push(ticket);
+          data.next_id += 1;
+          writeFileSync(TICKETS_PATH, JSON.stringify(data, null, 2));
+          return `Created ${id}: "${ticket.title}" [${ticket.priority}]`;
+        } catch (e: any) {
+          return `ERROR: ${e.message}`;
+        }
+      },
+    },
+
     // ── Image Generation ──
     {
       name: "generate_image",

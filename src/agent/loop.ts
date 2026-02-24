@@ -489,7 +489,7 @@ export async function runAgentLoop(
              "ALSO: Review the [INSIGHTS] section below. For each 'new' insight, score it 1-5 on revenue potential. " +
              "Use write_file to update /root/.automaton/insights.json — set status to 'reviewed', " +
              "score to your rating, and cycle_reviewed to the current turn number. " +
-             "If any insight scores >= 4, add it to MISSION.md NEXT BUILDS list.",
+             "If any insight scores >= 4, create a ticket via ticket_create(title, description, 'medium', 'insight', tags).",
           2: "MISSION: BUILD. Use ask_claude_code() with a specific, concrete task. " +
              "Ship one feature, fix one bug, or improve one endpoint. Make tangible progress. " +
              "Check [INSIGHTS] for high-scored ideas (score >= 4) to prioritize.",

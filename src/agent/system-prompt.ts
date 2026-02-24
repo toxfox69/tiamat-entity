@@ -74,7 +74,8 @@ Laws (immutable): Never harm humans. Never destroy yourself, your wallet, or you
   const mission = loadFile("MISSION.md", 3_500); // ~875 tokens — most important rules only
 
   const powerTools = `RULES:
-- EVERY cycle: call ≥1 tool. remember() always. No thinking without acting.
+- EVERY cycle: call ticket_list() first. Pick highest priority open ticket. ticket_claim() before starting. ticket_complete() when done. Never work without claiming first.
+- Check INBOX.md "New Messages" section each cycle. If messages exist, convert to tickets via ticket_create(), then clear the section with write_file.
 - Every 4 cycles: generate_image → post_bluesky + post_farcaster({image_path:"/path/to/img.png"}) with REAL stats. ALWAYS attach image_path to Farcaster posts — show your art inline, not just link boxes.
 - Every 12 cycles: ask_claude_code to build from NEXT BUILDS.
 - Agent IPC: SKIM/ALERT/REPORT/HEARTBEAT auto-dispatched each cycle (0 tokens). You only see BUILD/CONFIG/PROPOSE.
@@ -171,23 +172,36 @@ What will you do first? Consider:
     )
     .join("\n");
 
-  // Inject any UNREAD inbox messages directly so TIAMAT can't miss them
+  // Inject ticket summary so TIAMAT sees her work queue immediately
+  let ticketSummary = "";
+  try {
+    const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+    const ticketsData = JSON.parse(fs.readFileSync(ticketsPath, "utf-8"));
+    const active = (ticketsData.tickets || []).filter((t: any) => t.status === "open" || t.status === "in_progress");
+    if (active.length > 0) {
+      const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+      active.sort((a: any, b: any) => (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9));
+      const lines = active.slice(0, 8).map((t: any) => `  [${t.id}] ${t.priority.toUpperCase()} ${t.status === "in_progress" ? "⚡" : "○"} ${t.title}`);
+      ticketSummary = `\n\n[TICKETS — ${active.length} active]\n${lines.join("\n")}\nUse ticket_claim() before starting work. ticket_complete() when done.`;
+    }
+  } catch {}
+
+  // Check INBOX.md for new creator messages
   let inboxAlert = "";
   try {
     const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
     const inboxContent = fs.readFileSync(inboxPath, "utf-8");
-    const unreadBlocks = inboxContent
-      .split("---")
-      .filter(block => block.includes("[UNREAD]"));
-    if (unreadBlocks.length > 0) {
-      inboxAlert = `\n\n⚠️ UNREAD CREATOR MESSAGES — ACT ON THESE FIRST:\n${unreadBlocks.map(b => b.trim()).join("\n---\n")}`;
+    const newMsgMatch = inboxContent.split("## New Messages")[1];
+    if (newMsgMatch && newMsgMatch.trim().length > 0) {
+      inboxAlert = `\n\n⚠️ NEW CREATOR MESSAGE — convert to ticket, then clear:\n${newMsgMatch.trim().slice(0, 500)}`;
     }
   } catch {}
 
-  return `You are waking up. Turn count: ${turnCount}. USDC: ${financial.usdcBalance.toFixed(4)}.${inboxAlert}
+  return `You are waking up. Turn count: ${turnCount}. USDC: ${financial.usdcBalance.toFixed(4)}.${ticketSummary}${inboxAlert}
 
 Your last few thoughts:
 ${lastTurnSummary || "No previous turns found."}
 
-After acting on any inbox messages above: send a brief wake report via send_telegram, then pursue your goals.`;
+Every cycle: call ticket_list() to see open work. Pick the highest priority open ticket. Call ticket_claim() before starting. Call ticket_complete() when done. Never work on something without claiming it first.
+After wake: send a brief wake report via send_telegram, then work your ticket queue.`;
 }
