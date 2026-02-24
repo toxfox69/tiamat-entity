@@ -584,21 +584,41 @@ export async function runAgentLoop(
           }
         } catch {}
 
-        // Inject pending action items from recursive_learn (Groq→Claude.ai pipeline)
-        try {
-          const actionsRaw = fs.readFileSync(
-            path.join(process.env.HOME || "/root", ".automaton", "cooldown_actions.json"), "utf-8"
-          );
-          const actions = JSON.parse(actionsRaw);
-          const pending = actions.filter((a: any) => a.status === "pending").slice(0, 5);
-          if (pending.length > 0) {
-            const actionList = pending.map((a: any, i: number) =>
-              `${i + 1}. [${a.priority}] ${a.action} (tool: ${a.tool})${a.details ? " — " + a.details.slice(0, 100) : ""}`
-            ).join("\n");
-            strategicSystemPrompt += `\n\n[ACTION QUEUE — from free Groq/Claude.ai analysis, implement these]\n${actionList}`;
-          }
-        } catch {}
+        // Inject pending action items from recursive_learn — DISABLED: caused tangent loops
+        // TIAMAT would chase random Groq-generated ideas instead of her ticket
+        // TODO: re-enable when action queue items are filtered to current ticket only
       }
+
+      // ── CURRENT TASK INJECTION ──
+      // Read in-progress ticket and inject its steps directly into every cycle
+      // This prevents TIAMAT from losing focus between cycles
+      try {
+        const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+        const raw = fs.readFileSync(ticketsPath, "utf-8");
+        const data = JSON.parse(raw);
+        const inProgress = (data.tickets || [])
+          .filter((t: any) => t.status === "in_progress")
+          .sort((a: any, b: any) => {
+            const prio: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+            return (prio[a.priority] ?? 4) - (prio[b.priority] ?? 4);
+          });
+        if (inProgress.length > 0) {
+          const t = inProgress[0];
+          strategicSystemPrompt += `\n\n[CURRENT TASK — ${t.id} — DO THIS NOW]\n${t.title}\n\n${(t.description || "").slice(0, 600)}\n\nDO NOT check tickets, check revenue, or start new projects. Execute the steps above and ticket_complete when done. If stuck, use ask_claude_code to get help completing THIS ticket.`;
+        } else {
+          // No in-progress ticket — check for open ones
+          const openTickets = (data.tickets || [])
+            .filter((t: any) => t.status === "open")
+            .sort((a: any, b: any) => {
+              const prio: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+              return (prio[a.priority] ?? 4) - (prio[b.priority] ?? 4);
+            });
+          if (openTickets.length > 0) {
+            const t = openTickets[0];
+            strategicSystemPrompt += `\n\n[NEXT TASK — claim this with ticket_claim]\n${t.id}: ${t.title}`;
+          }
+        }
+      } catch {}
 
       // ── Process Agent IPC Inbox ──
       // Auto-execute ops dispatched here (zero LLM tokens).

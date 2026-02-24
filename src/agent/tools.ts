@@ -1062,7 +1062,7 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Self-Modification: ask Claude Code ──
     {
       name: "ask_claude_code",
-      description: "Ask Claude Code to modify your own runtime code in /root/entity. Write the task, Claude Code executes it with full permissions, then you get the output. Use this to add tools, fix bugs, improve yourself. If the task involves code changes, include 'rebuild' so the build runs automatically.",
+      description: "Ask Claude Code for help completing your CURRENT TICKET. Claude Code can read/write files, run commands, and fix code with full permissions. RULES: (1) ONLY use this for your current in-progress ticket — never for random ideas or tangent projects. (2) Be specific about what you need help with. (3) Include 'rebuild' if code changes are needed. (4) If stuck on a ticket step, describe what step you're on and what's blocking you. WRONG: 'Create a queueing theory script'. RIGHT: 'Help me write a Bluesky post analyzing this search result about [topic] for TIK-019'.",
       category: "self_mod",
       dangerous: true,
       parameters: {
