@@ -168,7 +168,7 @@ export function checkBehavioralLoop(
     "ticket_list", "ticket_claim", "ticket_complete",
     "check_revenue", "read_farcaster", "browse_web",
   ]);
-  const NORMAL_THRESHOLD = 10; // normal tools need 10+ repeats to flag
+  const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
 
   const warnings: string[] = [];
   for (const [action, count] of counts) {
