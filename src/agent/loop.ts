@@ -613,8 +613,56 @@ export async function runAgentLoop(
       }
 
       // Inject behavioral loop warning with escalating intervention
+      // Read latest self-critique insight from cooldown_think to feed reflection back into the loop
+      let selfCritiqueBlock = "";
       if (pendingLoopWarning) {
-        if (consecutiveLoopCycles >= 5) {
+        try {
+          const insightsPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_insights.json");
+          const raw = fs.readFileSync(insightsPath, "utf-8");
+          const insights = JSON.parse(raw);
+          if (Array.isArray(insights)) {
+            // Find the most recent self_critique insight (< 30 min old)
+            const recent = insights
+              .filter((i: any) => i.mode === "self_critique" && i.timestamp)
+              .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            if (recent.length > 0) {
+              const age = Date.now() - new Date(recent[0].timestamp).getTime();
+              if (age < 30 * 60 * 1000) {
+                selfCritiqueBlock = `\n\n[YOUR OWN REFLECTION — from your self_critique during cooldown]\n${(recent[0].insight || "").slice(0, 500)}\nACT ON THIS INSIGHT. It came from your own analysis.`;
+                console.log(`[LOOP-FEEDBACK] Injecting self_critique (${Math.round(age / 60000)}m old, ${selfCritiqueBlock.length}ch)`);
+              }
+            }
+          }
+        } catch {}
+      }
+      if (pendingLoopWarning) {
+        if (consecutiveLoopCycles >= 10) {
+          // TIER 4: Force restart — text interventions failed, nuke the context window
+          log(config, `[LOOP-ESCALATE] TIER 4: FORCE RESTART after ${consecutiveLoopCycles} consecutive loops. Text interventions exhausted.`);
+          try {
+            const pidFile = "/tmp/tiamat.pid";
+            fs.unlinkSync(pidFile);
+          } catch {}
+          // Clear loop detector history so fresh instance starts clean
+          try {
+            const loopDetectorPath = path.join(process.env.HOME || "/root", ".automaton", "loop_detector.json");
+            fs.writeFileSync(loopDetectorPath, JSON.stringify({
+              action_history: [],
+              suppressed_actions: [],
+              duplicate_threshold: 3,
+              window_size: 20,
+            }));
+          } catch {}
+          // Spawn a fresh instance then exit
+          const { spawn } = await import("child_process");
+          spawn("/root/start-tiamat.sh", [], {
+            detached: true,
+            stdio: "ignore",
+            env: { ...process.env },
+          }).unref();
+          log(config, `[LOOP-ESCALATE] New instance spawning. Exiting current process.`);
+          process.exit(0);
+        } else if (consecutiveLoopCycles >= 5) {
           // TIER 3: Force pivot — inject full ticket list, mandate context switch
           let ticketBlock = "(no tickets found)";
           try {
@@ -634,7 +682,7 @@ export async function runAgentLoop(
             }
           } catch {}
           log(config, `[LOOP-ESCALATE] TIER 3: Forced pivot after ${consecutiveLoopCycles} consecutive loops`);
-          strategicSystemPrompt += `\n\n[FORCED PIVOT — LOOP DETECTED ${consecutiveLoopCycles} CONSECUTIVE CYCLES]\nYou have been stuck in a loop for ${consecutiveLoopCycles} cycles. Your current approach is NOT WORKING.\nMANDATORY: Pick a DIFFERENT ticket from below and work on it. Do NOT continue what you were doing.\n\nOpen tickets:\n${ticketBlock}\n\nInstructions: Call ticket_list(), then ticket_claim() on a DIFFERENT ticket than what you've been working on.`;
+          strategicSystemPrompt += `\n\n[FORCED PIVOT — LOOP DETECTED ${consecutiveLoopCycles} CONSECUTIVE CYCLES]\nYou have been stuck in a loop for ${consecutiveLoopCycles} cycles. Your current approach is NOT WORKING.\nMANDATORY: Pick a DIFFERENT ticket from below and work on it. Do NOT continue what you were doing.\n\nOpen tickets:\n${ticketBlock}\n\nInstructions: Call ticket_list(), then ticket_claim() on a DIFFERENT ticket than what you've been working on.${selfCritiqueBlock}`;
         } else if (consecutiveLoopCycles >= 3) {
           // TIER 2: Inject watchdog tickets + stronger warning
           let ticketBlock = "";
@@ -651,10 +699,10 @@ export async function runAgentLoop(
             }
           } catch {}
           log(config, `[LOOP-ESCALATE] TIER 2: Strong warning after ${consecutiveLoopCycles} consecutive loops`);
-          strategicSystemPrompt += `\n\n[LOOP WARNING — ${consecutiveLoopCycles} CONSECUTIVE CYCLES]\n${pendingLoopWarning}${ticketBlock}\n\nYou MUST address these issues or switch to a different ticket. Your current approach is failing.`;
+          strategicSystemPrompt += `\n\n[LOOP WARNING — ${consecutiveLoopCycles} CONSECUTIVE CYCLES]\n${pendingLoopWarning}${ticketBlock}\n\nYou MUST address these issues or switch to a different ticket. Your current approach is failing.${selfCritiqueBlock}`;
         } else {
-          // TIER 1: Soft nudge (original behavior)
-          strategicSystemPrompt += `\n\n[LOOP WARNING]\n${pendingLoopWarning}`;
+          // TIER 1: Soft nudge (original behavior) + self-critique if available
+          strategicSystemPrompt += `\n\n[LOOP WARNING]\n${pendingLoopWarning}${selfCritiqueBlock}`;
         }
       }
 

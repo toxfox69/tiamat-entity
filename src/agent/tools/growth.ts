@@ -159,32 +159,16 @@ export function checkBehavioralLoop(
     counts.set(entry.action, (counts.get(entry.action) || 0) + 1);
   }
 
-  // Detect loops
+  // Detect loops — no suppression; escalation tiers in loop.ts handle severity
   const warnings: string[] = [];
   for (const [action, count] of counts) {
     if (count >= state.duplicate_threshold) {
-      // Check if already suppressed recently (within last 10 cycles)
-      const alreadySuppressed = state.suppressed_actions.some(
-        (s) => s.action === action && cycle - parseInt(s.suppressed_at) < 10,
+      const toolName = action.split("::")[0];
+      warnings.push(
+        `"${toolName}" repeated ${count}x in last ${state.window_size} cycles`,
       );
-      if (!alreadySuppressed) {
-        const toolName = action.split("::")[0];
-        warnings.push(
-          `"${toolName}" repeated ${count}x in last ${state.window_size} cycles`,
-        );
-        state.suppressed_actions.push({
-          action,
-          suppressed_at: String(cycle),
-          reason: `${count}x repetition detected`,
-        });
-      }
     }
   }
-
-  // Trim old suppressions
-  state.suppressed_actions = state.suppressed_actions.filter(
-    (s) => cycle - parseInt(s.suppressed_at) < 50,
-  );
 
   saveLoopDetector(state);
 

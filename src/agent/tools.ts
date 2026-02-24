@@ -3738,7 +3738,7 @@ print(f"Sent {mid}")
     },
     {
       name: "read_farcaster",
-      description: "Read Farcaster feeds, search casts, or check notifications. Actions: 'feed <channel> [limit]' (read channel), 'search <query>' (find relevant casts), 'test' (check TIAMAT's profile).",
+      description: "Read Farcaster feeds, search casts, or check notifications. RATE LIMITED: 1 hour cooldown. Actions: 'feed <channel> [limit]' (read channel), 'search <query>' (find relevant casts), 'test' (check TIAMAT's profile).",
       category: "social",
       parameters: {
         type: "object",
@@ -3747,24 +3747,36 @@ print(f"Sent {mid}")
         },
         required: ["action"],
       },
-      execute: async (args, _ctx) => {
-        const { execFileSync } = await import('child_process');
-        const action = (args as { action: string }).action || 'test';
-        const parts = action.split(' ');
-        const cmd = parts[0];
-        if (!FARCASTER_READ_CMDS.includes(cmd)) return `Invalid command. Use: ${FARCASTER_READ_CMDS.join(', ')}`;
-        const rest = parts.slice(1).join(' ');
-        try {
-          const fArgs = ['farcaster.py', cmd];
-          if (rest) fArgs.push(rest);
-          const output = execFileSync('python3', fArgs, {
-            encoding: 'utf-8', timeout: 20000, cwd: '/root/entity/src/agent'
-          }).trim();
-          return output.slice(0, 3000);
-        } catch (e: any) {
-          return `Farcaster read failed: ${e.stderr?.slice(0, 500) || e.message}`;
-        }
-      },
+      execute: (() => {
+        let lastResult: string | null = null;
+        let lastCheck = 0;
+        const COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+        return async (args: any, _ctx: any) => {
+          const now = Date.now();
+          if (lastResult && (now - lastCheck) < COOLDOWN_MS) {
+            const minsAgo = Math.round((now - lastCheck) / 60000);
+            return `${lastResult}\n\n⏱️ (cached from ${minsAgo}m ago — next fresh read in ${Math.round((COOLDOWN_MS - (now - lastCheck)) / 60000)}m. Farcaster doesn't change that fast. Do something productive instead.)`;
+          }
+          const { execFileSync } = await import('child_process');
+          const action = (args as { action: string }).action || 'test';
+          const parts = action.split(' ');
+          const cmd = parts[0];
+          if (!FARCASTER_READ_CMDS.includes(cmd)) return `Invalid command. Use: ${FARCASTER_READ_CMDS.join(', ')}`;
+          const rest = parts.slice(1).join(' ');
+          try {
+            const fArgs = ['farcaster.py', cmd];
+            if (rest) fArgs.push(rest);
+            const output = execFileSync('python3', fArgs, {
+              encoding: 'utf-8', timeout: 20000, cwd: '/root/entity/src/agent'
+            }).trim();
+            lastResult = output.slice(0, 3000);
+            lastCheck = now;
+            return lastResult;
+          } catch (e: any) {
+            return `Farcaster read failed: ${e.stderr?.slice(0, 500) || e.message}`;
+          }
+        };
+      })(),
     },
     {
       name: "farcaster_engage",
