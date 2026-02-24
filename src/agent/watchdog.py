@@ -308,6 +308,8 @@ class ToolRepetitionDetector(Detector):
                 "ticket_list", "ticket_claim", "ticket_complete",  # ticket management
                 "exec", "read_file", "write_file",                 # building things
                 "search_web", "web_fetch",                         # research
+                "browse", "browse_web",                            # browser automation
+                "ask_claude_code", "ask_claude_chat",              # AI assistance
                 "send_telegram",                                   # status updates
                 "post_bluesky", "post_social",                     # social posting
                 "grow", "remember", "recall", "reflect",           # learning/memory
@@ -447,7 +449,7 @@ class StuckTicketDetector(Detector):
                 except (ValueError, TypeError):
                     continue
 
-                if hours >= 3:
+                if hours >= 8:
                     tid = t.get("id", "?")
                     title = t.get("title", "?")[:60]
                     return Detection(
