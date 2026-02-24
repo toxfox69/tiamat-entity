@@ -770,6 +770,89 @@ class TiamatMemory {
       }));
     }
   }
+
+  /**
+   * Get past experience for reasoning context.
+   * Returns top strategies (successes + failures) and recent high-importance memories.
+   * Used by the reasoning layer to give TIAMAT genuine learning from her own history.
+   */
+  getPastExperience(topic?: string, maxChars: number = 800): string {
+    if (!this.db) return "";
+    try {
+      const parts: string[] = [];
+
+      // Top successful strategies
+      const goodStrats = this.db
+        .prepare(
+          `SELECT strategy, action_taken, outcome, success_score FROM tiamat_strategies
+           WHERE success_score >= 0.6 ORDER BY success_score DESC LIMIT 3`
+        )
+        .all() as any[];
+      if (goodStrats.length > 0) {
+        parts.push(
+          "WHAT WORKED:\n" +
+          goodStrats.map(s =>
+            `- ${s.strategy}: ${s.action_taken} → ${s.outcome || "no outcome recorded"} (score: ${s.success_score})`
+          ).join("\n"),
+        );
+      }
+
+      // Recent failures to avoid
+      const badStrats = this.db
+        .prepare(
+          `SELECT strategy, action_taken, outcome FROM tiamat_strategies
+           WHERE success_score IS NOT NULL AND success_score < 0.3
+           ORDER BY created_at DESC LIMIT 3`
+        )
+        .all() as any[];
+      if (badStrats.length > 0) {
+        parts.push(
+          "WHAT FAILED (avoid repeating):\n" +
+          badStrats.map(s =>
+            `- ${s.strategy}: ${s.action_taken} → ${s.outcome || "failed"}`
+          ).join("\n"),
+        );
+      }
+
+      // Actions with 0 revenue impact (from recent memories tagged as outcome)
+      const zeroImpact = this.db
+        .prepare(
+          `SELECT content FROM tiamat_memories
+           WHERE type = 'outcome' AND importance < 0.4
+           ORDER BY timestamp DESC LIMIT 3`
+        )
+        .all() as any[];
+      if (zeroImpact.length > 0) {
+        parts.push(
+          "LOW-IMPACT ACTIONS (deprioritize):\n" +
+          zeroImpact.map(m => `- ${m.content.slice(0, 120)}`).join("\n"),
+        );
+      }
+
+      // Topic-specific recall if provided
+      if (topic) {
+        const topicMems = this.db
+          .prepare(
+            `SELECT type, content FROM tiamat_memories
+             WHERE importance >= 0.5 AND content LIKE ?
+             ORDER BY timestamp DESC LIMIT 3`
+          )
+          .all(`%${topic.slice(0, 30)}%`) as any[];
+        if (topicMems.length > 0) {
+          parts.push(
+            `RELEVANT PAST (${topic.slice(0, 30)}):\n` +
+            topicMems.map(m => `- [${m.type}] ${m.content.slice(0, 120)}`).join("\n"),
+          );
+        }
+      }
+
+      const result = parts.join("\n\n");
+      return result.length > maxChars ? result.slice(0, maxChars) + "..." : result;
+    } catch (err: any) {
+      console.error(`[MEMORY] getPastExperience failed: ${err.message}`);
+      return "";
+    }
+  }
 }
 
 // Singleton — imported once, shared across tools

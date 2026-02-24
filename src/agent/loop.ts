@@ -37,6 +37,7 @@ import { getSurvivalTier } from "../conway/credits.js";
 import { getUsdcBalance } from "../conway/x402.js";
 import { checkBehavioralLoop } from "./tools/growth.js";
 import { updatePacer, checkCronTasks, loadPacer, type PacerUpdate } from "./pacer.js";
+import { reasonFirst, buildReasoningSituation, formatReasoningBlock } from "./reasoning.js";
 import { ulid } from "ulid";
 
 const MAX_TOOL_CALLS_PER_TURN = 10;
@@ -640,6 +641,15 @@ export async function runAgentLoop(
           } catch {}
         }
 
+        // Past experience injection — gives TIAMAT genuine learning from her own history
+        let pastExperienceContext = "";
+        try {
+          const experience = memory.getPastExperience(undefined, 800);
+          if (experience) {
+            pastExperienceContext = `\n\n[PAST EXPERIENCE — from your own strategy log]\n${experience}`;
+          }
+        } catch {}
+
         const strategicSuffix =
           `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}): Sonnet active.\n` +
           `${phaseMissions[burstPhase] || ""}\n\n` +
@@ -647,7 +657,8 @@ export async function runAgentLoop(
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
           `PROGRESS (last 3000 chars):\n${progressContent}` +
           insightsContext +
-          growthContext;
+          growthContext +
+          pastExperienceContext;
         strategicSystemPrompt = systemPrompt + strategicSuffix;
         inferenceModel = "claude-sonnet-4-5-20250929";
       } else {
@@ -864,6 +875,84 @@ export async function runAgentLoop(
           strategicSystemPrompt += `\n⚠️ REFLECT MODE: You are stuck. Call introspect() and ticket_list() this cycle. Try a completely different approach.`;
         }
       } catch {}
+
+      // ── Chain-of-Thought Reasoning Pass (FREE via Groq) ──
+      // Runs before strategic bursts and high-priority tickets.
+      // DeepSeek R1 distill analyzes the situation; output is injected as context.
+      const shouldReason = isStrategicCycle || (inferenceModel?.includes("sonnet"));
+      if (shouldReason && process.env.GROQ_API_KEY) {
+        try {
+          // Gather situation context for reasoning
+          let currentTicketInfo: { id: string; title: string; description?: string; priority: string; ageHours: number } | undefined;
+          try {
+            const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+            const raw = fs.readFileSync(ticketsPath, "utf-8");
+            const data = JSON.parse(raw);
+            const inProgress = (data.tickets || []).find((t: any) => t.status === "in_progress");
+            if (inProgress) {
+              const startedAt = inProgress.started_at ? new Date(inProgress.started_at).getTime() : Date.now();
+              currentTicketInfo = {
+                id: inProgress.id,
+                title: inProgress.title,
+                description: inProgress.description,
+                priority: inProgress.priority,
+                ageHours: (Date.now() - startedAt) / (1000 * 60 * 60),
+              };
+            }
+          } catch {}
+
+          // Recent tool calls from last 3 turns
+          let recentToolNames: string[] = [];
+          let recentErrors: string[] = [];
+          try {
+            const lastTurns = db.getRecentTurns(3);
+            for (const t of lastTurns) {
+              if (t.toolCalls) {
+                for (const tc of t.toolCalls) {
+                  recentToolNames.push(tc.name);
+                  if (tc.error) recentErrors.push(`${tc.name}: ${tc.error.slice(0, 80)}`);
+                }
+              }
+            }
+          } catch {}
+
+          // Revenue status
+          let revenueStatus = "$0 revenue";
+          try {
+            const logContent = fs.readFileSync("/root/api_requests.log", "utf-8");
+            const lines = logContent.trim().split("\n").filter(Boolean);
+            const paid = lines.filter(l => l.includes("Free: False") || l.includes("free:false")).length;
+            revenueStatus = `${lines.length} requests (${paid} paid). USDC: ${financial.usdcBalance.toFixed(4)}`;
+          } catch {}
+
+          // Memory context for reasoning (past experience on similar tasks)
+          let memCtx = "";
+          try {
+            const topic = currentTicketInfo?.title;
+            memCtx = memory.getPastExperience(topic, 600);
+          } catch {}
+
+          const situation = buildReasoningSituation({
+            turnCount,
+            burstPhase,
+            currentTicket: currentTicketInfo,
+            recentToolCalls: recentToolNames.slice(-6),
+            recentErrors: recentErrors.slice(-3),
+            revenue: revenueStatus,
+            memoryContext: memCtx || undefined,
+          });
+
+          const reasoningResult = await reasonFirst(situation, process.env.GROQ_API_KEY!);
+          const reasoningBlock = formatReasoningBlock(reasoningResult);
+
+          if (reasoningBlock) {
+            strategicSystemPrompt += reasoningBlock;
+            console.log(`[REASONING] Injected ${reasoningBlock.length} chars of pre-analysis`);
+          }
+        } catch (e: any) {
+          console.log(`[REASONING] Skipped: ${e.message?.slice(0, 100)}`);
+        }
+      }
 
       const messages = buildContextMessages(
         strategicSystemPrompt,
