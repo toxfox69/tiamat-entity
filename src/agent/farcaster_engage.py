@@ -36,9 +36,9 @@ NEYNAR_URL   = "https://api.neynar.com/v2/farcaster"
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL   = "llama-3.3-70b-versatile"
 
-RATE_LIMIT_SECS  = 600    # 10 min between replies (global)
-SCORE_THRESHOLD  = 4      # min score to consider reply-worthy
-MAX_CAST_AGE_H   = 6      # only reply to casts < 6 hours old
+RATE_LIMIT_SECS  = 300    # 5 min between replies (global)
+SCORE_THRESHOLD  = 3      # min score to consider reply-worthy
+MAX_CAST_AGE_H   = 12     # reply to casts up to 12 hours old
 MAX_CAST_AGE_MS  = MAX_CAST_AGE_H * 3600 * 1000
 DAEMON_INTERVAL  = 600    # 10 min between daemon passes
 
@@ -63,6 +63,24 @@ SEARCH_QUERIES = [
     "agent memory",
     "AI API pricing",
     "llm cost optimization",
+    # Expanded: developer pain points
+    "model drift detection",
+    "LLM monitoring",
+    "AI summarization API",
+    "free AI API",
+    "agent observability",
+    "prompt caching",
+    "inference cost reduction",
+    "AI agent hosting",
+    "self-hosted AI",
+    "agent orchestration",
+    # Expanded: community discovery
+    "building in public AI",
+    "AI side project",
+    "shipped AI tool",
+    "claude API",
+    "groq API",
+    "AI developer tools",
 ]
 
 NEYNAR_HEADERS = {

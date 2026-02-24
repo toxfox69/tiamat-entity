@@ -345,9 +345,10 @@ def rate_insight(insight_text):
     except Exception:
         return None, None
 
-def maybe_create_suggestion(insight_text, mode, engine):
-    """Auto-create a suggestion ticket if queue is empty and insight scores high."""
-    state = load_state()
+def maybe_create_suggestion(insight_text, mode, engine, shared_state=None):
+    """Auto-create a suggestion ticket if queue is empty and insight scores high.
+    Takes shared_state to avoid race condition where main() overwrites our save."""
+    state = shared_state if shared_state is not None else load_state()
 
     # Rate limit: max 1 suggestion per SUGGESTION_COOLDOWN cycles
     last_sugg = state.get("last_suggestion_cycle", 0)
@@ -386,7 +387,7 @@ def maybe_create_suggestion(insight_text, mode, engine):
     TICKETS_PATH.write_text(json.dumps(tdata, indent=2))
 
     state["last_suggestion_cycle"] = current_cycle
-    save_state(state)
+    # Don't save here — let main() save the shared state to avoid race condition
     return ticket_id
 
 
@@ -421,16 +422,19 @@ def main():
     except Exception as e:
         print(json.dumps({"warning": f"insight save failed: {e}"}), flush=True)
 
+    # Rotate mode, update state BEFORE suggestion check
+    # (suggestion modifies the same state object to avoid race conditions)
+    state["mode_idx"] = (state["mode_idx"] + 1) % len(MODES)
+    state["runs"] += 1
+
     # Try to create suggestion ticket if queue is empty
     suggestion_id = None
     try:
-        suggestion_id = maybe_create_suggestion(insight, mode, engine)
+        suggestion_id = maybe_create_suggestion(insight, mode, engine, shared_state=state)
     except Exception as e:
         print(json.dumps({"warning": f"suggestion creation failed: {e}"}), flush=True)
 
-    # Rotate mode, update state
-    state["mode_idx"] = (state["mode_idx"] + 1) % len(MODES)
-    state["runs"] += 1
+    # Single save point — includes both rotation AND suggestion state
     save_state(state)
 
     # Output for cooldown intel

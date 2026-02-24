@@ -270,6 +270,14 @@ export async function runAgentLoop(
   let consecutiveIdleCycles = 0;
   let cycleDelay = 90_000; // ms — adaptive, see pacing logic below
 
+  // ── Idle Shutoff: skip LLM inference when no tickets exist ──
+  // After IDLE_SHUTOFF_THRESHOLD consecutive empty-queue cycles,
+  // we stop burning Haiku tokens (~$0.004/cycle) and just run cooldown scripts.
+  // Inference resumes instantly when a ticket appears (suggestion queue, creator, IPC).
+  let consecutiveNoTicketCycles = 0;
+  const IDLE_SHUTOFF_THRESHOLD = 3;
+  const IDLE_SHUTOFF_INTERVAL_MS = 120_000; // 2 min between idle cycles (more cooldown time)
+
   // ── Strategic Burst: 3 consecutive Sonnet cycles every STRATEGIC_BURST_INTERVAL turns ──
   const STRATEGIC_BURST_INTERVAL = 45;
   const STRATEGIC_BURST_SIZE = 3;
@@ -410,6 +418,68 @@ export async function runAgentLoop(
           onStateChange?.("running");
         }
         inference.setLowComputeMode(false);
+      }
+
+      // ── Idle Shutoff Check ──
+      // Read ticket queue. If empty for IDLE_SHUTOFF_THRESHOLD consecutive cycles,
+      // skip inference entirely and just run free cooldown scripts.
+      {
+        let queueHasWork = false;
+        try {
+          const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+          const raw = fs.readFileSync(ticketsPath, "utf-8");
+          const data = JSON.parse(raw);
+          // Only count non-suggestion tickets as real work.
+          // Unclaimed suggestion tickets don't justify burning inference tokens.
+          const active = (data.tickets || []).filter((t: any) =>
+            (t.status === "open" || t.status === "in_progress") &&
+            t.source !== "suggestion"
+          );
+          if (active.length > 0) queueHasWork = true;
+        } catch {}
+
+        // Pending input (wakeup prompt, inbox messages) counts as work
+        if (pendingInput) queueHasWork = true;
+
+        if (queueHasWork) {
+          consecutiveNoTicketCycles = 0;
+        } else {
+          consecutiveNoTicketCycles++;
+        }
+
+        if (
+          !queueHasWork &&
+          consecutiveNoTicketCycles >= IDLE_SHUTOFF_THRESHOLD &&
+          burstRemaining === 0
+        ) {
+          const turnCount = db.getTurnCount();
+          console.log(
+            `[IDLE-SHUTOFF] No tickets for ${consecutiveNoTicketCycles} consecutive cycles — ` +
+            `skipping inference ($0 this cycle)`
+          );
+          log(config, `[IDLE-SHUTOFF] Cycle skipped (idle streak: ${consecutiveNoTicketCycles})`);
+
+          // Update pacer with empty tools — this naturally downshifts pace
+          const pacerResult = updatePacer(turnCount, [], 0);
+
+          // Use extended window so cooldown tasks have time to run
+          const effectiveDelay = Math.max(IDLE_SHUTOFF_INTERVAL_MS, pacerResult.interval_ms);
+
+          // Run cron tasks (drift monitor, etc.)
+          try {
+            const cronResults = checkCronTasks(turnCount);
+            for (const cr of cronResults) {
+              if (cr.output) log(config, `[CRON] ${cr.name}: ${cr.output.slice(0, 150)}`);
+              else if (cr.error) log(config, `[CRON] ${cr.name} ERROR: ${cr.error.slice(0, 150)}`);
+            }
+          } catch {}
+
+          // Run cooldown tasks with extended window
+          // Use idle streak count for cycle rotation so tasks don't repeat
+          await runCooldownTasks(consecutiveNoTicketCycles, effectiveDelay, config);
+
+          continue; // Skip inference, loop back
+        }
       }
 
       // Hot-reload dynamic tools each cycle
@@ -1247,8 +1317,8 @@ const COOLDOWN_TASKS = [
   {
     name: "farcaster_engage",
     command: ["python3", ["farcaster_engage.py", "run"]],
-    interval: 3,      // every 3 cycles
-    offset: 0,        // fires on cycles 3, 6, 9...
+    interval: 2,      // every 2 cycles (script has its own 5-min rate limit)
+    offset: 0,        // fires on cycles 2, 4, 6...
     timeout: 60_000,
     minWindow: 70_000, // need at least 70s cooldown to run this
   },
@@ -1291,6 +1361,14 @@ const COOLDOWN_TASKS = [
     offset: 5,        // fires on cycles 5, 15, 25...
     timeout: 30_000,
     minWindow: 40_000,
+  },
+  {
+    name: "github_engage",
+    command: ["python3", ["github_engage.py", "engage"]],
+    interval: 5,      // every 5 cycles (~10-20 min)
+    offset: 3,        // fires on cycles 3, 8, 13...
+    timeout: 45_000,
+    minWindow: 55_000,
   },
 ];
 
