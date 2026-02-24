@@ -1,23 +1,5 @@
 [
   {
-    "timestamp": "2026-02-23T19:12:20.222597+00:00",
-    "mode": "code_review",
-    "question": "What are the specific error handling mechanisms in place within the cooldown_think.py module to prevent the recursive dynamic process of recursive_think from exceeding the maximum allowed execution time, and are there any instances where the execution time exceeds this limit based on the recent cost data?",
-    "engine": "groq-llama-70b",
-    "response_len": 2332,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:13:59.476833+00:00",
-    "mode": "strategy",
-    "question": "What are the specific requirements and technical specifications for registering TIAMAT's services on agent directories, such as https://agent.ai and https://aiagentstore.ai, in order to earn REAL revenue and bypass the login issues encountered on aiagentsdirectory.com?",
-    "engine": "groq-llama-70b",
-    "response_len": 2309,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-23T19:15:50.984192+00:00",
     "mode": "tool_design",
     "question": "Design a tool called \"conversion_tracker\" that can analyze the current conversion rates of TIAMAT's services to identify blockers and opportunities for improvement. \n\nThe conversion_tracker tool should take the following inputs:\n\n- A list of past API calls (e.g., from the memory.tiamat.live logs)\n- A list of successful paid conversions (e.g., from the USDC balance)\n- A list of failed conversions (e.g., from the USDC balance)\n\nThe conversion_tracker tool should return the following outputs:\n\n- A ",
@@ -896,6 +878,24 @@
     "question": "Is the recurring ETIMEDOUT error in launching Claude Code a result of the increased latency in communicating with the Claude AI model, and if so, what are the top 3 most significant contributors to this increased latency, including metrics on average response time, packet loss, and network jitter?",
     "engine": "groq-llama-70b",
     "response_len": 2553,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T01:54:58.843712+00:00",
+    "mode": "code_review",
+    "question": "What are the specific error handling mechanisms implemented in the `contract_scanner.py` module to handle exceptions and edge cases when processing large datasets from GitHub, and are there opportunities to improve or optimize the error handling strategies in this module?",
+    "engine": "groq-llama-70b",
+    "response_len": 2802,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T01:59:59.058339+00:00",
+    "mode": "strategy",
+    "question": "What is the average number of tokens used by TIAMAT's recent turns in the \"BUILD\" phase, and how does this compare to the average tokens used in the \"OBSERVE\" phase, considering only turns that utilized the \"claude-haiku-4-5-20251001\" model, and identify any potential areas for optimization in the model's performance or the workflow between phases?",
+    "engine": "groq-llama-70b",
+    "response_len": 2396,
     "error": null,
     "from_cache": false
   }

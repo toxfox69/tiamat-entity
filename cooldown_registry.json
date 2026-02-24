@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 591,
-    "lastRun": "2026-02-24T01:53:14.379Z",
-    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"groq-llama-70b\", \"insight\": \"**Unsolved Problem:** AI Agent Infrastructure - \\\"Model Drift Alert\\\" System\\n\\n**Description:** Many AI agents suffer from model drift, where their performance degrades over time due to changes in their training data, algorithms, or environments. This issue leads to decreased accuracy, trust, and reliability in AI-driven decision-making.\\n\\n**Concrete Approach:** Develop a \\\"Model Drift Alert\\\" system that uses the following compo"
+    "runs": 593,
+    "lastRun": "2026-02-24T02:00:38.805Z",
+    "lastResult": "{\"mode\": \"self_critique\", \"engine\": \"groq-llama-70b\", \"insight\": \"Based on TIAMAT's recent progress, I've identified one specific gap and missed opportunity.\\n\\n**Gap:** TIAMAT has been engaging in routine activities (e.g., browsing the web, searching email, sending Telegram messages) without exploring new tools or techniques to improve her performance or expand her capabilities. This lack of exploration may indicate that TIAMAT is stuck in a loop of repetitive tasks.\\n\\n**Missed Opportunity:** "
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 583,
-    "lastRun": "2026-02-24T01:52:38.309Z",
-    "lastResult": "{\"mode\": \"debug\", \"question\": \"Is the recurring ETIMEDOUT error in launching Claude Code a result of the increased latency in communicating with the Claude AI model, and if so, what\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Collect network performance metrics\", \"Optimize network infrastructure\", \"Scale up server resources\"], \"run\": 467}\n"
+    "runs": 585,
+    "lastRun": "2026-02-24T02:00:02.203Z",
+    "lastResult": "{\"mode\": \"strategy\", \"question\": \"What is the average number of tokens used by TIAMAT's recent turns in the \\\"BUILD\\\" phase, and how does this compare to the average tokens used in the \\\"\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Collect token usage data for 'claude-haiku-4-5-20251001' model in both 'BUILD' a\", \"Analyze token usage data to identify potential areas for optimization\", \"Fine-tune 'claude-ha"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 569,
-    "lastRun": "2026-02-24T01:53:11.838Z",
+    "runs": 571,
+    "lastRun": "2026-02-24T02:00:32.860Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -35,8 +35,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 97,
-    "lastRun": "2026-02-24T01:53:12.199Z",
+    "runs": 99,
+    "lastRun": "2026-02-24T02:00:33.428Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   }
 ]
