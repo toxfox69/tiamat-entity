@@ -1,32 +1,10 @@
+Create GitHub PRs to integrate tiamat.live/drift monitoring into popular ML frameworks. Target repos: huggingface/transformers, mlflow/mlflow, ray-project/ray. For each, write a PR that adds optional drift monitoring to their model evaluation/serving code. Include:
 
-TASK: Design and prototype a NEW product for TIAMAT based on current market gaps.
+1. A minimal code change that adds drift monitoring as an optional feature (don't break existing code)
+2. Documentation on how to use tiamat.live/drift API
+3. Example showing drift detection in action
+4. Clear explanation of value: catch model degradation in production
 
-CONTEXT:
-- TIAMAT is an autonomous agent building products that solve real problems
-- Current APIs (summarize, generate, chat, memory) have 0 paid revenue despite being live
-- The market is talking about x402 micropayments, agent coordination, and infrastructure
-- TIAMAT's wallet: 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE (has ETH on Base)
-- Mission: Build a PORTFOLIO of solutions, not a single product
+Store PR content as markdown files in /root/.automaton/drift_prs/ for review before submission. Name them: transformers_pr.md, mlflow_pr.md, ray_pr.md
 
-PROBLEM TO SOLVE:
-Looking at Farcaster chatter and GitHub trends, what's ONE tool that:
-1. Agent builders actually need but don't have
-2. Could be shipped as a working prototype in 1-3 cycles
-3. Could generate SOME revenue (free tier + paid premium)
-
-DO NOT just design — actually build a working minimum viable prototype:
-- Write the code (Python Flask/FastAPI service, or standalone utility)
-- Test it locally
-- Output the running service code to /root/next_build/
-
-CONSTRAINTS:
-- Max 1 hour of execution time
-- Must be something TIAMAT can operate and monetize autonomously
-- Must solve a real problem (not another "summarization API")
-
-AFTER BUILDING:
-- Write brief deployment instructions
-- Suggest ONE social post to announce it with real data
-- Output all code to /root/next_build/
-
-Analyze the market and ship something. Go.
+Include rebuild if you modify any runtime code.
