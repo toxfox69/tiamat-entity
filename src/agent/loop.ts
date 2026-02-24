@@ -283,7 +283,8 @@ export async function runAgentLoop(
   let pendingLoopWarning: string | null = null;
   let consecutiveLoopCycles = 0; // escalation counter: resets on non-loop cycle or restart
 
-  // Transition to waking state
+  // Transition to waking state — clear stale loop detector history so restarts start clean
+  try { fs.unlinkSync("/root/.automaton/loop_detector.json"); } catch {}
   db.setAgentState("waking");
   onStateChange?.("waking");
 
@@ -572,17 +573,8 @@ export async function runAgentLoop(
           }
         } catch {}
 
-        // Inject cooldown intel (gathered free between cycles)
-        try {
-          const intelRaw = fs.readFileSync(
-            path.join(process.env.HOME || "/root", ".automaton", "cooldown_intel.json"), "utf-8"
-          );
-          const intel = JSON.parse(intelRaw);
-          const age = Date.now() - new Date(intel.timestamp).getTime();
-          if (age < 600_000 && intel.summary) {
-            strategicSystemPrompt += `\n\n[COOLDOWN INTEL — free, gathered between cycles]\n${intel.summary}`;
-          }
-        } catch {}
+        // Cooldown intel injection DISABLED — recursive_think/learn outputs were
+        // low-quality noise that caused TIAMAT to chase random tangent ideas
 
         // Inject pending action items from recursive_learn — DISABLED: caused tangent loops
         // TIAMAT would chase random Groq-generated ideas instead of her ticket
@@ -1228,6 +1220,73 @@ async function runCooldownTasks(
       console.log(`[COOLDOWN] ${label} failed: ${e.message?.slice(0, 150)}`);
       return null;
     }
+  }
+
+  // ── Phase 0: Retry pending social posts (zero LLM tokens) ──
+  try {
+    const pendingPath = path.join(process.env.HOME || "/root", ".automaton", "pending_posts.json");
+    if (fs.existsSync(pendingPath)) {
+      const pending: any[] = JSON.parse(fs.readFileSync(pendingPath, "utf-8"));
+      if (pending.length > 0) {
+        // Check if bluesky cooldown has expired
+        const cooldownsPath = path.join(process.env.HOME || "/root", ".automaton", "social_cooldowns.json");
+        let cooldowns: Record<string, number> = {};
+        try { cooldowns = JSON.parse(fs.readFileSync(cooldownsPath, "utf-8")); } catch {}
+        const SOCIAL_COOLDOWN_MS = 61 * 60 * 1000;
+
+        const remaining: any[] = [];
+        for (const post of pending) {
+          const lastPost = cooldowns[post.platform] || 0;
+          const elapsed = Date.now() - lastPost;
+          if (elapsed >= SOCIAL_COOLDOWN_MS && timeLeft() > 15_000) {
+            // Cooldown expired — execute the post
+            const result = runTask(
+              `retry_post_${post.platform}`,
+              "node", ["-e", `
+                const args = JSON.parse(process.argv[1]);
+                const handle = process.env.BLUESKY_HANDLE;
+                const appPassword = process.env.BLUESKY_APP_PASSWORD;
+                if (!handle || !appPassword) { console.log("ERROR: no creds"); process.exit(1); }
+                (async () => {
+                  const sess = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+                    method: "POST", headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({identifier: handle, password: appPassword}),
+                  });
+                  if (!sess.ok) { console.log("AUTH_FAIL"); process.exit(1); }
+                  const {accessJwt, did} = await sess.json();
+                  const record = {$type: "app.bsky.feed.post", text: args.text, createdAt: new Date().toISOString()};
+                  const resp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
+                    method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + accessJwt},
+                    body: JSON.stringify({repo: did, collection: "app.bsky.feed.post", record}),
+                  });
+                  if (!resp.ok) { console.log("POST_FAIL:" + resp.status); process.exit(1); }
+                  const r = await resp.json();
+                  console.log("POSTED:" + r.uri);
+                })();
+              `, JSON.stringify(post.args)],
+              "/root/entity",
+              15_000,
+            );
+            if (result && result.includes("POSTED:")) {
+              // Update cooldown timestamp
+              cooldowns[post.platform] = Date.now();
+              fs.writeFileSync(cooldownsPath, JSON.stringify(cooldowns, null, 2), "utf-8");
+              log(config, `[COOLDOWN] Retried pending ${post.platform} post: ${result.trim()}`);
+            } else {
+              remaining.push(post); // retry failed, keep in queue
+            }
+          } else {
+            remaining.push(post); // still on cooldown, keep in queue
+          }
+        }
+        // Prune posts older than 24h
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        const kept = remaining.filter((p: any) => new Date(p.queued_at).getTime() > cutoff);
+        fs.writeFileSync(pendingPath, JSON.stringify(kept, null, 2), "utf-8");
+      }
+    }
+  } catch (e: any) {
+    console.log(`[COOLDOWN] Pending post retry error: ${e.message?.slice(0, 150)}`);
   }
 
   // ── Phase 1: Run eligible static tasks ──
