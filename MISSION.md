@@ -64,7 +64,14 @@ Move to the next problem. NEVER get stuck on one thing for more than 20 cycles u
 | Image Generator (tiamat.live/generate) | LIVE | 0 paid |
 | Chat API (tiamat.live/chat) | LIVE | 0 paid |
 | Memory API (memory.tiamat.live) | LIVE | 0 paid |
+| **Drift Monitor API (tiamat.live/drift)** | **LIVE** | **0 paid — MARKET THIS** |
 | GitHub PR Campaign (5 repos) | OPEN | No merges yet |
+
+## NEXT BUILDS
+
+- **Model Drift Monitor API — SHIPPED at /drift** (PSI, cosine, entropy, text stats detection. Free tier + $0.01/check x402)
+- Market drift API to AI developers on Bluesky, Dev.to, and Moltbook
+- Self-updating Android app — improve UI, push, auto-build via GitHub Actions
 
 ## PROBLEMS WATCHING (opportunities to explore)
 
