@@ -40,8 +40,9 @@ export function buildContextMessages(
     }
 
     // Emit assistant message if there was thinking OR tool calls.
-    // Skipping tool calls when thinking is empty loses the entire turn from history.
-    if (turn.thinking || turn.toolCalls.length > 0) {
+    // Skip completely empty turns — they poison the context and cause
+    // Anthropic to return empty responses in a feedback loop.
+    if ((turn.thinking && turn.thinking.trim()) || turn.toolCalls.length > 0) {
       const msg: ChatMessage = {
         role: "assistant",
         content: turn.thinking || "",

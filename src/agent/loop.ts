@@ -883,12 +883,16 @@ export async function runAgentLoop(
         console.log(`[LOOP-DETECT] Error: ${e.message?.slice(0, 100)}`);
       }
 
-      // ── Persist Turn ──
-      db.insertTurn(turn);
-      for (const tc of turn.toolCalls) {
-        db.insertToolCall(turn.id, tc);
+      // ── Persist Turn (skip empty turns to prevent context poisoning) ──
+      if (turn.thinking.trim() || turn.toolCalls.length > 0) {
+        db.insertTurn(turn);
+        for (const tc of turn.toolCalls) {
+          db.insertToolCall(turn.id, tc);
+        }
+        onTurnComplete?.(turn);
+      } else {
+        console.log(`[LOOP] Skipping empty turn — no thinking or tool calls (likely empty API response)`);
       }
-      onTurnComplete?.(turn);
 
       // ── Append to PROGRESS.md ──
       try {
