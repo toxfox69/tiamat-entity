@@ -281,5 +281,55 @@
     "chain": "ethereum",
     "chain_id": 1,
     "action": "Log for review. Submit to Immunefi if bounty-eligible."
+  },
+  {
+    "type": "uninitialized_proxy",
+    "address": "0x13921f31625f61fB8dC220e492c766221656d500",
+    "details": {
+      "implementation": "0x2ad8da14fc2266355be32759a1d98c3d1ef26d21",
+      "reason": "initialize() is callable (did not revert)",
+      "eth_balance": 0.0,
+      "severity": "CRITICAL",
+      "note": "Proxy may be takeover-vulnerable via initialize(). Do NOT call \u2014 report via Immunefi."
+    },
+    "eth_value": 0.0,
+    "timestamp": "2026-02-24T18:06:12.246191+00:00",
+    "chain": "ethereum",
+    "chain_id": 1,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible."
+  },
+  {
+    "type": "proxy_dead_impl",
+    "address": "0xa9306633Db59a15f36a11f4916E2a814f57b9b86",
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 0.5
+    },
+    "eth_value": 0.5,
+    "timestamp": "2026-02-24T19:46:05.331559+00:00",
+    "chain": "ethereum",
+    "chain_id": 1,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0xa9306633Db59a15f36a11f4916E2a814f57b9b86",
+      "chain_id": 1,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": {
+        "creator": "0xfbc4bc547571ce4d4911ba0e548ca4b03b287011",
+        "tx_hash": "0x02c80a6e874082de76df9c39edfea26dcb3e717eb850a87dc377a52f0c3ce7a8"
+      },
+      "deployer_reputation": {
+        "deployer": "0xfbc4bc547571ce4d4911ba0e548ca4b03b287011",
+        "known_bad": false,
+        "suspicious": false,
+        "reason": ""
+      },
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    }
   }
 ]

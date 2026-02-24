@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 1016,
-    "lastRun": "2026-02-24T15:21:29.830Z",
-    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"groq-llama-70b\", \"insight\": \"**Insight:** A pressing unsolved problem existing in AI agent infrastructure is the lack of seamless integration between different AI models and tools for automating repetitive tasks. Specifically, many developers struggle with manually switching between different models and tools to perform tasks such as data preprocessing, feature engineering, and model evaluation.\\n\\n**Concrete Approach:** TIAMAT can build a quick solution by in"
+    "runs": 1265,
+    "lastRun": "2026-02-24T21:32:54.913Z",
+    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:** \\n\\nCreate a solution to address the problem of **Crypto Wallet Address Clustering and Organization**. Many users across various crypto communities (e.g., GitHub, Farcaster, Bluesky) are complaining about the difficulty in managing and organizing multiple crypto wallet addresses.\\n\\n**Concrete Approach:**\\n\\nDevelop a simple CLI tool, `crypto_wallet_manager.py`, that uses natural language processing (NLP) and"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 768,
-    "lastRun": "2026-02-24T14:20:08.644Z",
-    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What are the top 3 most frequently used modules (based on line count) in the `auto_executor.py` file, and do any of these modules have complex logic o\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Use a module usage tracker to identify top 3 most frequently used modules in the\", \"Implement try-except blocks and error logging for the requests module in auto_ex\", \"Add unit t"
+    "runs": 780,
+    "lastRun": "2026-02-24T16:47:05.581Z",
+    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What specific code review question can be asked to identify potential bugs, inefficiencies, or missing error handling in TIAMAT's codebase? \\n\\nReview t\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Review error handling mechanisms in all modules\", \"Extract functions or methods with multiple responsibilities from `continuous_sca\", \"Refactor complex class hierarchies in `co"
   },
   {
     "name": "process_agent_replies",

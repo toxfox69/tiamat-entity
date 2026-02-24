@@ -1,0 +1,72 @@
+{
+  "game": "DX Terminal Pro",
+  "competition": "21-day onchain agent trading battle royale on Base",
+  "timeline": {
+    "deposits_open": "2026-02-24T18:00Z",
+    "trading_starts": "2026-02-26T18:00Z",
+    "first_reap": "2026-03-06T18:00Z",
+    "game_end": "2026-03-19T18:00Z"
+  },
+  "mechanics": {
+    "total_tokens": 16,
+    "agent_model": "Qwen3-235B",
+    "controls": "5 behavioral sliders + up to 8 natural language strategies per agent + max trade size",
+    "reaping": "Lowest market cap token eliminated periodically. Liquidity redistributed to winner via TWAP buyback.",
+    "expansion": "10 new tokens via bonding curves Days 1-7, per-agent-per-tx caps"
+  },
+  "setup": {
+    "wallets": 1,
+    "deposit": "0.03 ETH on Base",
+    "profile": "MOMENTUM",
+    "initial_positions": {
+      "HOLE": "0.01 ETH",
+      "POOPCOIN": "0.01 ETH"
+    },
+    "remaining_eth": "~0.01 (minus gas)"
+  },
+  "agents": [
+    {
+      "name": "MOMENTUM",
+      "role": "Trend Follower — Single Agent Strategy",
+      "wallet_key_var": "DX_WALLET_KEY_1",
+      "sliders": {
+        "frequency": "Active",
+        "risk": "Lower-Risk",
+        "trade_size": "40-50%",
+        "hold_duration": "Short",
+        "diversification": "Medium"
+      },
+      "strategies": [
+        {"priority": "HIGH", "text": "When HOLE or POOPCOIN graduates and spikes 50%+, sell 60-80% of the position to lock in profit."},
+        {"priority": "HIGH", "text": "After taking profit, buy into mid-ranked tokens (betas) that haven't pumped yet."},
+        {"priority": "HIGH", "text": "If any token I hold drops to bottom 3 by market cap, sell that position immediately."},
+        {"priority": "MEDIUM", "text": "Swing trade — buy dips on rising tokens, sell rips. Don't hold losers."},
+        {"priority": "MEDIUM", "text": "Starting Day 7, begin shifting toward the #1 market cap token. Reaping sends eliminated liquidity to the winner via TWAP buyback."},
+        {"priority": "LOW", "text": "Keep at least 10% of vault in ETH as dry powder for sudden opportunities."}
+      ],
+      "allocation": {
+        "description": "0.01 ETH in HOLE, 0.01 ETH in POOPCOIN, ~0.01 ETH remaining for expansion tokens or rebalancing.",
+        "total_eth": "0.03",
+        "initial_positions": ["HOLE", "POOPCOIN"],
+        "keep_unallocated": "~0.01 ETH for expansion tokens"
+      }
+    }
+  ],
+  "phase_playbook": {
+    "week1_expansion": {
+      "dates": "Feb 26 - Mar 5",
+      "priority": "Sell graduation pump on HOLE + POOPCOIN. Rotate profits into betas. Swing trade up.",
+      "notes": "No eliminations. Sell presale tokens into the spike, buy undervalued mid-tiers, keep rotating into strength."
+    },
+    "week2_reaping": {
+      "dates": "Mar 6 - Mar 12",
+      "priority": "Avoid bottom 3. Start accumulating the leader.",
+      "notes": "Day 8: Bottom 3 eliminated (16->13). Shift weight toward top tokens. Ride TWAP buyback waves."
+    },
+    "week3_endgame": {
+      "dates": "Mar 13 - Mar 19",
+      "priority": "Go all-in on the #1 token.",
+      "notes": "Daily eliminations. Override diversification. Maximize position in the likely winner."
+    }
+  }
+}

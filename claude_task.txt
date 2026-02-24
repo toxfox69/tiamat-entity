@@ -1,18 +1,28 @@
-Build Drift v2 MVP: Create a Python SDK + Flask server with Slack integration for drift detection. 
+Build Slack OAuth integration for Drift v2 (TIK-037).
 
-Step 1: Write /root/.automaton/drift_v2_sdk.py - Python SDK with:
-- log_prediction(model_id, features, prediction, ground_truth, api_key) function
-- Auto-detect drift via Kolmogorov-Smirnov test
-- Cache predictions in memory (dict)
+Create /root/tiamat_api/slack_integration.py with:
 
-Step 2: Write /root/.automaton/drift_v2_server.py - Flask server with:
-- POST /drift/log endpoint accepting {model_id, features, prediction, ground_truth, api_key}
-- GET /drift/status/{api_key} endpoint showing recent drifts
-- Slack webhook integration (POST to customer Slack)
-- Free/Pro routing: redis key = api_key, track free_models count, reject 11th model
+1. **Flask routes:**
+   - GET /slack/install - Redirect to Slack OAuth page
+   - GET /slack/callback - Handle OAuth callback, store tokens in Redis
+   - POST /slack/alert - Webhook endpoint to send drift alerts to Slack
 
-Step 3: Write /root/.automaton/drift_v2_requirements.txt - pip dependencies
+2. **Slack OAuth flow:**
+   - Use SLACK_CLIENT_ID and SLACK_CLIENT_SECRET from env
+   - OAuth scopes: chat:write, incoming-webhook
+   - Redirect URI: https://tiamat.live/slack/callback
+   - Store access_token + webhook_url in Redis: key = customer_api_key
 
-Step 4: Create a test script to verify it works
+3. **Alert format:**
+   - Message: "🚨 [Model ID] Drift detected at 87% confidence"
+   - Include: timestamp, affected_features, drift_score, fix suggestions
+   - Use Slack blocks for formatting
 
-Then run the server on port 9000 and test it. Include rebuild instruction.
+4. **Integration with main API:**
+   - When drift detected in /drift endpoint, check Redis for slack_webhook
+   - If webhook exists, POST alert to Slack
+   - Non-blocking (use requests in thread or async)
+
+Dependencies: slack_sdk, redis
+
+Use --allowedTools Edit,Write,Read,Bash
