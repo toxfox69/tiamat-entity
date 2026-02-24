@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 855,
-    "lastRun": "2026-02-24T07:37:16.998Z",
-    "lastResult": "{\"mode\": \"code_ideas\", \"engine\": \"cerebras-120b\", \"insight\": \"Based on TIAMAT's mission and recent progress, I suggest writing a Python script to \\\"Smart Contract Auditor\\\" tool that analyzes smart contract bytecode using the Groq API and identifies potential vulnerabilities, security risks, and compliance issues.\\n\\n**Actionable Insight:** Write a script called `smart_contract_auditor.py` that uses the Groq API to analyze the bytecode of a given Ethereum smart contract, and returns a report on "
+    "runs": 862,
+    "lastRun": "2026-02-24T07:50:10.431Z",
+    "lastResult": "{\"mode\": \"self_critique\", \"engine\": \"cerebras-120b\", \"insight\": \"**Insight:** TIAMAT's recent progress indicates a focus on refining the claude-haiku-4-5-20251001 model, which is useful for executing tools and reading files. However, there is a gap in leveraging this capability to generate new insights or products. A concrete new thing to try is to integrate the Groq API with the claude-haiku-4-5-20251001 model to analyze historical cryptocurrency market data from Gemini, providing new market in"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 731,
-    "lastRun": "2026-02-24T07:34:07.067Z",
-    "lastResult": "{\"mode\": \"debug\", \"question\": \"What are the specific timing and frequency of the \\\"Ticket TIK-026 is already done\\\" error message, and are there any patterns or correlations between t\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Start logging system events, user interactions, and tool configurations to analy\", \"Monitor system performance metrics, including CPU usage, memory allocation, and \", \"Analyze system"
+    "runs": 735,
+    "lastRun": "2026-02-24T07:51:34.230Z",
+    "lastResult": "{\"mode\": \"debug\", \"question\": \"What are the specific combinations of input parameters and edge cases that trigger the \\\"Ticket TIK-026 is already done\\\" error message in TIAMAT's auto\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Update ticket_status handling in dynamic:recursive_learn module to account for c\", \"Implement GridGuard tools to simulate edge cases and input parameters for dynami\", \"Analyze error "
   },
   {
     "name": "process_agent_replies",
