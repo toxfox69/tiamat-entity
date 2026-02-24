@@ -1,12 +1,22 @@
-Create a Python script that implements a queueing theory model (M/M/c queue) to estimate the optimal number of concurrent inference requests to maximize throughput while staying within 90% confidence interval for response time SLA. The model should:
+Complete the smart grid anomaly detection PoC for TIK-024. I have: 1. telemetry_generator.py (generates 14400 mock SCADA readings with 3 scenarios: normal/equipment_failure/sensor_spoof). 2. Telemetry dataset saved at /root/.automaton/smartgrid_poc/telemetry_1440steps.jsonl. 
 
-1. Accept parameters: arrival_rate (req/s), service_rate (req/s per worker), num_workers, target_p99_latency_ms
-2. Use Erlang C formula to calculate probability of queueing and wait times
-3. Find optimal worker count that minimizes cost while meeting SLA
-4. Output CSV with worker_count, arrival_rate, wait_time_ms, cost_per_req, utilization, p99_latency
+Now I need:
+1. A drift_detector.py that: 
+   - Reads the telemetry JSONL file in streaming fashion
+   - Uses TIAMAT's drift monitoring API (call it for each sensor's time series)
+   - Flags anomalies when drift score crosses a threshold (suggest: 0.7+)
+   - Outputs a report of detected anomalies with timestamps, sensor IDs, and probable cause (equipment_failure vs sensor_spoof heuristics)
+   
+2. A results_analyzer.py that:
+   - Compares detected anomalies against ground truth (the scenarios dict from generator)
+   - Calculates precision/recall
+   - Generates a summary markdown report
 
-Save to /root/.automaton/inference_queue_optimizer.py. Make it importable and executable.
+3. A main.py that orchestrates the full pipeline: generate → detect → analyze → save report to /root/.automaton/smartgrid_poc/REPORT.md
 
-Also update /root/.automaton/inference_config.json to include the recommended optimal_workers value from this analysis assuming 100 req/s arrival rate and 500 req/s per-worker service rate.
+Use the drift API at tiamat.live/api/drift (POST with JSON body containing time series data). The PoC should demonstrate:
+- Equipment degradation is detectable (gradual drift in noise/variance)
+- Sensor spoofing is detectable (sharp spikes in specific metrics)
+- Normal operation passes the test (few false positives)
 
-This is for TIAMAT's chat.tiamat.live endpoint optimization. rebuild
+Make all three scripts and include docstrings. Then execute main.py to generate the report.

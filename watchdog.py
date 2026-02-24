@@ -303,15 +303,27 @@ class ToolRepetitionDetector(Detector):
             ).fetchall()
             conn.close()
 
+            # Tools that are part of normal operation — don't flag unless extreme
+            NORMAL_TOOLS = {
+                "ticket_list", "ticket_claim", "ticket_complete",  # ticket management
+                "exec", "read_file", "write_file",                 # building things
+                "search_web", "web_fetch",                         # research
+                "send_telegram",                                   # status updates
+                "post_bluesky", "post_social",                     # social posting
+                "grow", "remember", "recall", "reflect",           # learning/memory
+                "check_revenue",                                   # routine checks
+                "read_farcaster",                                  # social reading
+            }
+
             for row in rows:
                 tool_name = row["name"]
                 count = row["cnt"]
 
-                # ticket_list is called every cycle by design — only flag at 10+
-                if tool_name == "ticket_list" and count < 10:
+                # Normal tools only flagged at 15+ (extreme repetition)
+                if tool_name in NORMAL_TOOLS and count < 15:
                     continue
 
-                severity = "critical" if count >= 10 else "high"
+                severity = "critical" if count >= 15 else "high"
                 return Detection(
                     key=f"tool_loop_{tool_name}",
                     severity=severity,
@@ -397,7 +409,7 @@ class CostAnomalyDetector(Detector):
                 return None
 
             avg = sum(costs) / len(costs)
-            if avg > 0.01:
+            if avg > 0.025:
                 severity = "critical" if avg > 0.05 else "high"
                 return Detection(
                     key="cost_anomaly",

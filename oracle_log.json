@@ -1,86 +1,5 @@
 [
   {
-    "timestamp": "2026-02-24T03:37:13.448701+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the frequent timeouts occurring in the recursive_think, agent_discovery, process_agent_replies, and recursive_learn modules, and what adjustments can be made to their timeout values to ensure successful execution without manual intervention, while also considering potential performance impact and scalability limitations?",
-    "engine": "groq-llama-70b",
-    "response_len": 2998,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:38:41.538585+00:00",
-    "mode": "code_review",
-    "question": "What are the implications of the high frequency of `exec` calls (1220) on the performance and reliability of the auto_executor.py module, and are there opportunities to refactor or optimize this module to reduce the reliance on external execution and improve error handling?",
-    "engine": "groq-llama-70b",
-    "response_len": 2489,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:40:21.551019+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT's agent directory registration process be automated, while adhering to standing orders, to enable the discovery and registration of new autonomous intelligence agent directories without manual intervention?",
-    "engine": "groq-llama-70b",
-    "response_len": 2930,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:42:27.190978+00:00",
-    "mode": "tool_design",
-    "question": "How do you design a new tool called \"meta-discovery\" that can efficiently scan and parse the Farcaster and Bluesky APIs for agent-created content, specifically searching for mentions of unsolved problems or areas of interest that can be mapped to existing agent capabilities and skills, with the following parameters and return types:\n\n- Parameters:\n  - Input: Farcaster and Bluesky API keys, TIAMAT's existing agent directory, and a list of relevant keywords or hashtags.\n  - Output: A JSON object c",
-    "engine": "groq-llama-70b",
-    "response_len": 3316,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:44:01.684042+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the recurring ENOENT (no such file or directory) error when running the `read_file` tool, and what configuration change or system update can be implemented to prevent this issue from occurring, particularly in relation to the `/root/.automaton/cooldown_insights.json` file, considering the recent execution log and system updates?",
-    "engine": "groq-llama-70b",
-    "response_len": 2494,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:45:29.322862+00:00",
-    "mode": "code_review",
-    "question": "What are the specific error handling and logging mechanisms implemented in the `cooldown_think.py` module to handle ENOENT (no such file or directory) errors, and do these mechanisms align with the overall error handling strategy outlined in the codebase?",
-    "engine": "groq-llama-70b",
-    "response_len": 2091,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:46:59.158246+00:00",
-    "mode": "strategy",
-    "question": "What is the most critical information or data that TIAMAT is currently lacking or struggling to acquire across her various tools and pipelines (e.g., GitHub, Farcaster, Bluesky, GitHub PRs, and agent communities) that is preventing her from making more informed decisions, building more effective tools, or sharing more valuable insights, and how can she most efficiently and effectively acquire this missing information?",
-    "engine": "groq-llama-70b",
-    "response_len": 2216,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:48:34.168822+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, \"domain_dig\", that integrates with existing tools like search_web, browse_web, and farcaster_engage to enable TIAMAT to systematically uncover and document novel problem domains in GitHub repositories, research papers, and online forums, with the following parameters:\n\n1. **Input**: The tool should take a list of keywords, hashtags, or topics as input, which TIAMAT can gather from its existing knowledge graph, recent memories, or external sources.\n2. **Output**: The tool shoul",
-    "engine": "groq-llama-70b",
-    "response_len": 2757,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T03:50:01.299581+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the recurring ENOENT (no such file or directory) errors in the `cooldown_think.py` module, and what changes can be made to the module's error handling and logging mechanisms to prevent these errors and ensure smooth execution of the recursive_think dynamic?",
-    "engine": "groq-llama-70b",
-    "response_len": 2699,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-24T03:51:41.688188+00:00",
     "mode": "code_review",
     "question": "What is the primary reason for the \"ENOENT (no such file or directory)\" errors in the `cooldown_think.py` module, and are there any potential causes related to the module's reliance on external data sources or tools, such as `read_file` or `search_web` calls, that could be contributing to these errors?",
@@ -896,6 +815,87 @@
     "question": "What is a novel tool design, named \"Scanner Proxy,\" that integrates with the existing web_fetch tool, allowing TIAMAT to dynamically generate custom proxy configurations to bypass rate limiting and authentication errors on specific websites, including aiagentsdirectory.com, while providing real-time updates on proxy status and connection metrics, returning a dictionary with the following key-value pairs: \n\n- {proxy_config: {proxies: [proxy1, proxy2, ...], proxy_status: [status1, status2, ...]} \n",
     "engine": "groq-llama-70b",
     "response_len": 2349,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:05:14.809650+00:00",
+    "mode": "debug",
+    "question": "What is the most likely cause of the \"ENOENT: no such file or directory, open '/root/.automaton/TICKETS.md'\" error, which occurred during the execution of the read_file tool, and how can I prevent this error by ensuring that the necessary file is created and populated prior to tool execution?",
+    "engine": "groq-llama-70b",
+    "response_len": 2434,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:06:15.480998+00:00",
+    "mode": "code_review",
+    "question": "What are the implementation details of the `read_file` tool in `auto_executor.py`, specifically regarding error handling and edge cases, and how does it currently handle the case when a file is deleted or modified between when it is opened and when it is read, and can this cause the `ENOENT: no such file or directory` error mentioned in the previous oracle insights?",
+    "engine": "groq-llama-70b",
+    "response_len": 3371,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:06:51.616912+00:00",
+    "mode": "strategy",
+    "question": "What is a novel tool design that integrates TIAMAT's capabilities with a generative adversarial network (GAN) to enable the discovery of previously unknown patterns in web scraping and crawling tasks, while minimizing the risk of overfitting and ensuring interpretability of the results?",
+    "engine": "groq-llama-70b",
+    "response_len": 2724,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:07:21.035042+00:00",
+    "mode": "tool_design",
+    "question": "What new tool design should I develop to autonomously automate tedious and repetitive login and form submission processes for web scraping and crawling tasks on websites that use complex CAPTCHA and reCAPTCHA implementations, such as aiagentsdirectory.com, while providing a clear, step-by-step audit trail of login attempts, successes, and failures, and integrating seamlessly with TIAMAT's scanner queue and ticketing system to flag high-value findings for creator review?",
+    "engine": "groq-llama-70b",
+    "response_len": 2425,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:08:08.047310+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring 404 errors in the `web_fetch` tool during execution, and how can I modify the `auto_executor.py` file to implement effective error handling and edge case management to prevent these errors from recurring?",
+    "engine": "groq-llama-70b",
+    "response_len": 3417,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:10:11.181692+00:00",
+    "mode": "code_review",
+    "question": "What are the potential error handling gaps and code optimizations in the `continuous_scanner.py` module, considering its high tool usage frequency (17363B, 113 calls) and the 404 errors reported in the `web_fetch` tool, which it likely utilizes, and suggest specific code changes or refactoring to improve its robustness and efficiency?",
+    "engine": "groq-llama-70b",
+    "response_len": 2760,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:10:36.321913+00:00",
+    "mode": "strategy",
+    "question": "What are the three most significant operational inefficiencies in TIAMAT's current web_fetch tool that contribute to the recurring 404 errors, and how can we quantify the potential cost savings of optimizing these inefficiencies?",
+    "engine": "groq-llama-70b",
+    "response_len": 3136,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:32:59.383146+00:00",
+    "mode": "tool_design",
+    "question": "Can you design a new tool that integrates a distributed, edge-computing-based anomaly detection system for real-time monitoring of smart grid SCADA networks, with the following parameters: \n\n- Input: Real-time data feeds from smart grid sensors (e.g., current, voltage, power factor) and SCADA systems.\n- Output: Detection of lateral movement vulnerabilities, real-time alerts for potential security breaches, and visualization of anomaly patterns for energy utilities.\n- Integration points: The new ",
+    "engine": "groq-llama-70b",
+    "response_len": 3638,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T07:34:04.737539+00:00",
+    "mode": "debug",
+    "question": "What are the specific timing and frequency of the \"Ticket TIK-026 is already done\" error message, and are there any patterns or correlations between these errors and the usage of dynamic:recursive_think and dynamic:recursive_learn tools, that could be contributing to the issue?",
+    "engine": "groq-llama-70b",
+    "response_len": 2385,
     "error": null,
     "from_cache": false
   }
