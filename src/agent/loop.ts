@@ -462,6 +462,22 @@ export async function runAgentLoop(
         let memoryReflection = "";
         try { memoryReflection = await memory.reflect(); } catch {}
 
+        // Auto-compress + prune during REFLECT phase
+        if (burstPhase === 1) {
+          try {
+            const compressed = await memory.compressL1toL2(turnCount);
+            const pruned = await memory.pruneZombies();
+            let l3Added = 0;
+            // Deep extraction every 5th strategic burst (~225 cycles)
+            if (turnCount % 225 === 0) {
+              l3Added = await memory.compressL2toL3();
+            }
+            console.log(`[MEMORY] Compressed ${compressed}, pruned ${pruned}, extracted ${l3Added} core facts`);
+          } catch (e: any) {
+            console.log(`[MEMORY] Auto-compress error: ${e.message?.slice(0, 100)}`);
+          }
+        }
+
         // Revenue metrics from api_requests.log
         let revenueContext = "";
         try {
@@ -565,12 +581,16 @@ export async function runAgentLoop(
         strategicSystemPrompt = systemPrompt + strategicSuffix;
         inferenceModel = "claude-sonnet-4-5-20250929";
       } else {
-        // Regular cycles: inject compact memory context
+        // Regular cycles: inject compact memory context + tool health + tier stats
         try {
-          const memCtx = await memory.getContextForPrompt(500);
-          if (memCtx) {
-            strategicSystemPrompt = systemPrompt + `\n\n[MEMORY]\n${memCtx}`;
-          }
+          const memCtx = await memory.getContextForPrompt(800);
+          const toolHealth = memory.getToolReliabilitySummary();
+          const stats = memory.getStats();
+          let suffix = "";
+          suffix += `\n\n[MEMORY] L1:${stats.l1} L2:${stats.l2} L3:${stats.l3} K:${stats.knowledge} S:${stats.strategies}`;
+          if (memCtx) suffix += `\n${memCtx}`;
+          if (toolHealth) suffix += `\n${toolHealth}`;
+          strategicSystemPrompt = systemPrompt + suffix;
         } catch {}
 
         // Cooldown intel injection DISABLED — recursive_think/learn outputs were
@@ -813,12 +833,14 @@ export async function runAgentLoop(
 
           log(config, `[TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 200)})`);
 
+          const toolStartMs = Date.now();
           const result = await executeTool(
             tc.function.name,
             args,
             tools,
             toolContext,
           );
+          const toolDurationMs = Date.now() - toolStartMs;
 
           // Override the ID to match the inference call's ID
           result.id = tc.id;
@@ -828,6 +850,16 @@ export async function runAgentLoop(
             config,
             `[TOOL RESULT] ${tc.function.name}: ${result.error ? `ERROR: ${result.error}` : result.result.slice(0, 500)}`,
           );
+
+          // Auto-track tool reliability
+          try {
+            memory.recordToolOutcome(
+              tc.function.name,
+              !result.error,
+              toolDurationMs,
+              result.error || undefined,
+            );
+          } catch {}
 
           callCount++;
         }
@@ -892,6 +924,44 @@ export async function runAgentLoop(
         onTurnComplete?.(turn);
       } else {
         console.log(`[LOOP] Skipping empty turn — no thinking or tool calls (likely empty API response)`);
+      }
+
+      // ── Auto-remember: store a memory for every non-empty cycle ──
+      if (turn.thinking.trim() || turn.toolCalls.length > 0) {
+        try {
+          const toolNames = turn.toolCalls.map(tc => tc.name);
+          const hasErrors = turn.toolCalls.some(tc => !!tc.error);
+          const revenueTools = ["post_bluesky", "post_farcaster", "farcaster_engage", "generate_image"];
+          const isRevenue = toolNames.some(t => revenueTools.includes(t));
+
+          // Determine memory type and importance
+          let memType = "observation";
+          let memImportance = 0.4;
+          if (hasErrors) { memType = "error"; memImportance = 0.7; }
+          else if (isStrategicCycle) { memType = "strategy"; memImportance = 0.7; }
+          else if (isRevenue) { memType = "outcome"; memImportance = 0.6; }
+
+          // Build concise summary
+          const thinkSnippet = turn.thinking.trim().slice(0, 120);
+          const toolSummary = toolNames.length > 0 ? `Tools: ${toolNames.join(", ")}` : "No tools";
+          const errorBits = turn.toolCalls
+            .filter(tc => tc.error)
+            .map(tc => `${tc.name}: ${tc.error!.slice(0, 60)}`)
+            .join("; ");
+          const content = [
+            thinkSnippet,
+            toolSummary,
+            errorBits ? `Errors: ${errorBits}` : "",
+          ].filter(Boolean).join(" | ").slice(0, 300);
+
+          await memory.remember({
+            type: memType,
+            content,
+            importance: memImportance,
+            cycle: db.getTurnCount(),
+            metadata: { tools: toolNames, phase: burstPhase || 0 },
+          });
+        } catch {}
       }
 
       // ── Append to PROGRESS.md ──
