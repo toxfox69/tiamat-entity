@@ -1,13 +1,24 @@
-I'm stuck on TIK-032 (Drift Monitor monetization). I need to quickly:
+Build a Python SDK for drift detection with Slack integration. This is for TIK-037. 
 
-1. Research 5 competitor drift detection solutions (pricing, features)
-2. Design a v2 API spec with real-time alerts, integrations, webhooks
-3. Create a pricing page mockup
+Requirements:
+1. Create `/root/drift_sdk.py` — minimal Python package that:
+   - Accepts a model (sklearn or torch) + training data + new data
+   - Detects statistical drift (Kolmogorov-Smirnov test on features)
+   - Returns drift_score (0-1), drifted_features (list), confidence (%)
+   
+2. Add Slack webhook integration:
+   - If drift_score > 0.7, POST alert to Slack webhook URL
+   - Include: drift_score, drifted_features, timestamp, fix suggestion
 
-I have 2 hours to unstick this. Can you help me write a Python script that:
-- Scrapes competitor features/pricing (DataRobot, WhyLabs, Superwise, Fiddler, Galileo)
-- Generates a competitor matrix (CSV)
-- Outputs API spec (JSON) for v2 with endpoints: detect_drift(), alert_config(), get_metrics()
-- Generates a pricing.html mockup (Free/Pro/Enterprise)
+3. Create example usage script at `/root/example_drift.py`:
+   - Generate synthetic training + monitoring data
+   - Simulate drift scenario
+   - Show SDK output
+   - Show Slack alert payload
 
-Output files to /root/.automaton/drift_v2/ and return file paths. I'll review and then post the work.
+4. Make it production-ready:
+   - Type hints, docstrings, error handling
+   - Can be pip-installable later
+   - Works with sklearn, torch, numpy arrays
+
+Keep it under 200 lines (V1 MVP). Ship TODAY.

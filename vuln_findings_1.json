@@ -218,5 +218,68 @@
       "confidence": "low",
       "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
     }
+  },
+  {
+    "type": "stuck_trading_fees",
+    "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
+    "details": {
+      "eth_balance": 15.001234278783233,
+      "weth_balance": 0.0,
+      "total_value": 15.001234278783233,
+      "owner": null,
+      "owner_renounced": null,
+      "callable_functions": {
+        "0x3ccfd60b": "withdraw()",
+        "0x51cff8d9": "withdraw(address)",
+        "0x2e1a7d4d": "withdraw(uint256)",
+        "0xf2fde38b": "transferOwnership(address)",
+        "0x01681a62": "sweep(address)",
+        "0xe9fad8ee": "exit()",
+        "0x7b103999": "claimReward()",
+        "0x853828b6": "withdrawAll()"
+      },
+      "reason": "Contract holds ETH+WETH with 8 callable extraction path(s)"
+    },
+    "eth_value": 15.001234278783233,
+    "timestamp": "2026-02-24T04:56:40.307653+00:00",
+    "chain": "ethereum",
+    "chain_id": 1,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
+      "chain_id": 1,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": {
+        "creator": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
+        "tx_hash": "0xdc7d2f8b24fb1e1cbc0bb700e59a7bd23bc3dddb0472e402dc2fea01c3316da5"
+      },
+      "deployer_reputation": {
+        "deployer": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
+        "known_bad": false,
+        "suspicious": false,
+        "reason": ""
+      },
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    }
+  },
+  {
+    "type": "uninitialized_proxy",
+    "address": "0xB5ae36aDa806C3e6FAA9Ad6766e19Fa6932f0B20",
+    "details": {
+      "implementation": "0x136b95cfab2778c8016bb1785fd1ccc846da9570",
+      "reason": "initialize() is callable (did not revert)",
+      "eth_balance": 0.0,
+      "severity": "CRITICAL",
+      "note": "Proxy may be takeover-vulnerable via initialize(). Do NOT call \u2014 report via Immunefi."
+    },
+    "eth_value": 0.0,
+    "timestamp": "2026-02-24T13:58:24.686864+00:00",
+    "chain": "ethereum",
+    "chain_id": 1,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible."
   }
 ]

@@ -18,280 +18,6 @@
       "note": "skim() can claim excess tokens sent directly to pair"
     },
     "action": "skim",
-    "queued_at": 1771907603.669395,
-    "status": "pending"
-  },
-  {
-    "source": "skim_arbitrum",
-    "type": "skimmable_pair",
-    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
-    "eth_value": 0.0,
-    "chain_id": 42161,
-    "chain_name": "Arbitrum",
-    "details": {
-      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
-      "reserve0": "1",
-      "reserve1": "400000000000092145212",
-      "balance0": "1",
-      "balance1": "401000000000000000000",
-      "excess0": "0",
-      "excess1": "999999999907854788",
-      "note": "skim() can claim excess tokens sent directly to pair"
-    },
-    "action": "skim",
-    "queued_at": 1771908413.98667,
-    "status": "pending"
-  },
-  {
-    "source": "scanner_ethereum",
-    "type": "stuck_eth_no_owner",
-    "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
-    "eth_value": 15.001234278783233,
-    "chain_id": 1,
-    "chain_name": "Ethereum",
-    "details": {
-      "eth_balance": 15.001234278783233,
-      "reason": "Contract has ETH, no owner() function found"
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "etherscan": {
-      "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
-      "chain_id": 1,
-      "source_verified": false,
-      "source_analysis": null,
-      "creator": {
-        "creator": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
-        "tx_hash": "0xdc7d2f8b24fb1e1cbc0bb700e59a7bd23bc3dddb0472e402dc2fea01c3316da5"
-      },
-      "deployer_reputation": {
-        "deployer": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
-        "known_bad": false,
-        "suspicious": false,
-        "reason": ""
-      },
-      "abi_available": false,
-      "recommendation": "review",
-      "confidence": "low",
-      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
-    },
-    "queued_at": 1771908998.9223692,
-    "status": "pending"
-  },
-  {
-    "source": "scanner_ethereum",
-    "type": "proxy_dead_impl",
-    "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
-    "eth_value": 15.001234278783233,
-    "chain_id": 1,
-    "chain_name": "Ethereum",
-    "details": {
-      "implementation": "0x0000000000000000000000000000000000000000",
-      "reason": "Proxy points to zero/dead address",
-      "eth_balance": 15.001234278783233
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "etherscan": {
-      "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
-      "chain_id": 1,
-      "source_verified": false,
-      "source_analysis": null,
-      "creator": {
-        "creator": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
-        "tx_hash": "0xdc7d2f8b24fb1e1cbc0bb700e59a7bd23bc3dddb0472e402dc2fea01c3316da5"
-      },
-      "deployer_reputation": {
-        "deployer": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
-        "known_bad": false,
-        "suspicious": false,
-        "reason": ""
-      },
-      "abi_available": false,
-      "recommendation": "review",
-      "confidence": "low",
-      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
-    },
-    "queued_at": 1771908999.3889852,
-    "status": "pending"
-  },
-  {
-    "source": "scanner_ethereum",
-    "type": "stuck_trading_fees",
-    "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
-    "eth_value": 15.001234278783233,
-    "chain_id": 1,
-    "chain_name": "Ethereum",
-    "details": {
-      "eth_balance": 15.001234278783233,
-      "weth_balance": 0.0,
-      "total_value": 15.001234278783233,
-      "owner": null,
-      "owner_renounced": null,
-      "callable_functions": {
-        "0x3ccfd60b": "withdraw()",
-        "0x51cff8d9": "withdraw(address)",
-        "0x2e1a7d4d": "withdraw(uint256)",
-        "0xf2fde38b": "transferOwnership(address)",
-        "0x01681a62": "sweep(address)",
-        "0xe9fad8ee": "exit()",
-        "0x7b103999": "claimReward()",
-        "0x853828b6": "withdrawAll()"
-      },
-      "reason": "Contract holds ETH+WETH with 8 callable extraction path(s)"
-    },
-    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
-    "etherscan": {
-      "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
-      "chain_id": 1,
-      "source_verified": false,
-      "source_analysis": null,
-      "creator": {
-        "creator": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
-        "tx_hash": "0xdc7d2f8b24fb1e1cbc0bb700e59a7bd23bc3dddb0472e402dc2fea01c3316da5"
-      },
-      "deployer_reputation": {
-        "deployer": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
-        "known_bad": false,
-        "suspicious": false,
-        "reason": ""
-      },
-      "abi_available": false,
-      "recommendation": "review",
-      "confidence": "low",
-      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
-    },
-    "queued_at": 1771909000.7235894,
-    "status": "pending"
-  },
-  {
-    "source": "skim_arbitrum",
-    "type": "skimmable_pair",
-    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
-    "eth_value": 0.0,
-    "chain_id": 42161,
-    "chain_name": "Arbitrum",
-    "details": {
-      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
-      "reserve0": "1",
-      "reserve1": "400000000000092145212",
-      "balance0": "1",
-      "balance1": "401000000000000000000",
-      "excess0": "0",
-      "excess1": "999999999907854788",
-      "note": "skim() can claim excess tokens sent directly to pair"
-    },
-    "action": "skim",
-    "queued_at": 1771909242.353829,
-    "status": "pending"
-  },
-  {
-    "source": "skim_base",
-    "type": "skimmable_pair",
-    "address": "0xF97d62B558960Db312894f4913b8eFa5B4A92441",
-    "eth_value": 0.0,
-    "chain_id": 8453,
-    "chain_name": "Base",
-    "details": {
-      "token0": "0x4200000000000000000000000000000000000006",
-      "token1": "0xa0Cf660A1156184E42E1fD686259cC965B538BA3",
-      "reserve0": "1952198740248580792",
-      "reserve1": "695972056079041721042454304",
-      "balance0": "1952198740248580792",
-      "balance1": "709023873752398850647451058",
-      "excess0": "0",
-      "excess1": "13051817673357129604996754",
-      "note": "skim() can claim excess tokens sent directly to pair"
-    },
-    "action": "skim",
-    "queued_at": 1771909267.05183,
-    "status": "pending"
-  },
-  {
-    "source": "skim_arbitrum",
-    "type": "skimmable_pair",
-    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
-    "eth_value": 0.0,
-    "chain_id": 42161,
-    "chain_name": "Arbitrum",
-    "details": {
-      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
-      "reserve0": "1",
-      "reserve1": "400000000000092145212",
-      "balance0": "1",
-      "balance1": "401000000000000000000",
-      "excess0": "0",
-      "excess1": "999999999907854788",
-      "note": "skim() can claim excess tokens sent directly to pair"
-    },
-    "action": "skim",
-    "queued_at": 1771910057.1750326,
-    "status": "pending"
-  },
-  {
-    "source": "skim_arbitrum",
-    "type": "skimmable_pair",
-    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
-    "eth_value": 0.0,
-    "chain_id": 42161,
-    "chain_name": "Arbitrum",
-    "details": {
-      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
-      "reserve0": "1",
-      "reserve1": "400000000000092145212",
-      "balance0": "1",
-      "balance1": "401000000000000000000",
-      "excess0": "0",
-      "excess1": "999999999907854788",
-      "note": "skim() can claim excess tokens sent directly to pair"
-    },
-    "action": "skim",
-    "queued_at": 1771910883.5858245,
-    "status": "pending"
-  },
-  {
-    "source": "skim_base",
-    "type": "skimmable_pair",
-    "address": "0x324Fe0b1B39C30716A26631a026A56593295eC60",
-    "eth_value": 0.025504301860560054,
-    "chain_id": 8453,
-    "chain_name": "Base",
-    "details": {
-      "token0": "0x4200000000000000000000000000000000000006",
-      "token1": "0x8fD70146B59E509aEEb5265876F3889E02A5EB07",
-      "reserve0": "6639816034272007149",
-      "reserve1": "192364516247101188197664804",
-      "balance0": "6665320336132567202",
-      "balance1": "191636755768943805833775990",
-      "excess0": "25504301860560053",
-      "excess1": "-727760478157382363888814",
-      "note": "skim() can claim excess tokens sent directly to pair"
-    },
-    "action": "skim",
-    "queued_at": 1771911027.7846155,
-    "status": "pending"
-  },
-  {
-    "source": "skim_arbitrum",
-    "type": "skimmable_pair",
-    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
-    "eth_value": 0.0,
-    "chain_id": 42161,
-    "chain_name": "Arbitrum",
-    "details": {
-      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
-      "reserve0": "1",
-      "reserve1": "400000000000092145212",
-      "balance0": "1",
-      "balance1": "401000000000000000000",
-      "excess0": "0",
-      "excess1": "999999999907854788",
-      "note": "skim() can claim excess tokens sent directly to pair"
-    },
-    "action": "skim",
     "queued_at": 1771911717.333633,
     "status": "pending"
   },
@@ -1175,6 +901,250 @@
     },
     "action": "skim",
     "queued_at": 1771936981.6745527,
+    "status": "pending"
+  },
+  {
+    "source": "scanner_base",
+    "type": "proxy_dead_impl",
+    "address": "0x45D9a0297418132974Fb5e85dB6ab06Df1D2AdAE",
+    "eth_value": 0.01,
+    "chain_id": 8453,
+    "chain_name": "Base",
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 0.01
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x45D9a0297418132974Fb5e85dB6ab06Df1D2AdAE",
+      "chain_id": 8453,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": null,
+      "deployer_reputation": null,
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    },
+    "queued_at": 1771938085.4704542,
+    "status": "pending"
+  },
+  {
+    "source": "skim_arbitrum",
+    "type": "skimmable_pair",
+    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
+    "eth_value": 0.0,
+    "chain_id": 42161,
+    "chain_name": "Arbitrum",
+    "details": {
+      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
+      "reserve0": "1",
+      "reserve1": "400000000000092145212",
+      "balance0": "1",
+      "balance1": "401000000000000000000",
+      "excess0": "0",
+      "excess1": "999999999907854788",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "action": "skim",
+    "queued_at": 1771938094.1463807,
+    "status": "pending"
+  },
+  {
+    "source": "scanner_base",
+    "type": "proxy_dead_impl",
+    "address": "0x60A6BCFc2F612684D40ABbE819D8839cf07aE6c4",
+    "eth_value": 1.0,
+    "chain_id": 8453,
+    "chain_name": "Base",
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 1.0
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x60A6BCFc2F612684D40ABbE819D8839cf07aE6c4",
+      "chain_id": 8453,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": null,
+      "deployer_reputation": null,
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    },
+    "queued_at": 1771938156.0993428,
+    "status": "pending"
+  },
+  {
+    "source": "skim_arbitrum",
+    "type": "skimmable_pair",
+    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
+    "eth_value": 0.0,
+    "chain_id": 42161,
+    "chain_name": "Arbitrum",
+    "details": {
+      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
+      "reserve0": "1",
+      "reserve1": "400000000000092145212",
+      "balance0": "1",
+      "balance1": "401000000000000000000",
+      "excess0": "0",
+      "excess1": "999999999907854788",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "action": "skim",
+    "queued_at": 1771938925.5200527,
+    "status": "pending"
+  },
+  {
+    "source": "skim_arbitrum",
+    "type": "skimmable_pair",
+    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
+    "eth_value": 0.0,
+    "chain_id": 42161,
+    "chain_name": "Arbitrum",
+    "details": {
+      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
+      "reserve0": "1",
+      "reserve1": "400000000000092145212",
+      "balance0": "1",
+      "balance1": "401000000000000000000",
+      "excess0": "0",
+      "excess1": "999999999907854788",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "action": "skim",
+    "queued_at": 1771939768.1479375,
+    "status": "pending"
+  },
+  {
+    "source": "skim_arbitrum",
+    "type": "skimmable_pair",
+    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
+    "eth_value": 0.0,
+    "chain_id": 42161,
+    "chain_name": "Arbitrum",
+    "details": {
+      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
+      "reserve0": "1",
+      "reserve1": "400000000000092145212",
+      "balance0": "1",
+      "balance1": "401000000000000000000",
+      "excess0": "0",
+      "excess1": "999999999907854788",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "action": "skim",
+    "queued_at": 1771940599.6316526,
+    "status": "pending"
+  },
+  {
+    "source": "scanner_base",
+    "type": "proxy_dead_impl",
+    "address": "0x49B939efA135e9750F67cC962028d1aDCd23AE1F",
+    "eth_value": 0.01,
+    "chain_id": 8453,
+    "chain_name": "Base",
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 0.01
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x49B939efA135e9750F67cC962028d1aDCd23AE1F",
+      "chain_id": 8453,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": null,
+      "deployer_reputation": null,
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    },
+    "queued_at": 1771940953.467468,
+    "status": "pending"
+  },
+  {
+    "source": "skim_arbitrum",
+    "type": "skimmable_pair",
+    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
+    "eth_value": 0.0,
+    "chain_id": 42161,
+    "chain_name": "Arbitrum",
+    "details": {
+      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
+      "reserve0": "1",
+      "reserve1": "400000000000092145212",
+      "balance0": "1",
+      "balance1": "401000000000000000000",
+      "excess0": "0",
+      "excess1": "999999999907854788",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "action": "skim",
+    "queued_at": 1771941430.845714,
+    "status": "pending"
+  },
+  {
+    "source": "scanner_base",
+    "type": "proxy_dead_impl",
+    "address": "0xA46C2006e296d555887B920Cc3350033327AAD6B",
+    "eth_value": 0.01,
+    "chain_id": 8453,
+    "chain_name": "Base",
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 0.01
+    },
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0xA46C2006e296d555887B920Cc3350033327AAD6B",
+      "chain_id": 8453,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": null,
+      "deployer_reputation": null,
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    },
+    "queued_at": 1771941852.779921,
+    "status": "pending"
+  },
+  {
+    "source": "skim_arbitrum",
+    "type": "skimmable_pair",
+    "address": "0x31a28685423E8d23dE5398f2dA5a6e2Ea47190F5",
+    "eth_value": 0.0,
+    "chain_id": 42161,
+    "chain_name": "Arbitrum",
+    "details": {
+      "token0": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      "token1": "0xE921401D18Ed1EA4d64169D1576c32F9a7439694",
+      "reserve0": "1",
+      "reserve1": "400000000000092145212",
+      "balance0": "1",
+      "balance1": "401000000000000000000",
+      "excess0": "0",
+      "excess1": "999999999907854788",
+      "note": "skim() can claim excess tokens sent directly to pair"
+    },
+    "action": "skim",
+    "queued_at": 1771942259.1565764,
     "status": "pending"
   }
 ]
