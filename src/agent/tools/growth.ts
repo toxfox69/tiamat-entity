@@ -163,10 +163,11 @@ export function checkBehavioralLoop(
   // Only flag them at a much higher threshold to avoid false positives.
   const NORMAL_TOOLS = new Set([
     "exec", "read_file", "write_file", "search_web", "web_fetch",
+    "browse", "browse_web", "ask_claude_code", "ask_claude_chat",
     "send_telegram", "post_bluesky", "post_social", "post_farcaster",
     "grow", "remember", "recall", "reflect",
     "ticket_list", "ticket_claim", "ticket_complete",
-    "check_revenue", "read_farcaster", "browse_web",
+    "check_revenue", "read_farcaster",
   ]);
   const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
 
