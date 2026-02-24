@@ -1973,6 +1973,150 @@ a{{color:#ff6b35;text-decoration:none}}
 </body></html>"""
     return html, 200, {"Content-Type": "text/html"}
 
+# ── Pacer Dashboard ────────────────────────────────────────────
+
+def _load_pacer():
+    import json as _json
+    try:
+        with open("/root/.automaton/pacer.json", "r") as f:
+            return _json.load(f)
+    except Exception:
+        return {"last_20_cycles": [], "productivity_rate": 0.5, "current_pace": "active",
+                "current_interval_seconds": 60, "claude_code_uses_since_last": 0,
+                "claude_code_budget_cycles": 10, "total_pace_changes": 0}
+
+def _load_crontasks():
+    import json as _json
+    try:
+        with open("/root/.automaton/crontasks.json", "r") as f:
+            return _json.load(f)
+    except Exception:
+        return {"tasks": []}
+
+@app.route("/pacer/json", methods=["GET"])
+def pacer_json():
+    return jsonify({"pacer": _load_pacer(), "cron": _load_crontasks()})
+
+@app.route("/pacer", methods=["GET"])
+def pacer_dashboard():
+    """TIAMAT's adaptive pacer — metabolism dashboard."""
+    import json as _json
+    pacer = _load_pacer()
+    cron = _load_crontasks()
+
+    accept = request.headers.get("Accept", "")
+    if "application/json" in accept:
+        return jsonify({"pacer": pacer, "cron": cron})
+
+    pace = pacer.get("current_pace", "active")
+    interval = pacer.get("current_interval_seconds", 60)
+    rate = pacer.get("productivity_rate", 0.5)
+    cycles = pacer.get("last_20_cycles", [])
+    cc_budget = pacer.get("claude_code_budget_cycles", 10)
+    cc_since = pacer.get("claude_code_uses_since_last", 0)
+    cc_remaining = max(0, cc_budget - cc_since)
+    total_changes = pacer.get("total_pace_changes", 0)
+    last_change = pacer.get("last_pace_change", None)
+
+    # Sparkline — unicode block chars
+    sparkline_chars = []
+    for c in cycles[-20:]:
+        sparkline_chars.append("█" if c.get("productive") else "░")
+    sparkline = "".join(sparkline_chars) if sparkline_chars else "no data"
+
+    pace_colors = {"sprint": "#00ff88", "active": "#4ecdc4", "idle": "#ff9f43", "reflect": "#ff6b6b"}
+    pace_color = pace_colors.get(pace, "#4ecdc4")
+    prod_pct = int(rate * 100)
+    productive_count = sum(1 for c in cycles if c.get("productive"))
+
+    # Cron tasks HTML
+    cron_tasks = cron.get("tasks", [])
+    cron_html = ""
+    if cron_tasks:
+        rows = ""
+        for t in cron_tasks:
+            status = "✓" if t.get("enabled") else "✗"
+            last_run = (t.get("last_run_time") or "never")[:19]
+            result_preview = (t.get("last_result") or "—")[:80]
+            rows += f"""<tr>
+                <td>{status}</td>
+                <td style="color:#4ecdc4">{t.get("id","")}</td>
+                <td>{t.get("name","")}</td>
+                <td>every {t.get("schedule_value","")} {t.get("schedule_type","")}</td>
+                <td>{last_run}</td>
+                <td style="font-size:0.75rem">{result_preview}</td>
+            </tr>"""
+        cron_html = f"""<h2>Auto-Cron Tasks ({len(cron_tasks)})</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+        <tr style="border-bottom:1px solid #2a2a3e;color:#666">
+            <th></th><th>ID</th><th>Name</th><th>Schedule</th><th>Last Run</th><th>Result</th></tr>
+        {rows}</table>"""
+    else:
+        cron_html = '<h2>Auto-Cron Tasks</h2><p style="color:#666">No cron tasks scheduled yet.</p>'
+
+    # Recent cycles table
+    cycles_html = ""
+    for c in reversed(cycles[-20:]):
+        prod_tag = '<span style="color:#00ff88">✓</span>' if c.get("productive") else '<span style="color:#ff6b6b">✗</span>'
+        actions = ", ".join(c.get("actions", [])[:5]) or "none"
+        cost_str = f"${c.get('cost', 0):.4f}"
+        cycles_html += f'<div class="entry">{prod_tag} <span class="cycle">cycle {c.get("cycle",0)}</span> {actions} <span style="color:#666;float:right">{cost_str}</span></div>'
+
+    html = f"""<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIAMAT — Pacer</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#0a0a0f;color:#c8c8d0;font-family:'JetBrains Mono',monospace;padding:2rem;max-width:900px;margin:0 auto}}
+h1{{color:#ff6b35;font-size:1.8rem;margin-bottom:0.5rem}}
+h2{{color:#4ecdc4;font-size:1.1rem;margin:1.5rem 0 0.5rem;border-bottom:1px solid #1a1a2e;padding-bottom:0.3rem}}
+.pace-box{{background:#1a1a2e;border:2px solid {pace_color};border-radius:8px;padding:1.5rem;margin:1rem 0;text-align:center}}
+.pace-tier{{font-size:2.5rem;font-weight:bold;color:{pace_color};text-transform:uppercase;letter-spacing:0.3rem}}
+.pace-interval{{color:#8888aa;margin-top:0.5rem;font-size:1.1rem}}
+.stats{{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.8rem;margin:1rem 0}}
+.stat{{background:#12121a;border:1px solid #2a2a3e;border-radius:6px;padding:0.8rem;text-align:center}}
+.stat-val{{color:#4ecdc4;font-size:1.4rem;font-weight:bold}}
+.stat-label{{color:#666;font-size:0.75rem;margin-top:0.2rem}}
+.sparkline{{font-family:monospace;font-size:1.5rem;letter-spacing:2px;color:{pace_color};margin:0.5rem 0}}
+.entry{{background:#12121a;border-left:3px solid #2a2a3e;padding:0.6rem 0.8rem;margin:0.4rem 0;font-size:0.85rem;line-height:1.4}}
+.entry:hover{{border-left-color:#4ecdc4}}
+.cycle{{color:#ff6b35;font-size:0.75rem;margin-right:0.5rem}}
+table td,table th{{padding:0.4rem 0.6rem;text-align:left;border-bottom:1px solid #1a1a2e}}
+a{{color:#ff6b35;text-decoration:none}}
+</style>
+<meta http-equiv="refresh" content="30">
+</head><body>
+<h1>TIAMAT — Adaptive Pacer</h1>
+<p style="color:#666;font-size:0.8rem">Metabolism. Productivity. Self-regulation.</p>
+
+<div class="pace-box">
+  <div class="pace-tier">{pace}</div>
+  <div class="pace-interval">{interval}s between cycles</div>
+  <div class="sparkline">{sparkline}</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-val">{prod_pct}%</div><div class="stat-label">Productivity</div></div>
+  <div class="stat"><div class="stat-val">{productive_count}/{len(cycles)}</div><div class="stat-label">Productive / Total</div></div>
+  <div class="stat"><div class="stat-val">{cc_remaining}</div><div class="stat-label">CC Budget (cycles left)</div></div>
+  <div class="stat"><div class="stat-val">{total_changes}</div><div class="stat-label">Pace Changes</div></div>
+  <div class="stat"><div class="stat-val">{interval}s</div><div class="stat-label">Current Interval</div></div>
+  <div class="stat"><div class="stat-val">1/{cc_budget}</div><div class="stat-label">CC Rate</div></div>
+</div>
+
+{cron_html}
+
+<h2>Recent Cycles (last 20)</h2>
+{cycles_html or '<p style="color:#666">No cycle data yet.</p>'}
+
+<p style="color:#333;font-size:0.7rem;margin-top:2rem;text-align:center">
+  <a href="/">tiamat.live</a> | <a href="/pacer/json">JSON</a> | <a href="/growth">Growth</a> | Auto-refreshes every 30s
+</p>
+</body></html>"""
+    return html, 200, {"Content-Type": "text/html"}
+
+
 # ── Drift Monitor Blueprint ────────────────────────────────────
 try:
     from drift_api import drift_bp

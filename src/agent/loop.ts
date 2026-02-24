@@ -36,6 +36,7 @@ import {
 import { getSurvivalTier } from "../conway/credits.js";
 import { getUsdcBalance } from "../conway/x402.js";
 import { checkBehavioralLoop } from "./tools/growth.js";
+import { updatePacer, checkCronTasks, loadPacer, type PacerUpdate } from "./pacer.js";
 import { ulid } from "ulid";
 
 const MAX_TOOL_CALLS_PER_TURN = 10;
@@ -615,6 +616,18 @@ export async function runAgentLoop(
         strategicSystemPrompt += `\n\n[LOOP WARNING]\n${pendingLoopWarning}`;
       }
 
+      // Inject pacer state so TIAMAT knows her pace tier and Claude Code budget
+      try {
+        const pacerState = loadPacer();
+        const ccBudget = pacerState.claude_code_budget_cycles;
+        const ccSinceLast = pacerState.claude_code_uses_since_last;
+        const ccAllowed = ccSinceLast >= ccBudget;
+        strategicSystemPrompt += `\n\n[PACER] pace:${pacerState.current_pace} interval:${pacerState.current_interval_seconds}s productivity:${pacerState.productivity_rate.toFixed(2)} claude_code:${ccAllowed ? "ALLOWED" : `wait ${ccBudget - ccSinceLast} more cycles`}`;
+        if (pacerState.current_pace === "reflect") {
+          strategicSystemPrompt += `\n⚠️ REFLECT MODE: You are stuck. Call introspect() and ticket_list() this cycle. Try a completely different approach.`;
+        }
+      } catch {}
+
       const messages = buildContextMessages(
         strategicSystemPrompt,
         recentTurns,
@@ -800,37 +813,64 @@ export async function runAgentLoop(
         }
       }
 
-      // ── Optimization 5: Adaptive cycle pacing ──
-      // Reduce frequency when TIAMAT is idle; accelerate when active.
-      // Baseline: 90s. Idle backoff caps at 180s. Burst: 5s.
+      // ── Adaptive Pacer: dynamic cycle pacing based on productivity ──
       {
-        const SIGNIFICANT_TOOLS = new Set([
-          "ask_claude_code", "post_bluesky", "post_instagram", "post_facebook",
-          "generate_image", "deploy_app", "exec", "search_web", "web_fetch",
-          "self_improve", "spawn_child", "remember", "learn_fact",
-          "grow", "introspect", "evolve_era",
-        ]);
-        const toolNames   = turn.toolCalls.map(tc => tc.name);
-        const toolsUsed   = turn.toolCalls.length;
-        const hadSignificantAction = toolNames.some(n => SIGNIFICANT_TOOLS.has(n));
+        const toolNames = turn.toolCalls.map(tc => tc.name);
+        const cycleCost = estimateCostCents(turn.tokenUsage, inference.getDefaultModel()) / 100;
 
-        if (toolsUsed === 0 || (!hadSignificantAction && consecutiveIdleCycles > 3)) {
-          // Back off — nothing meaningful happened (cap 180s)
-          cycleDelay = Math.min(Math.round(cycleDelay * 1.3), 180_000);
+        // Update pacer with this cycle's data
+        const pacerResult: PacerUpdate = updatePacer(turnCount, toolNames, cycleCost);
+
+        // Track idle streaks for consolidation sleep
+        if (pacerResult.pace === "idle" || pacerResult.pace === "reflect") {
           consecutiveIdleCycles++;
         } else {
-          // Active turn — reset to baseline
-          cycleDelay = 90_000;
           consecutiveIdleCycles = 0;
+        }
+
+        // Log pace tier changes to growth system
+        if (pacerResult.pace_changed && pacerResult.previous_pace) {
+          try {
+            const growthTools = tools.find(t => t.name === "grow");
+            if (growthTools) {
+              const rate = (pacerResult.productivity_rate * 100).toFixed(0);
+              if (pacerResult.pace === "sprint" || pacerResult.pace === "active") {
+                await growthTools.execute(
+                  { category: "milestone", entry: `Entered ${pacerResult.pace} mode — productivity at ${rate}%` },
+                  toolContext,
+                );
+              } else {
+                await growthTools.execute(
+                  { category: "lesson", entry: `Dropped to ${pacerResult.pace} mode from ${pacerResult.previous_pace} — productivity at ${rate}%` },
+                  toolContext,
+                );
+              }
+            }
+          } catch {}
+        }
+
+        // Run auto-cron tasks
+        try {
+          const cronResults = checkCronTasks(turnCount);
+          for (const cr of cronResults) {
+            if (cr.output) {
+              log(config, `[CRON] ${cr.name}: ${cr.output.slice(0, 150)}`);
+            } else if (cr.error) {
+              log(config, `[CRON] ${cr.name} ERROR: ${cr.error.slice(0, 150)}`);
+            }
+          }
+        } catch (e: any) {
+          console.log(`[CRON] Error: ${e.message?.slice(0, 100)}`);
         }
 
         // Skip delay between burst cycles to keep Anthropic cache warm (5-min TTL)
         if (burstRemaining > 0) {
-          cycleDelay = 5_000; // 5s — just enough for API cooldown
+          cycleDelay = 5_000;
           console.log(`[LOOP] Burst continues (${burstRemaining} remaining) — skipping delay.`);
           await new Promise(resolve => setTimeout(resolve, cycleDelay));
         } else {
-          console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (idle_streak:${consecutiveIdleCycles}).`);
+          cycleDelay = pacerResult.interval_ms;
+          console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (pace:${pacerResult.pace}, prod:${pacerResult.productivity_rate.toFixed(2)}).`);
           await runCooldownTasks(turnCount, cycleDelay, config);
         }
       }

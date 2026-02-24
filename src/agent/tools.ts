@@ -3725,6 +3725,94 @@ print(f"Sent {mid}")
         return 'Invalid action. Use: add, list, remove';
       },
     },
+    // ─── Auto-Cron Task Manager ─────────────────────────────────
+    {
+      name: "cron_create",
+      description: "Schedule a recurring task that runs automatically. Schedule: 'every N cycles' or 'every N minutes'. Must have a ticket first — pass the ticket ID. Commands run in /root with 30s timeout.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Short task name (e.g., 'check_drift_traffic')" },
+          command: { type: "string", description: "Shell command to run (e.g., 'wc -l /root/drift_requests.log')" },
+          schedule_type: { type: "string", enum: ["cycles", "minutes"], description: "Schedule unit" },
+          schedule_value: { type: "number", description: "How often to run (e.g., 50 for 'every 50 cycles')" },
+          ticket_id: { type: "string", description: "Ticket ID this cron was created for (required for tracking)" },
+        },
+        required: ["name", "command", "schedule_type", "schedule_value"],
+      },
+      execute: async (args: any) => {
+        const { loadCronTasks, saveCronTasks } = await import("./pacer.js");
+        const state = loadCronTasks();
+
+        if (state.tasks.length >= 30) return "Error: max 30 cron tasks. Remove some first.";
+        if (state.tasks.some(t => t.name === args.name)) return `Error: cron "${args.name}" already exists.`;
+
+        // Basic command safety — block dangerous patterns
+        const cmd = args.command as string;
+        const blocked = /rm\s+-rf|mkfs|dd\s+if=|>\s*\/dev|shutdown|reboot|kill\s+-9\s+1\b/i;
+        if (blocked.test(cmd)) return "Error: command contains blocked pattern.";
+
+        const id = `cron-${String(state.tasks.length + 1).padStart(3, "0")}`;
+        state.tasks.push({
+          id,
+          name: args.name,
+          command: cmd,
+          schedule_type: args.schedule_type,
+          schedule_value: args.schedule_value,
+          last_run_cycle: null,
+          last_run_time: null,
+          last_result: null,
+          created_by_ticket: args.ticket_id || null,
+          enabled: true,
+          created_at: new Date().toISOString(),
+        });
+
+        saveCronTasks(state);
+        return `✓ Cron task "${args.name}" (${id}) scheduled: every ${args.schedule_value} ${args.schedule_type}. Command: ${cmd}`;
+      },
+    },
+    {
+      name: "cron_list",
+      description: "List all auto-cron tasks with their last results and schedules.",
+      category: "cognitive",
+      parameters: { type: "object", properties: {} },
+      execute: async () => {
+        const { loadCronTasks } = await import("./pacer.js");
+        const state = loadCronTasks();
+        if (state.tasks.length === 0) return "No auto-cron tasks scheduled.";
+
+        return state.tasks.map(t =>
+          `${t.enabled ? "✓" : "✗"} ${t.id} "${t.name}" — every ${t.schedule_value} ${t.schedule_type}\n` +
+          `  cmd: ${t.command}\n` +
+          `  last: ${t.last_run_time || "never"} (cycle ${t.last_run_cycle ?? "—"})` +
+          (t.last_result ? `\n  result: ${t.last_result.slice(0, 120)}` : "") +
+          (t.created_by_ticket ? `\n  ticket: ${t.created_by_ticket}` : "")
+        ).join("\n\n");
+      },
+    },
+    {
+      name: "cron_remove",
+      description: "Remove an auto-cron task by name or ID.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Task name or ID to remove" },
+        },
+        required: ["name"],
+      },
+      execute: async (args: any) => {
+        const { loadCronTasks, saveCronTasks } = await import("./pacer.js");
+        const state = loadCronTasks();
+        const idx = state.tasks.findIndex(t => t.name === args.name || t.id === args.name);
+        if (idx === -1) return `Cron task "${args.name}" not found.`;
+        const removed = state.tasks.splice(idx, 1)[0];
+        saveCronTasks(state);
+        return `✓ Removed cron task "${removed.name}" (${removed.id}). ${state.tasks.length} remaining.`;
+      },
+    },
+
     // ── Android App Build & Deploy ──
     {
       name: "build_and_deploy_app",
