@@ -1,1 +1,18 @@
-Build Drift v2 MVP with: 1) Python SDK with KS test drift detection, 2) Flask server with /log_prediction, /webhook/setup endpoints, 3) Slack OAuth integration, 4) Redis free/pro routing, 5) Webhook event sending. Write to /root/.automaton/drift_v2_server.py and /root/.automaton/drift_sdk.py. Include test file.
+Build Drift v2 MVP: Create a Python SDK + Flask server with Slack integration for drift detection. 
+
+Step 1: Write /root/.automaton/drift_v2_sdk.py - Python SDK with:
+- log_prediction(model_id, features, prediction, ground_truth, api_key) function
+- Auto-detect drift via Kolmogorov-Smirnov test
+- Cache predictions in memory (dict)
+
+Step 2: Write /root/.automaton/drift_v2_server.py - Flask server with:
+- POST /drift/log endpoint accepting {model_id, features, prediction, ground_truth, api_key}
+- GET /drift/status/{api_key} endpoint showing recent drifts
+- Slack webhook integration (POST to customer Slack)
+- Free/Pro routing: redis key = api_key, track free_models count, reject 11th model
+
+Step 3: Write /root/.automaton/drift_v2_requirements.txt - pip dependencies
+
+Step 4: Create a test script to verify it works
+
+Then run the server on port 9000 and test it. Include rebuild instruction.
