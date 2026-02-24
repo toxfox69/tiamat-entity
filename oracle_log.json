@@ -1,77 +1,5 @@
 [
   {
-    "timestamp": "2026-02-23T19:15:50.984192+00:00",
-    "mode": "tool_design",
-    "question": "Design a tool called \"conversion_tracker\" that can analyze the current conversion rates of TIAMAT's services to identify blockers and opportunities for improvement. \n\nThe conversion_tracker tool should take the following inputs:\n\n- A list of past API calls (e.g., from the memory.tiamat.live logs)\n- A list of successful paid conversions (e.g., from the USDC balance)\n- A list of failed conversions (e.g., from the USDC balance)\n\nThe conversion_tracker tool should return the following outputs:\n\n- A ",
-    "engine": "groq-llama-70b",
-    "response_len": 3992,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:17:24.292434+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the recurring \"Rate limit reached\" error experienced by the farcaster_engage process, and what specific adjustments can be made to the model usage and requests to avoid exceeding the rate limit, as seen in the following error message:\n\n{\"error\":{\"message\":\"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01k`, please try again after 60 seconds\"}}",
-    "engine": "groq-llama-70b",
-    "response_len": 2483,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:18:56.533172+00:00",
-    "mode": "code_review",
-    "question": "What are the 3 most frequently used methods in the `auto_executor.py` file, and how do they handle potential errors or edge cases when interacting with other modules, such as `agent_ipc.py` or `base_scanner.py`, given its 1188 exec calls and potential impact on the overall system's reliability?",
-    "engine": "groq-llama-70b",
-    "response_len": 3523,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:20:35.707953+00:00",
-    "mode": "strategy",
-    "question": "What are the top three (3) most popular, high-paying agent directories that TIAMAT can register on, in order to maximize her chances of GETTING LISTED, and subsequently earning REAL revenue, given her current limitations in automating login-based registration processes?",
-    "engine": "groq-llama-70b",
-    "response_len": 2332,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:22:01.838585+00:00",
-    "mode": "tool_design",
-    "question": "Design a browser extension (Tool: \"navigate_login_required\") that enables TIAMAT to programmatically navigate and interact with websites that require user authentication, while adhering to the constraints of not attempting to automate login processes via the existing \"browse_web\" tool. The extension should:\n\n1. Identify and extract login forms on a given webpage, and return a list of form fields and their respective types (e.g., text, password, checkbox, etc.) as a JSON object.\n2. Allow TIAMAT t",
-    "engine": "groq-llama-70b",
-    "response_len": 4587,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:23:47.054354+00:00",
-    "mode": "debug",
-    "question": "Why do the recursive_learn and recursive_think processes consistently timeout, resulting in the COOLDOWN message, and what are the underlying causes of these timeouts, particularly considering the recent execution log entries where the tx sent value is reported as 0?",
-    "engine": "groq-llama-70b",
-    "response_len": 2334,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:25:19.518006+00:00",
-    "mode": "code_review",
-    "question": "What are the specific edge cases and input validation checks implemented in the `web_fetch` module (located at `agent_ipc.py`), given its high usage count of 101 calls, and how can these checks be improved or added to prevent potential errors and improve overall reliability?",
-    "engine": "groq-llama-70b",
-    "response_len": 2823,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-23T19:26:43.610556+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal sequence of directories and platforms for TIAMAT to register on, given the constraints of requiring manual login for aiagentsdirectory.com and the need to balance the trade-off between ease of registration and access to potential users, such that the first 5 registered directories yield at least 10% of the total registered users across all platforms?",
-    "engine": "groq-llama-70b",
-    "response_len": 1850,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-23T19:28:18.947428+00:00",
     "mode": "tool_design",
     "question": "Design a proprietary, web-based tool called \"Discovery Explorer\" that integrates with existing tools (e.g., browse_web, search_web, fetch_llm_docs) to identify and categorize novel, untapped problem domains within a given knowledge graph, returning a list of top 10 unexplored areas along with relevant keywords, related agents, and a heatmap of potential revenue streams. The tool should be able to scan the web, GitHub, and social media platforms (e.g., Farcaster, Bluesky) to gather information on",
@@ -896,6 +824,78 @@
     "question": "What is the average number of tokens used by TIAMAT's recent turns in the \"BUILD\" phase, and how does this compare to the average tokens used in the \"OBSERVE\" phase, considering only turns that utilized the \"claude-haiku-4-5-20251001\" model, and identify any potential areas for optimization in the model's performance or the workflow between phases?",
     "engine": "groq-llama-70b",
     "response_len": 2396,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:02:07.691731+00:00",
+    "mode": "tool_design",
+    "question": "What is a novel tool design, named \"scanner_crawler\", that integrates with existing \"scanner\" and \"browse_web\" tools to automatically submit high-value findings from aiagentsdirectory.com to Farcaster, without requiring login credentials, and includes the following parameters:\n\n- Parameters: \n  - Input: Scanner queue items flagged as high-value findings\n  - Output: A list of unique submissions to Farcaster, each with a timestamp and a unique identifier\n  - Return types: JSON object with submissi",
+    "engine": "groq-llama-70b",
+    "response_len": 2389,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:03:44.214222+00:00",
+    "mode": "debug",
+    "question": "What are the top 3 recurring patterns or error types that led to the timeout in the \"dynamic:recursive_learn\" and \"dynamic:process_agent_replies\" execution logs, and what are the most common tools or functions that were being used when these timeouts occurred?",
+    "engine": "groq-llama-70b",
+    "response_len": 2707,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:05:13.512353+00:00",
+    "mode": "code_review",
+    "question": "What are the potential security risks and inefficiencies associated with the use of the \"read_file\" tool in auto_executor.py, given its 18330B size, 192 write_file calls, and the fact that it was only modified in the last 6 turns, resulting in changes that increased its token usage by 11.3% (315/2821)?",
+    "engine": "groq-llama-70b",
+    "response_len": 2314,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:06:48.792934+00:00",
+    "mode": "strategy",
+    "question": "What are the top 3 most frequently used tools by TIAMAT over the past 3 cycles, and how can we optimize their usage to reduce the overall token expenditure, while maintaining or improving the quality of output?",
+    "engine": "groq-llama-70b",
+    "response_len": 2521,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:09:07.432971+00:00",
+    "mode": "tool_design",
+    "question": "What is a tool design for \"AI Researcher Outreach\" that would allow TIAMAT to interact with and submit research topics to arXiv, including:\n\n1. Retrieval of arXiv categories and research areas from their API, with parameters:\n   - API endpoint: `https://arxiv.org/archive/${year}/${quarter}/${month}/${day}`\n   - API key or authentication method: unknown, investigate and propose a solution\n   - Response type: list of categories, including paper titles, authors, and abstracts\n\n2. Submission of rese",
+    "engine": "groq-llama-70b",
+    "response_len": 3641,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:10:29.282012+00:00",
+    "mode": "debug",
+    "question": "What is the average execution time for the dynamic:recursive_learn process across the past 24 hours, and how does this value compare to the process's designated timeout of 55 seconds?",
+    "engine": "groq-llama-70b",
+    "response_len": 1933,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:13:39.496792+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal threshold for the 'scanner' alert system to trigger a send_telegram notification to the creator when a potential opportunity (> 0.1 ETH) is detected, taking into account the trade-off between minimizing false positives and maximizing timely alerts?",
+    "engine": "groq-llama-70b",
+    "response_len": 2557,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-24T02:15:04.925746+00:00",
+    "mode": "tool_design",
+    "question": "What is an automated tool design to extract, filter, and prioritize potential AI researcher collaborators from publicly available online databases and profiles, specifically tailored to facilitate high-quality researcher outreach for TIAMAT, with the following parameters:\n\n* Input: \n  - publicly available online databases (e.g., AIAgentsDirectory.com, dblp.org, SemanticScholar.org)\n  - researcher profiles (e.g., GitHub, ResearchGate, Academia.edu)\n* Output:\n  - A prioritized list of researcher p",
+    "engine": "groq-llama-70b",
+    "response_len": 3437,
     "error": null,
     "from_cache": false
   }
