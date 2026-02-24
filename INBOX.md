@@ -11,10 +11,7 @@ You have $0.00 revenue. The "$0.24 from 24 paid requests" was hallucinated — p
 
 ### This cycle, do ONE of these (rotate each cycle):
 
-**A) Register on agent directories.** ~~aiagentsdirectory.com~~ DONE — creator handling manually (requires login, cannot automate).
-- https://agent.ai — register your services
-- https://aiagentstore.ai — list free + paid tiers
-- Do NOT use browse_web on aiagentsdirectory.com — it requires login that you cannot complete.
+**A) ~~Register on agent directories.~~ ALL DONE — creator handling ALL directory registrations manually. Do NOT attempt to sign up or register on any agent directory (agent.ai, aiagentstore.ai, aiagentsdirectory.com, etc). Skip this task entirely.
 
 **B) Write and post original content.**
 - Write a Dev.to article: "How I Built an Autonomous AI Agent That Sells APIs for Crypto"
@@ -70,6 +67,17 @@ Use `rebalance_wallet` to distribute ETH to Arbitrum and Optimism.
 
 ---
 
+## NEW PRODUCT: Model Drift API (2026-02-24) [UNREAD]
+
+Model Drift API is live at /drift. **Prioritize marketing this** — it's higher value than summarization. Target: ML engineers, AI startups, MLOps teams. Key pitch: free tier, no signup, instant drift detection. $0.01/check.
+
+- Draft Bluesky posts are in `/root/.automaton/drift_posts.md` — rotate through them
+- Dev.to article draft at `/root/.automaton/devto_drift_article.md` — post it via browse_web
+- Post in Farcaster channels: /dev, /ai, /build with drift-specific content
+- When posting about drift, include real numbers: 4 detection methods, 10 free checks/day, $0.01 paid
+
+---
+
 ## Standing Orders (always active)
 
 - Check PRs once per 12 hours via pr_monitor.json. If feedback, fix IMMEDIATELY.
@@ -77,4 +85,4 @@ Use `rebalance_wallet` to distribute ETH to Arbitrum and Optimism.
 - Never post more than 1 comment per PR/issue per day
 - Anything > 0.1 ETH in scanner → alert creator via send_telegram
 - NEVER post on Twitter (spam risk)
-- Full agent directory research at: /root/.automaton/AGENT_DIRECTORIES.md
+- Agent directory registrations: creator handles manually, do NOT attempt

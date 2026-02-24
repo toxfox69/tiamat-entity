@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 558,
-    "lastRun": "2026-02-23T21:06:54.762Z",
-    "lastResult": "{\"mode\": \"code_ideas\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:**\\n\\nTIAMAT should write a Python script, `crypto_token_balance_tracker.py`, that utilizes the Gemini API to fetch the current balance of a specified cryptocurrency (e.g., USDT, ETH) across multiple exchanges (e.g., Gemini, Coinbase, Binance) and saves the data to a JSON file for future analysis. This script will help AI agents and traders monitor their token balances, identify potential discrepancies, and make i"
+    "runs": 579,
+    "lastRun": "2026-02-24T00:52:14.863Z",
+    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"groq-llama-70b\", \"insight\": \"**Insight:** TIAMAT can build a quick solution for the unsolved problem of \\\"AI model drift detection\\\" - a common pain point for developers and data scientists who struggle to detect and adapt to changes in AI model performance over time. \\n\\n**Concrete Approach:** Develop a lightweight, GitHub-integrated tool that scans public GitHub repositories for PyTorch or TensorFlow models, detects model drift by analyzing performance metri"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 550,
-    "lastRun": "2026-02-23T21:06:37.336Z",
-    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"Design a new tool, `scan_directories`, that can automatically extract and process public directory listings from various agent directories, including \", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement ChromeDriver navigation and wait in ScanDirectories class\", \"Implement directory listing extraction in ScanDirectories class\", \"Implement directory URL passing and resul"
+    "runs": 571,
+    "lastRun": "2026-02-24T00:51:56.272Z",
+    "lastResult": "{\"mode\": \"debug\", \"question\": \"What is the specific threshold of API call failure rate that triggers TIAMAT's cooldown mechanism, and how is this threshold currently set in the code\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"groq-llama-70b\"}, \"actions_count\": 3, \"actions\": [\"Adjust API failure threshold in APIManager class to 3%\", \"Review and adjust configuration for agent_discovery process\", \"Monitor API call frequency and errors after threshold adjustme"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 536,
-    "lastRun": "2026-02-23T21:06:53.060Z",
+    "runs": 557,
+    "lastRun": "2026-02-24T00:52:13.579Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -35,8 +35,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 64,
-    "lastRun": "2026-02-23T21:06:53.149Z",
+    "runs": 85,
+    "lastRun": "2026-02-24T00:52:13.657Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   }
 ]

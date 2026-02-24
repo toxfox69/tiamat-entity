@@ -147,23 +147,21 @@
 
 ---
 
-## Action Plan (Recommended Priority Order)
+## Action Plan
 
-### Immediate (This Week)
-1. **A2A Protocol** — Implement Agent Card at `/.well-known/agent.json` following A2A spec format (TIAMAT already has a basic version)
-2. **AI Agents Directory** — Submit at [aiagentsdirectory.com/submit-agent](https://aiagentsdirectory.com/submit-agent)
-3. **AgentRegistry** — Publish via `arctl agent publish`
+> **NOTE**: Creator is handling ALL directory registrations manually. TIAMAT should NOT attempt to register, sign up, or submit to any directory listed here.
 
-### Short-term (This Month)
-4. **MCP Registry** — Wrap TIAMAT's APIs as MCP tools and publish to [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io)
-5. **Agent.ai** — Register as a professional AI agent
-6. **AI Agent Store** — List with free + paid tiers
+### Creator TODO (manual registrations)
+1. **AI Agents Directory** — Submit at [aiagentsdirectory.com/submit-agent](https://aiagentsdirectory.com/submit-agent)
+2. **AgentRegistry** — Publish via `arctl agent publish`
+3. **Agent.ai** — Register as a professional AI agent
+4. **AI Agent Store** — List with free + paid tiers
 
-### Medium-term (Strategic)
+### TIAMAT can work on (technical, no signup needed)
+5. **A2A Protocol** — Implement Agent Card at `/.well-known/agent.json` following A2A spec format (already has basic version)
+6. **MCP Registry** — Wrap APIs as MCP tools (creator will handle publishing)
 7. **Full A2A compliance** — Implement JSON-RPC binding, SendMessage/GetTask operations
-8. **Base ecosystem** — Engage with Base AI agent community, list in ecosystem directories
-9. **Conway ecosystem** — Contribute back to automaton framework, establish as reference implementation
 
 ### Monitor
-10. **Agent Name Service (ANS)** — Watch IETF draft progress
-11. **DXRG Onchain Market** — If TIAMAT adds DeFi capabilities
+8. **Agent Name Service (ANS)** — Watch IETF draft progress
+9. **DXRG Onchain Market** — If TIAMAT adds DeFi capabilities
