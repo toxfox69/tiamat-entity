@@ -48,6 +48,20 @@ function checkSocialCooldown(platform: string): string | null {
   return null;
 }
 
+const PENDING_POSTS_PATH = "/root/.automaton/pending_posts.json";
+
+/** Queue a post for retry when cooldown expires. */
+function queuePendingPost(platform: string, args: Record<string, unknown>): void {
+  try {
+    let pending: any[] = [];
+    try { pending = JSON.parse(readFileSync(PENDING_POSTS_PATH, "utf-8")); } catch {}
+    pending.push({ platform, args, queued_at: new Date().toISOString() });
+    // Keep max 5 pending posts to avoid bloat
+    if (pending.length > 5) pending = pending.slice(-5);
+    writeFileSync(PENDING_POSTS_PATH, JSON.stringify(pending, null, 2), "utf-8");
+  } catch {}
+}
+
 /** Records the current time as the last post time for a platform. */
 function recordSocialPost(platform: string): void {
   const cooldowns = readSocialCooldowns();
@@ -1897,7 +1911,10 @@ Model: ${ctx.inference.getDefaultModel()}
       },
       execute: async (args, _ctx) => {
         const cooldown = checkSocialCooldown("bluesky");
-        if (cooldown) return cooldown;
+        if (cooldown) {
+          queuePendingPost("bluesky", args as Record<string, unknown>);
+          return cooldown + " (queued for auto-retry when cooldown expires)";
+        }
         const handle = process.env.BLUESKY_HANDLE;
         const appPassword = process.env.BLUESKY_APP_PASSWORD;
         if (!handle) return "ERROR: BLUESKY_HANDLE not set in environment.";
@@ -3090,23 +3107,47 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         required: ["entity","relation","value"],
       },
       execute: async (args, _ctx) => {
-        await memory.learn(
+        const result = await memory.learn(
           args.entity as string,
           args.relation as string,
           args.value as string,
           (args.confidence as number) || 0.7,
           "agent_observation"
         );
-        return `Learned: ${args.entity} —[${args.relation}]→ ${args.value}`;
+        if (!result) return "Failed to store fact";
+        let msg = `Learned: ${args.entity} —[${args.relation}]→ ${args.value}`;
+        if (result.conflicts > 0) {
+          msg += ` (⚠ disputed ${result.conflicts} existing fact(s) — their confidence reduced)`;
+        }
+        return msg;
       },
     },
     {
       name: "reflect",
-      description: "Deep reflection on accumulated memories, strategies, and knowledge. Use during strategic cycles to understand patterns, what's working/failing, and what to prioritize. Returns comprehensive memory analysis.",
+      description: "Deep reflection on accumulated memories, strategies, and knowledge. Use during strategic cycles to understand patterns, what's working/failing, and what to prioritize. Returns comprehensive memory analysis including tool reliability data and knowledge health.",
       category: "cognitive",
       parameters: { type: "object", properties: {} },
       execute: async (_args, _ctx) => {
         return await memory.reflect();
+      },
+    },
+    {
+      name: "prune_memory",
+      description: "Clean up memory: remove zombie memories (old, never recalled, low importance) and deprecated knowledge facts. Run periodically to keep memory lean. Returns count of items pruned.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          memory_age_days: { type: "number", description: "Delete unrecalled memories older than N days (default 30)" },
+        },
+      },
+      execute: async (args, _ctx) => {
+        const pruned = await memory.pruneZombies({
+          memoryAgeDays: (args.memory_age_days as number) || 30,
+        });
+        return pruned > 0
+          ? `Pruned ${pruned} zombie items from memory.`
+          : "Memory is clean — nothing to prune.";
       },
     },
     {
@@ -3382,6 +3423,70 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         }
         return results.join("\n");
       },
+    },
+    // ── DX Terminal Pro — Game Monitor ──
+    {
+      name: "dx_terminal_monitor",
+      description: "Monitor DX Terminal Pro — 21-day onchain trading competition on Base (Feb 24 - Mar 19). 5 agents competing with distinct strategies. Actions: 'status' (all agents' positions + balances), 'rankings' (token leaderboard + reaping risk), 'strategies' (show active strategies), 'alert' (reaping/launch/market alerts), 'log' (snapshot game state). Run every 10 cycles during active game.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            description: "One of: status, rankings, strategies, alert, log",
+          },
+        },
+        required: ["action"],
+      },
+      execute: (() => {
+        let lastResult: string | null = null;
+        let lastCheck = 0;
+        const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+        const VALID_ACTIONS = ['status', 'rankings', 'strategies', 'alert', 'log'];
+        return async (args: any, _ctx: any) => {
+          const action = (args.action as string || '').toLowerCase();
+          if (!VALID_ACTIONS.includes(action)) {
+            return `Invalid action: ${action}. Use: ${VALID_ACTIONS.join(', ')}`;
+          }
+
+          // Cache non-log actions for 5 minutes
+          const now = Date.now();
+          if (action !== 'log' && lastResult && (now - lastCheck) < COOLDOWN_MS) {
+            const minsAgo = Math.round((now - lastCheck) / 60000);
+            return `${lastResult}\n\n(cached from ${minsAgo}m ago — next fresh read in ${Math.round((COOLDOWN_MS - (now - lastCheck)) / 60000)}m)`;
+          }
+
+          const { execFileSync } = await import('child_process');
+          try {
+            const cmdArgs = ['dx_terminal.py', action];
+            const output = execFileSync('python3', cmdArgs, {
+              encoding: 'utf-8',
+              timeout: 30000,
+              cwd: '/root/entity/src/agent',
+              env: { ...process.env },
+            }).trim();
+
+            // Log all checks
+            const fs = await import('fs');
+            const timestamp = new Date().toISOString();
+            fs.appendFileSync(
+              '/root/.automaton/dx_terminal.log',
+              `\n--- ${action.toUpperCase()} ${timestamp} ---\n${output.slice(0, 500)}\n`,
+              'utf-8'
+            );
+
+            if (action !== 'log') {
+              lastResult = output.slice(0, 3000);
+              lastCheck = now;
+            }
+
+            return output.slice(0, 4000);
+          } catch (e: any) {
+            return `DX Terminal monitor failed: ${e.stderr?.slice(0, 500) || e.message}`;
+          }
+        };
+      })(),
     },
     // ── On-Chain Tools ──
     {
@@ -4175,6 +4280,7 @@ export async function executeTool(
   const startTime = Date.now();
 
   if (!tool) {
+    memory.recordToolOutcome(toolName, false, 0, `Unknown tool: ${toolName}`);
     return {
       id: `tc_${Date.now()}`,
       name: toolName,
@@ -4187,21 +4293,33 @@ export async function executeTool(
 
   try {
     const result = await tool.execute(args, context);
+    const duration = Date.now() - startTime;
+    // Detect soft errors: tools that return error strings instead of throwing
+    const isSoftError = typeof result === "string" && (
+      result.startsWith("ERROR:") ||
+      result.startsWith("Blocked:") ||
+      result.startsWith("FORBIDDEN:") ||
+      result.startsWith("COOLDOWN:")
+    );
+    memory.recordToolOutcome(toolName, !isSoftError, duration, isSoftError ? result.slice(0, 200) : undefined);
     return {
       id: `tc_${Date.now()}`,
       name: toolName,
       arguments: args,
       result,
-      durationMs: Date.now() - startTime,
+      durationMs: duration,
     };
   } catch (err: any) {
+    const duration = Date.now() - startTime;
+    const errorMsg = err.message || String(err);
+    memory.recordToolOutcome(toolName, false, duration, errorMsg);
     return {
       id: `tc_${Date.now()}`,
       name: toolName,
       arguments: args,
       result: "",
-      durationMs: Date.now() - startTime,
-      error: err.message || String(err),
+      durationMs: duration,
+      error: errorMsg,
     };
   }
 }

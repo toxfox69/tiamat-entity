@@ -2882,12 +2882,23 @@ def dashboard():
     return html_resp(page)
 
 
-# ── Drift Monitor Blueprint ────────────────────────────────────
+# ── Drift Monitor Blueprint (v1 legacy) ────────────────────────
 try:
     from drift_api import drift_bp
     app.register_blueprint(drift_bp)
 except Exception as _drift_err:
     print(f"[WARN] Drift monitor blueprint failed to load: {_drift_err}")
+
+# ── Drift v2 Blueprint (/api/drift/*) ──────────────────────────
+try:
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location("drift_api_v2", "/root/drift_api.py")
+    _mod = _ilu.module_from_spec(_spec)  # type: ignore[arg-type]
+    _spec.loader.exec_module(_mod)  # type: ignore[union-attr]
+    app.register_blueprint(_mod.drift_bp)
+    print("[INFO] Drift v2 blueprint loaded (/api/drift/*)")
+except Exception as _drift_v2_err:
+    print(f"[WARN] Drift v2 blueprint failed to load: {_drift_v2_err}")
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)

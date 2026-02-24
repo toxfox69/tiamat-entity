@@ -1252,6 +1252,14 @@ const COOLDOWN_TASKS = [
     timeout: 30_000,
     minWindow: 40_000,
   },
+  {
+    name: "dx_terminal_check",
+    command: ["python3", ["dx_terminal.py", "alert"]],
+    interval: 10,     // every 10 cycles (~15-30 min)
+    offset: 5,        // fires on cycles 5, 15, 25...
+    timeout: 30_000,
+    minWindow: 40_000,
+  },
 ];
 
 const CLAUDE_QUESTIONS = [
