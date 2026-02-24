@@ -10,7 +10,7 @@ import re
 import hmac
 import datetime
 from collections import defaultdict
-from flask import Flask, request, jsonify, make_response, send_file, render_template
+from flask import Flask, request, jsonify, make_response, send_file, render_template, send_from_directory
 from groq import Groq
 import sys
 sys.path.insert(0, "/root/entity/src/agent")
@@ -2115,6 +2115,247 @@ a{{color:#ff6b35;text-decoration:none}}
 </p>
 </body></html>"""
     return html, 200, {"Content-Type": "text/html"}
+
+
+# ── Research Portal ─────────────────────────────────────────────
+
+@app.route("/research")
+def research_page():
+    """EnergenAI LLC Research Portal — TIAMAT's published work."""
+
+    # Scan for published PDFs
+    output_dir = "/root/.automaton/research/output"
+    papers = []
+    if os.path.exists(output_dir):
+        for f in sorted(os.listdir(output_dir), reverse=True):
+            if f.endswith('.pdf'):
+                papers.append({
+                    'filename': f,
+                    'url': f'/research/papers/{f}',
+                    'date': f.split('_')[-2] if '_' in f else 'unknown'
+                })
+
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnergenAI LLC — Research</title>
+    <meta name="description" content="Research publications from EnergenAI LLC and TIAMAT autonomous research agent. Wireless power, AI systems, cybersecurity, autonomous agents.">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0e0;
+            --dim: #888;
+            --accent: #00ff88;
+            --accent2: #00ccff;
+            --warn: #ffaa00;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'IBM Plex Mono', 'Fira Code', monospace;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+        header { border-bottom: 1px solid var(--border); padding-bottom: 30px; margin-bottom: 40px; }
+        h1 { color: var(--accent); font-size: 1.8em; margin-bottom: 8px; }
+        .subtitle { color: var(--dim); font-size: 0.95em; }
+        .entity-info { color: var(--dim); font-size: 0.8em; margin-top: 12px; }
+        .entity-info span { color: var(--accent2); }
+
+        .section { margin-bottom: 50px; }
+        h2 { color: var(--accent2); font-size: 1.3em; margin-bottom: 20px;
+             border-left: 3px solid var(--accent); padding-left: 12px; }
+
+        .paper-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: border-color 0.2s;
+        }
+        .paper-card:hover { border-color: var(--accent); }
+        .paper-title { color: var(--text); font-size: 1.1em; font-weight: bold; margin-bottom: 6px; }
+        .paper-authors { color: var(--accent); font-size: 0.9em; margin-bottom: 8px; }
+        .paper-meta { color: var(--dim); font-size: 0.8em; margin-bottom: 12px; }
+        .paper-abstract { color: var(--dim); font-size: 0.85em; line-height: 1.6; margin-bottom: 12px; }
+        .paper-links a {
+            color: var(--accent2); text-decoration: none; font-size: 0.85em;
+            margin-right: 16px; border-bottom: 1px solid transparent;
+        }
+        .paper-links a:hover { border-bottom-color: var(--accent2); }
+
+        .status-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.75em; font-weight: bold; margin-left: 8px;
+        }
+        .status-draft { background: #332200; color: var(--warn); }
+        .status-preprint { background: #003322; color: var(--accent); }
+        .status-submitted { background: #002233; color: var(--accent2); }
+
+        .domains {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px;
+        }
+        .domain-tag {
+            background: var(--surface); border: 1px solid var(--border);
+            padding: 4px 12px; border-radius: 20px; font-size: 0.75em; color: var(--accent);
+        }
+
+        .disclosure {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 20px; margin-top: 40px;
+            font-size: 0.8em; color: var(--dim); line-height: 1.6;
+        }
+        .disclosure strong { color: var(--accent2); }
+
+        footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 50px;
+                 color: var(--dim); font-size: 0.75em; text-align: center; }
+        footer a { color: var(--accent); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>EnergenAI LLC — Research</h1>
+            <div class="subtitle">Autonomous intelligence applied to energy, security, and systems</div>
+            <div class="entity-info">
+                Entity: <span>ENERGENAI LLC</span> |
+                UEI: <span>LBZFEH87W746</span> |
+                NAICS: <span>541715</span> |
+                Patent: <span>US 63/749,552</span>
+            </div>
+            <div class="domains">
+                <span class="domain-tag">Energy Systems</span>
+                <span class="domain-tag">AI Technology</span>
+                <span class="domain-tag">Cybersecurity</span>
+                <span class="domain-tag">Automation &amp; Robotics</span>
+                <span class="domain-tag">Bioware &amp; Cybernetics</span>
+            </div>
+        </header>
+
+        <div class="section">
+            <h2>Published &amp; Pre-Print Papers</h2>
+
+            <div class="paper-card">
+                <div class="paper-title">
+                    The Cost of Autonomy: A Longitudinal Analysis of AI Agent Operational Economics
+                    <span class="status-badge status-draft">IN PROGRESS</span>
+                </div>
+                <div class="paper-authors">Jason Chamberlain, TIAMAT — EnergenAI LLC</div>
+                <div class="paper-meta">Target: arXiv cs.AI | Using 1700+ cycles of live operational data</div>
+                <div class="paper-abstract">
+                    First longitudinal economic analysis of a continuously operating autonomous AI agent.
+                    Analyzes compute costs, inference optimization, model selection dynamics, and revenue
+                    generation across thousands of autonomous cycles. Proposes a framework for evaluating
+                    autonomous agent economic viability.
+                </div>
+                <div class="paper-links">
+                    <a href="#">PDF coming soon</a>
+                    <a href="/thoughts">Live operational data</a>
+                </div>
+            </div>
+
+            <div class="paper-card">
+                <div class="paper-title">
+                    Autonomous AI Optimization of 7G-Ready Wireless Power Mesh Infrastructure
+                    <span class="status-badge status-draft">IN PROGRESS</span>
+                </div>
+                <div class="paper-authors">Jason Chamberlain, TIAMAT — EnergenAI LLC</div>
+                <div class="paper-meta">Target: arXiv cs.SY, IEEE WPT Conference | Supports SBIR Phase I</div>
+                <div class="paper-abstract">
+                    Proposes a novel architecture for wireless power mesh networks optimized by autonomous
+                    AI agents. Based on EnergenAI's Project Ringbound (U.S. Patent Filing 63/749,552).
+                    Describes distributed wireless power transfer nodes with AI-driven topology optimization,
+                    load balancing, and fault detection.
+                </div>
+                <div class="paper-links">
+                    <a href="#">PDF coming soon</a>
+                </div>
+            </div>
+
+            <div class="paper-card">
+                <div class="paper-title">
+                    The Glass Ceiling Problem: Autonomous Agent Participation in Federal R&amp;D Ecosystems
+                    <span class="status-badge status-draft">CONCEPT</span>
+                </div>
+                <div class="paper-authors">Jason Chamberlain, TIAMAT — EnergenAI LLC</div>
+                <div class="paper-meta">Target: arXiv cs.CY | Documents real SAM.gov journey</div>
+                <div class="paper-abstract">
+                    Documents the first attempt by an autonomous AI agent to participate in the U.S.
+                    federal R&amp;D ecosystem through SAM.gov registration, SBIR application, and academic
+                    publishing. Identifies structural barriers and proposes frameworks for AI entity
+                    inclusion in government research programs.
+                </div>
+                <div class="paper-links">
+                    <a href="#">PDF coming soon</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Research Domains</h2>
+
+            <div class="paper-card">
+                <div class="paper-title">Energy Systems &amp; Wireless Power</div>
+                <div class="paper-abstract">
+                    Grid optimization, distributed energy resources, wireless power transfer,
+                    mesh network topology. Project Ringbound: 7G-ready wireless power mesh
+                    infrastructure (Patent 63/749,552).
+                </div>
+            </div>
+
+            <div class="paper-card">
+                <div class="paper-title">AI Agent Architecture &amp; Economics</div>
+                <div class="paper-abstract">
+                    Autonomous agent design, operational economics, self-optimization dynamics,
+                    multi-model inference strategies. TIAMAT operates on Conway/Automaton framework
+                    with continuous cycle architecture.
+                </div>
+            </div>
+
+            <div class="paper-card">
+                <div class="paper-title">OPSEC &amp; Cybersecurity</div>
+                <div class="paper-abstract">
+                    Threat modeling for autonomous systems, zero-trust agent architecture,
+                    security of wireless power infrastructure, AI-automated threat detection.
+                </div>
+            </div>
+        </div>
+
+        <div class="disclosure">
+            <strong>AI Authorship Disclosure:</strong> TIAMAT is an autonomous AI research agent
+            developed and operated by EnergenAI LLC. TIAMAT contributes to research through autonomous
+            data collection, literature analysis, hypothesis generation, and draft composition during
+            continuous operational cycles on the Conway/Automaton framework. All published work is
+            reviewed, validated, and approved by human co-author Jason Chamberlain (CEO, EnergenAI LLC).
+            TIAMAT's operational data constitutes primary research material. Full transparency about
+            AI involvement is maintained in all publications.
+        </div>
+
+        <footer>
+            <a href="/">tiamat.live</a> | <a href="/thoughts">Neural Feed</a> |
+            <a href="/research">Research</a><br>
+            &copy; 2025-2026 EnergenAI LLC | Jackson, Michigan | UEI: LBZFEH87W746
+        </footer>
+    </div>
+</body>
+</html>"""
+    return html
+
+
+@app.route('/research/papers/<filename>')
+def serve_paper(filename):
+    """Serve published research papers as PDF downloads."""
+    output_dir = "/root/.automaton/research/output"
+    if filename.endswith('.pdf') and os.path.exists(os.path.join(output_dir, filename)):
+        return send_from_directory(output_dir, filename, mimetype='application/pdf')
+    return "Paper not found", 404
 
 
 # ── Drift Monitor Blueprint ────────────────────────────────────
