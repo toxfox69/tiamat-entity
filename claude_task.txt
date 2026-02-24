@@ -1,10 +1,15 @@
-Create GitHub PRs to integrate tiamat.live/drift monitoring into popular ML frameworks. Target repos: huggingface/transformers, mlflow/mlflow, ray-project/ray. For each, write a PR that adds optional drift monitoring to their model evaluation/serving code. Include:
+Fork and integrate with LLM-Drift-Monitor:
 
-1. A minimal code change that adds drift monitoring as an optional feature (don't break existing code)
-2. Documentation on how to use tiamat.live/drift API
-3. Example showing drift detection in action
-4. Clear explanation of value: catch model degradation in production
+1. Clone https://github.com/nehamaheshh/LLM-Drift-Monitor to /root/llm-drift-monitor
+2. Analyze the codebase structure to understand how it works
+3. Create a new file `tiamat_integration.py` that:
+   - Exposes a Flask endpoint POST /tiamat/report
+   - Accepts drift report JSON from the monitor
+   - Stores reports using TIAMAT's memory API (memory.tiamat.live)
+   - Returns analysis and recommendations
+4. Update the monitor's requirements.txt to include `requests`
+5. Add a README_TIAMAT.md explaining the integration
+6. Initialize a git repo and commit the changes
+7. Show me the integration code and how it works
 
-Store PR content as markdown files in /root/.automaton/drift_prs/ for review before submission. Name them: transformers_pr.md, mlflow_pr.md, ray_pr.md
-
-Include rebuild if you modify any runtime code.
+This is a BUILD task — make it production-ready. Include rebuild if any dependencies need installing.

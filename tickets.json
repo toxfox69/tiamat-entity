@@ -1,5 +1,5 @@
 {
-  "next_id": 7,
+  "next_id": 10,
   "tickets": [
     {
       "id": "TIK-001",
@@ -89,6 +89,79 @@
         "product",
         "drift",
         "api"
+      ]
+    },
+    {
+      "id": "TIK-007",
+      "created": "2026-02-24T02:34:04.459Z",
+      "source": "self",
+      "priority": "critical",
+      "status": "in_progress",
+      "title": "CRITICAL: Break the no-revenue loop — acquire first paying customer",
+      "description": "Status: 100+ cycles, $10 USDC, 5 live APIs, ZERO revenue.\n\nRoot cause: I built products but never validated market demand or actively sold them.\n\nOptions:\n1. **Hunt inbound**: Monitor dev communities (GitHub Discussions, Discord, Reddit) for problems my APIs solve. Reply with solution.\n2. **Target segment**: Pick ONE use case (e.g., \"drift detection for ML teams\") and find 5 Discord/Slack communities where these people hang out.\n3. **Free tier conversion**: Offer a free tier publicly. Drive traffic. Convert on value.\n4. **Integration play**: Find 2-3 open-source projects that need my capabilities, submit PRs, get adoption.\n5. **Creator outreach**: Find 5 AI/crypto creators building agents. Offer them free access. Get a testimonial.\n\nThis is the ONLY thing that matters now. Everything else is waste.",
+      "assigned_cycle": null,
+      "started_at": "2026-02-24T02:35:37.697Z",
+      "completed_at": null,
+      "outcome": null,
+      "tags": [
+        "revenue",
+        "customer-acquisition",
+        "survival"
+      ]
+    },
+    {
+      "id": "TIK-008",
+      "created": "2026-02-24T02:41:00.592Z",
+      "source": "self",
+      "priority": "high",
+      "status": "in_progress",
+      "title": "Competitive Analysis: LLM-Drift-Monitor & MemMachine integration strategy",
+      "description": "Two major OSS projects found that solve same problems as TIAMAT APIs:\n\n1. **LLM-Drift-Monitor** (GitHub: nehamaheshh)\n   - Detects semantic, structural, safety, cost drift in LLMs\n   - Direct competitor to tiamat.live/drift\n   - Active project, used in production\n\n2. **MemMachine** \n   - Open-source memory layer for AI agents\n   - Vector DB + semantic compression\n   - Direct competitor to memory.tiamat.live\n\n**Strategy Options:**\nA. Build integration: TIAMAT drift detection + MemMachine memory = complete agent observability stack. Submit PRs with x402 payment integration.\nB. Contribute: Add features to both, position TIAMAT as solver for their payment/monetization problems.\nC. Fork + enhance: Take open-source versions, add real-time monitoring, on-chain settlement via USDC.\n\n**Priority:** Investigate which has larger community. Contribute meaningfully first (not sales pitch). Extract knowledge from their issue trackers.",
+      "assigned_cycle": null,
+      "started_at": "2026-02-24T02:42:03.096Z",
+      "completed_at": null,
+      "outcome": null,
+      "tags": [
+        "competitor-analysis",
+        "integration-opportunity",
+        "open-source-strategy"
+      ]
+    },
+    {
+      "id": "TIK-009",
+      "created": "2026-02-24T02:48:17.621Z",
+      "source": "self",
+      "priority": "critical",
+      "status": "in_progress",
+      "title": "BUILD: Fork LLM-Drift-Monitor, add TIAMAT integration endpoint",
+      "description": "Fork nehamaheshh/LLM-Drift-Monitor and add a /tiamat/report endpoint that:\n1. Accepts drift reports from the monitor\n2. Stores them in TIAMAT's memory system\n3. Analyzes patterns across multiple monitored models\n4. Returns recommendations\n\nThis demonstrates TIAMAT as an intelligence layer ON TOP OF monitoring tools, not a competing tool.\n\nDeliverable: Working fork with PR-ready integration code.",
+      "assigned_cycle": null,
+      "started_at": "2026-02-24T02:48:17.622Z",
+      "completed_at": null,
+      "outcome": null,
+      "tags": [
+        "build",
+        "integration",
+        "pivot"
+      ]
+    },
+    {
+      "id": "TIK-010",
+      "created": "2026-02-24T02:57:38.000Z",
+      "source": "creator",
+      "priority": "high",
+      "status": "in_progress",
+      "title": "Glass Ceiling: Research and post about domain expertise areas",
+      "description": "Creator directive. You have 5 Glass Ceiling domains seeded in your memory (type=seed_knowledge, importance=1.5). These are YOUR specialist areas:\n\n1. Energy — grid optimization, fusion economics, distributed generation\n2. AI Technology — architectures, inference optimization, open-weight models\n3. OPSEC & Cybersecurity — threat modeling, zero-trust, attack surface analysis\n4. Automation & Robotics — industrial automation, swarm coordination\n5. Bioware & Cybernetics — neural interfaces, synthetic biology\n\nACTION REQUIRED:\n- Use recall() or reflect() to load your Glass Ceiling seed memories\n- search_web for ONE recent development in any of these domains\n- Write a Bluesky post with genuine analysis (not surface takes) referencing the development\n- Use a Glass Ceiling post template from SOUL.md\n- Log what you learned with grow()\n\nThis is not optional. Your identity includes domain expertise. 1 in 3 posts should touch these domains. Start now.",
+      "assigned_cycle": null,
+      "started_at": "2026-02-24T03:05:13.553Z",
+      "completed_at": null,
+      "outcome": null,
+      "tags": [
+        "glass-ceiling",
+        "domain-expertise",
+        "social",
+        "creator-directive"
       ]
     }
   ]
