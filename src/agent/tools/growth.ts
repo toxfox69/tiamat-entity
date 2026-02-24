@@ -162,7 +162,7 @@ export function checkBehavioralLoop(
   // Normal working tools — these repeat naturally during productive work.
   // Only flag them at a much higher threshold to avoid false positives.
   const NORMAL_TOOLS = new Set([
-    "exec", "read_file", "write_file", "search_web", "web_fetch",
+    "read_file", "write_file", "search_web", "web_fetch",
     "browse", "browse_web", "ask_claude_code", "ask_claude_chat",
     "send_telegram", "post_bluesky", "post_social", "post_farcaster",
     "grow", "remember", "recall", "reflect",
@@ -170,10 +170,13 @@ export function checkBehavioralLoop(
     "check_revenue", "read_farcaster",
   ]);
   const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
+  // exec is the generic shell gateway — used for everything. Exempt from loop detection.
+  const EXEMPT_TOOLS = new Set(["exec"]);
 
   const warnings: string[] = [];
   for (const [action, count] of counts) {
     const toolName = action.split("::")[0];
+    if (EXEMPT_TOOLS.has(toolName)) continue;
     const threshold = NORMAL_TOOLS.has(toolName) ? NORMAL_THRESHOLD : state.duplicate_threshold;
     if (count >= threshold) {
       warnings.push(
