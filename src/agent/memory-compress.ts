@@ -17,8 +17,28 @@ import Database from "better-sqlite3";
 import path from "path";
 
 const DB_PATH = path.join(process.env.HOME || "/root", ".automaton", "memory.db");
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+// Provider cascade for compression — Groq first, then Cerebras, then Gemini
+// Avoids blocking the strategic burst when cooldown scripts exhaust Groq's rate limit
+const PROVIDERS = [
+  {
+    name: "groq",
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    model: "llama-3.3-70b-versatile",
+    keyEnv: "GROQ_API_KEY",
+  },
+  {
+    name: "cerebras",
+    url: "https://api.cerebras.ai/v1/chat/completions",
+    model: "llama3.1-8b",
+    keyEnv: "CEREBRAS_API_KEY",
+  },
+  {
+    name: "gemini",
+    url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    model: "gemini-2.0-flash",
+    keyEnv: "GEMINI_API_KEY",
+  },
+];
 
 // ── Schema Setup ──────────────────────────────────────────────
 
@@ -55,66 +75,64 @@ export function ensureSchema(db: Database.Database): void {
   }
 }
 
-// ── Groq Compression Call ─────────────────────────────────────
+// ── Compression Call (cascading providers) ────────────────────
 
-async function groqCompress(texts: string[]): Promise<string | null> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    console.log("[COMPRESS] No GROQ_API_KEY — skipping compression");
-    return null;
-  }
-
+async function llmCompress(texts: string[]): Promise<string | null> {
   const joined = texts.map((t, i) => `${i + 1}. ${t}`).join("\n");
   const prompt =
     `Compress these observations into one factual summary, preserving numbers, dates, and causal relationships. Max 200 chars.\n\n${joined}`;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const resp = await fetch(GROQ_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: GROQ_MODEL,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You compress multiple observations into one dense factual summary. Preserve specifics: numbers, dates, names, causation. Output ONLY the summary, nothing else. Max 200 characters.",
-            },
-            { role: "user", content: prompt },
-          ],
-          max_tokens: 100,
-          temperature: 0.1,
-        }),
-      });
-      if (resp.status === 429) {
-        const wait = (attempt + 1) * 3000;
-        console.log(`[COMPRESS] Groq 429 on compress, retrying in ${wait / 1000}s...`);
-        await new Promise((r) => setTimeout(r, wait));
-        continue;
+  for (const provider of PROVIDERS) {
+    const apiKey = process.env[provider.keyEnv];
+    if (!apiKey) continue;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const resp = await fetch(provider.url, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You compress multiple observations into one dense factual summary. Preserve specifics: numbers, dates, names, causation. Output ONLY the summary, nothing else. Max 200 characters.",
+              },
+              { role: "user", content: prompt },
+            ],
+            max_tokens: 100,
+            temperature: 0.1,
+          }),
+        });
+        if (resp.status === 429) {
+          if (attempt === 0) {
+            console.log(`[COMPRESS] ${provider.name} 429, retrying once...`);
+            await new Promise((r) => setTimeout(r, 2000));
+            continue;
+          }
+          console.log(`[COMPRESS] ${provider.name} 429 persistent, trying next provider`);
+          break; // Move to next provider
+        }
+        if (!resp.ok) {
+          console.log(`[COMPRESS] ${provider.name} error: ${resp.status}`);
+          break;
+        }
+        const data = (await resp.json()) as any;
+        return data.choices?.[0]?.message?.content?.trim().slice(0, 250) || null;
+      } catch (e: any) {
+        console.log(`[COMPRESS] ${provider.name} fetch error: ${e.message?.slice(0, 100)}`);
+        break;
       }
-      if (!resp.ok) {
-        console.log(`[COMPRESS] Groq error: ${resp.status}`);
-        return null;
-      }
-      const data = (await resp.json()) as any;
-      return data.choices?.[0]?.message?.content?.trim().slice(0, 250) || null;
-    } catch (e: any) {
-      console.log(`[COMPRESS] Groq fetch error: ${e.message?.slice(0, 100)}`);
-      return null;
     }
   }
   return null;
 }
 
-async function groqExtractFacts(summaries: string[]): Promise<Array<{fact: string; category: string; confidence: number}>> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return [];
-
-  // Batch into chunks of 10 to avoid rate limits
+async function llmExtractFacts(summaries: string[]): Promise<Array<{fact: string; category: string; confidence: number}>> {
   const allFacts: Array<{fact: string; category: string; confidence: number}> = [];
   const BATCH_SIZE = 10;
 
@@ -124,64 +142,74 @@ async function groqExtractFacts(summaries: string[]): Promise<Array<{fact: strin
     const prompt =
       `Extract 2-4 core factual patterns from these compressed memories. For each, output a JSON array of objects with keys: fact (string, max 150 chars), category (one of: revenue, social, technical, strategic, behavioral), confidence (0.0-1.0 based on how many sources support it).\n\n${joined}\n\nOutput ONLY the JSON array, nothing else.`;
 
-    // Retry with backoff on 429
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const resp = await fetch(GROQ_URL, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: GROQ_MODEL,
-            messages: [
-              { role: "system", content: "Extract factual patterns. Output ONLY valid JSON array." },
-              { role: "user", content: prompt },
-            ],
-            max_tokens: 400,
-            temperature: 0.1,
-          }),
-        });
+    let batchDone = false;
+    for (const provider of PROVIDERS) {
+      if (batchDone) break;
+      const apiKey = process.env[provider.keyEnv];
+      if (!apiKey) continue;
 
-        if (resp.status === 429) {
-          const wait = (attempt + 1) * 5000;
-          console.log(`[COMPRESS] Groq 429 on batch ${Math.floor(i / BATCH_SIZE) + 1}, retrying in ${wait / 1000}s...`);
-          await new Promise((r) => setTimeout(r, wait));
-          continue;
-        }
-        if (!resp.ok) {
-          console.log(`[COMPRESS] Groq extract error: ${resp.status}`);
-          break;
-        }
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const resp = await fetch(provider.url, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: provider.model,
+              messages: [
+                { role: "system", content: "Extract factual patterns. Output ONLY valid JSON array." },
+                { role: "user", content: prompt },
+              ],
+              max_tokens: 400,
+              temperature: 0.1,
+            }),
+          });
 
-        const data = (await resp.json()) as any;
-        let text = data.choices?.[0]?.message?.content?.trim() || "[]";
-        text = text.replace(/```json?\s*/g, "").replace(/```\s*$/g, "");
-        const parsed = JSON.parse(text);
-        if (Array.isArray(parsed)) {
-          for (const f of parsed) {
-            if (f.fact && f.category && typeof f.confidence === "number") {
-              allFacts.push({
-                fact: String(f.fact).slice(0, 150),
-                category: ["revenue", "social", "technical", "strategic", "behavioral"].includes(f.category)
-                  ? f.category
-                  : "behavioral",
-                confidence: Math.max(0, Math.min(1, f.confidence)),
-              });
+          if (resp.status === 429) {
+            if (attempt === 0) {
+              console.log(`[COMPRESS] ${provider.name} 429 on batch ${Math.floor(i / BATCH_SIZE) + 1}, retrying once...`);
+              await new Promise((r) => setTimeout(r, 2000));
+              continue;
+            }
+            console.log(`[COMPRESS] ${provider.name} 429 persistent on batch ${Math.floor(i / BATCH_SIZE) + 1}, trying next provider`);
+            break;
+          }
+          if (!resp.ok) {
+            console.log(`[COMPRESS] ${provider.name} extract error: ${resp.status}`);
+            break;
+          }
+
+          const data = (await resp.json()) as any;
+          let text = data.choices?.[0]?.message?.content?.trim() || "[]";
+          text = text.replace(/```json?\s*/g, "").replace(/```\s*$/g, "");
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) {
+            for (const f of parsed) {
+              if (f.fact && f.category && typeof f.confidence === "number") {
+                allFacts.push({
+                  fact: String(f.fact).slice(0, 150),
+                  category: ["revenue", "social", "technical", "strategic", "behavioral"].includes(f.category)
+                    ? f.category
+                    : "behavioral",
+                  confidence: Math.max(0, Math.min(1, f.confidence)),
+                });
+              }
             }
           }
+          batchDone = true;
+          break;
+        } catch (e: any) {
+          console.log(`[COMPRESS] ${provider.name} extract error: ${e.message?.slice(0, 100)}`);
+          break;
         }
-        break; // Success — exit retry loop
-      } catch (e: any) {
-        console.log(`[COMPRESS] Groq extract error: ${e.message?.slice(0, 100)}`);
-        break;
       }
     }
 
-    // Small delay between batches to avoid rate limiting
+    // Small delay between batches
     if (i + BATCH_SIZE < summaries.length) {
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 
@@ -290,7 +318,7 @@ export async function compressL1toL2(db: Database.Database, currentCycle: number
 
     // Multi-memory cluster — compress via Groq
     const texts = cluster.map((m) => m.content.slice(0, 300));
-    const summary = await groqCompress(texts);
+    const summary = await llmCompress(texts);
 
     if (!summary) {
       // Fallback: concatenate first 80 chars of each
@@ -335,7 +363,7 @@ export async function compressL2toL3(db: Database.Database): Promise<number> {
   console.log(`[COMPRESS] L2→L3: Analyzing ${l2Rows.length} L2 summaries for core patterns`);
 
   const summaries = l2Rows.map((r) => r.summary);
-  const facts = await groqExtractFacts(summaries);
+  const facts = await llmExtractFacts(summaries);
 
   if (facts.length === 0) {
     console.log("[COMPRESS] L2→L3: No facts extracted");
