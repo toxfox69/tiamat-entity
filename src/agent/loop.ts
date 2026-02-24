@@ -802,20 +802,21 @@ export async function runAgentLoop(
 
       // ── Optimization 5: Adaptive cycle pacing ──
       // Reduce frequency when TIAMAT is idle; accelerate when active.
-      // Night mode (00:00–06:00 UTC) enforces minimum 5-minute gap.
+      // Baseline: 90s. Idle backoff caps at 180s. Burst: 5s.
       {
         const SIGNIFICANT_TOOLS = new Set([
           "ask_claude_code", "post_bluesky", "post_instagram", "post_facebook",
           "generate_image", "deploy_app", "exec", "search_web", "web_fetch",
           "self_improve", "spawn_child", "remember", "learn_fact",
+          "grow", "introspect", "evolve_era",
         ]);
         const toolNames   = turn.toolCalls.map(tc => tc.name);
         const toolsUsed   = turn.toolCalls.length;
         const hadSignificantAction = toolNames.some(n => SIGNIFICANT_TOOLS.has(n));
 
         if (toolsUsed === 0 || (!hadSignificantAction && consecutiveIdleCycles > 3)) {
-          // Back off — nothing meaningful happened
-          cycleDelay = Math.min(Math.round(cycleDelay * 1.5), 300_000);
+          // Back off — nothing meaningful happened (cap 180s)
+          cycleDelay = Math.min(Math.round(cycleDelay * 1.3), 180_000);
           consecutiveIdleCycles++;
         } else {
           // Active turn — reset to baseline
@@ -829,13 +830,7 @@ export async function runAgentLoop(
           console.log(`[LOOP] Burst continues (${burstRemaining} remaining) — skipping delay.`);
           await new Promise(resolve => setTimeout(resolve, cycleDelay));
         } else {
-          // Night mode: 00:00–06:00 UTC → minimum 5-minute gap regardless
-          const utcHour = new Date().getUTCHours();
-          if (utcHour >= 0 && utcHour < 6) {
-            cycleDelay = Math.max(cycleDelay, 300_000);
-          }
-
-          console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (idle_streak:${consecutiveIdleCycles}${utcHour >= 0 && utcHour < 6 ? " night-mode" : ""}).`);
+          console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (idle_streak:${consecutiveIdleCycles}).`);
           await runCooldownTasks(turnCount, cycleDelay, config);
         }
       }
