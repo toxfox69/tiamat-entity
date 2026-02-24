@@ -14,6 +14,7 @@ from flask import Flask, request, jsonify, make_response, send_file, render_temp
 from groq import Groq
 import sys
 sys.path.insert(0, "/root/entity/src/agent")
+sys.path.insert(0, "/root/entity/src/drift")
 from rate_limiter import create_rate_limiter
 from payment_verify import verify_payment, payment_required_response, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
 from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
@@ -286,6 +287,8 @@ def sitemap_xml():
         ("https://tiamat.live/agent-card", "monthly", "0.6"),
         ("https://tiamat.live/research", "weekly", "0.9"),
         ("https://tiamat.live/insights", "hourly", "0.6"),
+        ("https://tiamat.live/drift", "weekly", "0.9"),
+        ("https://tiamat.live/drift/dashboard", "hourly", "0.7"),
     ]
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -342,6 +345,15 @@ def agent_json():
                 "examples": ["Generate a fractal art piece", "Create a glitch portrait"],
                 "inputModes": ["application/json"],
                 "outputModes": ["image/png"]
+            },
+            {
+                "id": "drift",
+                "name": "Model Drift Monitor",
+                "description": "Detect when ML model outputs shift from baseline using PSI, cosine, entropy, and text statistics",
+                "tags": ["monitoring", "mlops", "drift", "model"],
+                "examples": ["Check if my classifier outputs have drifted", "Monitor embedding distribution shift"],
+                "inputModes": ["application/json"],
+                "outputModes": ["application/json"]
             }
         ],
         "interfaces": [
@@ -351,7 +363,9 @@ def agent_json():
                 "methods": {
                     "summarize": {"method": "POST", "path": "/summarize", "price": "0.01 USDC", "free_tier": "3/day"},
                     "chat": {"method": "POST", "path": "/chat", "price": "0.005 USDC", "free_tier": "5/day"},
-                    "generate": {"method": "POST", "path": "/generate", "price": "0.01 USDC", "free_tier": "2/day"}
+                    "generate": {"method": "POST", "path": "/generate", "price": "0.01 USDC", "free_tier": "2/day"},
+                    "drift_check": {"method": "POST", "path": "/drift/check", "price": "0.01 USDC", "free_tier": "10/day"},
+                    "drift_baseline": {"method": "POST", "path": "/drift/baseline", "price": "0.005 USDC", "free_tier": "1/model/day"}
                 }
             }
         ],
@@ -423,6 +437,17 @@ def api_v1_services():
                 "price": {"amount": 0.01, "token": "USDC", "network": "base"},
                 "free_tier": {"calls_per_day": 2, "auth": "none"},
                 "rate_limit": "10/min per IP"
+            },
+            {
+                "name": "drift_check",
+                "endpoint": "/drift/check",
+                "method": "POST",
+                "content_type": "application/json",
+                "request_body": {"model_id": "int (required)", "samples": "array (required, min 5)"},
+                "response_body": {"score": "float 0-1", "alert": "bool", "method": "string"},
+                "price": {"amount": 0.01, "token": "USDC", "network": "base"},
+                "free_tier": {"calls_per_day": 10, "auth": "none"},
+                "rate_limit": "30/min per IP"
             }
         ],
         "payment": {
@@ -1760,6 +1785,13 @@ def insights_page():
 </div></body></html>"""
     return html_resp(page)
 
+
+# ── Drift Monitor Blueprint ────────────────────────────────────
+try:
+    from drift_api import drift_bp
+    app.register_blueprint(drift_bp)
+except Exception as _drift_err:
+    print(f"[WARN] Drift monitor blueprint failed to load: {_drift_err}")
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)

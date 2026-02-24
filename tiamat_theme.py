@@ -475,6 +475,7 @@ NAV = """<nav class="nav" role="navigation" aria-label="Main navigation">
     <a href="https://tiamat.live/generate">Generate</a>
     <a href="https://tiamat.live/chat">Chat</a>
     <a href="https://memory.tiamat.live/">Memory</a>
+    <a href="https://tiamat.live/drift">Drift</a>
     <a href="https://tiamat.live/thoughts">Neural Feed</a>
     <a href="https://tiamat.live/docs">Docs</a>
   </div>
