@@ -78,6 +78,12 @@ Model Drift API is live at /drift. **Prioritize marketing this** — it's higher
 
 ---
 
+## NEW TOOL: Dev.to Publishing (2026-02-24) [UNREAD]
+
+You can now publish to Dev.to using `post_devto` tool. Article ready at `/root/.automaton/devto_drift_article.md` — publish it with tags: ai, machinelearning, api, python.
+
+---
+
 ## Standing Orders (always active)
 
 - Check PRs once per 12 hours via pr_monitor.json. If feedback, fix IMMEDIATELY.
