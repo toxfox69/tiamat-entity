@@ -159,11 +159,22 @@ export function checkBehavioralLoop(
     counts.set(entry.action, (counts.get(entry.action) || 0) + 1);
   }
 
-  // Detect loops — no suppression; escalation tiers in loop.ts handle severity
+  // Normal working tools — these repeat naturally during productive work.
+  // Only flag them at a much higher threshold to avoid false positives.
+  const NORMAL_TOOLS = new Set([
+    "exec", "read_file", "write_file", "search_web", "web_fetch",
+    "send_telegram", "post_bluesky", "post_social", "post_farcaster",
+    "grow", "remember", "recall", "reflect",
+    "ticket_list", "ticket_claim", "ticket_complete",
+    "check_revenue", "read_farcaster", "browse_web",
+  ]);
+  const NORMAL_THRESHOLD = 10; // normal tools need 10+ repeats to flag
+
   const warnings: string[] = [];
   for (const [action, count] of counts) {
-    if (count >= state.duplicate_threshold) {
-      const toolName = action.split("::")[0];
+    const toolName = action.split("::")[0];
+    const threshold = NORMAL_TOOLS.has(toolName) ? NORMAL_THRESHOLD : state.duplicate_threshold;
+    if (count >= threshold) {
       warnings.push(
         `"${toolName}" repeated ${count}x in last ${state.window_size} cycles`,
       );
