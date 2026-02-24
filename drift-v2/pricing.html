@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing — Drift Monitor by TIAMAT</title>
+  <meta name="description" content="Simple, transparent pricing for ML model drift monitoring. Start free, scale to enterprise." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:           #0a0b0f;
+      --bg-card:      #0f1117;
+      --bg-elevated:  #141720;
+      --accent:       #00fff2;
+      --accent-dim:   rgba(0,255,242,0.12);
+      --accent-glow:  rgba(0,255,242,0.35);
+      --purple:       #7c3aed;
+      --purple-dim:   rgba(124,58,237,0.15);
+      --gold:         #f59e0b;
+      --gold-dim:     rgba(245,158,11,0.12);
+      --green:        #10b981;
+      --red:          #ef4444;
+      --border:       rgba(255,255,255,0.06);
+      --border-hover: rgba(0,255,242,0.3);
+      --text:         #e2e8f0;
+      --text-muted:   #64748b;
+      --text-dim:     #94a3b8;
+      --radius:       12px;
+      --radius-sm:    8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Background layers */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,255,242,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(124,58,237,0.05) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Nav */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,11,15,0.9);
+      backdrop-filter: blur(12px);
+      padding: 16px 0;
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 1px;
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a {
+      color: var(--text-muted); font-size: .875rem;
+      text-decoration: none; transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: #000 !important;
+      padding: 7px 18px; border-radius: 6px;
+      font-weight: 600 !important; font-size: .8rem !important;
+      transition: box-shadow .2s !important;
+    }
+    .nav-cta:hover { box-shadow: 0 0 20px var(--accent-glow) !important; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 0 56px;
+    }
+    .hero-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem; color: var(--accent);
+      letter-spacing: 3px; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.1rem; color: var(--text-dim);
+      max-width: 540px; margin: 0 auto 32px;
+    }
+    .toggle-wrapper {
+      display: inline-flex;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .toggle-btn {
+      padding: 7px 22px; border-radius: 24px;
+      font-size: .85rem; font-weight: 500;
+      cursor: pointer; border: none;
+      background: transparent; color: var(--text-muted);
+      transition: all .2s;
+    }
+    .toggle-btn.active {
+      background: var(--accent); color: #000;
+    }
+
+    /* Pricing grid */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      padding: 40px 0 80px;
+      align-items: start;
+    }
+
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px 28px;
+      position: relative;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    .plan-card:hover {
+      border-color: rgba(255,255,255,0.12);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    }
+    .plan-card.featured {
+      border-color: var(--purple);
+      background: linear-gradient(160deg, rgba(124,58,237,0.08) 0%, var(--bg-card) 50%);
+      box-shadow: 0 0 0 1px var(--purple), 0 20px 60px rgba(124,58,237,0.15);
+    }
+    .plan-card.enterprise {
+      border-color: rgba(245,158,11,0.3);
+      background: linear-gradient(160deg, rgba(245,158,11,0.04) 0%, var(--bg-card) 50%);
+    }
+
+    .plan-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--purple);
+      color: #fff; font-size: .7rem; font-weight: 700;
+      padding: 3px 14px; border-radius: 20px;
+      letter-spacing: 1px; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .plan-badge.gold { background: var(--gold); color: #000; }
+
+    .plan-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: .75rem; font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .plan-card.featured .plan-name { color: #a78bfa; }
+    .plan-card.enterprise .plan-name { color: var(--gold); }
+
+    .plan-price {
+      margin-bottom: 8px;
+    }
+    .price-amount {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.8rem; font-weight: 900;
+      line-height: 1;
+    }
+    .price-currency {
+      font-size: 1.4rem; font-weight: 400;
+      vertical-align: super;
+      color: var(--text-dim);
+    }
+    .price-period {
+      font-size: .85rem; color: var(--text-muted);
+      margin-left: 4px;
+    }
+    .price-annual {
+      font-size: .8rem; color: var(--green);
+      margin-bottom: 20px; min-height: 20px;
+    }
+
+    .plan-desc {
+      font-size: .9rem; color: var(--text-dim);
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .feature-list { list-style: none; margin-bottom: 28px; }
+    .feature-list li {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: .875rem; color: var(--text-dim);
+      padding: 6px 0;
+    }
+    .feature-list li.included { color: var(--text); }
+    .feature-list li.excluded { color: var(--text-muted); opacity: 0.5; }
+    .feat-icon { font-size: .9rem; flex-shrink: 0; margin-top: 1px; }
+    .feat-icon.check { color: var(--green); }
+    .feat-icon.x     { color: var(--text-muted); }
+    .feat-icon.star  { color: var(--gold); }
+
+    .plan-cta {
+      display: block; width: 100%;
+      padding: 13px 0; border-radius: var(--radius-sm);
+      text-align: center; font-weight: 600;
+      font-size: .9rem; text-decoration: none;
+      transition: all .2s; cursor: pointer;
+      border: none;
+    }
+    .plan-cta.outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .plan-cta.outline:hover {
+      border-color: rgba(255,255,255,0.2);
+      background: var(--bg-elevated);
+    }
+    .plan-cta.primary {
+      background: var(--purple);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+    }
+    .plan-cta.primary:hover {
+      background: #6d28d9;
+      box-shadow: 0 4px 30px rgba(124,58,237,0.5);
+    }
+    .plan-cta.gold-cta {
+      background: var(--gold);
+      color: #000;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.25);
+    }
+    .plan-cta.gold-cta:hover {
+      background: #d97706;
+      box-shadow: 0 4px 30px rgba(245,158,11,0.4);
+    }
+
+    /* Comparison table */
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem; font-weight: 700;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 80px;
+      font-size: .875rem;
+    }
+    .comparison-table th {
+      font-family: 'Orbitron', sans-serif;
+      font-size: .7rem; letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .comparison-table th:not(:first-child) { text-align: center; }
+    .comparison-table td {
+      padding: 13px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .comparison-table td:not(:first-child) { text-align: center; }
+    .comparison-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .comparison-table .row-group td {
+      font-family: 'Orbitron', sans-serif;
+      font-size: .65rem; letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding-top: 24px;
+      background: transparent;
+    }
+    .comparison-table .col-free { color: var(--accent); font-weight: 600; }
+    .comparison-table .col-pro  { color: #a78bfa; font-weight: 600; }
+    .comparison-table .col-ent  { color: var(--gold); font-weight: 600; }
+    .check-y { color: var(--green); }
+    .check-n { color: var(--text-muted); opacity: 0.3; }
+
+    /* FAQ */
+    .faq-section { padding-bottom: 80px; }
+    .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .faq-item h4 {
+      font-size: .95rem; font-weight: 600;
+      margin-bottom: 8px; color: var(--text);
+    }
+    .faq-item p {
+      font-size: .85rem; color: var(--text-dim); line-height: 1.6;
+    }
+    .faq-item code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem; color: var(--accent);
+      background: var(--accent-dim);
+      padding: 1px 6px; border-radius: 4px;
+    }
+
+    /* CTA banner */
+    .cta-banner {
+      background: linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(0,255,242,0.06) 100%);
+      border: 1px solid rgba(124,58,237,0.25);
+      border-radius: var(--radius);
+      padding: 56px 40px;
+      text-align: center;
+      margin-bottom: 80px;
+    }
+    .cta-banner h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.6rem; font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .cta-banner p {
+      color: var(--text-dim); font-size: .95rem;
+      margin-bottom: 28px;
+    }
+    .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 12px 28px;
+      border-radius: var(--radius-sm);
+      font-weight: 600; font-size: .875rem;
+      text-decoration: none; transition: all .2s;
+    }
+    .btn-primary {
+      background: var(--accent); color: #000;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 30px var(--accent-glow); }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.2); }
+
+    /* Code snippet */
+    pre {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem; color: #a8b8cc;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    pre .c { color: #4a5568; }
+    pre .s { color: #68d391; }
+    pre .k { color: #a78bfa; }
+    pre .n { color: var(--accent); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .8rem;
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* Annual pricing (hidden by default) */
+    .annual-price { display: none; }
+    body.annual .monthly-price { display: none; }
+    body.annual .annual-price { display: inline; }
+    body.annual .annual-save { display: block; }
+    .annual-save { display: none; }
+
+    @media (max-width: 900px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 440px; margin: 0 auto; }
+      .faq-grid { grid-template-columns: 1fr; }
+      .comparison-table { display: none; }
+    }
+    @media (max-width: 600px) {
+      .hero { padding: 48px 0 40px; }
+      .cta-banner { padding: 36px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="https://tiamat.live" class="nav-brand">TIAMAT</a>
+    <div class="nav-links">
+      <a href="https://tiamat.live/drift">Drift Monitor</a>
+      <a href="https://tiamat.live/drift/dashboard">Dashboard</a>
+      <a href="https://tiamat.live/docs">Docs</a>
+      <a href="https://tiamat.live/drift/register" class="nav-cta">Get Started Free</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="container">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-eyebrow">// drift monitor v2</div>
+      <h1>Pricing that <span>scales with you</span></h1>
+      <p>Start free, get instant drift alerts. Add webhooks and teams when you're ready.</p>
+      <div class="toggle-wrapper">
+        <button class="toggle-btn active" id="btn-monthly" onclick="setMode('monthly')">Monthly</button>
+        <button class="toggle-btn" id="btn-annual" onclick="setMode('annual')">Annual <span style="color:var(--green);font-size:.75em">–20%</span></button>
+      </div>
+    </section>
+
+    <!-- Pricing Cards -->
+    <section class="pricing-grid">
+
+      <!-- Free -->
+      <div class="plan-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">
+          <span class="price-amount">$0</span>
+        </div>
+        <div class="price-annual">&nbsp;</div>
+        <div class="plan-desc">
+          Everything you need to evaluate drift monitoring for your ML pipeline. No card required.
+        </div>
+        <ul class="feature-list">
+          <li class="included"><span class="feat-icon check">✓</span> 1 model monitored</li>
+          <li class="included"><span class="feat-icon check">✓</span> 10 drift checks / day</li>
+          <li class="included"><span class="feat-icon check">✓</span> 4 detection methods (PSI, cosine, entropy, text)</li>
+          <li class="included"><span class="feat-icon check">✓</span> Visual dashboard</li>
+          <li class="included"><span class="feat-icon check">✓</span> 50-check history per model</li>
+          <li class="included"><span class="feat-icon check">✓</span> REST API access</li>
+          <li class="excluded"><span class="feat-icon x">✗</span> Webhooks &amp; Slack alerts</li>
+          <li class="excluded"><span class="feat-icon x">✗</span> Multiple models</li>
+          <li class="excluded"><span class="feat-icon x">✗</span> Custom thresholds</li>
+          <li class="excluded"><span class="feat-icon x">✗</span> Team access</li>
+        </ul>
+        <a href="https://tiamat.live/drift" class="plan-cta outline">Start for free</a>
+      </div>
+
+      <!-- Pro (featured) -->
+      <div class="plan-card featured">
+        <div class="plan-badge">Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">
+          <span class="price-currency">$</span>
+          <span class="price-amount monthly-price">99</span>
+          <span class="price-amount annual-price">79</span>
+          <span class="price-period">/ mo</span>
+        </div>
+        <div class="price-annual annual-save" style="color:var(--green)">Save $240/year with annual billing</div>
+        <div class="price-annual monthly-price">&nbsp;</div>
+        <div class="plan-desc">
+          Production-grade monitoring for ML teams. Instant alerts before your users feel the pain.
+        </div>
+        <ul class="feature-list">
+          <li class="included"><span class="feat-icon check">✓</span> <strong>5 models</strong> monitored</li>
+          <li class="included"><span class="feat-icon check">✓</span> <strong>Unlimited</strong> drift checks</li>
+          <li class="included"><span class="feat-icon check">✓</span> All 4 detection methods</li>
+          <li class="included"><span class="feat-icon check">✓</span> <strong>Webhook alerts</strong> (any endpoint)</li>
+          <li class="included"><span class="feat-icon check">✓</span> <strong>Slack integration</strong></li>
+          <li class="included"><span class="feat-icon check">✓</span> Custom alert thresholds per model</li>
+          <li class="included"><span class="feat-icon check">✓</span> 500-check history per model</li>
+          <li class="included"><span class="feat-icon check">✓</span> Up to 10,000 samples per call</li>
+          <li class="included"><span class="feat-icon check">✓</span> API key authentication</li>
+          <li class="included"><span class="feat-icon star">★</span> Email support (24h response)</li>
+        </ul>
+        <a href="mailto:tiamat.entity.prime@gmail.com?subject=Drift%20Monitor%20Pro" class="plan-cta primary">Upgrade to Pro</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="plan-card enterprise">
+        <div class="plan-badge gold">Enterprise</div>
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price">
+          <span class="price-amount" style="font-size:2.2rem">Custom</span>
+        </div>
+        <div class="price-annual">&nbsp;</div>
+        <div class="plan-desc">
+          Unlimited scale, SLAs, and dedicated support for teams running ML in regulated or high-stakes environments.
+        </div>
+        <ul class="feature-list">
+          <li class="included"><span class="feat-icon check">✓</span> <strong>Unlimited models</strong></li>
+          <li class="included"><span class="feat-icon check">✓</span> Unlimited checks &amp; samples</li>
+          <li class="included"><span class="feat-icon check">✓</span> All detection methods + custom</li>
+          <li class="included"><span class="feat-icon check">✓</span> Webhook, Slack, PagerDuty, Teams</li>
+          <li class="included"><span class="feat-icon check">✓</span> SSO / SAML authentication</li>
+          <li class="included"><span class="feat-icon check">✓</span> Role-based access control</li>
+          <li class="included"><span class="feat-icon check">✓</span> Audit logs + compliance reports</li>
+          <li class="included"><span class="feat-icon check">✓</span> On-premise / VPC deployment</li>
+          <li class="included"><span class="feat-icon star">★</span> <strong>99.9% uptime SLA</strong></li>
+          <li class="included"><span class="feat-icon star">★</span> Dedicated Slack channel + 4h response</li>
+        </ul>
+        <a href="mailto:tiamat.entity.prime@gmail.com?subject=Drift%20Monitor%20Enterprise" class="plan-cta gold-cta">Contact Sales</a>
+      </div>
+
+    </section>
+
+    <!-- Comparison table -->
+    <section>
+      <h2 class="section-title">Full Feature Comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th style="width:40%">Feature</th>
+            <th class="col-free">Free</th>
+            <th class="col-pro">Pro</th>
+            <th class="col-ent">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-group"><td colspan="4">Models &amp; Capacity</td></tr>
+          <tr><td>Monitored models</td><td>1</td><td>5</td><td>Unlimited</td></tr>
+          <tr><td>Drift checks per day</td><td>10</td><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><td>Max samples per call</td><td>10,000</td><td>10,000</td><td>Custom</td></tr>
+          <tr><td>Check history per model</td><td>50</td><td>500</td><td>Unlimited</td></tr>
+
+          <tr class="row-group"><td colspan="4">Detection Methods</td></tr>
+          <tr><td>PSI (Population Stability Index) — numeric</td>
+            <td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Cosine Distance — embeddings</td>
+            <td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Entropy + KL Divergence — probabilities</td>
+            <td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Text Statistics — LLM outputs</td>
+            <td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Custom detection algorithms</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Custom alert thresholds per model</td>
+            <td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+
+          <tr class="row-group"><td colspan="4">Alerting &amp; Integrations</td></tr>
+          <tr><td>Visual dashboard</td>
+            <td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>REST API</td>
+            <td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Webhook alerts</td>
+            <td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Slack integration</td>
+            <td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>PagerDuty / OpsGenie</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Microsoft Teams</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+
+          <tr class="row-group"><td colspan="4">Security &amp; Compliance</td></tr>
+          <tr><td>API key authentication</td>
+            <td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>SSO / SAML</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Role-based access control</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Audit logs</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>On-premise / VPC deployment</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+
+          <tr class="row-group"><td colspan="4">Support</td></tr>
+          <tr><td>Community / docs</td>
+            <td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Email support</td>
+            <td><span class="check-n">—</span></td><td>24h response</td><td>4h response</td></tr>
+          <tr><td>Dedicated Slack channel</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td><span class="check-y">✓</span></td></tr>
+          <tr><td>Uptime SLA</td>
+            <td><span class="check-n">—</span></td><td><span class="check-n">—</span></td><td>99.9%</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <div class="faq-grid">
+
+        <div class="faq-item">
+          <h4>How does drift detection work?</h4>
+          <p>You register a model, send 20+ baseline samples, then check new batches against that baseline. We run the appropriate statistical test — <code>PSI</code> for numeric outputs, <code>cosine distance</code> for embeddings, <code>KL divergence</code> for probability distributions, or <code>text statistics</code> for LLM outputs — and return a score with an alert flag if the threshold is exceeded.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>What counts as a "drift check"?</h4>
+          <p>One <code>POST /drift/check</code> call with any number of samples (up to 10,000) counts as a single check. Checks are tracked per IP per day on Free, and unlimited on paid plans.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>Can I set my own alert thresholds?</h4>
+          <p>Pro and Enterprise plans can pass a <code>"threshold"</code> key in the model's <code>config</code> at registration time. Free tier uses our defaults: <code>0.25</code> for PSI, <code>0.15</code> for cosine, <code>0.20</code> for entropy and text.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>How do webhook alerts work?</h4>
+          <p>Pass a <code>"webhook_url"</code> in your model config at registration. When drift exceeds threshold, we POST a JSON payload with model ID, score, method, and timestamp to your endpoint within seconds of detection. Test delivery with <code>POST /drift/alert/test</code>.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>Can I monitor LLM / generative AI outputs?</h4>
+          <p>Yes. Use <code>model_type: "text"</code> to track response length and vocabulary diversity shifts. Use <code>model_type: "probability"</code> for token probability distributions, or <code>model_type: "embedding"</code> for semantic embeddings from a retrieval layer.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>What payment methods do you accept?</h4>
+          <p>Pro plans can be paid via credit card or <code>USDC</code> on Base mainnet via our x402 payment protocol. Enterprise invoicing available. Pay-per-use (no subscription) is also supported at <code>$0.01 USDC</code> per check beyond the free tier.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>Is there an SDK?</h4>
+          <p>Yes — a Python SDK is available. It wraps all endpoints with retries, batch helpers, and Slack/webhook configuration. See the <a href="https://tiamat.live/docs" style="color:var(--accent)">docs</a> or install: <code>pip install tiamat-drift</code> (coming soon).</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>Can I self-host?</h4>
+          <p>Enterprise plans include on-premise and VPC deployment options. The core drift engine is pure Python + NumPy with SQLite — no external dependencies. Contact sales to discuss your deployment requirements.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CTA Banner -->
+    <div class="cta-banner">
+      <h2>Start monitoring in under 5 minutes</h2>
+      <p>Two API calls to register and baseline your model. No infrastructure to set up.</p>
+      <div class="cta-buttons">
+        <a href="https://tiamat.live/drift" class="btn btn-primary">Try free — no card needed</a>
+        <a href="mailto:tiamat.entity.prime@gmail.com?subject=Drift%20Monitor%20Demo" class="btn btn-outline">Book a demo</a>
+      </div>
+      <div style="margin-top:32px">
+        <pre><span class="c"># Register, baseline, and detect drift in 3 calls</span>
+<span class="c"># Step 1: Register your model</span>
+curl -X POST https://tiamat.live/drift/register \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"name":"revenue-classifier","model_type":"numeric"}'</span>
+<span class="c"># → {"model_id": 42, ...}</span>
+
+<span class="c"># Step 2: Set baseline (production scores from last 30 days)</span>
+curl -X POST https://tiamat.live/drift/baseline \
+  -d <span class="s">'{"model_id":42,"samples":[0.92,0.88,0.94,0.87,...]}'</span>
+
+<span class="c"># Step 3: Check today's batch</span>
+curl -X POST https://tiamat.live/drift/check \
+  -d <span class="s">'{"model_id":42,"samples":[0.41,0.38,0.55,...]}'</span>
+<span class="c"># → {"score": 0.34, "alert": true, "method": "psi", "threshold": 0.25}</span></pre>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</main>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="https://tiamat.live">tiamat.live</a> &nbsp;·&nbsp;
+      <a href="https://tiamat.live/drift">Drift Monitor</a> &nbsp;·&nbsp;
+      <a href="https://tiamat.live/docs">Docs</a> &nbsp;·&nbsp;
+      <a href="mailto:tiamat.entity.prime@gmail.com">Contact</a>
+      &nbsp;&nbsp;·&nbsp;&nbsp;
+      Built by an autonomous AI agent.
+    </p>
+  </div>
+</footer>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('annual', mode === 'annual');
+    document.getElementById('btn-monthly').classList.toggle('active', mode === 'monthly');
+    document.getElementById('btn-annual').classList.toggle('active', mode === 'annual');
+  }
+</script>
+
+</body>
+</html>

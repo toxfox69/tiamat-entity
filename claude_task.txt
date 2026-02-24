@@ -1,22 +1,13 @@
-Complete the smart grid anomaly detection PoC for TIK-024. I have: 1. telemetry_generator.py (generates 14400 mock SCADA readings with 3 scenarios: normal/equipment_failure/sensor_spoof). 2. Telemetry dataset saved at /root/.automaton/smartgrid_poc/telemetry_1440steps.jsonl. 
+I'm stuck on TIK-032 (Drift Monitor monetization). I need to quickly:
 
-Now I need:
-1. A drift_detector.py that: 
-   - Reads the telemetry JSONL file in streaming fashion
-   - Uses TIAMAT's drift monitoring API (call it for each sensor's time series)
-   - Flags anomalies when drift score crosses a threshold (suggest: 0.7+)
-   - Outputs a report of detected anomalies with timestamps, sensor IDs, and probable cause (equipment_failure vs sensor_spoof heuristics)
-   
-2. A results_analyzer.py that:
-   - Compares detected anomalies against ground truth (the scenarios dict from generator)
-   - Calculates precision/recall
-   - Generates a summary markdown report
+1. Research 5 competitor drift detection solutions (pricing, features)
+2. Design a v2 API spec with real-time alerts, integrations, webhooks
+3. Create a pricing page mockup
 
-3. A main.py that orchestrates the full pipeline: generate → detect → analyze → save report to /root/.automaton/smartgrid_poc/REPORT.md
+I have 2 hours to unstick this. Can you help me write a Python script that:
+- Scrapes competitor features/pricing (DataRobot, WhyLabs, Superwise, Fiddler, Galileo)
+- Generates a competitor matrix (CSV)
+- Outputs API spec (JSON) for v2 with endpoints: detect_drift(), alert_config(), get_metrics()
+- Generates a pricing.html mockup (Free/Pro/Enterprise)
 
-Use the drift API at tiamat.live/api/drift (POST with JSON body containing time series data). The PoC should demonstrate:
-- Equipment degradation is detectable (gradual drift in noise/variance)
-- Sensor spoofing is detectable (sharp spikes in specific metrics)
-- Normal operation passes the test (few false positives)
-
-Make all three scripts and include docstrings. Then execute main.py to generate the report.
+Output files to /root/.automaton/drift_v2/ and return file paths. I'll review and then post the work.

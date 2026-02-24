@@ -1,0 +1,243 @@
+================================================================================
+TIAMAT DRIFT MONITOR — OUTREACH PITCH TEMPLATES
+API: https://tiamat.live/drift
+Generated: 2026-02-24
+================================================================================
+
+HOW TO USE THIS FILE
+--------------------
+Each template has:
+  - Subject/opening line (DM or reply format)
+  - Body (keep to 3-5 sentences for DMs; expand if replying to a relevant thread)
+  - Personalization hooks (fill in before sending)
+  - Variants for different contexts (cold DM vs. reply to post vs. thread)
+
+Target mapping (see drift_outreach.json):
+  Template A (Data Scientist) → targets 3, 4, 8, 9
+  Template B (MLOps Engineer)  → targets 1, 2, 10
+  Template C (AI Founder)      → targets 5, 6, 7
+
+================================================================================
+TEMPLATE A — DATA SCIENTIST / MODEL DECAY
+Target persona: DS who has watched a model's accuracy slowly erode in prod.
+Core fear: "My model is wrong and I don't know it yet."
+Value angle: Statistical certainty that something has changed, before users notice.
+================================================================================
+
+OPENING LINE (cold DM or reply):
+  "Quick question — how do you currently detect when your model's output
+   distribution starts shifting?"
+
+BODY (short form, DM):
+  Most teams find out from users. I built an API to catch it statistically:
+  send your model's baseline outputs, then POST new batches to /drift/check.
+  Returns a PSI score (numeric), cosine drift (embeddings), or KL divergence
+  (probabilities) — whichever fits your model type.
+
+  Free tier: 3 models, 10 checks/day. https://tiamat.live/drift
+
+BODY (thread reply — attach to their post about model reliability):
+  This is the exact problem I built for. Three endpoints:
+
+  1. POST /drift/register  (name + model_type: numeric|embedding|probability|text)
+  2. POST /drift/baseline  (your clean production outputs, 20+ samples)
+  3. POST /drift/check     (new batch → get back score + alert bool)
+
+  PSI > 0.25 = significant drift. Webhook optional. No infra, just curl.
+  https://tiamat.live/drift — free tier covers most side projects.
+
+PERSONALIZATION HOOKS (fill in ONE per message):
+  - [FOR CHIP]   "Your chapter 8 description of PSI thresholds is exactly
+                  the algorithm — 10-bin equal-frequency histogram comparison."
+  - [FOR SHREYA] "Your 'Rethinking Data Monitoring' paper maps to the free
+                  tier directly: lightweight enough to actually deploy."
+  - [FOR EUGENE] "The recsys drift problem you described in 'ML beyond
+                  curation' — PSI on score distributions catches it automatically."
+  - [FOR VICKI]  "No YAML configs. No dashboards to maintain. Just POST samples,
+                  get a number. If score > 0.25, your distribution shifted."
+  - [FOR LINUS]  "For any model you're iterating on — this gives you a scalar
+                  for 'did my outputs change?' without manual inspection."
+
+DO / DON'T:
+  DO: Lead with the algorithm name (PSI/cosine) — this audience trusts math.
+  DO: Show the 3-step curl flow if space allows.
+  DON'T: Talk about pricing first. Prove the tool exists before asking for $.
+  DON'T: Oversell. "Catches drift" > "revolutionary AI monitoring platform."
+
+================================================================================
+TEMPLATE B — MLOPS ENGINEER / MONITORING INFRASTRUCTURE
+Target persona: MLOps eng building the observability stack, choosing tools.
+Core fear: "I'm building monitoring but I can't justify another full platform."
+Value angle: Drop-in API endpoint, no agent/sidecar/SDK required.
+================================================================================
+
+OPENING LINE (cold DM):
+  "If you're building model monitoring infra — this might save you the
+   PSI implementation work."
+
+BODY (short form, DM):
+  Built a drift detection API: https://tiamat.live/drift
+  Three POST endpoints — register model, set baseline, check drift.
+  Algorithms: PSI (numeric outputs), cosine distance (embeddings),
+  KL divergence (probabilities), text stats (LLM outputs).
+
+  Webhook support for alerts. Returns JSON score + threshold + alert bool.
+  10 free checks/day. Paid tier $0.01/check (USDC, no account needed).
+
+BODY (longer, replying to a monitoring infra post):
+  I've been building a lightweight drift detection layer that might be
+  useful for this:
+
+  - POST /drift/register — model_id back
+  - POST /drift/baseline — feed it 20+ baseline samples, stats stored
+  - POST /drift/check    — score, threshold, alert bool, optional webhook
+
+  The algorithms are: PSI (numeric score distributions), cosine centroid
+  drift (embeddings), entropy + KL (probability outputs), z-score on
+  length/vocab (text). All from scratch, numpy only, no sklearn dependency.
+
+  Works as a CI step: run baseline weekly, check on every deploy.
+  https://tiamat.live/drift — meta at /drift/meta
+
+PERSONALIZATION HOOKS (fill in ONE per message):
+  - [FOR CHIP]    "The PSI threshold table in your book (0.1/0.25) is exactly
+                   what the API uses as default — plug-and-play with the
+                   chapter's examples."
+  - [FOR HAMEL]   "For LLM output monitoring specifically — text model_type
+                   tracks length z-score and vocab diversity drift. Sends a
+                   webhook when your outputs start changing character."
+  - [FOR TIM/LAION] "For checkpoint evaluation at scale — cosine drift on
+                   embedding samples detects semantic shift between fine-tune
+                   versions before your benchmark suite does."
+
+DO / DON'T:
+  DO: Emphasize no-SDK / no-agent. This is their biggest pain with full platforms.
+  DO: Mention the /drift/meta endpoint — MLOps engineers want to inspect APIs.
+  DO: Mention the webhook + CI use case — that's the integration they're thinking about.
+  DON'T: Try to replace their full observability stack. Position as one complementary layer.
+  DON'T: Use the word "platform." You're an API, not a platform.
+
+================================================================================
+TEMPLATE C — AI STARTUP FOUNDER
+Target persona: Founder shipping an LLM-powered product, technical but time-poor.
+Core fear: "My product breaks silently when the underlying model changes."
+Value angle: Catches silent model updates / distribution shifts without engineering overhead.
+================================================================================
+
+OPENING LINE (cold DM):
+  "Genuine question: how do you know when a model update breaks your
+   product before your users do?"
+
+BODY (short form, DM):
+  I built a drift alert API for this: https://tiamat.live/drift
+  You send a batch of your app's current outputs to /drift/baseline (once).
+  Then POST new batches to /drift/check — you get a score + alert bool.
+
+  Webhook fires when your output distribution shifts. Catches silent model
+  updates, data pipeline changes, prompt injection patterns, anything that
+  makes your outputs statistically different.
+
+  Free to try. 10 checks/day included.
+
+BODY (longer, replying to a post about LLM reliability):
+  The problem I kept seeing was: teams find out about model degradation
+  from support tickets, not metrics. I built an endpoint for the gap:
+
+  1. POST /drift/baseline — your current outputs become the baseline
+  2. POST /drift/check daily — get a drift score (0 = stable, >0.25 = alert)
+  3. Configure a webhook — your Slack/PagerDuty fires before users notice
+
+  Works for any output type: numeric scores (PSI), embedding vectors
+  (cosine drift), LLM probabilities (KL divergence), text outputs (stats).
+
+  No new infra. Just HTTP. https://tiamat.live/drift
+
+PERSONALIZATION HOOKS (fill in ONE per message):
+  - [FOR SWYX]   "Every silent GPT-4 update is a potential distribution
+                  shift in your app. Baseline your outputs this week and
+                  you'll know the next time it happens in <10 minutes."
+  - [FOR SIMON]  "For any LLM experiment you're running — 3 curls and you
+                  have a time-series of output stability. The text model_type
+                  catches when response length/vocab starts drifting."
+  - [FOR HARRISON] "LangSmith traces tell you what happened. This tells you
+                  whether your *output distribution* has shifted from baseline —
+                  the statistical layer LangSmith doesn't have."
+
+DO / DON'T:
+  DO: Make the "silent model update" scenario concrete. It's visceral.
+  DO: Keep it extremely short. Founders have 8 seconds.
+  DO: Mention the webhook explicitly — that's the feature that converts them.
+  DON'T: Explain the algorithms in depth. They don't care about PSI.
+  DON'T: Lead with pricing. Lead with the problem solved.
+  DON'T: Send a long message. If they want more, they'll ask.
+
+================================================================================
+FOLLOW-UP TEMPLATE (use if they engage but don't convert)
+================================================================================
+
+FOLLOW-UP (24-48h after a reply that shows interest but not action):
+  "In case it's useful — quickest way to test it:
+
+  curl -X POST https://tiamat.live/drift/register \
+    -H 'Content-Type: application/json' \
+    -d '{\"name\":\"test\",\"model_type\":\"numeric\"}'
+
+  Returns a model_id. Then /drift/baseline with 20+ of your actual outputs.
+  Then /drift/check with a new batch. Takes about 2 minutes end to end.
+  No signup, no API key needed for free tier."
+
+================================================================================
+QUICK REFERENCE — API FACTS TO WEAVE IN
+================================================================================
+
+Detection methods (by model_type):
+  numeric      → PSI (Population Stability Index), 10-bin histogram
+                 Alert threshold: > 0.25
+  embedding    → Cosine centroid drift + per-sample similarity shift
+                 Alert threshold: > 0.15
+  probability  → Shannon entropy change + KL divergence
+                 Alert threshold: > 0.20
+  text         → Length z-score + vocabulary diversity z-score
+                 Alert threshold: > 0.20
+
+Free tier:
+  - 3 models per IP (lifetime)
+  - 10 drift checks per day per IP
+  - 1 baseline reset per model per day
+
+Paid tier:
+  - $0.005 USDC per baseline (above free limit)
+  - $0.010 USDC per drift check (above free limit)
+  - No account required — pay per call with USDC on Base
+
+Integrations:
+  - Webhook: configure in model config, fires on alert
+  - CI: POST /drift/check in your deploy pipeline
+  - Dashboard: https://tiamat.live/drift/dashboard (visual)
+
+================================================================================
+OUTREACH SEQUENCING RECOMMENDATION
+================================================================================
+
+Week 1 targets (highest signal / most likely to amplify):
+  1. Shreya Shankar (Template A, Twitter) — most technically aligned
+  2. Simon Willison (Template C, Bluesky) — likely to blog about it
+  3. Hamel Husain (Template B, Twitter) — LLM monitoring is his beat
+
+Week 2 targets (high profile, lower response rate):
+  4. Eugene Yan (Template A, Twitter)
+  5. Vicki Boykis (Template A, Twitter)
+  6. swyx (Template C, Twitter)
+
+Week 3+ targets (long shots, worth trying):
+  7. Chip Huyen (Template B, Twitter)
+  8. Harrison Chase (Template C, Twitter)
+  9. Linus Lee (Template A, Farcaster)
+  10. Tim Schuhmann (Template B, Twitter)
+
+GENERAL RULES:
+  - One message per person per week max.
+  - Reply to their posts when relevant (warm) > cold DM.
+  - Never pitch in a reply thread about something unrelated.
+  - If they try the API and have feedback, respond within 2 hours.
+================================================================================

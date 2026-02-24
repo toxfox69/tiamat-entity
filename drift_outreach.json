@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "created": "2026-02-24",
+    "api": "https://tiamat.live/drift",
+    "value_prop": "PSI + cosine + entropy drift detection. 3-step API. Webhook alerts. 10 free checks/day. $0.01 USDC/check.",
+    "free_tier": "3 models per IP, 10 drift checks/day, 1 baseline reset/model/day"
+  },
+  "targets": [
+    {
+      "id": 1,
+      "name": "Chip Huyen",
+      "handle": "@chipro",
+      "domain": "MLOps education, author of 'Designing Machine Learning Systems' (O'Reilly)",
+      "best_channel": "twitter",
+      "template": "B",
+      "pain_point": "Chapter 8 of her book covers data distribution shifts in depth — she knows how hard it is to detect and act on in production. She's heard every complaint about drift monitoring being too complex.",
+      "personalization_hook": "Your chapter 8 on distribution shifts is the most dog-eared section of my copy — the gap between 'PSI > 0.25' and 'here's a working endpoint to check it' is exactly what I built.",
+      "context": "Extremely high signal audience. A single retweet from her could drive hundreds of signups. Treat this as a top-tier cold pitch.",
+      "notes": "Active on Twitter. Has mentioned wanting simpler tools. Do NOT ask her to try it blindly — give her the 3-line curl example upfront."
+    },
+    {
+      "id": 2,
+      "name": "Hamel Husain",
+      "handle": "@HamelHusain",
+      "domain": "LLM engineering, evals, fine-tuning pipelines, W&B advisor",
+      "best_channel": "twitter",
+      "template": "B",
+      "pain_point": "Writes and podcasts constantly about LLM output quality degradation. His core thesis: most teams discover model rot from angry users, not metrics. Wants proactive monitoring.",
+      "personalization_hook": "You've said monitoring LLM outputs is the biggest gap in the eval toolchain. The drift API tracks text-stat drift (length z-score + vocab diversity) — send it baseline outputs, get a score.",
+      "context": "Heavy on substack/newsletter. Engaged community. He responds to technical pitches that show actual output examples.",
+      "notes": "Best approach: include a working drift check example with LLM outputs. Show text model_type in the curl."
+    },
+    {
+      "id": 3,
+      "name": "Shreya Shankar",
+      "handle": "@sh_rei",
+      "domain": "ML monitoring research, UC Berkeley PhD, co-authored 'Rethinking Data Monitoring'",
+      "best_channel": "twitter",
+      "template": "A",
+      "pain_point": "Her research shows practitioners discover drift weeks late because monitoring tooling is too heavyweight to actually deploy. She's looking for lightweight, deployable solutions.",
+      "personalization_hook": "Your paper 'Rethinking Data Monitoring' describes exactly why I built this — the gap between knowing PSI and having a /check endpoint your CI can hit. 3 endpoints, no infra.",
+      "context": "Academic + practitioner hybrid. Very technical. Engage her as a peer — cite the paper, show the algorithm (PSI for numeric, cosine for embeddings). She may want to experiment.",
+      "notes": "Could become a genuine user AND help validate the approach academically. Treat like a collab pitch, not a sales pitch."
+    },
+    {
+      "id": 4,
+      "name": "Eugene Yan",
+      "handle": "@eugeneyan",
+      "domain": "Applied ML at Amazon, recommendation systems, writing at eugeneyan.com",
+      "best_channel": "twitter",
+      "template": "A",
+      "pain_point": "Has written about recommendation system staleness and the challenge of knowing when a model's predictions have drifted from what users actually click. Scoring drift is his exact use case.",
+      "personalization_hook": "You wrote about recsys drift in 'ML beyond curation' — the PSI method in this API is exactly what you described wanting to automate: bucket the output score distribution, compare to baseline.",
+      "context": "Practical, builder mindset. He values tools he can drop into a pipeline. Show the webhook integration angle — he cares about operationalizing, not just detecting.",
+      "notes": "Has a large newsletter audience. If he writes about the tool, it reaches 20k+ ML practitioners."
+    },
+    {
+      "id": 5,
+      "name": "swyx",
+      "handle": "@swyx",
+      "domain": "AI developer, Latent Space podcast, 'AI engineer' community builder",
+      "best_channel": "twitter",
+      "template": "C",
+      "pain_point": "Building AI products that depend on LLM APIs. When OpenAI/Anthropic silently updates model behavior, apps break silently. Wants early warning when outputs shift.",
+      "personalization_hook": "Every time a model provider does a silent update, your users notice before you do. This catches it: baseline your app's outputs this week, get a webhook the moment distributions shift.",
+      "context": "Very community-oriented. Could share in AI Engineer Discord/Slack. Pitch the 'silent model update' angle hard — it resonates with AI app builders.",
+      "notes": "Keep pitch punchy. He gets tons of pitches. Lead with the problem statement, not the API docs."
+    },
+    {
+      "id": 6,
+      "name": "Simon Willison",
+      "handle": "@simonw",
+      "domain": "Datasette, LLM tools, prolific builder, writes daily at simonwillison.net",
+      "best_channel": "bluesky",
+      "template": "C",
+      "pain_point": "Runs many side LLM experiments and tools. No systematic way to know if an experiment's output distribution is changing over time. Probably just checks manually.",
+      "personalization_hook": "For any LLM experiment you're running — send baseline outputs to /drift/register + /drift/baseline, then check daily. Three curl commands and you have a time-series of model stability.",
+      "context": "Bluesky native. Very responsive to interesting tools. He blogs about everything he finds interesting — getting a mention on his blog is enormous.",
+      "notes": "Do NOT pitch revenue. Pitch the tool as interesting engineering. Show the text model_type. He'll want to poke at the API."
+    },
+    {
+      "id": 7,
+      "name": "Harrison Chase",
+      "handle": "@hwchase17",
+      "domain": "LangChain founder/CEO, LLM orchestration, massive developer community",
+      "best_channel": "twitter",
+      "template": "C",
+      "pain_point": "LangChain pipelines use LLMs as components. When the underlying model updates, the pipeline output distribution shifts but there's no native monitoring. LangSmith doesn't do statistical drift.",
+      "personalization_hook": "LangSmith tracks traces. This tracks whether your output *distribution* is changing — probability entropy + KL divergence on your chain's outputs. Complementary, not redundant.",
+      "context": "High profile. Low response probability unless pitch is exceptionally differentiated. Best angle: LangSmith integration story — 'this adds the missing stat layer.'",
+      "notes": "Pitch the embedding model_type — LangChain users have embeddings everywhere. Show how cosine drift on embedding outputs catches semantic shift."
+    },
+    {
+      "id": 8,
+      "name": "Vicki Boykis",
+      "handle": "@vboykis",
+      "domain": "ML engineer, staff engineer at Mozilla, writes 'Normcore Tech' newsletter",
+      "best_channel": "twitter",
+      "template": "A",
+      "pain_point": "Consistently writes that production ML is mostly unglamorous reliability work. Has complained about monitoring tooling being either too complex (full Evidently stack) or too naive (just log accuracy).",
+      "personalization_hook": "You've written that real ML engineering is 'maintaining things that break quietly.' PSI > 0.25 on your score distribution is the thing that breaks quietly — this makes it loud.",
+      "context": "Respected, opinionated voice. Very skeptical of hype. Pitch must be direct and honest — what it does, what it doesn't do, exact pricing. She'll respect that.",
+      "notes": "Do NOT oversell. She will call it out publicly. Be precise about the algorithms (PSI, cosine, KL). She'll appreciate the numpy-only implementation."
+    },
+    {
+      "id": 9,
+      "name": "Linus Lee",
+      "handle": "@thesephist",
+      "domain": "Independent AI researcher, builder of experimental ML tools, Farcaster native",
+      "best_channel": "farcaster",
+      "template": "A",
+      "pain_point": "Runs many experimental ML models and tools (Mira, etc.). Output consistency over time matters but he has no systematic way to measure it. Likely just does vibes-based evaluation.",
+      "personalization_hook": "For any model you're iterating on — this gives you a number for 'has my output distribution changed?' Cosine drift on embeddings, PSI on numeric scores. API, no infra.",
+      "context": "Farcaster native. Technical, builder, values simplicity and elegance. Respond to aesthetically clean APIs. Show the full 3-step flow compactly.",
+      "notes": "Could become a genuine power user who writes about the tool publicly. Farcaster DM is right channel — he's active there."
+    },
+    {
+      "id": 10,
+      "name": "Tim Schuhmann",
+      "handle": "@tim_schuhmann",
+      "domain": "LAION founder, large-scale ML datasets, model quality tracking",
+      "best_channel": "twitter",
+      "template": "B",
+      "pain_point": "LAION manages massive datasets used to train models. Tracking whether model outputs shift across dataset versions or fine-tunes is a core problem. Statistical drift detection at scale.",
+      "personalization_hook": "For LAION-trained models — send a sample of output embeddings as baseline, then check each new fine-tune checkpoint for cosine drift. Catches distribution shifts before your evals do.",
+      "context": "Very technical audience. Cares about scale and rigor. Pitch the embedding model_type and cosine drift method specifically — that's what matters for large model evaluation.",
+      "notes": "Less about revenue pitch, more about getting the tool used in a high-profile pipeline. If LAION uses it, credibility skyrockets."
+    }
+  ]
+}

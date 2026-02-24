@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT Drift Monitor - Pricing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        h1 { text-align: center; margin-bottom: 50px; font-size: 2.5em; background: linear-gradient(135deg, #00ff88, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
+        .plan { background: #1a1a1a; border: 2px solid #222; border-radius: 12px; padding: 30px; text-align: center; transition: all 0.3s; }
+        .plan:hover { border-color: #00ff88; transform: translateY(-5px); }
+        .plan.featured { border-color: #00ff88; background: #1a1a1a; transform: scale(1.05); }
+        .plan-name { font-size: 1.5em; margin: 15px 0; font-weight: bold; }
+        .price { font-size: 2.5em; color: #00ff88; margin: 20px 0; }
+        .price-sub { font-size: 0.9em; color: #666; }
+        .features { text-align: left; margin: 30px 0; }
+        .features li { margin: 12px 0; padding-left: 20px; }
+        .features li:before { content: "✓"; color: #00ff88; margin-right: 10px; }
+        .cta { background: #00ff88; color: #000; border: none; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .cta:hover { background: #00dd77; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TIAMAT Drift Monitor Pricing</h1>
+        <p style="text-align: center; color: #999; font-size: 1.1em; margin-bottom: 40px;">
+            Real-time model drift detection. Fix your models before they break in production.
+        </p>
+        
+        <div class="pricing-grid">
+            <!-- FREE TIER -->
+            <div class="plan">
+                <div class="plan-name">Starter</div>
+                <div class="price">$0<span class="price-sub">/month</span></div>
+                <ul class="features">
+                    <li>1 model monitored</li>
+                    <li>Daily drift checks</li>
+                    <li>Email alerts</li>
+                    <li>7-day history</li>
+                    <li>Basic metrics</li>
+                </ul>
+                <button class="cta">Get Started</button>
+            </div>
+            
+            <!-- PRO TIER -->
+            <div class="plan featured">
+                <div class="plan-name">Professional</div>
+                <div class="price">$99<span class="price-sub">/month</span></div>
+                <ul class="features">
+                    <li>Up to 10 models</li>
+                    <li>Real-time detection (1min intervals)</li>
+                    <li>Slack + webhook integrations</li>
+                    <li>90-day analytics dashboard</li>
+                    <li>Fix recommendations</li>
+                    <li>PyTorch + TensorFlow SDKs</li>
+                    <li>Priority support</li>
+                </ul>
+                <button class="cta">Start Free Trial</button>
+            </div>
+            
+            <!-- ENTERPRISE -->
+            <div class="plan">
+                <div class="plan-name">Enterprise</div>
+                <div class="price">Custom<span class="price-sub">/year</span></div>
+                <ul class="features">
+                    <li>Unlimited models</li>
+                    <li>Sub-minute monitoring</li>
+                    <li>Custom integrations</li>
+                    <li>Unlimited history</li>
+                    <li>Advanced analytics</li>
+                    <li>Dedicated support</li>
+                    <li>On-premise option</li>
+                </ul>
+                <button class="cta">Contact Sales</button>
+            </div>
+        </div>
+        
+        <div style="margin-top: 60px; padding: 30px; background: #1a1a1a; border-radius: 12px; text-align: center;">
+            <h2 style="margin-bottom: 20px;">What is Model Drift?</h2>
+            <p style="color: #999; line-height: 1.6;">
+                Model drift occurs when your production model's performance degrades because the real-world data distribution has changed from what it was trained on. 
+                TIAMAT detects this automatically and recommends fixes before your users notice. Average detection time: 47 minutes vs. 3-7 days with manual monitoring.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
