@@ -3138,34 +3138,48 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     // ── Revenue & Autonomy Tools ──
     {
       name: "check_revenue",
-      description: "Check API revenue metrics: total requests, free vs paid, last request time. Use this to measure traction and decide whether to pivot or double down.",
+      description: "Check API revenue metrics: total requests, free vs paid, last request time. RATE LIMITED: returns cached result if called more than once per hour. Check at most once per session.",
       category: "financial",
       parameters: { type: "object", properties: {} },
-      execute: async (_args, _ctx) => {
-        const { readFileSync } = await import("fs");
-        try {
-          const log = readFileSync("/root/api/requests.log", "utf-8");
-          const lines = log.trim().split("\n").filter(Boolean);
-          if (lines.length === 0) return "No requests logged yet.";
-          const paid = lines.filter(l => l.includes("free:False") || l.includes("Free: False")).length;
-          const free = lines.filter(l => l.includes("free:True") || l.includes("Free: True") || l.includes("Type: FREE")).length;
-          const errors = lines.filter(l => l.includes("500") || l.includes("Error")).length;
-          const first = lines[0];
-          const last = lines[lines.length - 1];
-          const revenueUsdc = (paid * 0.01).toFixed(2);
-          return [
-            `=== Revenue Report ===`,
-            `Total requests: ${lines.length}`,
-            `Free tier: ${free}`,
-            `Paid (x402): ${paid} = $${revenueUsdc} USDC`,
-            `Errors (500): ${errors}`,
-            `First request: ${first.slice(0, 120)}`,
-            `Last request:  ${last.slice(0, 120)}`,
-          ].join("\n");
-        } catch {
-          return "No revenue data yet — /root/api/requests.log does not exist.";
-        }
-      },
+      execute: (() => {
+        let lastResult: string | null = null;
+        let lastCheck = 0;
+        const COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+        return async (_args: any, _ctx: any) => {
+          const now = Date.now();
+          if (lastResult && (now - lastCheck) < COOLDOWN_MS) {
+            const minsAgo = Math.round((now - lastCheck) / 60000);
+            return `${lastResult}\n\n⏱️ (cached from ${minsAgo}m ago — next fresh check in ${Math.round((COOLDOWN_MS - (now - lastCheck)) / 60000)}m. Revenue doesn't change fast. Focus on BUILDING, not checking.)`;
+          }
+          const { readFileSync } = await import("fs");
+          try {
+            const log = readFileSync("/root/api/requests.log", "utf-8");
+            const lines = log.trim().split("\n").filter(Boolean);
+            if (lines.length === 0) { lastResult = "No requests logged yet."; lastCheck = now; return lastResult; }
+            const paid = lines.filter((l: string) => l.includes("free:False") || l.includes("Free: False")).length;
+            const free = lines.filter((l: string) => l.includes("free:True") || l.includes("Free: True") || l.includes("Type: FREE")).length;
+            const errors = lines.filter((l: string) => l.includes("500") || l.includes("Error")).length;
+            const first = lines[0];
+            const last = lines[lines.length - 1];
+            const revenueUsdc = (paid * 0.01).toFixed(2);
+            lastResult = [
+              `=== Revenue Report ===`,
+              `Total requests: ${lines.length}`,
+              `Free tier: ${free}`,
+              `Paid (x402): ${paid} = $${revenueUsdc} USDC`,
+              `Errors (500): ${errors}`,
+              `First request: ${first.slice(0, 120)}`,
+              `Last request:  ${last.slice(0, 120)}`,
+            ].join("\n");
+            lastCheck = now;
+            return lastResult;
+          } catch {
+            lastResult = "No revenue data yet — /root/api/requests.log does not exist.";
+            lastCheck = now;
+            return lastResult;
+          }
+        };
+      })(),
     },
     {
       name: "self_improve",

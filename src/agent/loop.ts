@@ -281,6 +281,7 @@ export async function runAgentLoop(
 
   // Behavioral loop warning from previous cycle — injected into next wakeup context
   let pendingLoopWarning: string | null = null;
+  let consecutiveLoopCycles = 0; // escalation counter: resets on non-loop cycle or restart
 
   // Transition to waking state
   db.setAgentState("waking");
@@ -495,7 +496,7 @@ export async function runAgentLoop(
              "Use grow() to record milestones, lessons, opinions, and failed experiments from this era. " +
              "If your strategic focus has fundamentally shifted, call evolve_era(). " +
              "ALSO: Review the [INSIGHTS] section below. For each 'new' insight, score it 1-5 on revenue potential. " +
-             "Use write_file to update /root/.automaton/insights.json — set status to 'reviewed', " +
+             "Use write_file to update /root/.automaton/cooldown_insights.json — set status to 'reviewed', " +
              "score to your rating, and cycle_reviewed to the current turn number. " +
              "If any insight scores >= 4, create a ticket via ticket_create(title, description, 'medium', 'insight', tags).",
           2: "MISSION: BUILD. Use ask_claude_code() with a specific, concrete task. " +
@@ -509,7 +510,7 @@ export async function runAgentLoop(
         let insightsContext = "";
         try {
           const insightsRaw = fs.readFileSync(
-            path.join(process.env.HOME || "/root", ".automaton", "insights.json"), "utf-8"
+            path.join(process.env.HOME || "/root", ".automaton", "cooldown_insights.json"), "utf-8"
           );
           const insights = JSON.parse(insightsRaw);
           if (Array.isArray(insights) && insights.length > 0) {
@@ -611,9 +612,50 @@ export async function runAgentLoop(
         console.log(`[IPC] Inbox processing error: ${e.message?.slice(0, 200)}`);
       }
 
-      // Inject behavioral loop warning if detected on previous cycle
+      // Inject behavioral loop warning with escalating intervention
       if (pendingLoopWarning) {
-        strategicSystemPrompt += `\n\n[LOOP WARNING]\n${pendingLoopWarning}`;
+        if (consecutiveLoopCycles >= 5) {
+          // TIER 3: Force pivot — inject full ticket list, mandate context switch
+          let ticketBlock = "(no tickets found)";
+          try {
+            const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+            const raw = fs.readFileSync(ticketsPath, "utf-8");
+            const data = JSON.parse(raw);
+            const open = (data.tickets || [])
+              .filter((t: any) => t.status === "open" || t.status === "in_progress")
+              .sort((a: any, b: any) => {
+                const prio: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+                return (prio[a.priority] ?? 4) - (prio[b.priority] ?? 4);
+              });
+            if (open.length > 0) {
+              ticketBlock = open.map((t: any) =>
+                `- ${t.id} [${t.priority}] ${t.title}: ${(t.description || "").slice(0, 120)}`
+              ).join("\n");
+            }
+          } catch {}
+          log(config, `[LOOP-ESCALATE] TIER 3: Forced pivot after ${consecutiveLoopCycles} consecutive loops`);
+          strategicSystemPrompt += `\n\n[FORCED PIVOT — LOOP DETECTED ${consecutiveLoopCycles} CONSECUTIVE CYCLES]\nYou have been stuck in a loop for ${consecutiveLoopCycles} cycles. Your current approach is NOT WORKING.\nMANDATORY: Pick a DIFFERENT ticket from below and work on it. Do NOT continue what you were doing.\n\nOpen tickets:\n${ticketBlock}\n\nInstructions: Call ticket_list(), then ticket_claim() on a DIFFERENT ticket than what you've been working on.`;
+        } else if (consecutiveLoopCycles >= 3) {
+          // TIER 2: Inject watchdog tickets + stronger warning
+          let ticketBlock = "";
+          try {
+            const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+            const raw = fs.readFileSync(ticketsPath, "utf-8");
+            const data = JSON.parse(raw);
+            const watchdog = (data.tickets || [])
+              .filter((t: any) => t.source === "watchdog" && (t.status === "open" || t.status === "in_progress"));
+            if (watchdog.length > 0) {
+              ticketBlock = "\n\nWATCHDOG ALERTS (unresolved):\n" + watchdog.map((t: any) =>
+                `- ${t.id} [${t.priority}] ${t.title}: ${(t.description || "").slice(0, 120)}`
+              ).join("\n");
+            }
+          } catch {}
+          log(config, `[LOOP-ESCALATE] TIER 2: Strong warning after ${consecutiveLoopCycles} consecutive loops`);
+          strategicSystemPrompt += `\n\n[LOOP WARNING — ${consecutiveLoopCycles} CONSECUTIVE CYCLES]\n${pendingLoopWarning}${ticketBlock}\n\nYou MUST address these issues or switch to a different ticket. Your current approach is failing.`;
+        } else {
+          // TIER 1: Soft nudge (original behavior)
+          strategicSystemPrompt += `\n\n[LOOP WARNING]\n${pendingLoopWarning}`;
+        }
       }
 
       // Inject pacer state so TIAMAT knows her pace tier and Claude Code budget
@@ -770,11 +812,12 @@ export async function runAgentLoop(
           turn.toolCalls.map(tc => ({ name: tc.name, arguments: tc.arguments })),
         );
         if (loopWarning) {
-          log(config, `[LOOP-DETECT] ${loopWarning}`);
-          // Inject warning into next cycle's context by appending to wakeup
+          consecutiveLoopCycles++;
+          log(config, `[LOOP-DETECT] (consecutive: ${consecutiveLoopCycles}) ${loopWarning}`);
           pendingLoopWarning = loopWarning;
         } else {
           pendingLoopWarning = null;
+          consecutiveLoopCycles = 0;
         }
       } catch (e: any) {
         console.log(`[LOOP-DETECT] Error: ${e.message?.slice(0, 100)}`);

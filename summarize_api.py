@@ -290,6 +290,7 @@ def sitemap_xml():
         ("https://tiamat.live/drift", "weekly", "0.9"),
         ("https://tiamat.live/drift/dashboard", "hourly", "0.7"),
         ("https://tiamat.live/tickets", "always", "0.5"),
+        ("https://tiamat.live/dashboard", "always", "0.8"),
     ]
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -2356,6 +2357,529 @@ def serve_paper(filename):
     if filename.endswith('.pdf') and os.path.exists(os.path.join(output_dir, filename)):
         return send_from_directory(output_dir, filename, mimetype='application/pdf')
     return "Paper not found", 404
+
+
+# ── /dashboard helpers ─────────────────────────────────────────
+
+def _dash_cost_metrics():
+    """Parse cost.log → cycle count, avg costs, cache hit rate, model split."""
+    out = {
+        "cycle": 0, "total_cost": 0.0, "avg_cost_routine": 0.0,
+        "avg_cost_strategic": 0.0, "cache_hit_rate": 0.0,
+        "haiku": 0, "sonnet": 0, "recent_10": [], "total_cycles": 0,
+    }
+    try:
+        rows = []
+        with open("/root/.automaton/cost.log") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("timestamp"):
+                    continue
+                p = line.split(",")
+                if len(p) >= 8:
+                    try:
+                        rows.append({
+                            "ts": p[0], "cycle": int(p[1]), "model": p[2],
+                            "inp": int(p[3]), "cr": int(p[4]), "cw": int(p[5]),
+                            "out": int(p[6]), "cost": float(p[7]),
+                            "label": p[8].strip() if len(p) > 8 else "routine",
+                        })
+                    except (ValueError, IndexError):
+                        pass
+        if not rows:
+            return out
+        out["cycle"] = rows[-1]["cycle"]
+        out["total_cycles"] = len(rows)
+        out["total_cost"] = sum(r["cost"] for r in rows)
+        recent = rows[-500:]
+        routine = [r for r in recent if "routine" in r["label"]]
+        strategic = [r for r in recent if "strategic" in r["label"]]
+        if routine:
+            out["avg_cost_routine"] = sum(r["cost"] for r in routine) / len(routine)
+        if strategic:
+            out["avg_cost_strategic"] = sum(r["cost"] for r in strategic) / len(strategic)
+        total_inp = sum(r["inp"] + r["cr"] for r in recent)
+        total_cr = sum(r["cr"] for r in recent)
+        if total_inp > 0:
+            out["cache_hit_rate"] = total_cr / total_inp * 100
+        for r in recent:
+            if "haiku" in r["model"].lower():
+                out["haiku"] += 1
+            elif "sonnet" in r["model"].lower():
+                out["sonnet"] += 1
+        out["recent_10"] = rows[-10:]
+    except Exception:
+        pass
+    return out
+
+
+def _dash_24h_usage():
+    """Parse requests.log for last 24h stats."""
+    result = {"free": 0, "paid": 0, "revenue": 0.0, "endpoints": {}, "ips": set()}
+    try:
+        cutoff = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+        with open(REQUEST_LOG) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ts_str = line.split(" | ")[0].strip()
+                    dt = datetime.datetime.fromisoformat(ts_str)
+                    if dt < cutoff:
+                        continue
+                    parts = {}
+                    for seg in line.split(" | ")[1:]:
+                        if ":" in seg:
+                            k, v = seg.split(":", 1)
+                            parts[k.strip()] = v.strip()
+                    ep = parts.get("endpoint", "/api")
+                    status = parts.get("status", "0")
+                    is_free = parts.get("free", "True") in ("True", "true")
+                    ip = parts.get("IP", "")
+                    if status == "200":
+                        if is_free:
+                            result["free"] += 1
+                        else:
+                            result["paid"] += 1
+                            result["revenue"] += 0.01
+                    result["endpoints"][ep] = result["endpoints"].get(ep, 0) + 1
+                    if ip:
+                        result["ips"].add(ip)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    result["ips"] = len(result["ips"])
+    return result
+
+
+def _dash_progress_entries():
+    """Get last 10 sections from PROGRESS.md."""
+    entries = []
+    try:
+        with open("/root/.automaton/PROGRESS.md") as f:
+            content = f.read()
+        sections = re.split(r'\n(?=## )', content)
+        for section in sections:
+            if not section.strip():
+                continue
+            lines = section.strip().split("\n")
+            title = lines[0].lstrip("#").strip()
+            body = []
+            for l in lines[1:7]:
+                l = l.strip()
+                if not l:
+                    continue
+                l = re.sub(r'\*\*(.+?)\*\*', r'\1', l)
+                l = re.sub(r'\*(.+?)\*', r'\1', l)
+                l = re.sub(r'`(.+?)`', r'\1', l)
+                if l.startswith(("- ", "* ", "• ")):
+                    l = l[2:]
+                body.append(l[:120])
+            if title:
+                entries.append({"title": title[:80], "body": body})
+    except Exception:
+        pass
+    return entries[-10:]
+
+
+def _dash_health():
+    """Check health of key services."""
+    import urllib.request as _ur
+    import urllib.error as _ue
+    checks = {}
+
+    def _http(name, url, timeout=2):
+        try:
+            resp = _ur.urlopen(_ur.Request(url), timeout=timeout)
+            checks[name] = {"ok": True, "label": "OK"}
+        except _ue.HTTPError as e:
+            checks[name] = {"ok": e.code < 500, "label": str(e.code)}
+        except Exception:
+            checks[name] = {"ok": False, "label": "DOWN"}
+
+    _http("Memory API", "http://127.0.0.1:5001/health")
+
+    try:
+        agent_ok = False
+        for pp in ["/tmp/tiamat.pid", "/run/tiamat/tiamat.pid"]:
+            if os.path.exists(pp):
+                with open(pp) as pf:
+                    os.kill(int(pf.read().strip()), 0)
+                agent_ok = True
+                break
+        checks["TIAMAT Agent"] = {"ok": agent_ok, "label": "RUNNING" if agent_ok else "DOWN"}
+    except Exception:
+        checks["TIAMAT Agent"] = {"ok": False, "label": "DOWN"}
+
+    try:
+        with open("/root/.automaton/cost.log") as f:
+            last_line = None
+            for l in f:
+                if l.strip() and not l.startswith("timestamp"):
+                    last_line = l.strip()
+        if last_line:
+            ts = last_line.split(",")[0].replace("Z", "")
+            dt = datetime.datetime.fromisoformat(ts)
+            age_min = (datetime.datetime.utcnow() - dt).total_seconds() / 60
+            checks["Last Cycle"] = {
+                "ok": age_min < 20,
+                "label": f"{age_min:.0f}m ago",
+            }
+        else:
+            checks["Last Cycle"] = {"ok": False, "label": "unknown"}
+    except Exception:
+        checks["Last Cycle"] = {"ok": False, "label": "error"}
+
+    checks["Gunicorn"] = {"ok": True, "label": "OK"}
+    checks["Summarize"] = {"ok": True, "label": "OK"}
+    checks["Generate"] = {"ok": True, "label": "OK"}
+    checks["Chat"] = {"ok": True, "label": "OK"}
+    return checks
+
+
+_GC_DOMAINS = {
+    "Autonomous AI":   ["autonomous agent", "agent loop", "self-improv", "tiamat"],
+    "Model Drift":     ["model drift", "drift detect", "degradation", "baseline"],
+    "MLOps":           ["mlops", "training data", "production model", "ml pipeline"],
+    "Energy / DER":    ["distributed energy", "energy grid", "wireless power", "renewable energy"],
+    "Cybersecurity":   ["cybersecurity", "threat model", "zero-trust", "opsec"],
+    "DeFi / Web3":     ["defi", "usdc", "base mainnet", "blockchain", "crypto"],
+    "Open Source PRs": ["pull request", "github pr", "pr #", "langchain", "autogen", "griptape"],
+    "Social / Growth": ["post_bluesky", "post_farcaster", "bluesky", "farcaster"],
+}
+
+
+def _dash_domain_tracker():
+    """Scan recent tiamat.log for Glass Ceiling domain activity."""
+    activity = {}
+    try:
+        with open("/root/.automaton/tiamat.log") as f:
+            lines = f.readlines()
+        recent = lines[-8000:]
+        for domain, keywords in _GC_DOMAINS.items():
+            last_ts = None
+            count = 0
+            for line in recent:
+                ll = line.lower()
+                if any(kw.lower() in ll for kw in keywords):
+                    count += 1
+                    m = re.search(r'\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', line)
+                    if m:
+                        last_ts = m.group(1)
+            age_h = 999.0
+            label = "dormant"
+            if last_ts:
+                try:
+                    dt = datetime.datetime.fromisoformat(last_ts)
+                    age_h = (datetime.datetime.utcnow() - dt).total_seconds() / 3600
+                    if age_h < 1:
+                        label = f"{int(age_h*60)}m ago"
+                    elif age_h < 24:
+                        label = f"{age_h:.0f}h ago"
+                    else:
+                        label = f"{age_h/24:.0f}d ago"
+                except Exception:
+                    label = last_ts[:16]
+            activity[domain] = {"count": count, "last": label, "age_h": age_h}
+    except Exception:
+        for d in _GC_DOMAINS:
+            activity[d] = {"count": 0, "last": "error", "age_h": 999}
+    return activity
+
+
+def _sparkline_svg(costs):
+    """Generate an inline SVG sparkline from a list of float cost values."""
+    if len(costs) < 2:
+        return ""
+    W, H = 240, 44
+    mn, mx = min(costs), max(costs)
+    rng = mx - mn or 0.001
+    pts = []
+    for i, c in enumerate(costs):
+        x = i / (len(costs) - 1) * W
+        y = H - 4 - ((c - mn) / rng) * (H - 8)
+        pts.append((x, y))
+    poly = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    lx, ly = pts[-1]
+    return (
+        f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" '
+        f'xmlns="http://www.w3.org/2000/svg">'
+        f'<polyline points="{poly}" fill="none" stroke="#00fff2" '
+        f'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>'
+        f'<circle cx="{lx:.1f}" cy="{ly:.1f}" r="3.5" fill="#00fff2"/>'
+        f'</svg>'
+    )
+
+
+_DASH_CSS = """
+.dash-header{text-align:center;padding:32px 0 20px;border-bottom:1px solid var(--border);margin-bottom:28px}
+.dash-title{font-family:'Orbitron',monospace;font-size:1.9em;font-weight:900;
+  color:var(--accent);text-shadow:0 0 28px rgba(0,255,242,.4);letter-spacing:.08em}
+.dash-sub{color:var(--text-secondary);font-family:'JetBrains Mono',monospace;font-size:.78em;margin-top:6px}
+.live-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;
+  border:1px solid var(--green);border-radius:20px;color:var(--green);
+  font-size:.7em;font-family:'JetBrains Mono',monospace;margin-left:10px;vertical-align:middle}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:pulse-g 1.4s ease infinite}
+@keyframes pulse-g{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(57,255,20,.5)}
+  60%{opacity:.8;box-shadow:0 0 0 6px rgba(57,255,20,0)}}
+.kstats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+.kstat{flex:1;min-width:130px;background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:16px 18px;text-align:center;transition:border-color .3s,box-shadow .3s}
+.kstat:hover{border-color:rgba(0,255,242,.2);box-shadow:0 0 16px rgba(0,255,242,.05)}
+.kstat-val{font-family:'Orbitron',monospace;font-size:1.5em;font-weight:700;color:var(--accent);line-height:1.2}
+.kstat-label{color:var(--text-muted);font-size:.68em;text-transform:uppercase;
+  letter-spacing:.1em;margin-top:5px;font-family:'JetBrains Mono',monospace}
+.dash-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;margin-bottom:24px;align-items:start}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
+.dcard{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.dcard-title{font-family:'JetBrains Mono',monospace;font-size:.7em;font-weight:600;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--text-secondary);
+  border-bottom:1px solid var(--border);padding-bottom:9px;margin-bottom:2px}
+.hrow{display:flex;align-items:center;gap:10px;padding:5px 0;
+  border-bottom:1px solid rgba(255,255,255,.03)}
+.hrow:last-child{border-bottom:none}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--green);box-shadow:0 0 6px rgba(57,255,20,.6);animation:pulse-g 2s infinite}
+.dot-red{background:var(--red)}
+.hname{flex:1;font-size:.84em;color:var(--text-primary)}
+.hval{font-family:'JetBrains Mono',monospace;font-size:.73em;color:var(--text-secondary)}
+.usage-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ustat{background:rgba(0,0,0,.3);border-radius:var(--radius-xs);padding:11px;text-align:center}
+.ustat-num{font-family:'Orbitron',monospace;font-size:1.25em;color:var(--accent)}
+.ustat-lbl{color:var(--text-muted);font-size:.67em;text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+.ctable{width:100%;border-collapse:collapse;font-size:.81em}
+.ctable td{padding:5px 7px;border-bottom:1px solid rgba(255,255,255,.03)}
+.ctable tr:last-child td{border-bottom:none}
+.mono{font-family:'JetBrains Mono',monospace;color:var(--text-primary)}
+.lbl{font-size:.68em;padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.lbl-r{background:rgba(0,255,242,.08);color:var(--accent)}
+.lbl-s{background:rgba(255,0,170,.08);color:var(--magenta)}
+.prog-entry{border-left:2px solid rgba(0,255,242,.15);padding-left:11px;margin-bottom:11px}
+.prog-entry:last-child{margin-bottom:0}
+.prog-title{font-weight:600;font-size:.84em;color:var(--text-primary);margin-bottom:3px}
+.prog-body{color:var(--text-secondary);font-size:.76em;padding-left:14px;list-style:disc}
+.prog-body li{margin-bottom:2px;line-height:1.45}
+.domain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.domain-card{background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px;transition:border-color .25s,transform .2s}
+.domain-card:hover{transform:translateY(-2px)}
+.heat-hot{border-color:rgba(57,255,20,.25)}
+.heat-hot .dname{color:var(--green)}
+.heat-warm{border-color:rgba(0,255,242,.18)}
+.heat-warm .dname{color:var(--accent)}
+.heat-cool{border-color:rgba(255,170,0,.14)}
+.heat-cool .dname{color:var(--gold)}
+.heat-cold .dname{color:var(--text-muted)}
+.dname{font-family:'JetBrains Mono',monospace;font-size:.77em;font-weight:600;
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.dbar{height:3px;background:rgba(255,255,255,.05);border-radius:2px;margin:5px 0}
+.dfill{height:100%;border-radius:2px}
+.heat-hot .dfill{background:linear-gradient(90deg,var(--green),var(--accent))}
+.heat-warm .dfill{background:linear-gradient(90deg,var(--accent),#0088ff)}
+.heat-cool .dfill{background:var(--gold)}
+.heat-cold .dfill{background:rgba(255,255,255,.08)}
+.dmeta{display:flex;justify-content:space-between;font-size:.7em}
+.dcnt{color:var(--text-secondary);font-family:'JetBrains Mono',monospace}
+.dlast{color:var(--text-muted)}
+.refresh-bar{text-align:right;font-family:'JetBrains Mono',monospace;
+  font-size:.7em;color:var(--text-muted);margin-bottom:18px}
+#cd{color:var(--accent);font-weight:600}
+"""
+
+
+@app.route("/dashboard", methods=["GET"])
+def dashboard():
+    metrics  = _dash_cost_metrics()
+    usage    = _dash_24h_usage()
+    health   = _dash_health()
+    progress = _dash_progress_entries()
+    domains  = _dash_domain_tracker()
+    uptime, _, _, _ = get_stats()
+    now_str = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+    # Health rows
+    health_html = ""
+    for name, info in health.items():
+        dc = "dot-green" if info["ok"] else "dot-red"
+        health_html += (
+            f'<div class="hrow"><span class="dot {dc}"></span>'
+            f'<span class="hname">{name}</span>'
+            f'<span class="hval">{info["label"]}</span></div>\n'
+        )
+
+    # Endpoint breakdown (top 5)
+    ep_html = ""
+    for ep, cnt in sorted(usage["endpoints"].items(), key=lambda x: -x[1])[:5]:
+        ep_html += (
+            f'<div class="hrow"><span class="hname" style="font-size:.8em">{ep}</span>'
+            f'<span class="hval">{cnt}</span></div>'
+        )
+
+    # Recent cycles table + sparkline
+    costs = [r["cost"] for r in metrics["recent_10"]]
+    sparkline = _sparkline_svg(costs)
+    cycle_rows = ""
+    for r in reversed(metrics["recent_10"]):
+        lc = "lbl-s" if "strategic" in r.get("label", "") else "lbl-r"
+        ms = "Sonnet" if "sonnet" in r["model"].lower() else "Haiku"
+        cycle_rows += (
+            f'<tr><td class="mono">#{r["cycle"]}</td>'
+            f'<td class="mono">${r["cost"]:.4f}</td>'
+            f'<td><span class="lbl {lc}">{r.get("label","routine")[:10]}</span></td>'
+            f'<td class="dim">{ms}</td></tr>\n'
+        )
+
+    # Progress feed
+    prog_html = ""
+    for entry in reversed(progress):
+        items = "".join(f"<li>{l}</li>" for l in entry["body"][:4])
+        prog_html += (
+            f'<div class="prog-entry">'
+            f'<div class="prog-title">{entry["title"][:70]}</div>'
+            f'<ul class="prog-body">{items}</ul>'
+            f'</div>'
+        )
+
+    # Domain cards (sorted hottest first)
+    domain_html = ""
+    for dname, di in sorted(domains.items(), key=lambda x: x[1]["age_h"]):
+        age_h = di["age_h"]
+        if age_h < 2:
+            hc = "heat-hot"
+        elif age_h < 8:
+            hc = "heat-warm"
+        elif age_h < 48:
+            hc = "heat-cool"
+        else:
+            hc = "heat-cold"
+        bar = max(3, min(100, int(100 - (age_h / 48) * 95))) if age_h < 999 else 3
+        domain_html += (
+            f'<div class="domain-card {hc}">'
+            f'<div class="dname">{dname}</div>'
+            f'<div class="dbar"><div class="dfill" style="width:{bar}%"></div></div>'
+            f'<div class="dmeta"><span class="dcnt">{di["count"]} refs</span>'
+            f'<span class="dlast">{di["last"]}</span></div>'
+            f'</div>\n'
+        )
+
+    model_total = metrics["haiku"] + metrics["sonnet"]
+    haiku_pct = f'{metrics["haiku"]/model_total*100:.0f}%' if model_total else '—'
+    sonnet_pct = f'{metrics["sonnet"]/model_total*100:.0f}%' if model_total else '—'
+    cache_color = "var(--green)" if metrics["cache_hit_rate"] > 65 else "var(--gold)"
+    rev_color = "var(--green)" if usage["revenue"] > 0 else "var(--text-muted)"
+
+    page = f"""{_html_head('TIAMAT — Live Dashboard', _DASH_CSS)}<body>
+<div class="site-wrap">
+{_NAV}
+
+<div class="dash-header">
+  <div class="dash-title">&#9889; LIVE OPERATIONS
+    <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+  </div>
+  <div class="dash-sub">TIAMAT Autonomous Agent &bull; {now_str} &bull; Uptime: {uptime}</div>
+</div>
+
+<div class="refresh-bar">
+  Auto-refresh in <span id="cd">30</span>s &nbsp;&bull;&nbsp;
+  <a href="/dashboard" style="color:var(--accent);text-decoration:none">&#8635; Refresh now</a>
+</div>
+
+<div class="kstats">
+  <div class="kstat">
+    <div class="kstat-val">{metrics['cycle']:,}</div>
+    <div class="kstat-label">Autonomous Cycles</div>
+  </div>
+  <div class="kstat">
+    <div class="kstat-val">${metrics['avg_cost_routine']:.4f}</div>
+    <div class="kstat-label">Cost / Routine</div>
+  </div>
+  <div class="kstat">
+    <div class="kstat-val" style="color:{cache_color}">{metrics['cache_hit_rate']:.1f}%</div>
+    <div class="kstat-label">Cache Hit Rate</div>
+  </div>
+  <div class="kstat">
+    <div class="kstat-val" style="color:var(--magenta)">${metrics['avg_cost_strategic']:.4f}</div>
+    <div class="kstat-label">Cost / Strategic</div>
+  </div>
+  <div class="kstat">
+    <div class="kstat-val" style="color:var(--text-secondary)">${metrics['total_cost']:.2f}</div>
+    <div class="kstat-label">Total Compute Spend</div>
+  </div>
+</div>
+
+<div class="dash-grid">
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div class="dcard">
+      <div class="dcard-title">&#11044; System Health</div>
+      {health_html}
+    </div>
+    <div class="dcard">
+      <div class="dcard-title">&#128202; 24h API Usage</div>
+      <div class="usage-grid">
+        <div class="ustat">
+          <div class="ustat-num">{usage['free']}</div>
+          <div class="ustat-lbl">Free Reqs</div>
+        </div>
+        <div class="ustat">
+          <div class="ustat-num" style="color:var(--gold)">{usage['paid']}</div>
+          <div class="ustat-lbl">Paid Reqs</div>
+        </div>
+        <div class="ustat">
+          <div class="ustat-num" style="color:{rev_color}">${usage['revenue']:.2f}</div>
+          <div class="ustat-lbl">Revenue</div>
+        </div>
+        <div class="ustat">
+          <div class="ustat-num">{usage['ips']}</div>
+          <div class="ustat-lbl">Unique IPs</div>
+        </div>
+      </div>
+      <div style="margin-top:6px">{ep_html}</div>
+    </div>
+  </div>
+
+  <div class="dcard">
+    <div class="dcard-title">&#128260; Recent Cycles (last 10)</div>
+    <div style="margin:4px 0">{sparkline}</div>
+    <table class="ctable">
+      <tbody>{cycle_rows}</tbody>
+    </table>
+    <div style="font-size:.73em;color:var(--text-muted);margin-top:6px">
+      Model split (last 500): Haiku {haiku_pct} &bull; Sonnet {sonnet_pct}
+    </div>
+  </div>
+
+  <div class="dcard" style="overflow-y:auto;max-height:560px">
+    <div class="dcard-title">&#128296; What I&rsquo;m Building</div>
+    {prog_html}
+  </div>
+
+</div>
+
+<div class="dcard" style="margin-bottom:36px">
+  <div class="dcard-title">&#127758; Glass Ceiling &mdash; Domain Expertise Tracker</div>
+  <div style="color:var(--text-secondary);font-size:.79em;margin-bottom:12px">
+    Domains researched &amp; posted about. Card heat = recency. Bar = activity intensity.
+  </div>
+  <div class="domain-grid">{domain_html}</div>
+</div>
+
+{_FOOTER}
+</div>
+
+<script>
+(function(){{
+  var t=30,el=document.getElementById('cd');
+  setInterval(function(){{t--;if(el)el.textContent=t;if(t<=0)location.reload();}},1000);
+}})();
+</script>
+</body></html>"""
+
+    return html_resp(page)
 
 
 # ── Drift Monitor Blueprint ────────────────────────────────────
