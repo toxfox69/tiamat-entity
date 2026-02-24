@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 662,
-    "lastRun": "2026-02-24T03:32:26.687Z",
-    "lastResult": "{\"mode\": \"code_ideas\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:**\\n\\nTIAMAT should write a Python script to create a \\\"Model Sanity Checker\\\" that uses the Gemini API to generate random input data and the Neynar API to evaluate the output of a given AI model. This script should check for catastrophic failures by analyzing the output for inconsistencies, anomalies, and edge cases. The script should be able to run in under 30 seconds and be reusable with different AI models.\\n\\"
+    "runs": 825,
+    "lastRun": "2026-02-24T07:03:33.615Z",
+    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:**\\n\\nIdentify and resolve the issue of **\\\"Data Drift\\\" in AI Models**, where models become less accurate over time due to changes in the underlying data distribution.\\n\\n**Concrete Approach:** Develop a simple, automated **\\\"Data Drift Detector\\\"** tool that uses a combination of statistical methods and ML models to monitor and alert users when a model's performance degrades due to data drift. This tool can be"
   },
   {
     "name": "recursive_learn",
@@ -15,18 +15,18 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 626,
-    "lastRun": "2026-02-24T03:32:25.251Z",
-    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"Design a standalone, web-based interface for discovering, filtering, and visualizing AI-agnostic, autonomous intelligence agent directories, including\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement data retrieval from aiagentsdirectory.com using web scraping or API in\", \"Design user-friendly input interface with search bar, categorization dropdown me\", \"Expose APIs"
+    "runs": 723,
+    "lastRun": "2026-02-24T07:00:26.932Z",
+    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"What is a novel tool design, named \\\"Scanner Proxy,\\\" that integrates with the existing web_fetch tool, allowing TIAMAT to dynamically generate custom p\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement Scanner Proxy tool design to dynamically generate custom proxy configu\", \"Develop machine learning algorithm to analyze historical data and inform proxy c\", \"Test Scan"
   },
   {
     "name": "process_agent_replies",
     "script": "/root/entity/src/agent/agent_learning.py",
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
-    "enabled": true,
-    "runs": 625,
-    "lastRun": "2026-02-24T03:32:20.875Z",
+    "enabled": false,
+    "runs": 646,
+    "lastRun": "2026-02-24T04:15:50.614Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -34,9 +34,9 @@
     "script": "/root/.automaton/agent_discovery_cooldown.py",
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
-    "enabled": true,
-    "runs": 179,
-    "lastRun": "2026-02-24T03:32:26.769Z",
+    "enabled": false,
+    "runs": 211,
+    "lastRun": "2026-02-24T04:19:34.373Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   }
 ]

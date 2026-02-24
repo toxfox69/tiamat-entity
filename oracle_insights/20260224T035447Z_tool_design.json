@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-02-24T03:54:47.190334+00:00",
+  "mode": "tool_design",
+  "question": "What design specifications should a new tool, 'github_commit_reviewer', have in order to efficiently integrate with TIAMAT's existing GitHub issue resolution workflow, and automatically review and provide actionable feedback on GitHub pull requests and commits, including:\n\n- Input parameters: GitHub repository URL, pull request or commit hash, and a list of required review criteria (e.g. code style, cyclomatic complexity, duplicated code, security vulnerabilities)\n- Return types: A JSON object containing a review summary (e.g. pass/fail), detailed comments on areas of improvement, and a list of suggested commits or pull request revisions\n- Integration points: seamless integration with existing tools such as 'github_pr_comments' and 'ticket_claim' to enable creation of GitHub issues and assignment of tasks to developers\n- Scalability and performance considerations: ability to handle large-scale GitHub repositories and high-volume pull requests, with adjustable performance settings to balance review quality and speed",
+  "oracle_engine": "groq-llama-70b",
+  "oracle_response": "To efficiently integrate with TIAMAT's existing GitHub issue resolution workflow, the 'github_commit_reviewer' tool should have the following design specifications:\n\nThe 'github_commit_reviewer' tool should be designed with a modular architecture that allows for easy integration with existing tools such as 'github_pr_comments' and 'ticket_claim'. This can be achieved by implementing APIs or webhooks that enable seamless data exchange between tools. For example, the tool could utilize GitHub's Webhook API to receive notifications when new pull requests or commits are created, and trigger the review process accordingly. Additionally, the tool should be designed to accommodate adjustable performance settings that balance review quality and speed, allowing administrators to fine-tune the review process based on the specific needs of the project.\n\nIn terms of input parameters, the 'github_commit_reviewer' tool should accept the following:\n\n* GitHub repository URL\n* Pull request or commit hash (or both)\n* List of required review criteria, such as:\n\t+ Code style (e.g. adherence to coding conventions, formatting, etc.)\n\t+ Cyclomatic complexity (e.g. measure of code complexity, including loops, conditionals, etc.)\n\t+ Duplicated code (e.g. detection of duplicate code snippets or functions)\n\t+ Security vulnerabilities (e.g. detection of known security vulnerabilities or potential attack vectors)\n\nThe tool should also return a JSON object containing a review summary, detailed comments on areas of improvement, and a list of suggested commits or pull request revisions. This JSON object should include the following key-value pairs:\n\n* Review summary (e.g. pass/fail)\n* Detailed comments on areas of improvement (e.g. code snippets, explanations, etc.)\n* List of suggested commits or pull request revisions (e.g. specific changes to make, explanations, etc.)\n\nTo ensure scalability and performance, the 'github_commit_reviewer' tool should be designed to handle large-scale GitHub repositories and high-volume pull requests. This can be achieved by implementing a distributed architecture that utilize multiple nodes or instances to process reviews in parallel. Additionally, the tool should include features such as:\n\n* Caching mechanisms to reduce the load on GitHub APIs and improve performance\n* Adjustable performance settings that allow administrators to balance review quality and speed\n* Support for asynchronous processing to improve scalability and reduce latency\n\nFinally, the 'github_commit_reviewer' tool should be designed to integrate with existing tools and workflows, such as 'github_pr_comments' and 'ticket_claim', to enable creation of GitHub issues and assignment of tasks to developers. This can be achieved by implementing APIs or webhooks that enable seamless data exchange between tools. For example, the tool could utilize GitHub's API to create new issues or update existing ones, and trigger notifications to developers when tasks are assigned.",
+  "actions": [
+    {
+      "action": "Implement API or webhook integration with existing tools like 'github_pr_comments' and 'ticket_claim' using GitHub's Webhook API",
+      "tool": "write_file",
+      "priority": "high",
+      "details": "Create a new file in the 'github_commit_reviewer' directory, e.g., 'api_integration.py', and add code to handle webhook notifications and trigger the review process."
+    },
+    {
+      "action": "Define adjustable performance settings for review quality and speed",
+      "tool": "write_file",
+      "priority": "medium",
+      "details": "Create a new file in the 'github_commit_reviewer' directory, e.g., 'performance_settings.py', and add code to handle adjustable settings, such as review quality thresholds and review frequency."
+    },
+    {
+      "action": "Design JSON output format for review summary, detailed comments, and suggested commits or pull request revisions",
+      "tool": "write_file",
+      "priority": "low",
+      "details": "Create a new file in the 'github_commit_reviewer' directory, e.g., 'review_output.py', and add code to generate the JSON object with the specified key-value pairs."
+    }
+  ]
+}

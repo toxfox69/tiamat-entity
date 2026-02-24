@@ -177,8 +177,18 @@ class TicketManager:
                         if t.get("title", "").split(":")[0] == title_prefix:
                             return None
 
-                ticket_id = f"TIK-{data['next_id']:03d}"
-                data["next_id"] = data["next_id"] + 1
+                # Find safe next_id by scanning existing tickets
+                max_existing = 0
+                for t in data.get("tickets", []):
+                    tid = t.get("id", "")
+                    if tid.startswith("TIK-"):
+                        try:
+                            max_existing = max(max_existing, int(tid[4:]))
+                        except ValueError:
+                            pass
+                safe_next = max(data.get("next_id", 1), max_existing + 1)
+                ticket_id = f"TIK-{safe_next:03d}"
+                data["next_id"] = safe_next + 1
                 ticket = {
                     "id": ticket_id,
                     "created": utcnow_iso(),

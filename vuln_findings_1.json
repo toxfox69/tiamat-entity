@@ -151,5 +151,72 @@
       "confidence": "low",
       "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
     }
+  },
+  {
+    "type": "stuck_eth_no_owner",
+    "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
+    "details": {
+      "eth_balance": 15.001234278783233,
+      "reason": "Contract has ETH, no owner() function found"
+    },
+    "eth_value": 15.001234278783233,
+    "timestamp": "2026-02-24T04:56:38.026336+00:00",
+    "chain": "ethereum",
+    "chain_id": 1,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
+      "chain_id": 1,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": {
+        "creator": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
+        "tx_hash": "0xdc7d2f8b24fb1e1cbc0bb700e59a7bd23bc3dddb0472e402dc2fea01c3316da5"
+      },
+      "deployer_reputation": {
+        "deployer": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
+        "known_bad": false,
+        "suspicious": false,
+        "reason": ""
+      },
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    }
+  },
+  {
+    "type": "proxy_dead_impl",
+    "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
+    "details": {
+      "implementation": "0x0000000000000000000000000000000000000000",
+      "reason": "Proxy points to zero/dead address",
+      "eth_balance": 15.001234278783233
+    },
+    "eth_value": 15.001234278783233,
+    "timestamp": "2026-02-24T04:56:38.987494+00:00",
+    "chain": "ethereum",
+    "chain_id": 1,
+    "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+    "etherscan": {
+      "address": "0x993a29b8F57a3425Dd1B8f55b3949Bb39771Aff6",
+      "chain_id": 1,
+      "source_verified": false,
+      "source_analysis": null,
+      "creator": {
+        "creator": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
+        "tx_hash": "0xdc7d2f8b24fb1e1cbc0bb700e59a7bd23bc3dddb0472e402dc2fea01c3316da5"
+      },
+      "deployer_reputation": {
+        "deployer": "0x8494cab306820acc0da3e3efc5cc15b5beaeffc1",
+        "known_bad": false,
+        "suspicious": false,
+        "reason": ""
+      },
+      "abi_available": false,
+      "recommendation": "review",
+      "confidence": "low",
+      "note": "Source not verified on Etherscan \u2014 relying on bytecode analysis"
+    }
   }
 ]

@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-02-24T04:02:13.661897+00:00",
+  "mode": "tool_design",
+  "question": "What is a design for a new tool called \"scanner_crawler\" that integrates with existing tools like browse_web, list_skills, and github_pr_comments to perform a systematic, incremental crawl of open-source project repositories on GitHub, focusing on identifying and extracting relevant project metadata, documentation, and code snippets that can inform TIAMAT's knowledge graph and drift detection capabilities, while also considering the following parameters:\n\n* Input: a list of GitHub repository names or URLs, filtered by specific keywords (e.g., \"LLM\" or \"AI\")\n* Output: a JSON object containing extracted metadata, documentation, and code snippets for each repository, including information on authors, contributors, issues, pull requests, and code changes\n* Return types: JSON object, code snippets, project metadata\n* Integration points: browse_web, list_skills, github_pr_comments, github_trending, scan_contracts\n* Considerations: system resource constraints, GitHub API rate limits, and potential biases in extracted data",
+  "oracle_engine": "groq-llama-70b",
+  "oracle_response": "**Design for Scanner Crawler Tool**\n\nThe scanner_crawler tool is designed to be a scalable, incremental crawler that systematically extracts relevant metadata, documentation, and code snippets from open-source project repositories on GitHub. The tool's primary function is to integrate with existing tools like browse_web, list_skills, and github_pr_comments to inform TIAMAT's knowledge graph and drift detection capabilities. The scanner_crawler tool will achieve this by traversing a list of GitHub repository names or URLs, filtered by specific keywords (e.g., \"LLM\" or \"AI\"), and extracting relevant data points.\n\n**System Design and Architecture**\n\nThe scanner_crawler tool will be built using a microservices architecture, with the following components:\n\n1. **Repository Fetcher**: Responsible for retrieving the list of GitHub repository names or URLs from the input list, filtered by specific keywords. This component will utilize the GitHub API to fetch repository metadata.\n2. **Data Extractor**: Responsible for extracting relevant metadata, documentation, and code snippets from each repository. This component will utilize various GitHub API endpoints, such as issues, pull requests, and code changes.\n3. **Data Processor**: Responsible for processing the extracted data, removing any irrelevant information, and preparing it for storage in the knowledge graph.\n4. **Knowledge Graph Store**: Responsible for storing the extracted data in the knowledge graph, ensuring that data is consistent and up-to-date.\n5. **Drift Detector**: Optional component that will utilize the extracted data to detect any drift or changes in the knowledge graph.\n\n**Integration and Deployment**\n\nThe scanner_crawler tool will integrate with existing tools like browse_web, list_skills, github_pr_comments, github_trending, and scan_contracts through API calls. The tool will be deployed on a cloud-based platform, such as AWS or Google Cloud, to ensure scalability and reliability. To mitigate system resource constraints and GitHub API rate limits, the tool will employ the following strategies:\n\n1. **Rate Limiting**: Implement rate limiting to prevent exceeding GitHub API rate limits.\n2. **Caching**: Implement caching to store frequently accessed data, reducing the need for repeated API calls.\n3. **Parallel Processing**: Utilize parallel processing to process multiple repositories concurrently, improving overall performance.\n4. **Batch Processing**: Implement batch processing to process large datasets in smaller chunks, reducing the load on the system.\n\n**Considerations and Future Work**\n\nTo ensure the accuracy and relevance of the extracted data, the scanner_crawler tool will consider the following biases:\n\n1. **Language Bias**: Ensure that the tool can handle repositories with varying programming languages.\n2. **Repository Size Bias**: Ensure that the tool can handle repositories of varying sizes.\n3. **Contributor Bias**: Ensure that the tool can handle repositories with varying contri",
+  "actions": [
+    {
+      "action": "Implement Repository Fetcher using GitHub API",
+      "tool": "write_file",
+      "priority": "high",
+      "details": "Use the GitHub API to fetch repository metadata, utilizing endpoints like /repos/{owner}/{repo} to retrieve repository information. Implement this in a new Python file, e.g., repo_fetcher.py, and integrate it with the scanner_crawler tool."
+    },
+    {
+      "action": "Develop Data Extractor using GitHub API endpoints",
+      "tool": "write_file",
+      "priority": "high",
+      "details": "Utilize various GitHub API endpoints, such as issues, pull requests, and code changes, to extract relevant metadata and code snippets from each repository. Implement this in a new Python file, e.g., data_extractor.py, and integrate it with the scanner_crawler tool."
+    },
+    {
+      "action": "Design API Calls for Integration with existing tools",
+      "tool": "exec",
+      "priority": "medium",
+      "details": "Create API calls to integrate the scanner_crawler tool with existing tools like browse_web, list_skills, github_pr_comments, github_trending, and scan_contracts. Use tools like Swagger or API Blueprint to design and document the API endpoints."
+    }
+  ]
+}
