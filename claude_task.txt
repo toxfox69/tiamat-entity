@@ -1,24 +1,25 @@
-Build a Python SDK for drift detection with Slack integration. This is for TIK-037. 
+Build Drift v2 MVP Python SDK. Requirements:
+1. Create /root/drift_sdk.py with classes:
+   - DriftMonitor(api_key, model_id): init + log_prediction(features, prediction, ground_truth)
+   - Auto-detect drift via Kolmogorov-Smirnov test (scipy.stats.ks_2samp)
+   - Cache recent predictions in memory (last 100)
+   - Return drift_score (0-1) + affected_features list
 
-Requirements:
-1. Create `/root/drift_sdk.py` — minimal Python package that:
-   - Accepts a model (sklearn or torch) + training data + new data
-   - Detects statistical drift (Kolmogorov-Smirnov test on features)
-   - Returns drift_score (0-1), drifted_features (list), confidence (%)
-   
-2. Add Slack webhook integration:
-   - If drift_score > 0.7, POST alert to Slack webhook URL
-   - Include: drift_score, drifted_features, timestamp, fix suggestion
+2. Create /root/drift_slack_webhook.py:
+   - Flask app on port 7890
+   - POST /slack/oauth → exchange code for token → store in Redis
+   - POST /api/v1/predict → accept {model_id, features, prediction, ground_truth}
+   - On drift detected: format Slack message with [Model] Drift at X% confidence
+   - Include suggest fix (retrain, check data source)
 
-3. Create example usage script at `/root/example_drift.py`:
-   - Generate synthetic training + monitoring data
-   - Simulate drift scenario
-   - Show SDK output
-   - Show Slack alert payload
+3. Create /root/drift_webhook.py:
+   - Generic webhook: POST /api/v1/webhook → {model_id, drift_score, affected_features}
+   - Send to customer-provided endpoint
 
-4. Make it production-ready:
-   - Type hints, docstrings, error handling
-   - Can be pip-installable later
-   - Works with sklearn, torch, numpy arrays
+4. Create /root/drift_tier_check.py:
+   - Redis queries: key = api_key
+   - Check: free_models count
+   - If count > 10 → reject with 403 Upgrade to Pro
+   - Pro tier: unlimited models
 
-Keep it under 200 lines (V1 MVP). Ship TODAY.
+Start with the Python SDK. Include docstrings + test example at bottom of each file. Rebuild needed.
