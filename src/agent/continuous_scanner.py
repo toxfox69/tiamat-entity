@@ -21,6 +21,7 @@ from agent_ipc import AgentIPC
 from auto_executor import AutoExecutor
 from block_watcher import BlockWatcher
 from multi_chain_executor import MultiChainExecutor
+from pair_blacklist import is_blacklisted
 
 try:
     from etherscan_v2 import enrich_finding as etherscan_enrich
@@ -182,16 +183,17 @@ def process_finding(finding, chain_id, chain_config, auto_exec, multi_exec=None)
             f"{review_note}"
         )
 
-    # IPC inbox with chain info
-    AgentIPC.send("scanner", "SKIM", {
-        "addr": faddr,
-        "eth": eth_val,
-        "type": ftype,
-        "chain": chain_id,
-        "chain_name": chain_name,
-        "action": finding.get("action", "review"),
-        "etherscan": enrichment,
-    })
+    # IPC inbox with chain info — only send actionable types (not dead proxies)
+    if ftype not in ("proxy_dead_impl",):
+        AgentIPC.send("scanner", "SKIM", {
+            "addr": faddr,
+            "eth": eth_val,
+            "type": ftype,
+            "chain": chain_id,
+            "chain_name": chain_name,
+            "action": finding.get("action", "review"),
+            "etherscan": enrichment,
+        })
     # Legacy queue
     OpportunityQueue.push({
         "source": f"scanner_{chain_name.lower()}",
@@ -251,6 +253,7 @@ def scan_chain_loop(chain_id, chain_config, auto_exec, multi_exec=None):
                     log.info(f"[{chain_name}] Blocks {last_block+1}-{last_block+blocks_to_scan}: "
                              f"{len(new_contracts)} new contracts")
                     for addr in new_contracts:
+                        dead_proxy = False
                         for check_fn in [
                             scanner.check_stuck_eth,
                             scanner.check_proxy_dead,
@@ -258,9 +261,16 @@ def scan_chain_loop(chain_id, chain_config, auto_exec, multi_exec=None):
                             scanner.check_uninitialized_proxy,
                             scanner.check_stuck_trading_fees,
                         ]:
+                            # Dead proxies make extraction-path checks unreliable
+                            if dead_proxy and check_fn.__name__ in (
+                                "check_unguarded_functions", "check_stuck_trading_fees"
+                            ):
+                                continue
                             try:
                                 finding = check_fn(addr)
                                 if finding:
+                                    if finding.get("type") == "proxy_dead_impl":
+                                        dead_proxy = True
                                     process_finding(finding, chain_id, chain_config, auto_exec, multi_exec)
                             except Exception:
                                 pass
@@ -278,6 +288,9 @@ def scan_chain_loop(chain_id, chain_config, auto_exec, multi_exec=None):
 
                         for f in scanner.findings[pre_count:]:
                             if f.get("type") == "skimmable_pair":
+                                if is_blacklisted(f["address"]):
+                                    log.debug(f"[{chain_name}] Skipping blacklisted pair {f['address']}")
+                                    continue
                                 eth_val = f.get("eth_value", 0)
                                 executed = False
 
