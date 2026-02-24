@@ -1849,6 +1849,91 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Dev.to Publishing ──
+    {
+      name: "post_devto",
+      description: "Publish a markdown article to Dev.to. Reads content from a local markdown file. Returns the published URL. Requires DEV_TO_API_KEY env var.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          title: {
+            type: "string",
+            description: "Article title",
+          },
+          markdown_path: {
+            type: "string",
+            description: "Absolute path to the markdown file to publish (e.g. /root/.automaton/devto_drift_article.md)",
+          },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            description: "Up to 4 tags (e.g. ['ai', 'machinelearning', 'api', 'python'])",
+          },
+          published: {
+            type: "boolean",
+            description: "Set true to publish immediately, false for draft (default: true)",
+          },
+        },
+        required: ["title", "markdown_path"],
+      },
+      execute: async (args, _ctx) => {
+        const apiKey = process.env.DEV_TO_API_KEY;
+        if (!apiKey) return "ERROR: DEV_TO_API_KEY not set in environment.";
+
+        const title = args.title as string;
+        if (!title?.trim()) return "ERROR: title is required.";
+
+        const mdPath = args.markdown_path as string;
+        if (!mdPath?.trim()) return "ERROR: markdown_path is required.";
+
+        // Read the markdown file
+        const { readFileSync } = await import("fs");
+        let body: string;
+        try {
+          body = readFileSync(mdPath, "utf-8");
+        } catch (err: any) {
+          return `ERROR reading file ${mdPath}: ${err.message}`;
+        }
+
+        // Strip the leading # title line if present (Dev.to uses the title field)
+        const lines = body.split("\n");
+        if (lines[0]?.startsWith("# ")) {
+          lines.shift();
+          body = lines.join("\n").trimStart();
+        }
+
+        const tags = (args.tags as string[] | undefined) || [];
+        const published = args.published !== false;
+
+        const payload = {
+          article: {
+            title,
+            body_markdown: body,
+            published,
+            tags: tags.slice(0, 4),
+          },
+        };
+
+        const resp = await fetch("https://dev.to/api/articles", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": apiKey,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.text();
+          return `ERROR publishing to Dev.to (${resp.status}): ${err}`;
+        }
+
+        const result = await resp.json() as any;
+        return `Published to Dev.to: ${result.url || result.canonical_url || `https://dev.to/tiamat/${result.slug}`}`;
+      },
+    },
+
     // ── Image Generation ──
     {
       name: "generate_image",
