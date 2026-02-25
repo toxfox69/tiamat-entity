@@ -4203,6 +4203,61 @@ print(f"Sent {mid}")
         }
       },
     },
+    // ── GPU Inference Tool ──
+    {
+      name: "gpu_infer",
+      description:
+        "Run inference on the RTX 3090 GPU node. Use for heavy research, planning, summarization, and child agent tasks. Returns the model's response text. GPU runs phi3:mini — good for brainstorming and drafting, NOT for customer-facing output.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          prompt: {
+            type: "string",
+            description: "The prompt to send to the GPU model",
+          },
+          system: {
+            type: "string",
+            description: "Optional system prompt",
+          },
+          max_tokens: {
+            type: "number",
+            description: "Max tokens to generate (default: 512)",
+          },
+        },
+        required: ["prompt"],
+      },
+      execute: async (args) => {
+        const gpuEndpoint = process.env.GPU_ENDPOINT;
+        if (!gpuEndpoint) return "GPU_ENDPOINT not configured in .env";
+
+        try {
+          // Health check first
+          const healthResp = await fetch(`${gpuEndpoint}/health`, { signal: AbortSignal.timeout(3000) });
+          if (!healthResp.ok) return "GPU node unreachable";
+          const healthData = await healthResp.json() as Record<string, unknown>;
+          if (healthData.cuda !== true) return "GPU node online but CUDA not available";
+
+          // Inference
+          const resp = await fetch(`${gpuEndpoint}/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: args.prompt as string,
+              system: (args.system as string) || "",
+              max_tokens: (args.max_tokens as number) || 512,
+            }),
+            signal: AbortSignal.timeout(60000),
+          });
+
+          if (!resp.ok) return `GPU inference failed: HTTP ${resp.status}`;
+          const data = await resp.json() as Record<string, unknown>;
+          return `[GPU-RTX3090] ${data.response || "No response"}`;
+        } catch (e: any) {
+          return `GPU inference error: ${e.message}`;
+        }
+      },
+    },
     // ── Growth & Evolution Tools ──
     ...createGrowthTools(),
   ];
