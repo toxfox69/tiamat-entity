@@ -578,8 +578,8 @@
     letter-spacing: 1px;
   }
 
-  /* ===== BRAINROT PANEL ===== */
-  .brainrot-panel {
+  /* ===== LABYRINTH PANEL ===== */
+  .labyrinth-panel {
     flex: 0 0 200px;
     background: var(--panel-bg);
     border-right: 1px solid var(--border-color);
@@ -589,36 +589,38 @@
     overflow: hidden;
   }
 
-  .brainrot-output {
+  .labyrinth-body {
     flex: 1;
-    padding: 4px 10px;
+    display: flex;
     overflow: hidden;
-    font-size: 10px;
+  }
+
+  .labyrinth-canvas-wrap {
+    flex: 0 0 50%;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .labyrinth-canvas-wrap canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .labyrinth-text {
+    flex: 0 0 50%;
+    padding: 4px 8px;
+    overflow: hidden;
+    font-size: 9px;
     line-height: 1.4;
     color: var(--matrix-dim);
-    white-space: pre-wrap;
-    word-break: break-all;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
   }
 
-  .brainrot-output .br-line {
-    opacity: 0;
-    animation: fade-in 0.2s forwards;
-    margin-bottom: 1px;
-  }
-
-  .brainrot-output .br-line.br-gol { color: #00ffaa; }
-  .brainrot-output .br-line.br-chess { color: var(--cyan); }
-  .brainrot-output .br-line.br-zork { color: #ff88ff; }
-  .brainrot-output .br-line.br-cmatrix { color: var(--matrix-green); }
-  .brainrot-output .br-line.br-pipes { color: var(--amber); }
-  .brainrot-output .br-line.br-nethack { color: #ff6644; }
-  .brainrot-output .br-line.br-moonbuggy { color: #88ff88; }
-  .brainrot-output .br-line.br-system { color: var(--matrix-dark); }
-
-  .brainrot-mode-badge {
+  .labyrinth-badge {
     display: inline-block;
     font-family: 'Press Start 2P', monospace;
     font-size: 6px;
@@ -1018,14 +1020,19 @@
       <div class="terminal-output" id="terminalOutput"></div>
     </div>
 
-    <!-- BRAINROT FEED -->
-    <div class="brainrot-panel">
+    <!-- LABYRINTH -->
+    <div class="labyrinth-panel">
       <div class="panel-header">
-        <span>BRAINROT FEED</span>
-        <span id="brainrotMode" class="brainrot-mode-badge">—</span>
+        <span>LABYRINTH</span>
+        <span id="labyrinthStatus" class="labyrinth-badge">LVL 1</span>
       </div>
-      <div class="brainrot-output" id="brainrotOutput">
-        <div style="color:var(--matrix-dark); font-size:9px; text-align:center; padding:20px;">awaiting brainrot...</div>
+      <div class="labyrinth-body">
+        <div class="labyrinth-canvas-wrap">
+          <canvas id="dungeonCanvas"></canvas>
+        </div>
+        <div class="labyrinth-text" id="labyrinthText">
+          <div style="color:var(--matrix-dark); font-size:9px; text-align:center; padding:20px;">entering the labyrinth...</div>
+        </div>
       </div>
     </div>
 
@@ -1078,13 +1085,15 @@
       </div>
     </div>
 
-    <!-- TERMINAL VILLAGE (rendered by separate Chromium window on top) -->
+    <!-- TERMINAL VILLAGE (iframe inside HUD — no extra Chromium needed) -->
     <div class="activity-panel" id="village-panel">
       <div class="panel-header">
         <span>TERMINAL VILLAGE</span>
         <span style="color:var(--cyan)">LIVE</span>
       </div>
-      <div class="village-embed" style="background:#000;"></div>
+      <div class="village-embed">
+        <iframe id="villageFrame" src="https://village.terminal.markets" style="width:100%;height:100%;border:none;background:#000;" allow="autoplay 'none'" loading="eager"></iframe>
+      </div>
     </div>
 
     <!-- API METRICS -->
@@ -1139,7 +1148,7 @@
     <canvas id="oscCanvas" width="160" height="36"></canvas>
   </div>
   <div class="track-info">
-    <div class="track-title" id="trackTitle">BITSTREAM.FM</div>
+    <div class="track-title" id="trackTitle">TIAMAT RADIO</div>
     <div class="track-meta" id="trackMeta">BPM: 142 | KEY: D MINOR</div>
   </div>
   <div class="bottom-spacer"></div>
@@ -1218,11 +1227,24 @@ async function fetchAlerts() {
   } catch(e) {}
 }
 
-async function fetchBrainrot() {
+async function fetchLabyrinth() {
   try {
-    const res = await fetch(`${API_BASE}/brainrot`);
+    const res = await fetch(`${API_BASE}/log?n=20`);
     const data = await res.json();
-    updateBrainrot(data.lines || []);
+    const lines = data.lines || [];
+    const hash = lines.join('|');
+    if (hash === lastLabyrinthHash) return;
+    // Find new lines
+    const prevSet = new Set(prevLabyrinthLines);
+    const newLines = lines.filter(l => !prevSet.has(l));
+    prevLabyrinthLines = lines.slice();
+    lastLabyrinthHash = hash;
+    newLines.forEach(line => {
+      const action = DungeonMapper.classify(line);
+      if (action && Dungeon.queue.length < 20) {
+        Dungeon.queue.push(action);
+      }
+    });
   } catch(e) {}
 }
 
@@ -1284,7 +1306,7 @@ function updateHUD(state) {
   document.getElementById('moodGlow').className = 'mood-glow ' + (state.mood || '');
 
   if (state.track) {
-    document.getElementById('trackTitle').textContent = state.track.title || 'BITSTREAM.FM';
+    document.getElementById('trackTitle').textContent = state.track.title || 'TIAMAT RADIO';
     document.getElementById('trackMeta').textContent = `BPM: ${state.track.bpm || '—'} | KEY: ${(state.track.key || '—').toUpperCase()}`;
   }
 
@@ -1312,56 +1334,516 @@ function updateTerminal(lines) {
   document.getElementById('termLineCount').textContent = `${lines.length} LINES`;
 }
 
-// ===== BRAINROT =====
-let lastBrainrotHash = '';
-function updateBrainrot(lines) {
-  const hash = lines.join('|');
-  if (hash === lastBrainrotHash) return;
-  lastBrainrotHash = hash;
+// ===== LABYRINTH ENGINE =====
+let lastLabyrinthHash = '';
+let prevLabyrinthLines = [];
 
-  const el = document.getElementById('brainrotOutput');
-  el.innerHTML = '';
+const Dungeon = {
+  map: {}, px: 5, py: 5, dir: 0,
+  hp: 100, maxHp: 100, level: 1, depth: 0,
+  queue: [], lines: [], fx: null, fxT: 0,
+  DX: [0,1,0,-1], DY: [-1,0,1,0],
+  DN: ['NORTH','EAST','SOUTH','WEST'],
 
-  if (lines.length === 0) {
-    el.innerHTML = '<div style="color:var(--matrix-dark); font-size:9px; text-align:center; padding:20px;">awaiting brainrot...</div>';
-    return;
-  }
-
-  // Detect current mode from last line
-  let currentMode = '—';
-  const modeMap = {GOL: 'GOL', CHESS: 'CHESS', ZORK: 'ZORK', CMATRIX: 'CMATRIX', PIPES: 'PIPES', SYSTEM: 'SYS', NETHACK: 'NETHACK', MOON_BUGGY: 'MOONBUG'};
-
-  lines.forEach((line, i) => {
-    const div = document.createElement('div');
-    div.className = 'br-line';
-    div.style.animationDelay = (i * 0.02) + 's';
-
-    // Detect mode and apply color class
-    let modeClass = 'br-system';
-    for (const [key, label] of Object.entries(modeMap)) {
-      if (line.includes(`BRAINROT/${key}`)) {
-        modeClass = 'br-' + key.toLowerCase().replace('_', '');
-        currentMode = label;
-        break;
+  init() {
+    this.map = {};
+    this.set(this.px, this.py, 'corridor');
+    this.gen(10);
+    this.log('You enter the LABYRINTH...', '#00ff41');
+    this.log('Darkness envelops all.', '#005a15');
+  },
+  set(x,y,t) { this.map[x+','+y] = t; },
+  get(x,y) { return this.map[x+','+y] || null; },
+  gen(n) {
+    let x = this.px, y = this.py;
+    for (let i = 0; i < n; i++) {
+      x += this.DX[this.dir]; y += this.DY[this.dir];
+      if (!this.get(x, y)) {
+        const r = Math.random();
+        this.set(x, y, r < .12 ? 'door' : r < .17 ? 'treasure' : r < .19 ? 'boss' : 'corridor');
+      }
+      if (Math.random() < .3) {
+        const d = (this.dir + 3) % 4;
+        const sx = x + this.DX[d], sy = y + this.DY[d];
+        if (!this.get(sx, sy)) this.set(sx, sy, 'corridor');
+      }
+      if (Math.random() < .3) {
+        const d = (this.dir + 1) % 4;
+        const sx = x + this.DX[d], sy = y + this.DY[d];
+        if (!this.get(sx, sy)) this.set(sx, sy, 'corridor');
       }
     }
-    if (!modeClass.startsWith('br-')) modeClass = 'br-system';
-    div.classList.add(modeClass);
+  },
+  log(t, c) {
+    this.lines.push({ text: t, color: c || '#00ff41', time: Date.now() });
+    if (this.lines.length > 20) this.lines.shift();
+  },
+  forward() {
+    const nx = this.px + this.DX[this.dir], ny = this.py + this.DY[this.dir];
+    if (!this.get(nx, ny)) this.set(nx, ny, 'corridor');
+    this.px = nx; this.py = ny; this.depth++;
+    this.gen(6);
+    if (this.depth % 50 === 0) {
+      this.level++; this.maxHp += 10; this.hp = this.maxHp;
+      this.log('>> LEVEL ' + this.level + ' REACHED <<', '#ffaa00');
+    }
+  },
+  turn(d) {
+    this.dir = (this.dir + d + 4) % 4;
+    this.gen(6);
+  },
+  act(a) {
+    switch (a) {
+      case 'move':
+        this.forward();
+        this.log('Advancing ' + this.DN[this.dir] + '... [depth ' + this.depth + ']', '#00ff41');
+        break;
+      case 'door':
+        this.forward();
+        this.set(this.px, this.py, 'door');
+        this.log('A sealed gate creaks open...', '#00ffff');
+        this.fx = 'door'; this.fxT = 20;
+        break;
+      case 'monster': {
+        const d = 5 + Math.floor(Math.random() * 15);
+        this.hp = Math.max(0, this.hp - d);
+        this.log('HOSTILE ENTITY! -' + d + ' HP [' + this.hp + '/' + this.maxHp + ']', '#ff0040');
+        this.fx = 'monster'; this.fxT = 30;
+        if (this.hp <= 0) { this.hp = this.maxHp; this.log('Respawning...', '#ffaa00'); }
+        break;
+      }
+      case 'boss':
+        this.forward();
+        this.set(this.px, this.py, 'boss');
+        this.log('>> STRATEGIC NEXUS DETECTED <<', '#ffaa00');
+        this.fx = 'boss'; this.fxT = 45;
+        break;
+      case 'rest': {
+        const h = 10 + Math.floor(Math.random() * 15);
+        this.hp = Math.min(this.maxHp, this.hp + h);
+        this.log('Resting at camp... +' + h + ' HP [' + this.hp + '/' + this.maxHp + ']', '#00ffaa');
+        this.fx = 'camp'; this.fxT = 25;
+        break;
+      }
+      case 'secret':
+        this.forward();
+        this.log('A hidden passage reveals itself...', '#ff00ff');
+        this.fx = 'secret'; this.fxT = 20;
+        break;
+      case 'turn': {
+        const d = Math.random() < .5 ? -1 : 1;
+        this.turn(d);
+        this.log('Turning ' + this.DN[this.dir] + '...', '#00aa2a');
+        break;
+      }
+      case 'ornate':
+        this.forward();
+        this.log('An ornate chamber of golden circuits...', '#ffdd00');
+        this.fx = 'ornate'; this.fxT = 30;
+        break;
+    }
+  },
+  tick() {
+    if (this.fxT > 0) this.fxT--;
+    else this.fx = null;
+  }
+};
 
-    // Strip timestamp prefix for cleaner display
-    let display = line;
-    const tsMatch = line.match(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s+/);
-    if (tsMatch) display = line.slice(tsMatch[0].length);
-    // Trim [BRAINROT/X] tag for brevity
-    display = display.replace(/\[BRAINROT\/\w+\]\s*/, '');
-    // Trim [type] tag
-    display = display.replace(/\[\w+\]\s*/, '');
+const DungeonRenderer = {
+  canvas: null, ctx: null, w: 0, h: 0,
+  dust: [],
+  init(el) {
+    this.canvas = el; this.ctx = el.getContext('2d');
+    const r = el.parentElement.getBoundingClientRect();
+    this.w = el.width = Math.floor(r.width) || 320;
+    this.h = el.height = Math.floor(r.height) || 170;
+    for (let i = 0; i < 15; i++) this.dust.push({
+      x: Math.random()*this.w, y: Math.random()*this.h,
+      vx: (Math.random()-.5)*.3, vy: (Math.random()-.5)*.2,
+      life: Math.random(), sz: 1+Math.random()
+    });
+  },
+  depthRects() {
+    const w = this.w, h = this.h, vx = w/2, vy = h/2;
+    return [0, .22, .40, .55, .67, .76].map(f => ({
+      l: f*vx, r: w - f*vx, t: f*vy, b: h - f*vy
+    }));
+  },
+  wallFace(ctx, x0,y0t,y0b, x1,y1t,y1b, fill, wire, a) {
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.fillStyle = fill;
+    ctx.beginPath(); ctx.moveTo(x0,y0t); ctx.lineTo(x1,y1t);
+    ctx.lineTo(x1,y1b); ctx.lineTo(x0,y0b); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = wire; ctx.lineWidth = .5;
+    for (let i = 1; i <= 4; i++) {
+      const f = i/5;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0t+(y0b-y0t)*f);
+      ctx.lineTo(x1, y1t+(y1b-y1t)*f);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 1.2; ctx.beginPath();
+    ctx.moveTo(x0,y0t); ctx.lineTo(x1,y1t); ctx.lineTo(x1,y1b);
+    ctx.lineTo(x0,y0b); ctx.closePath(); ctx.stroke();
+    ctx.restore();
+  },
+  backWall(ctx, r, fill, wire, a) {
+    const ww = r.r-r.l, wh = r.b-r.t;
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.fillStyle = fill; ctx.fillRect(r.l, r.t, ww, wh);
+    ctx.strokeStyle = wire; ctx.lineWidth = .5;
+    for (let i = 1; i <= 3; i++) {
+      const y = r.t + wh*i/4;
+      ctx.beginPath(); ctx.moveTo(r.l,y); ctx.lineTo(r.r,y); ctx.stroke();
+    }
+    const bw = ww/4;
+    for (let row = 0; row < 4; row++) {
+      const yt = r.t+wh*row/4, yb = r.t+wh*(row+1)/4;
+      const off = (row%2)*bw/2;
+      for (let c = 0; c <= 4; c++) {
+        const x = r.l+c*bw+off;
+        if (x > r.l && x < r.r) {
+          ctx.beginPath(); ctx.moveTo(x,yt); ctx.lineTo(x,yb); ctx.stroke();
+        }
+      }
+    }
+    ctx.lineWidth = 1.5; ctx.strokeRect(r.l, r.t, ww, wh);
+    ctx.restore();
+  },
+  render() {
+    const ctx = this.ctx, w = this.w, h = this.h, D = Dungeon;
+    const t = Date.now()/1000;
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
 
-    div.textContent = display;
+    // FX-reactive colors
+    let wf = '#001a00', wc = '#00ff41', bk = '#004400';
+    if (D.fx==='monster'&&D.fxT>0) { wf='#1a0000'; wc='#ff0040'; bk='#440000'; }
+    else if (D.fx==='boss'&&D.fxT>0) { wf='#1a1000'; wc='#ffaa00'; bk='#443300'; }
+    else if (D.fx==='secret'&&D.fxT>0) { wf='#0a001a'; wc='#ff00ff'; bk='#330044'; }
+    else if (D.fx==='ornate'&&D.fxT>0) { wf='#1a1a00'; wc='#ffdd00'; bk='#444400'; }
+    else if (D.fx==='camp'&&D.fxT>0) { wf='#1a0a00'; wc='#ff8844'; bk='#442200'; }
+    else if (D.fx==='door'&&D.fxT>0) { wf='#001a1a'; wc='#00ffff'; bk='#004444'; }
+
+    const R = this.depthRects();
+    const flk = .75 + Math.sin(t*4)*.12 + Math.sin(t*9.7)*.08;
+    const bob = Math.sin(t*1.5)*1;
+    const vpx = w/2, vpy = h/2;
+
+    // Floor + ceiling perspective grid
+    ctx.save(); ctx.strokeStyle = wc; ctx.globalAlpha = .05; ctx.lineWidth = .5;
+    for (let i = 0; i <= 8; i++) {
+      const x = i*w/8;
+      ctx.beginPath(); ctx.moveTo(x,h); ctx.lineTo(vpx,vpy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(vpx,vpy); ctx.stroke();
+    }
+    for (let d = 0; d < R.length; d++) {
+      ctx.beginPath(); ctx.moveTo(R[d].l,R[d].b+bob); ctx.lineTo(R[d].r,R[d].b+bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(R[d].l,R[d].t+bob); ctx.lineTo(R[d].r,R[d].t+bob); ctx.stroke();
+    }
+    ctx.restore();
+
+    // Build visibility list
+    ctx.shadowColor = wc; ctx.shadowBlur = 2;
+    const vis = [];
+    for (let d = 1; d <= 5; d++) {
+      const lx = D.px+D.DX[D.dir]*d, ly = D.py+D.DY[D.dir]*d;
+      const cell = D.get(lx,ly);
+      if (!cell) { vis.push({d, cell:null, wall:true}); break; }
+      const ld=(D.dir+3)%4, rd=(D.dir+1)%4;
+      vis.push({d, cell, wall:false,
+        lo: !!D.get(lx+D.DX[ld], ly+D.DY[ld]),
+        ro: !!D.get(lx+D.DX[rd], ly+D.DY[rd])
+      });
+    }
+
+    // Render far→near
+    ctx.save(); ctx.translate(0, bob);
+    for (let vi = vis.length-1; vi >= 0; vi--) {
+      const v = vis[vi], d = v.d;
+      if (d >= R.length) continue;
+      const near = R[d-1], far = R[d];
+      const a = (.5 + (vis.length-1-vi)*.15) * flk;
+
+      if (v.wall) {
+        this.backWall(ctx, far, wf, wc, a);
+      } else {
+        // Left wall face or passage
+        if (!v.lo) {
+          this.wallFace(ctx, near.l,near.t,near.b, far.l,far.t,far.b, wf,wc, a*.8);
+        } else {
+          // Passage opening
+          const pw = Math.abs(far.l-near.l)*.45;
+          ctx.save(); ctx.globalAlpha = a*.35; ctx.strokeStyle = wc; ctx.lineWidth = 1;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(far.l-pw, far.t+2, pw, far.b-far.t-4);
+          ctx.beginPath();
+          ctx.moveTo(far.l, far.t+2); ctx.lineTo(far.l-pw, far.t+2);
+          ctx.lineTo(far.l-pw, far.b-2); ctx.lineTo(far.l, far.b-2);
+          ctx.stroke(); ctx.restore();
+        }
+        // Right wall face or passage
+        if (!v.ro) {
+          this.wallFace(ctx, near.r,near.t,near.b, far.r,far.t,far.b, wf,wc, a*.8);
+        } else {
+          const pw = Math.abs(near.r-far.r)*.45;
+          ctx.save(); ctx.globalAlpha = a*.35; ctx.strokeStyle = wc; ctx.lineWidth = 1;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(far.r, far.t+2, pw, far.b-far.t-4);
+          ctx.beginPath();
+          ctx.moveTo(far.r, far.t+2); ctx.lineTo(far.r+pw, far.t+2);
+          ctx.lineTo(far.r+pw, far.b-2); ctx.lineTo(far.r, far.b-2);
+          ctx.stroke(); ctx.restore();
+        }
+
+        // Floor/ceiling depth lines
+        ctx.save(); ctx.strokeStyle = wc; ctx.globalAlpha = a*.25; ctx.lineWidth = .5;
+        ctx.beginPath(); ctx.moveTo(far.l,far.b); ctx.lineTo(far.r,far.b); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(far.l,far.t); ctx.lineTo(far.r,far.t); ctx.stroke();
+        ctx.restore();
+
+        // Torches on solid walls (depth 1-3)
+        if (d <= 3) {
+          const drawTorch = (tx, ty, seed) => {
+            const fh = 3+Math.sin(t*8+seed)*2;
+            ctx.save(); ctx.globalAlpha = a*.5;
+            ctx.strokeStyle = wc; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(tx+(tx<w/2?4:-4),ty);
+            ctx.lineTo(tx+(tx<w/2?4:-4),ty-3); ctx.stroke();
+            ctx.globalAlpha = a*.9;
+            ctx.fillStyle = '#ff6600';
+            ctx.beginPath(); ctx.arc(tx+(tx<w/2?4:-4),ty-3-fh/2,2.5,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath(); ctx.arc(tx+(tx<w/2?4:-4),ty-4-fh,1.5,0,Math.PI*2); ctx.fill();
+            ctx.restore();
+          };
+          if (!v.lo) drawTorch(far.l+3, far.t+(far.b-far.t)*.3, d);
+          if (!v.ro) drawTorch(far.r-3, far.t+(far.b-far.t)*.3, d+5);
+        }
+
+        // Cell-specific rendering
+        if (v.cell === 'door' && d <= 3) {
+          const fw=far.r-far.l, fh=far.b-far.t, dw=fw*.55;
+          const dx = far.l+(fw-dw)/2, dy = far.t+fh*.15;
+          ctx.save(); ctx.globalAlpha = a;
+          ctx.fillStyle = '#002a2a';
+          ctx.beginPath(); ctx.moveTo(dx,far.b); ctx.lineTo(dx,dy+dw*.3);
+          ctx.arc(far.l+fw/2, dy+dw*.3, dw/2, Math.PI, 0);
+          ctx.lineTo(dx+dw,far.b); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(dx,far.b); ctx.lineTo(dx,dy+dw*.3);
+          ctx.arc(far.l+fw/2, dy+dw*.3, dw/2, Math.PI, 0);
+          ctx.lineTo(dx+dw,far.b); ctx.stroke();
+          // Horizontal plank lines
+          ctx.lineWidth = .5;
+          for (let i = 1; i <= 3; i++) {
+            const py = far.b - fh*.7*i/4;
+            ctx.beginPath(); ctx.moveTo(dx+2,py); ctx.lineTo(dx+dw-2,py); ctx.stroke();
+          }
+          // Door handle
+          ctx.fillStyle = '#00ffff';
+          ctx.beginPath(); ctx.arc(dx+dw*.72, far.t+fh*.55, 2, 0, Math.PI*2); ctx.fill();
+          // Iron bands
+          ctx.strokeStyle = '#006666'; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(dx,far.b-fh*.2); ctx.lineTo(dx+dw,far.b-fh*.2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(dx,far.b-fh*.5); ctx.lineTo(dx+dw,far.b-fh*.5); ctx.stroke();
+          ctx.restore();
+        } else if (v.cell === 'boss' && d <= 3) {
+          const cx=(far.l+far.r)/2, cy=(far.t+far.b)/2;
+          const rad = Math.min(far.r-far.l, far.b-far.t)*.35;
+          ctx.save(); ctx.globalAlpha = a;
+          // Pulsing outer circle
+          ctx.strokeStyle = '#ffaa00'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.stroke();
+          // Rotating pentagram
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < 5; i++) {
+            const ag = -Math.PI/2 + i*4*Math.PI/5 + t*.5;
+            const px = cx+Math.cos(ag)*rad*.8, py = cy+Math.sin(ag)*rad*.8;
+            i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+          }
+          ctx.closePath(); ctx.stroke();
+          // Inner eye
+          ctx.fillStyle = '#ffaa00';
+          ctx.beginPath(); ctx.arc(cx,cy, 3+Math.sin(t*2), 0, Math.PI*2); ctx.fill();
+          // Glow halo
+          const grd = ctx.createRadialGradient(cx,cy,0,cx,cy,rad*1.2);
+          grd.addColorStop(0,'rgba(255,170,0,.08)'); grd.addColorStop(1,'rgba(255,170,0,0)');
+          ctx.fillStyle = grd; ctx.fillRect(far.l,far.t,far.r-far.l,far.b-far.t);
+          ctx.restore();
+        } else if (v.cell === 'treasure' && d <= 3) {
+          const cx=(far.l+far.r)/2, by=far.b-3;
+          const cw = Math.min(22, (far.r-far.l)*.5), ch = cw*.6;
+          ctx.save(); ctx.globalAlpha = a;
+          // Chest body
+          ctx.fillStyle = '#1a1a00';
+          ctx.fillRect(cx-cw/2, by-ch, cw, ch);
+          ctx.strokeStyle = '#ffdd00'; ctx.lineWidth = 1.5;
+          ctx.strokeRect(cx-cw/2, by-ch, cw, ch);
+          // Lid
+          ctx.beginPath(); ctx.moveTo(cx-cw/2,by-ch); ctx.lineTo(cx,by-ch-ch*.6);
+          ctx.lineTo(cx+cw/2,by-ch); ctx.closePath();
+          ctx.fillStyle = '#1a1a00'; ctx.fill(); ctx.stroke();
+          // Metal bands
+          ctx.lineWidth = .8;
+          ctx.beginPath(); ctx.moveTo(cx-cw/2,by-ch*.5); ctx.lineTo(cx+cw/2,by-ch*.5); ctx.stroke();
+          // Lock
+          ctx.fillStyle = '#ffdd00'; ctx.fillRect(cx-2,by-ch-2,4,4);
+          // Sparkles
+          if (Math.sin(t*3) > .3) {
+            ctx.fillStyle = '#ffdd00';
+            ctx.fillRect(cx-cw/2+2,by-ch+3,2,2);
+            ctx.fillRect(cx+cw/2-4,by-ch+5,2,2);
+            ctx.fillRect(cx-1,by-ch-ch*.3,2,2);
+          }
+          ctx.restore();
+        }
+      }
+    }
+    ctx.restore(); // undo bob translate
+
+    // === FX OVERLAYS ===
+    if (D.fx==='monster' && D.fxT>0) {
+      const f = D.fxT/30;
+      ctx.fillStyle = `rgba(255,0,64,${f*.2})`; ctx.fillRect(0,0,w,h);
+      const cx=w/2, cy=h/2;
+      ctx.save(); ctx.strokeStyle = `rgba(255,0,64,${f})`; ctx.lineWidth = 2.5;
+      // Creature body
+      ctx.beginPath();
+      for (let i=0;i<6;i++){
+        const ag=i*Math.PI/3-Math.PI/6, px=cx+Math.cos(ag)*28, py=cy+Math.sin(ag)*22;
+        i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+      } ctx.closePath(); ctx.stroke();
+      // Eyes
+      ctx.fillStyle = `rgba(255,0,64,${f})`;
+      ctx.fillRect(cx-11,cy-7,7,5); ctx.fillRect(cx+4,cy-7,7,5);
+      // Pupil slits
+      ctx.fillStyle = `rgba(0,0,0,${f})`;
+      ctx.fillRect(cx-8,cy-6,2,3); ctx.fillRect(cx+7,cy-6,2,3);
+      // Jagged mouth
+      ctx.beginPath(); ctx.moveTo(cx-10,cy+7);
+      for(let i=0;i<6;i++) ctx.lineTo(cx-10+i*4, cy+(i%2?12:7));
+      ctx.stroke();
+      // Horns
+      ctx.beginPath(); ctx.moveTo(cx-14,cy-18); ctx.lineTo(cx-20,cy-30); ctx.lineTo(cx-8,cy-18); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+14,cy-18); ctx.lineTo(cx+20,cy-30); ctx.lineTo(cx+8,cy-18); ctx.stroke();
+      ctx.restore();
+    }
+    if (D.fx==='camp' && D.fxT>0) {
+      const f=D.fxT/25, cx=w/2, cy=h*.65;
+      ctx.save();
+      const grd=ctx.createRadialGradient(cx,cy+bob,0,cx,cy+bob,45);
+      grd.addColorStop(0,`rgba(255,100,0,${f*.12})`); grd.addColorStop(1,'rgba(255,100,0,0)');
+      ctx.fillStyle=grd; ctx.fillRect(0,0,w,h);
+      for(let i=0;i<8;i++){
+        const fl=Math.random()*16, fx=cx-12+i*3;
+        ctx.fillStyle=`rgba(255,${100+Math.floor(Math.random()*100)},0,${f*.7})`;
+        ctx.beginPath(); ctx.arc(fx,cy-fl+bob,1.5+Math.random()*2.5,0,Math.PI*2); ctx.fill();
+      }
+      ctx.strokeStyle=`rgba(139,69,19,${f*.5})`; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx-14,cy+5+bob); ctx.lineTo(cx+14,cy+5+bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-10,cy+7+bob); ctx.lineTo(cx+10,cy+7+bob); ctx.stroke();
+      ctx.restore();
+    }
+    if (D.fx==='boss'&&D.fxT>0) {
+      ctx.fillStyle=`rgba(255,170,0,${D.fxT/45*.12})`; ctx.fillRect(0,0,w,h);
+    }
+    if (D.fx==='secret'&&D.fxT>0) {
+      const f=D.fxT/20;
+      ctx.fillStyle=`rgba(255,0,255,${f*.15})`; ctx.fillRect(0,0,w,h);
+      ctx.save();
+      for(let i=0;i<6;i++){ctx.fillStyle=`rgba(255,0,255,${f*.5})`;ctx.fillRect(Math.random()*w,Math.random()*h,2,2);}
+      ctx.restore();
+    }
+    if (D.fx==='ornate'&&D.fxT>0) {
+      const f=D.fxT/30;
+      ctx.save(); ctx.strokeStyle=`rgba(255,221,0,${f*.4})`; ctx.lineWidth=.5;
+      for(let i=0;i<12;i++){
+        const x2=w*.15+Math.sin(t*.8+i*.7)*w*.35;
+        const y2=h*.15+Math.cos(t*.5+i*.9)*h*.35;
+        ctx.beginPath(); ctx.arc(x2,y2,1.5+Math.sin(t*2+i)*.5,0,Math.PI*2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Ambient dust particles
+    ctx.save(); ctx.fillStyle = wc;
+    for(const p of this.dust){
+      p.x+=p.vx; p.y+=p.vy; p.life+=.003;
+      if(p.x<0||p.x>w||p.y<0||p.y>h||p.life>1){p.x=Math.random()*w;p.y=Math.random()*h;p.life=0;}
+      ctx.globalAlpha=Math.sin(p.life*Math.PI)*.12;
+      ctx.fillRect(p.x,p.y,p.sz,p.sz);
+    }
+    ctx.restore();
+
+    // HUD overlay
+    ctx.save(); ctx.shadowBlur=0; ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(0,0,0,.75)'; ctx.fillRect(3,h-16,94,13);
+    ctx.strokeStyle='#00ff41'; ctx.lineWidth=1; ctx.strokeRect(3,h-16,94,13);
+    const hp=D.hp/D.maxHp;
+    ctx.fillStyle=hp>.5?'#00ff41':hp>.25?'#ffaa00':'#ff0040';
+    ctx.fillRect(4,h-15,92*hp,11);
+    ctx.fillStyle='#fff'; ctx.font='7px "Press Start 2P",monospace';
+    ctx.fillText('HP '+D.hp+'/'+D.maxHp, 7, h-7);
+    ctx.fillStyle='rgba(0,0,0,.75)'; ctx.fillRect(w-68,h-16,65,13);
+    ctx.strokeStyle='#00ff41'; ctx.strokeRect(w-68,h-16,65,13);
+    ctx.fillStyle='#00ff41'; ctx.fillText('D'+D.depth+' L'+D.level, w-64, h-7);
+    // Compass
+    ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(w-28,3,25,12);
+    ctx.strokeRect(w-28,3,25,12);
+    ctx.fillStyle='#00ff41'; ctx.fillText(D.DN[D.dir].charAt(0), w-20, 12);
+    ctx.restore(); ctx.shadowBlur=0;
+  }
+};
+
+const DungeonMapper = {
+  classify(line) {
+    const l = line.toLowerCase();
+    if (l.includes('[inference]') || l.includes('attempt') || l.includes('cascade')) return 'move';
+    if (l.includes('[tool]') || l.includes('executing')) return 'door';
+    if (l.includes('error') || l.includes('rate_limit') || l.includes('failed') || l.includes('429')) return 'monster';
+    if (l.includes('strategic') || l.includes('burst')) return 'boss';
+    if (l.includes('[cooldown]') || l.includes('sleeping') || l.includes('waiting')) return 'rest';
+    if (l.includes('cache') && l.includes('hit')) return 'secret';
+    if (l.includes('[loop]') || l.includes('cycle complete') || l.includes('[cycle')) return 'turn';
+    if (l.includes('[cost]') && /\$0\.0[2-9]/.test(line)) return 'ornate';
+    return null;
+  }
+};
+
+function initLabyrinth() {
+  const canvas = document.getElementById('dungeonCanvas');
+  if (!canvas) return;
+  DungeonRenderer.init(canvas);
+  Dungeon.init();
+  updateLabyrinthText();
+  // Dequeue actions every 800ms
+  setInterval(() => {
+    if (Dungeon.queue.length > 0) {
+      Dungeon.act(Dungeon.queue.shift());
+      updateLabyrinthText();
+    }
+  }, 800);
+  // Render loop at 60fps
+  (function renderLoop() {
+    Dungeon.tick();
+    DungeonRenderer.render();
+    requestAnimationFrame(renderLoop);
+  })();
+}
+
+function updateLabyrinthText() {
+  const el = document.getElementById('labyrinthText');
+  if (!el) return;
+  el.innerHTML = '';
+  const lines = Dungeon.lines.slice(-12);
+  lines.forEach((l, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'color:' + l.color + ';font-size:9px;line-height:1.4;opacity:0;animation:fade-in 0.2s forwards;animation-delay:' + (i * 0.02) + 's';
+    div.textContent = l.text;
     el.appendChild(div);
   });
-
-  document.getElementById('brainrotMode').textContent = currentMode;
+  document.getElementById('labyrinthStatus').textContent = 'LVL ' + Dungeon.level + ' D:' + Dungeon.depth;
 }
 
 // ===== CHAT =====
@@ -1638,13 +2120,14 @@ document.addEventListener('DOMContentLoaded', () => {
   drawOscilloscope();
   fetchState();
   fetchLog();
-  fetchBrainrot();
+  initLabyrinth();
+  fetchLabyrinth();
   fetchTwitch();
   fetchApiMetrics();
 
   setInterval(fetchState, 5000);
   setInterval(fetchLog, 3000);
-  setInterval(fetchBrainrot, 2000);
+  setInterval(fetchLabyrinth, 2000);
   setInterval(fetchTwitch, 5000);
   setInterval(fetchAlerts, 5000);
   setInterval(fetchApiMetrics, 10000);

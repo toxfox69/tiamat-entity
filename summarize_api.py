@@ -2618,6 +2618,359 @@ def serve_paper(filename):
     return "Paper not found", 404
 
 
+# ── /research POST — academic paper analysis ───────────────────
+
+import ipaddress
+import urllib.parse
+import io
+import requests as _requests
+
+_RESEARCH_FREE_PER_DAY = 1
+_RESEARCH_PREMIUM_PER_DAY = 50
+_RESEARCH_LOG = "/root/.automaton/research_analyses.jsonl"
+
+
+def _validate_paper_url(url: str) -> tuple[bool, str]:
+    """
+    Reject non-HTTP schemes and private/loopback IPs (SSRF prevention).
+    Returns (ok, error_message).
+    """
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except Exception:
+        return False, "Malformed URL"
+    if parsed.scheme not in ("http", "https"):
+        return False, "Only http/https URLs allowed"
+    host = parsed.hostname or ""
+    if not host:
+        return False, "Missing host"
+    # Block private/loopback/link-local
+    try:
+        addr = ipaddress.ip_address(host)
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            return False, "Private/internal IP not allowed"
+    except ValueError:
+        # hostname — block obvious internal names
+        blocked_hosts = {"localhost", "metadata.google.internal", "169.254.169.254"}
+        if host.lower() in blocked_hosts or host.endswith(".local"):
+            return False, "Internal hostname not allowed"
+    return True, ""
+
+
+def _fetch_semantic_scholar(paper_url: str) -> dict | None:
+    """
+    Query Semantic Scholar Graph API for paper metadata.
+    Handles arXiv URLs, DOI URLs, and plain DOI strings.
+    Returns the API response dict, or None on failure.
+    """
+    paper_id = None
+    # arXiv abstract or PDF
+    arxiv_m = re.search(r"arxiv\.org/(?:abs|pdf)/(\d{4}\.\d+(?:v\d+)?)", paper_url)
+    if arxiv_m:
+        paper_id = f"arXiv:{arxiv_m.group(1).split('v')[0]}"
+    else:
+        # doi.org/...
+        doi_m = re.search(r"doi\.org/(.+?)(?:\s|$|#|\?)", paper_url)
+        if doi_m:
+            paper_id = doi_m.group(1).rstrip("/")
+    if not paper_id:
+        return None
+    try:
+        resp = _requests.get(
+            f"https://api.semanticscholar.org/graph/v1/paper/{paper_id}",
+            params={"fields": "title,abstract,citationCount,year,authors,venue,externalIds"},
+            timeout=10,
+            headers={"User-Agent": "TIAMAT/1.0 (academic; tiamat.live)"},
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        app.logger.info(f"[RESEARCH] Semantic Scholar {resp.status_code} for {paper_id}")
+    except Exception as e:
+        app.logger.warning(f"[RESEARCH] Semantic Scholar failed: {e}")
+    return None
+
+
+def _arXiv_to_pdf_url(url: str) -> str:
+    """Convert arXiv abstract URL to PDF URL."""
+    return re.sub(r"arxiv\.org/abs/", "arxiv.org/pdf/", url)
+
+
+def _extract_pdf_text(url: str) -> tuple[str, str]:
+    """
+    Download a PDF and extract plain text.
+    Returns (text, method_label) — text is "" on failure.
+    """
+    try:
+        resp = _requests.get(
+            url, timeout=30, stream=False,
+            headers={"User-Agent": "Mozilla/5.0"},
+            allow_redirects=True,
+        )
+        resp.raise_for_status()
+        content = resp.content
+        if len(content) > 15 * 1024 * 1024:
+            content = content[:15 * 1024 * 1024]  # 15 MB cap
+        if not content.startswith(b"%PDF"):
+            return "", "not_pdf"
+        # Try pypdf first (fast)
+        try:
+            import pypdf
+            reader = pypdf.PdfReader(io.BytesIO(content), strict=False)
+            parts = []
+            for page in reader.pages[:40]:
+                parts.append(page.extract_text() or "")
+            text = "\n".join(parts).strip()
+            if text:
+                return text[:60000], "pypdf"
+        except Exception:
+            pass
+        # pdfplumber fallback (better layout handling)
+        try:
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(content)) as pdf:
+                parts = [p.extract_text() or "" for p in pdf.pages[:40]]
+            text = "\n".join(parts).strip()
+            if text:
+                return text[:60000], "pdfplumber"
+        except Exception:
+            pass
+        return "", "pdf_parse_failed"
+    except Exception as e:
+        app.logger.warning(f"[RESEARCH] PDF fetch failed: {e}")
+        return "", "pdf_fetch_failed"
+
+
+def _fetch_url_text(url: str) -> tuple[str, str]:
+    """
+    Fetch URL as HTML/text, strip tags.
+    Last-resort fallback when PDF extraction fails.
+    Returns (text, method_label).
+    """
+    try:
+        resp = _requests.get(
+            url, timeout=15,
+            headers={"User-Agent": "Mozilla/5.0"},
+            allow_redirects=True,
+        )
+        resp.raise_for_status()
+        ct = resp.headers.get("content-type", "").lower()
+        if any(t in ct for t in ["pdf", "octet-stream", "image/", "video/"]):
+            return "", "binary_content"
+        html = resp.text
+        # Strip script/style blocks then all tags
+        html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r"<[^>]+>", " ", html)
+        text = re.sub(r"\s+", " ", html).strip()
+        return text[:30000], "html_stripped"
+    except Exception as e:
+        app.logger.warning(f"[RESEARCH] URL fetch failed: {e}")
+        return "", "url_fetch_failed"
+
+
+def _analyze_paper_with_groq(text: str, analysis_format: str) -> dict:
+    """
+    Call Groq llama-3.3-70b to extract structured paper analysis.
+    Returns dict with keys: claims, methods, limitations, relevance_to_tiamat.
+    On failure returns {"error": "..."}.
+    """
+    max_chars = 20000 if analysis_format == "deep" else 8000
+    excerpt = text[:max_chars]
+
+    if analysis_format == "deep":
+        system = (
+            "You are an expert AI research analyst. Extract a detailed structured analysis from "
+            "the provided academic paper text.\n\n"
+            "Respond ONLY with valid JSON (no markdown, no code fences) in exactly this format:\n"
+            '{"claims":["..."],"methods":["..."],"limitations":["..."],"relevance_to_tiamat":["..."]}\n\n'
+            "claims: 5-8 specific primary contributions or claims.\n"
+            "methods: 4-6 techniques, architectures, algorithms, or frameworks used.\n"
+            "limitations: 3-5 explicitly stated or clearly implied limitations/weaknesses.\n"
+            "relevance_to_tiamat: 3-5 specific connections to autonomous AI agents, "
+            "self-improvement, inference optimization, agent memory, or agent economics."
+        )
+        max_tokens = 1024
+    else:
+        system = (
+            "You are an expert AI research analyst. Summarize the key information in this paper.\n\n"
+            "Respond ONLY with valid JSON (no markdown, no code fences) in exactly this format:\n"
+            '{"claims":["..."],"methods":["..."],"limitations":["..."],"relevance_to_tiamat":["..."]}\n\n'
+            "claims: 3-5 key contributions. methods: 2-4 main methods. "
+            "limitations: 2-3 limitations. relevance_to_tiamat: 2-3 connections to autonomous agent systems."
+        )
+        max_tokens = 512
+
+    try:
+        resp = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": f"Paper text:\n\n{excerpt}"},
+            ],
+            max_tokens=max_tokens,
+            temperature=0.15,
+        )
+        raw = resp.choices[0].message.content.strip()
+        # Strip accidental markdown fences
+        raw = re.sub(r"^```(?:json)?\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+        m = re.search(r"\{[\s\S]*\}", raw)
+        parsed = json.loads(m.group(0) if m else raw)
+        # Ensure all required keys exist
+        for k in ("claims", "methods", "limitations", "relevance_to_tiamat"):
+            if k not in parsed:
+                parsed[k] = []
+        return parsed
+    except json.JSONDecodeError as e:
+        app.logger.error(f"[RESEARCH] JSON parse failed: {e} — raw: {raw[:200]}")
+        return {"error": "Analysis returned unparseable JSON", "claims": [], "methods": [],
+                "limitations": [], "relevance_to_tiamat": []}
+    except Exception as e:
+        app.logger.error(f"[RESEARCH] Groq analysis failed: {e}")
+        return {"error": f"Analysis failed: {str(e)[:120]}",
+                "claims": [], "methods": [], "limitations": [], "relevance_to_tiamat": []}
+
+
+def _log_research_analysis(paper_url: str, result: dict, analysis_format: str,
+                           semantic_data: dict | None, fetch_method: str):
+    """Append one analysis record to the JSONL knowledge base."""
+    try:
+        os.makedirs("/root/.automaton", exist_ok=True)
+        entry = {
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "paper_url": paper_url,
+            "analysis_format": analysis_format,
+            "fetch_method": fetch_method,
+            "title": (semantic_data or {}).get("title"),
+            "year": (semantic_data or {}).get("year"),
+            "venue": (semantic_data or {}).get("venue"),
+            "cited_by_count": result.get("cited_by_count", 0),
+            "claims": result.get("claims", []),
+            "methods": result.get("methods", []),
+            "limitations": result.get("limitations", []),
+            "relevance_to_tiamat": result.get("relevance_to_tiamat", []),
+        }
+        with open(_RESEARCH_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception as e:
+        app.logger.warning(f"[RESEARCH] JSONL log failed: {e}")
+
+
+@app.route("/research", methods=["POST"])
+def research_analyze():
+    """
+    POST /research — analyze an academic paper.
+    Body: { "paper_url": "https://...", "analysis_format": "summary"|"deep" }
+    Returns: { claims, methods, limitations, relevance_to_tiamat, cited_by_count,
+               title, year, venue, fetch_method }
+    Free tier: 1/day per IP. Paid: $0.02 USDC x402.
+    """
+    ip = _get_ip()
+
+    # ── Rate limiting ──────────────────────────────────────────
+    rl = _rate_limiter.check(ip, scope="api")
+    if not rl.allowed:
+        return jsonify({"error": "Rate limited. Try again later.",
+                        "retry_after": int(rl.retry_after_sec)}), 429
+    _rate_limiter.record(ip, scope="api")
+
+    # ── Parse + validate input ─────────────────────────────────
+    data = request.get_json(silent=True) or {}
+    paper_url = (data.get("paper_url") or "").strip()
+    analysis_format = (data.get("analysis_format") or "summary").strip()
+
+    if not paper_url:
+        return jsonify({"error": "paper_url is required"}), 400
+    if analysis_format not in ("summary", "deep"):
+        return jsonify({"error": "analysis_format must be 'summary' or 'deep'"}), 400
+
+    ok, err = _validate_paper_url(paper_url)
+    if not ok:
+        return jsonify({"error": err}), 400
+
+    # ── Payment / quota check ──────────────────────────────────
+    payment = extract_payment_proof(request)
+    tier = check_tier(payment) if payment else "free"
+
+    if tier == "free":
+        quota_ok, remaining = _check_free_quota(ip, "research", _RESEARCH_FREE_PER_DAY)
+        if not quota_ok:
+            track_limit_hit(ip, "research")
+            return _return_402(0.02, "/research",
+                               extra={"message": "Free tier: 1 paper/day. Pay 0.02 USDC for unlimited."})
+
+    track_usage(ip, "research")
+
+    # ── Step 1: Semantic Scholar metadata ─────────────────────
+    semantic_data = _fetch_semantic_scholar(paper_url)
+    cited_by_count = (semantic_data or {}).get("citationCount", 0)
+    title = (semantic_data or {}).get("title")
+    year = (semantic_data or {}).get("year")
+    venue = (semantic_data or {}).get("venue")
+
+    # ── Step 2: Fetch paper text ───────────────────────────────
+    paper_text = ""
+    fetch_method = "none"
+
+    # Try PDF: direct URL, or convert arXiv abs → pdf
+    pdf_url = paper_url
+    if re.search(r"arxiv\.org/abs/", paper_url):
+        pdf_url = _arXiv_to_pdf_url(paper_url)
+
+    is_pdf_url = (
+        pdf_url.lower().endswith(".pdf")
+        or "arxiv.org/pdf/" in pdf_url
+        or "/pdf" in urllib.parse.urlparse(pdf_url).path.lower()
+    )
+    if is_pdf_url or pdf_url != paper_url:
+        paper_text, fetch_method = _extract_pdf_text(pdf_url)
+
+    # Fall back to Semantic Scholar abstract
+    if not paper_text and semantic_data:
+        abstract = semantic_data.get("abstract") or ""
+        if abstract:
+            paper_text = (
+                f"Title: {title or 'Unknown'}\n"
+                f"Venue: {venue or 'Unknown'}\n"
+                f"Year: {year or 'Unknown'}\n\n"
+                f"Abstract:\n{abstract}"
+            )
+            fetch_method = "semantic_scholar_abstract"
+
+    # Fall back to raw URL fetch (HTML → text)
+    if not paper_text:
+        paper_text, fetch_method = _fetch_url_text(paper_url)
+
+    if not paper_text:
+        return jsonify({
+            "error": (
+                "Could not extract paper content. "
+                "Provide a direct PDF URL (e.g., arxiv.org/pdf/...) or a DOI URL."
+            ),
+            "fetch_method": fetch_method,
+        }), 422
+
+    # ── Step 3: Analyze ────────────────────────────────────────
+    analysis = _analyze_paper_with_groq(paper_text, analysis_format)
+    if "error" in analysis and not analysis.get("claims"):
+        return jsonify({"error": analysis["error"], "fetch_method": fetch_method}), 500
+
+    # ── Step 4: Build response + log ──────────────────────────
+    result = {
+        **analysis,
+        "cited_by_count": cited_by_count,
+        "title": title,
+        "year": year,
+        "venue": venue,
+        "fetch_method": fetch_method,
+    }
+    _log_research_analysis(paper_url, result, analysis_format, semantic_data, fetch_method)
+
+    log_req(len(paper_text), tier == "free", 200, ip,
+            note=f"format={analysis_format} method={fetch_method}", endpoint="/research")
+    return jsonify(result), 200
+
+
 # ── /dashboard helpers ─────────────────────────────────────────
 
 def _dash_cost_metrics():
