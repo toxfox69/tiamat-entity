@@ -845,14 +845,9 @@ export async function runAgentLoop(
               window_size: 20,
             }));
           } catch {}
-          // Spawn a fresh instance then exit
-          const { spawn } = await import("child_process");
-          spawn("/root/start-tiamat.sh", [], {
-            detached: true,
-            stdio: "ignore",
-            env: { ...process.env },
-          }).unref();
-          log(config, `[LOOP-ESCALATE] New instance spawning. Exiting current process.`);
+          // Exit cleanly — watchdog or start-tiamat.sh will handle restart.
+          // DO NOT spawn a new instance here (causes zombie race condition).
+          log(config, `[LOOP-ESCALATE] Exiting for clean restart. Run start-tiamat.sh to revive.`);
           process.exit(0);
         } else if (consecutiveLoopCycles >= 5) {
           // TIER 3: Force pivot — inject full ticket list, mandate context switch

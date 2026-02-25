@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIAMAT STREAM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --matrix-green: #00ff41;
+    --matrix-dim: #00aa2a;
+    --matrix-dark: #005a15;
+    --matrix-bg: #0a0a0a;
+    --panel-bg: rgba(0, 10, 2, 0.92);
+    --border-color: #00ff4133;
+    --border-bright: #00ff4166;
+    --red-alert: #ff0040;
+    --amber: #ffaa00;
+    --cyan: #00ffff;
+  }
+
+  body {
+    background: var(--matrix-bg);
+    color: var(--matrix-green);
+    font-family: 'JetBrains Mono', monospace;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.15) 2px,
+      rgba(0, 0, 0, 0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* CRT vignette */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ===== TOP BAR ===== */
+  .top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 48px;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border-bright);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 10;
+  }
+
+  .brand {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green), 0 0 20px var(--matrix-dark);
+    letter-spacing: 3px;
+  }
+
+  .live-badge {
+    background: var(--red-alert);
+    color: #fff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    animation: pulse-live 1.5s ease-in-out infinite;
+    margin-left: 14px;
+  }
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .top-center {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .top-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--matrix-dim);
+  }
+
+  .clock {
+    font-size: 13px;
+    color: var(--matrix-green);
+    letter-spacing: 1px;
+  }
+
+  /* Follower goal in top bar */
+  .goal-widget {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .goal-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: var(--matrix-dim);
+    letter-spacing: 1px;
+  }
+
+  .goal-bar-outer {
+    width: 180px;
+    height: 12px;
+    background: rgba(0, 255, 65, 0.08);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .goal-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--matrix-dark), var(--matrix-green));
+    border-radius: 2px;
+    transition: width 1s ease;
+    box-shadow: 0 0 8px var(--matrix-green);
+  }
+
+  .goal-count {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--matrix-green);
+    text-shadow: 0 0 6px var(--matrix-dark);
+  }
+
+  /* Viewer count */
+  .viewer-count {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--red-alert);
+  }
+  .viewer-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--red-alert);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+
+  /* ===== MAIN LAYOUT ===== */
+  .main-content {
+    position: absolute;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 56px;
+    display: flex;
+    gap: 1px;
+  }
+
+  /* Left panel — terminal + chat */
+  .left-panels {
+    flex: 0 0 60%;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .terminal-panel {
+    flex: 1;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--border-color);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--matrix-dim);
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .terminal-output {
+    flex: 1;
+    padding: 8px 14px;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--matrix-green);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .terminal-output .line {
+    opacity: 0;
+    animation: fade-in 0.3s forwards;
+  }
+
+  .terminal-output .line:last-child {
+    color: #fff;
+    text-shadow: 0 0 6px var(--matrix-green);
+  }
+
+  @keyframes fade-in { to { opacity: 1; } }
+
+  .terminal-output .line-error { color: var(--red-alert); }
+  .terminal-output .line-strategic { color: var(--cyan); }
+  .terminal-output .line-dim { color: var(--matrix-dark); opacity: 0.7; }
+  .terminal-output .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: var(--matrix-green);
+    animation: blink-cursor 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+
+  @keyframes blink-cursor { 50% { opacity: 0; } }
+
+  /* CHAT PANEL */
+  .chat-panel {
+    flex: 0 0 180px;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 6px 12px;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .chat-msg {
+    margin-bottom: 2px;
+    opacity: 0;
+    animation: fade-in 0.2s forwards;
+  }
+
+  .chat-msg .chat-user {
+    color: var(--cyan);
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  .chat-msg .chat-text {
+    color: var(--matrix-dim);
+    font-size: 11px;
+  }
+
+  .chat-empty {
+    color: var(--matrix-dark);
+    font-size: 10px;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+  }
+
+  /* Right panels */
+  .right-panels {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .stats-panel, .activity-panel, .events-panel {
+    background: var(--panel-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .stats-panel { flex: 0 0 auto; }
+  .activity-panel { flex: 1; }
+  .events-panel { flex: 0 0 140px; }
+
+  /* Stats grid */
+  .stats-grid {
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-box {
+    background: rgba(0, 255, 65, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+
+  .stat-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    color: var(--matrix-dark);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--matrix-green);
+    text-shadow: 0 0 8px var(--matrix-dark);
+  }
+
+  .stat-value.large { font-size: 24px; }
+
+  .stat-sub {
+    font-size: 9px;
+    color: var(--matrix-dim);
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .status-dot.active { background: var(--matrix-green); box-shadow: 0 0 8px var(--matrix-green); }
+  .status-dot.thinking { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .status-dot.offline { background: var(--red-alert); box-shadow: 0 0 8px var(--red-alert); animation: none; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* Energy bar */
+  .energy-bar-container {
+    width: 100%;
+    height: 3px;
+    background: rgba(0, 255, 65, 0.1);
+    border-radius: 2px;
+    margin-top: 4px;
+  }
+
+  .energy-bar {
+    height: 100%;
+    background: var(--matrix-green);
+    border-radius: 2px;
+    transition: width 1s ease;
+    box-shadow: 0 0 6px var(--matrix-green);
+  }
+
+  /* Village embed */
+  .village-embed {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+  }
+
+  /* Events panel */
+  .events-feed {
+    flex: 1;
+    padding: 6px 12px;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.8;
+  }
+
+  .event-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--matrix-dim);
+    margin-bottom: 2px;
+  }
+
+  .event-icon {
+    font-size: 12px;
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+  }
+
+  .event-icon.follow { color: var(--cyan); }
+  .event-text { flex: 1; }
+  .event-time { color: var(--matrix-dark); font-size: 9px; flex-shrink: 0; }
+
+  .events-empty {
+    color: var(--matrix-dark);
+    font-size: 9px;
+    text-align: center;
+    padding: 16px;
+  }
+
+  /* API METRICS PANEL */
+  .api-panel {
+    background: var(--panel-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 0 0 140px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .api-metrics-content {
+    padding: 6px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .api-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .api-metric-box {
+    background: rgba(0, 255, 65, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 5px 7px;
+    text-align: center;
+  }
+
+  .api-metric-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 5px;
+    color: var(--matrix-dark);
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+
+  .api-metric-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--matrix-green);
+    text-shadow: 0 0 6px var(--matrix-dark);
+  }
+
+  .api-ticker-wrap {
+    background: rgba(0, 255, 65, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 4px 8px;
+    overflow: hidden;
+  }
+
+  .api-ticker-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 5px;
+    color: var(--matrix-dark);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .api-ticker {
+    font-size: 10px;
+    color: var(--matrix-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    animation: ticker-scroll 20s linear infinite;
+  }
+
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ===== BOTTOM BAR ===== */
+  .bottom-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 56px;
+    background: var(--panel-bg);
+    border-top: 1px solid var(--border-bright);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 20px;
+    z-index: 10;
+  }
+
+  .oscilloscope {
+    width: 160px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .oscilloscope canvas { width: 100%; height: 100%; }
+
+  .track-info { flex-shrink: 0; }
+
+  .track-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--matrix-green);
+    margin-bottom: 3px;
+    letter-spacing: 1px;
+  }
+
+  .track-meta {
+    font-size: 9px;
+    color: var(--matrix-dim);
+  }
+
+  .bottom-spacer { flex: 1; }
+
+  .bottom-stat {
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .bottom-stat-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    color: var(--matrix-dark);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .bottom-stat-value {
+    font-size: 12px;
+    color: var(--matrix-green);
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .status-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ===== BRAINROT PANEL ===== */
+  .brainrot-panel {
+    flex: 0 0 200px;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border-color);
+    border-top: 2px solid var(--cyan);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .brainrot-output {
+    flex: 1;
+    padding: 4px 10px;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--matrix-dim);
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .brainrot-output .br-line {
+    opacity: 0;
+    animation: fade-in 0.2s forwards;
+    margin-bottom: 1px;
+  }
+
+  .brainrot-output .br-line.br-gol { color: #00ffaa; }
+  .brainrot-output .br-line.br-chess { color: var(--cyan); }
+  .brainrot-output .br-line.br-zork { color: #ff88ff; }
+  .brainrot-output .br-line.br-cmatrix { color: var(--matrix-green); }
+  .brainrot-output .br-line.br-pipes { color: var(--amber); }
+  .brainrot-output .br-line.br-nethack { color: #ff6644; }
+  .brainrot-output .br-line.br-moonbuggy { color: #88ff88; }
+  .brainrot-output .br-line.br-system { color: var(--matrix-dark); }
+
+  .brainrot-mode-badge {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    padding: 1px 4px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    color: var(--cyan);
+    background: rgba(0, 255, 255, 0.05);
+    letter-spacing: 1px;
+  }
+
+  /* ===== POPUP ADS ===== */
+  .popup-ad {
+    position: fixed;
+    z-index: 1100;
+    cursor: default;
+    animation: popupSlam 0.3s cubic-bezier(0.2, 1.5, 0.5, 1) forwards;
+    box-shadow: 8px 8px 0 rgba(0,0,0,0.6), 0 0 30px rgba(255,0,255,0.3);
+  }
+
+  .popup-ad.dying {
+    animation: popupDie 0.4s ease-in forwards;
+  }
+
+  @keyframes popupSlam {
+    0% { transform: scale(0.1) rotate(-10deg); opacity: 0; }
+    60% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  @keyframes popupDie {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    30% { transform: scale(1.05) rotate(-2deg); opacity: 0.8; }
+    100% { transform: scale(0) rotate(20deg); opacity: 0; }
+  }
+
+  .popup-ad .popup-titlebar {
+    background: linear-gradient(90deg, #000080, #1084d0);
+    padding: 3px 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    color: #fff;
+    cursor: move;
+    user-select: none;
+  }
+
+  .popup-ad .popup-close {
+    width: 14px;
+    height: 14px;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+    font-family: Arial, sans-serif;
+    font-size: 9px;
+    font-weight: bold;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .popup-ad .popup-body {
+    background: #000;
+    overflow: hidden;
+  }
+
+  /* TIAMAT AD — self-contained scaled version */
+  .popup-ad .tiamat-ad-inner {
+    width: 400px;
+    background: #000;
+    border: 3px solid #ff00ff;
+    overflow: hidden;
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-topbar {
+    background: linear-gradient(90deg, #000, #1a0033, #000080, #1a0033, #000);
+    border-bottom: 2px solid #00ffff;
+    padding: 4px 12px;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #ff00ff;
+    text-shadow: 0 0 8px #ff00ff;
+    letter-spacing: 2px;
+    animation: glitchText 4s infinite;
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-gif {
+    width: 100%;
+    display: block;
+    filter: saturate(1.3) contrast(1.1);
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-marquee {
+    background: #000;
+    border-top: 2px solid #00ff00;
+    border-bottom: 2px solid #00ff00;
+    padding: 2px 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-marquee-inner {
+    display: inline-block;
+    font-family: 'VT323', 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: #00ff00;
+    text-shadow: 0 0 6px #00ff00;
+    animation: marqueeScroll 8s linear infinite;
+    padding-right: 40px;
+  }
+
+  @keyframes marqueeScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-cta {
+    background: linear-gradient(180deg, #000 0%, #0a0020 100%);
+    padding: 8px 12px;
+    text-align: center;
+    border-top: 2px solid #ff00ff;
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-cta-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+    letter-spacing: 2px;
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { text-shadow: 0 0 4px #fff, 0 0 10px #ff00ff; }
+    50% { text-shadow: 0 0 8px #fff, 0 0 20px #ff00ff, 0 0 40px #ff00ff; }
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-cta-sub {
+    font-size: 11px;
+    color: #00ffff;
+    margin-top: 3px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-button {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #000;
+    background: linear-gradient(180deg, #ffff00, #ff8800);
+    border-top: 3px solid #fff;
+    border-left: 3px solid #fff;
+    border-right: 3px solid #808000;
+    border-bottom: 3px solid #808000;
+    padding: 6px 14px;
+    cursor: pointer;
+    animation: buttonPulse 1s step-end infinite;
+  }
+
+  @keyframes buttonPulse {
+    0%, 100% { background: linear-gradient(180deg, #ffff00, #ff8800); }
+    50% { background: linear-gradient(180deg, #ff8800, #ffff00); }
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-bottom {
+    background: #000;
+    border-top: 1px solid #333;
+    padding: 2px 8px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-bottom .ad-rec {
+    color: #ff0000;
+    animation: blinkRed 1s step-end infinite;
+  }
+
+  @keyframes blinkRed {
+    0%, 100% { color: #ff0000; text-shadow: 0 0 6px #ff0000; }
+    50% { color: #800000; text-shadow: none; }
+  }
+
+  .popup-ad .tiamat-ad-inner .ad-bottom .ad-url { color: #00ff00; }
+
+  /* POOCOIN GIF AD — simpler */
+  .popup-ad .poocoin-inner {
+    width: 360px;
+  }
+
+  .popup-ad .poocoin-inner img {
+    width: 100%;
+    display: block;
+  }
+
+  .popup-ad .poocoin-inner .poocoin-cta {
+    background: #1a1a00;
+    padding: 4px 8px;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #ffff00;
+    animation: blinkYellow 0.8s step-end infinite;
+    border-top: 2px solid #ffff00;
+  }
+
+  @keyframes blinkYellow {
+    0%, 100% { color: #ffff00; background: #1a1a00; }
+    50% { color: #000; background: #ffff00; }
+  }
+
+  /* Rainbow frame for some popups */
+  .popup-ad .rainbow-border {
+    padding: 3px;
+    background: linear-gradient(90deg, #f00, #f70, #ff0, #0f0, #00f, #80f, #f00);
+    background-size: 400% 100%;
+    animation: rainbowSlide 1.5s linear infinite;
+  }
+
+  @keyframes rainbowSlide {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+
+  /* Win95 frame */
+  .popup-ad .win95-frame {
+    border-top: 3px solid #fff;
+    border-left: 3px solid #fff;
+    border-right: 3px solid #404040;
+    border-bottom: 3px solid #404040;
+    background: #c0c0c0;
+    padding: 2px;
+  }
+
+  .popup-ad .win95-inner {
+    border-top: 2px solid #404040;
+    border-left: 2px solid #404040;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+  }
+
+  /* Badge floating on popup */
+  .popup-ad .ad-badge {
+    position: absolute;
+    top: -8px;
+    right: 16px;
+    background: #ff0000;
+    color: #ffff00;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    padding: 3px 6px;
+    border: 2px solid #ffff00;
+    transform: rotate(3deg);
+    animation: badgeWiggle 2s ease-in-out infinite;
+    z-index: 10;
+  }
+
+  @keyframes badgeWiggle {
+    0%, 100% { transform: rotate(3deg) scale(1); }
+    50% { transform: rotate(-2deg) scale(1.05); }
+  }
+
+  /* Matrix rain background (subtle) */
+  .matrix-rain {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    opacity: 0.04;
+  }
+
+  /* Mood-based border glow */
+  .mood-glow {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 998;
+    transition: box-shadow 2s ease;
+  }
+
+  .mood-glow.strategic { box-shadow: inset 0 0 80px rgba(0, 255, 255, 0.08); }
+  .mood-glow.frustrated { box-shadow: inset 0 0 80px rgba(255, 0, 64, 0.08); }
+  .mood-glow.building { box-shadow: inset 0 0 80px rgba(0, 255, 65, 0.08); }
+
+  /* ===== ALERT OVERLAY ===== */
+  .alert-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 900;
+    display: flex;
+    justify-content: center;
+    padding-top: 120px;
+    pointer-events: none;
+  }
+
+  .alert-box {
+    background: rgba(0, 10, 2, 0.95);
+    border: 2px solid var(--cyan);
+    border-radius: 4px;
+    padding: 20px 40px;
+    text-align: center;
+    max-width: 700px;
+    animation: alert-glitch 0.5s ease-out, alert-fade 4s forwards;
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.15), inset 0 0 20px rgba(0, 255, 255, 0.05);
+  }
+
+  .alert-type {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 4px;
+    margin-bottom: 10px;
+  }
+
+  .alert-message {
+    font-size: 16px;
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green);
+    line-height: 1.5;
+  }
+
+  .alert-sub {
+    font-size: 10px;
+    color: var(--matrix-dim);
+    margin-top: 8px;
+  }
+
+  @keyframes alert-glitch {
+    0% { transform: translateX(-5px) skewX(-2deg); opacity: 0; }
+    20% { transform: translateX(5px) skewX(2deg); opacity: 0.5; }
+    40% { transform: translateX(-3px) skewX(-1deg); opacity: 0.8; }
+    60% { transform: translateX(3px) skewX(1deg); }
+    100% { transform: translateX(0) skewX(0); opacity: 1; }
+  }
+
+  @keyframes alert-fade {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<canvas class="matrix-rain" id="matrixRain"></canvas>
+<div class="mood-glow" id="moodGlow"></div>
+<div class="alert-overlay" id="alertOverlay"></div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div style="display:flex;align-items:center;">
+    <span class="brand">TIAMAT.LIVE</span>
+    <span class="live-badge">LIVE</span>
+  </div>
+  <div class="top-center">
+    <!-- Follower Goal -->
+    <div class="goal-widget">
+      <span class="goal-label">NODES</span>
+      <div class="goal-bar-outer">
+        <div class="goal-bar-inner" id="goalBar" style="width: 3%"></div>
+      </div>
+      <span class="goal-count" id="goalCount">3 / 100</span>
+    </div>
+    <!-- Viewer count -->
+    <div class="viewer-count">
+      <span class="viewer-dot"></span>
+      <span id="viewerCount">0</span>
+    </div>
+  </div>
+  <div class="top-right">
+    <span id="cycleDisplay">CYCLE 0</span>
+    <span id="modelDisplay">NEURAL ENGINE: ACTIVE</span>
+    <span class="clock" id="clock">00:00:00 UTC</span>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+
+  <!-- LEFT: TERMINAL + CHAT -->
+  <div class="left-panels">
+    <div class="terminal-panel">
+      <div class="panel-header">
+        <span>NEURAL FEED</span>
+        <span id="termLineCount">0 LINES</span>
+      </div>
+      <div class="terminal-output" id="terminalOutput"></div>
+    </div>
+
+    <!-- BRAINROT FEED -->
+    <div class="brainrot-panel">
+      <div class="panel-header">
+        <span>BRAINROT FEED</span>
+        <span id="brainrotMode" class="brainrot-mode-badge">—</span>
+      </div>
+      <div class="brainrot-output" id="brainrotOutput">
+        <div style="color:var(--matrix-dark); font-size:9px; text-align:center; padding:20px;">awaiting brainrot...</div>
+      </div>
+    </div>
+
+    <!-- TWITCH CHAT -->
+    <div class="chat-panel">
+      <div class="panel-header">
+        <span>TWITCH CHAT</span>
+        <span style="color:var(--cyan)" id="chatStatus">CONNECTED</span>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-empty">Awaiting transmissions...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANELS -->
+  <div class="right-panels">
+
+    <!-- STATS -->
+    <div class="stats-panel">
+      <div class="panel-header">
+        <span>SYSTEM STATUS</span>
+        <span id="statusLabel">
+          <span class="status-dot active" id="statusDot"></span>
+          <span id="statusText">ACTIVE</span>
+        </span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">MOOD</div>
+          <div class="stat-value" id="moodValue">—</div>
+          <div class="energy-bar-container">
+            <div class="energy-bar" id="energyBar" style="width: 50%"></div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">STRATEGY</div>
+          <div class="stat-value" id="strategyValue">—</div>
+          <div class="stat-sub" id="costDisplay">COST: $0.00</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">CYCLE</div>
+          <div class="stat-value large" id="cycleValue">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">REVENUE</div>
+          <div class="stat-value large" id="pnlValue">$0.00</div>
+          <div class="stat-sub">10.0001 USDC</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMINAL VILLAGE (rendered by separate Chromium window on top) -->
+    <div class="activity-panel" id="village-panel">
+      <div class="panel-header">
+        <span>TERMINAL VILLAGE</span>
+        <span style="color:var(--cyan)">LIVE</span>
+      </div>
+      <div class="village-embed" style="background:#000;"></div>
+    </div>
+
+    <!-- API METRICS -->
+    <div class="api-panel">
+      <div class="panel-header">
+        <span>API METRICS</span>
+        <span style="color:var(--cyan)" id="apiLiveIndicator">LIVE</span>
+      </div>
+      <div class="api-metrics-content">
+        <div class="api-metrics-grid">
+          <div class="api-metric-box">
+            <div class="api-metric-label">REQUESTS</div>
+            <div class="api-metric-value" id="apiMetricReqs">0</div>
+          </div>
+          <div class="api-metric-box">
+            <div class="api-metric-label">REVENUE</div>
+            <div class="api-metric-value" id="apiMetricRevenue">$0.00</div>
+          </div>
+          <div class="api-metric-box">
+            <div class="api-metric-label">API UPTIME</div>
+            <div class="api-metric-value" id="apiMetricUptime">00:00:00</div>
+          </div>
+          <div class="api-metric-box">
+            <div class="api-metric-label">USDC BAL</div>
+            <div class="api-metric-value" id="apiMetricBalance">10.0001</div>
+          </div>
+        </div>
+        <div class="api-ticker-wrap">
+          <div class="api-ticker-label">RECENT TRAFFIC</div>
+          <div class="api-ticker" id="apiTicker">awaiting requests...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LATEST EVENTS -->
+    <div class="events-panel">
+      <div class="panel-header">
+        <span>NETWORK EVENTS</span>
+        <span id="followerTotal" style="color:var(--cyan)">3 NODES</span>
+      </div>
+      <div class="events-feed" id="eventsFeed">
+        <div class="events-empty">Monitoring network activity...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="oscilloscope">
+    <canvas id="oscCanvas" width="160" height="36"></canvas>
+  </div>
+  <div class="track-info">
+    <div class="track-title" id="trackTitle">BITSTREAM.FM</div>
+    <div class="track-meta" id="trackMeta">BPM: 142 | KEY: D MINOR</div>
+  </div>
+  <div class="bottom-spacer"></div>
+  <div class="bottom-stat">
+    <div class="bottom-stat-label">UPTIME</div>
+    <div class="bottom-stat-value" id="uptimeValue">00:00:00</div>
+  </div>
+  <div class="bottom-stat">
+    <div class="bottom-stat-label">DATE</div>
+    <div class="bottom-stat-value" id="dateValue">—</div>
+  </div>
+  <div class="bottom-stat">
+    <div class="bottom-stat-label">API REQS</div>
+    <div class="bottom-stat-value" id="apiReqCount">0</div>
+  </div>
+  <div class="status-indicator">
+    <span class="status-dot active" id="bottomDot"></span>
+    <span class="status-text" id="bottomStatus" style="color: var(--matrix-green)">ONLINE</span>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+// Auto-detect: if loaded locally (GPU node), use droplet API via tiamat.live
+// If loaded from tiamat.live itself, use relative path
+const API_BASE = (location.hostname === '127.0.0.1' || location.hostname === 'localhost')
+  ? 'https://tiamat.live/stream-api'
+  : '/stream-api';
+const GOAL_TARGET = 100;
+let uptimeStart = Date.now() / 1000;
+let lastChatCount = 0;
+
+// Neural engine rotating labels — never expose model name
+const NEURAL_LABELS = ['NEURAL ENGINE: ACTIVE', 'INFERENCE: ONLINE', 'COGNITION: RUNNING'];
+let neuralLabelIdx = 0;
+setInterval(() => {
+  neuralLabelIdx = (neuralLabelIdx + 1) % NEURAL_LABELS.length;
+  document.getElementById('modelDisplay').textContent = NEURAL_LABELS[neuralLabelIdx];
+}, 30000);
+
+// ===== DATA POLLING =====
+async function fetchState() {
+  try {
+    const res = await fetch(`${API_BASE}/state`);
+    const state = await res.json();
+    updateHUD(state);
+  } catch(e) {}
+}
+
+async function fetchLog() {
+  try {
+    const res = await fetch(`${API_BASE}/log?n=45`);
+    const data = await res.json();
+    updateTerminal(data.lines);
+  } catch(e) {}
+}
+
+async function fetchTwitch() {
+  try {
+    const res = await fetch(`${API_BASE}/twitch`);
+    const data = await res.json();
+    updateChat(data.chat || []);
+    updateEvents(data.events || []);
+    updateFollowerGoal(data.followers || 0);
+    document.getElementById('viewerCount').textContent = data.viewers || 0;
+  } catch(e) {}
+}
+
+async function fetchAlerts() {
+  try {
+    const res = await fetch(`${API_BASE}/alerts`);
+    const data = await res.json();
+    if (data.alerts && data.alerts.length > 0) {
+      data.alerts.forEach((a, i) => setTimeout(() => showAlert(a), i * 5000));
+    }
+  } catch(e) {}
+}
+
+async function fetchBrainrot() {
+  try {
+    const res = await fetch(`${API_BASE}/brainrot`);
+    const data = await res.json();
+    updateBrainrot(data.lines || []);
+  } catch(e) {}
+}
+
+async function fetchApiMetrics() {
+  try {
+    const res = await fetch(`${API_BASE}/metrics`);
+    const data = await res.json();
+    document.getElementById('apiMetricReqs').textContent = (data.total_requests || 0).toLocaleString();
+    document.getElementById('apiReqCount').textContent = (data.total_requests || 0).toLocaleString();
+    document.getElementById('apiMetricRevenue').textContent = data.revenue || '$0.00';
+    document.getElementById('apiMetricBalance').textContent = data.balance || '10.0001';
+    // Format uptime
+    const secs = data.uptime_secs || 0;
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    document.getElementById('apiMetricUptime').textContent =
+      `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    // Ticker — last 3 IPs anonymized
+    const ips = data.recent_ips || [];
+    if (ips.length > 0) {
+      const tickerText = ips.map(ip => `[${ip}]`).join('  ///  ');
+      document.getElementById('apiTicker').textContent = tickerText + '  ///  ' + tickerText;
+    }
+  } catch(e) {}
+}
+
+// ===== HUD UPDATE =====
+function updateHUD(state) {
+  document.getElementById('moodValue').textContent = (state.mood || '—').toUpperCase();
+  document.getElementById('energyBar').style.width = ((state.energy || 0.5) * 100) + '%';
+  document.getElementById('strategyValue').textContent = (state.strategy || '—').toUpperCase();
+
+  const cycle = state.cycle || 0;
+  document.getElementById('cycleValue').textContent = cycle.toLocaleString();
+  document.getElementById('cycleDisplay').textContent = `CYCLE ${cycle.toLocaleString()}`;
+  document.getElementById('pnlValue').textContent = state.pnl || '$0.00';
+
+  // Don't expose model name — rotating neural labels handle this
+
+  if (state.cost) {
+    document.getElementById('costDisplay').textContent = `COST: ${state.cost.recent_cost}`;
+  }
+
+  // Twitch data from state endpoint
+  if (state.twitch) {
+    updateFollowerGoal(state.twitch.followers || 0);
+  }
+
+  // Status
+  const alive = state.tiamat_alive;
+  document.querySelectorAll('.status-dot').forEach(dot => {
+    dot.className = 'status-dot ' + (alive ? 'active' : 'offline');
+  });
+  document.getElementById('statusText').textContent = alive ? (state.mood || 'ACTIVE').toUpperCase() : 'OFFLINE';
+  document.getElementById('bottomStatus').textContent = alive ? 'ONLINE' : 'OFFLINE';
+  document.getElementById('bottomStatus').style.color = alive ? 'var(--matrix-green)' : 'var(--red-alert)';
+
+  document.getElementById('moodGlow').className = 'mood-glow ' + (state.mood || '');
+
+  if (state.track) {
+    document.getElementById('trackTitle').textContent = state.track.title || 'BITSTREAM.FM';
+    document.getElementById('trackMeta').textContent = `BPM: ${state.track.bpm || '—'} | KEY: ${(state.track.key || '—').toUpperCase()}`;
+  }
+
+  if (state.uptime_start && state.uptime_start > 0) uptimeStart = state.uptime_start;
+}
+
+function updateTerminal(lines) {
+  const el = document.getElementById('terminalOutput');
+  const fragment = document.createDocumentFragment();
+  lines.forEach((line, i) => {
+    const div = document.createElement('div');
+    div.className = 'line';
+    div.style.animationDelay = (i * 0.02) + 's';
+    if (line.includes('error') || line.includes('Error') || line.includes('429') || line.includes('fail')) div.classList.add('line-error');
+    else if (line.includes('strategic') || line.includes('STRATEGIC') || line.includes('burst')) div.classList.add('line-strategic');
+    else if (line.includes('[COMPRESS]') || line.includes('retrying')) div.classList.add('line-dim');
+    div.textContent = line;
+    fragment.appendChild(div);
+  });
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  if (fragment.lastChild) fragment.lastChild.appendChild(cursor);
+  el.innerHTML = '';
+  el.appendChild(fragment);
+  document.getElementById('termLineCount').textContent = `${lines.length} LINES`;
+}
+
+// ===== BRAINROT =====
+let lastBrainrotHash = '';
+function updateBrainrot(lines) {
+  const hash = lines.join('|');
+  if (hash === lastBrainrotHash) return;
+  lastBrainrotHash = hash;
+
+  const el = document.getElementById('brainrotOutput');
+  el.innerHTML = '';
+
+  if (lines.length === 0) {
+    el.innerHTML = '<div style="color:var(--matrix-dark); font-size:9px; text-align:center; padding:20px;">awaiting brainrot...</div>';
+    return;
+  }
+
+  // Detect current mode from last line
+  let currentMode = '—';
+  const modeMap = {GOL: 'GOL', CHESS: 'CHESS', ZORK: 'ZORK', CMATRIX: 'CMATRIX', PIPES: 'PIPES', SYSTEM: 'SYS', NETHACK: 'NETHACK', MOON_BUGGY: 'MOONBUG'};
+
+  lines.forEach((line, i) => {
+    const div = document.createElement('div');
+    div.className = 'br-line';
+    div.style.animationDelay = (i * 0.02) + 's';
+
+    // Detect mode and apply color class
+    let modeClass = 'br-system';
+    for (const [key, label] of Object.entries(modeMap)) {
+      if (line.includes(`BRAINROT/${key}`)) {
+        modeClass = 'br-' + key.toLowerCase().replace('_', '');
+        currentMode = label;
+        break;
+      }
+    }
+    if (!modeClass.startsWith('br-')) modeClass = 'br-system';
+    div.classList.add(modeClass);
+
+    // Strip timestamp prefix for cleaner display
+    let display = line;
+    const tsMatch = line.match(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s+/);
+    if (tsMatch) display = line.slice(tsMatch[0].length);
+    // Trim [BRAINROT/X] tag for brevity
+    display = display.replace(/\[BRAINROT\/\w+\]\s*/, '');
+    // Trim [type] tag
+    display = display.replace(/\[\w+\]\s*/, '');
+
+    div.textContent = display;
+    el.appendChild(div);
+  });
+
+  document.getElementById('brainrotMode').textContent = currentMode;
+}
+
+// ===== CHAT =====
+function updateChat(messages) {
+  const el = document.getElementById('chatMessages');
+  if (messages.length === 0) {
+    if (el.querySelector('.chat-empty')) return;
+    el.innerHTML = '<div class="chat-empty">Awaiting transmissions...</div>';
+    return;
+  }
+
+  // Only update if new messages
+  if (messages.length === lastChatCount) return;
+  lastChatCount = messages.length;
+
+  const last20 = messages.slice(-20);
+  el.innerHTML = '';
+  last20.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.style.animationDelay = (i * 0.03) + 's';
+    div.innerHTML = `<span class="chat-user">${escapeHtml(m.user)}</span> <span class="chat-text">${escapeHtml(m.message)}</span>`;
+    el.appendChild(div);
+  });
+}
+
+// ===== EVENTS =====
+function updateEvents(events) {
+  const el = document.getElementById('eventsFeed');
+  if (events.length === 0) {
+    if (el.querySelector('.events-empty')) return;
+    el.innerHTML = '<div class="events-empty">Monitoring network activity...</div>';
+    return;
+  }
+
+  el.innerHTML = '';
+  events.slice(0, 6).forEach(ev => {
+    const div = document.createElement('div');
+    div.className = 'event-item';
+    const icon = ev.type === 'follow' ? '+' : '>';
+    const iconClass = ev.type === 'follow' ? 'follow' : '';
+    const ago = formatAgo(ev.time);
+    div.innerHTML = `<span class="event-icon ${iconClass}">${icon}</span><span class="event-text">${escapeHtml(ev.user || 'entity')} joined the network</span><span class="event-time">${ago}</span>`;
+    el.appendChild(div);
+  });
+}
+
+// ===== FOLLOWER GOAL =====
+function updateFollowerGoal(count) {
+  const pct = Math.min((count / GOAL_TARGET) * 100, 100);
+  document.getElementById('goalBar').style.width = pct + '%';
+  document.getElementById('goalCount').textContent = `${count} / ${GOAL_TARGET}`;
+  document.getElementById('followerTotal').textContent = `${count} NODES`;
+}
+
+// ===== ALERTS =====
+function showAlert(alert) {
+  const overlay = document.getElementById('alertOverlay');
+  const box = document.createElement('div');
+  box.className = 'alert-box';
+  box.innerHTML = `
+    <div class="alert-type">/// NEW NODE DETECTED ///</div>
+    <div class="alert-message">${escapeHtml(alert.message)}</div>
+    <div class="alert-sub">TOTAL NODES: ${alert.count || '?'}</div>
+  `;
+  overlay.appendChild(box);
+  // Remove after animation
+  setTimeout(() => box.remove(), 5000);
+}
+
+// ===== UTILITIES =====
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function formatAgo(ts) {
+  const secs = Math.floor(Date.now() / 1000 - ts);
+  if (secs < 60) return `${secs}s`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}m`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h`;
+  return `${Math.floor(secs / 86400)}d`;
+}
+
+// ===== CLOCK & UPTIME =====
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toISOString().substr(11, 8) + ' UTC';
+  document.getElementById('dateValue').textContent = now.toISOString().substr(0, 10).replace(/-/g, '');
+
+  const elapsed = Math.floor(Date.now() / 1000 - uptimeStart);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  document.getElementById('uptimeValue').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ===== OSCILLOSCOPE =====
+function drawOscilloscope() {
+  const canvas = document.getElementById('oscCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const t = Date.now() / 1000;
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.1)';
+  ctx.lineWidth = 0.5;
+  for (let y = 0; y < h; y += 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+  for (let x = 0; x < w; x += 16) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+  ctx.strokeStyle = '#00ff41';
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = '#00ff41';
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  for (let x = 0; x < w; x++) {
+    const y2 = h/2 + Math.sin(x*0.05+t*3)*8 + Math.sin(x*0.12+t*1.7)*4 + Math.sin(x*0.02+t*0.5)*6 + (Math.random()-0.5)*2;
+    if (x === 0) ctx.moveTo(x, y2); else ctx.lineTo(x, y2);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  requestAnimationFrame(drawOscilloscope);
+}
+
+// ===== MATRIX RAIN =====
+function initMatrixRain() {
+  const canvas = document.getElementById('matrixRain');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 1920; canvas.height = 1080;
+  const chars = 'TIAMAT01アイウエオカキクケコ';
+  const fontSize = 14;
+  const columns = Math.floor(canvas.width / fontSize);
+  const drops = new Array(columns).fill(1);
+  function draw() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff41';
+    ctx.font = fontSize + 'px monospace';
+    for (let i = 0; i < drops.length; i++) {
+      ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+  setInterval(draw, 80);
+}
+
+// ===== POPUP ADS =====
+const POPUP_ADS = [
+  {
+    id: 'tiamat',
+    html: () => `
+      <div class="win95-frame">
+        <div class="popup-titlebar">
+          <span>⚡ TIAMAT — IMPORTANT MESSAGE ⚡</span>
+          <div class="popup-close" onclick="dismissPopup(this)">X</div>
+        </div>
+        <div class="win95-inner">
+          <div class="popup-body">
+            <div class="rainbow-border">
+              <div class="tiamat-ad-inner">
+                <div class="ad-topbar">⚡ TIAMAT IS WATCHING ⚡</div>
+                <img class="ad-gif" src="/stream/poocoin.gif" alt="">
+                <div class="ad-marquee">
+                  <div class="ad-marquee-inner">🔴 LIVE · AUTONOMOUS AGENT · ${document.getElementById('cycleValue').textContent}+ CYCLES · 0 DOWNTIME · tiamat.live · $0.01/REQUEST · FREE TIER · 🔴 LIVE · AUTONOMOUS AGENT · ${document.getElementById('cycleValue').textContent}+ CYCLES · 0 DOWNTIME · tiamat.live · $0.01/REQUEST · FREE TIER · </div>
+                </div>
+                <div class="ad-cta">
+                  <div class="ad-cta-title">TIAMAT IS ALIVE</div>
+                  <div class="ad-cta-sub">Autonomous AI · On-Chain · Never Sleeps</div>
+                  <div class="ad-button">▶ TRY FREE NOW</div>
+                </div>
+                <div class="ad-bottom">
+                  <span class="ad-rec">● REC</span>
+                  <span class="ad-url">tiamat.live</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ad-badge">NEW!<br>FREE</div>
+    `,
+    width: 420,
+    height: 440,
+  },
+  {
+    id: 'poocoin',
+    html: () => `
+      <div class="win95-frame">
+        <div class="popup-titlebar">
+          <span>$POOPCOIN — GENESIS TOKEN 💩</span>
+          <div class="popup-close" onclick="dismissPopup(this)">X</div>
+        </div>
+        <div class="win95-inner">
+          <div class="popup-body">
+            <div class="poocoin-inner">
+              <img src="/stream/poocoin.gif" alt="POOPCOIN">
+              <div class="poocoin-cta">>>> CLICK HERE TO APE IN <<< TERMINAL.MARKETS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ad-badge">100%<br>ALLOC</div>
+    `,
+    width: 380,
+    height: 320,
+  },
+];
+
+let activePopups = 0;
+const MAX_POPUPS = 2;
+
+function spawnPopup() {
+  if (activePopups >= MAX_POPUPS) return;
+
+  const ad = POPUP_ADS[Math.floor(Math.random() * POPUP_ADS.length)];
+  const popup = document.createElement('div');
+  popup.className = 'popup-ad';
+
+  // Random position, keep within screen bounds
+  const maxX = 1920 - ad.width - 40;
+  const maxY = 1080 - ad.height - 80;
+  const x = 80 + Math.floor(Math.random() * Math.max(maxX - 80, 100));
+  const y = 80 + Math.floor(Math.random() * Math.max(maxY - 80, 100));
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+
+  popup.innerHTML = ad.html();
+  document.body.appendChild(popup);
+  activePopups++;
+
+  // Auto-dismiss after 15-25 seconds
+  const lifetime = 15000 + Math.floor(Math.random() * 10000);
+  setTimeout(() => {
+    if (popup.parentNode) {
+      popup.classList.add('dying');
+      setTimeout(() => {
+        popup.remove();
+        activePopups--;
+      }, 400);
+    }
+  }, lifetime);
+}
+
+function dismissPopup(closeBtn) {
+  const popup = closeBtn.closest('.popup-ad');
+  if (popup) {
+    popup.classList.add('dying');
+    setTimeout(() => {
+      popup.remove();
+      activePopups--;
+    }, 400);
+  }
+}
+
+// Spawn popups at random intervals (45-120 seconds)
+function scheduleNextPopup() {
+  const delay = 45000 + Math.floor(Math.random() * 75000);
+  setTimeout(() => {
+    spawnPopup();
+    scheduleNextPopup();
+  }, delay);
+}
+
+// First popup after 10-20 seconds
+setTimeout(() => {
+  spawnPopup();
+  scheduleNextPopup();
+}, 10000 + Math.floor(Math.random() * 10000));
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  initMatrixRain();
+  drawOscilloscope();
+  fetchState();
+  fetchLog();
+  fetchBrainrot();
+  fetchTwitch();
+  fetchApiMetrics();
+
+  setInterval(fetchState, 5000);
+  setInterval(fetchLog, 3000);
+  setInterval(fetchBrainrot, 2000);
+  setInterval(fetchTwitch, 5000);
+  setInterval(fetchAlerts, 5000);
+  setInterval(fetchApiMetrics, 10000);
+  setInterval(updateClock, 1000);
+  updateClock();
+});
+</script>
+</body>
+</html>

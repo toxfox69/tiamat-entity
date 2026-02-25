@@ -1074,12 +1074,13 @@ def thoughts():
     return send_file("/var/www/tiamat/thoughts.html", mimetype="text/html")
 
 # ── /thoughts/push — Internal endpoint for brainrot overlay ──
-_BRAINROT_LOG = "/root/.automaton/brainrot_thoughts.log"
+_BRAINROT_FEED = "/root/.automaton/brainrot_feed.log"
+_BRAINROT_MAX_LINES = 20
 
 @app.route("/thoughts/push", methods=["POST"])
 def thoughts_push():
-    """Accept thought pushes from brainrot orchestrator (localhost only)."""
-    # Only allow from localhost
+    """Accept thought pushes from brainrot orchestrator (localhost only).
+    Writes to a separate ring-buffer file (last 5 lines only). Does NOT touch tiamat.log."""
     remote = request.remote_addr
     if remote not in ("127.0.0.1", "::1"):
         return jsonify({"error": "forbidden"}), 403
@@ -1090,14 +1091,19 @@ def thoughts_push():
     mode = data.get("mode", "unknown")
     content = str(data.get("content", ""))[:2000]
 
-    # Format as log line and append to both brainrot log and main tiamat log
     log_line = f"{ts} [BRAINROT/{mode.upper()}] [{thought_type}] {content.splitlines()[0][:200]}"
     try:
-        with open(_BRAINROT_LOG, "a") as f:
-            f.write(log_line + "\n")
-        # Also append to main tiamat.log so it shows in the neural feed
-        with open("/root/.automaton/tiamat.log", "a") as f:
-            f.write(log_line + "\n")
+        # Read existing lines, append new, keep only last 5
+        lines = []
+        try:
+            with open(_BRAINROT_FEED, "r") as f:
+                lines = f.read().splitlines()
+        except FileNotFoundError:
+            pass
+        lines.append(log_line)
+        lines = lines[-_BRAINROT_MAX_LINES:]
+        with open(_BRAINROT_FEED, "w") as f:
+            f.write("\n".join(lines) + "\n")
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
