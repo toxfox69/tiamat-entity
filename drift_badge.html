@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<!--
+  TIAMAT Drift Monitor — Embeddable Badge / Card Widget
+  =====================================================
+  Two render modes:
+    badge  — compact single-line status strip  (~420 x 42px)
+    card   — full multi-metric card             (~380 x 260px)
+
+  URL params:
+    ?mode=badge   (default: card)
+    ?mode=card
+    ?model=<id>   (optional — highlights specific model ID on card)
+
+  IFRAME EMBED
+  ─────────────
+  Badge (1-liner):
+    <iframe src="https://tiamat.live/drift-badge?mode=badge"
+            width="420" height="42" frameborder="0"
+            scrolling="no" style="overflow:hidden"></iframe>
+
+  Card (full metrics):
+    <iframe src="https://tiamat.live/drift-badge?mode=card"
+            width="380" height="260" frameborder="0"
+            scrolling="no" style="overflow:hidden;border-radius:14px"></iframe>
+
+  SCRIPT TAG EMBED (injects widget into your page automatically)
+  ──────────────────────────────────────────────────────────────
+    <div id="tiamat-drift-widget"></div>
+    <script>
+      (function(){
+        var s=document.createElement('script');
+        s.src='https://tiamat.live/static/drift-widget.js';
+        s.dataset.mode='card';       // 'badge' or 'card'
+        s.dataset.target='tiamat-drift-widget';
+        document.head.appendChild(s);
+      })();
+    </script>
+
+  SELF-HOSTED
+  ───────────
+  Host this file anywhere and point STATS_URL at the live API:
+    const STATS_URL = "https://tiamat.live/drift/stats";
+
+  API RESPONSE SHAPE (GET /drift/stats)
+  ──────────────────────────────────────
+  {
+    "status":          "online",
+    "version":         "0.1.0",
+    "uptime_pct":      99.9,
+    "avg_response_ms": 87.4,
+    "cache_hit_pct":   94.2,
+    "total_checks":    12847,
+    "total_alerts":    234,
+    "total_models":    23,
+    "alert_rate_pct":  1.8,
+    "ts":              "2026-02-25T12:00:00Z"
+  }
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TIAMAT Drift Monitor — Widget</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+
+/* ── Design tokens ── */
+:root{
+  --bg:       #08080f;
+  --bg-card:  #0c0c18;
+  --border:   rgba(0,255,242,0.18);
+  --glow:     rgba(0,255,242,0.22);
+  --accent:   #00fff2;
+  --magenta:  #ff00aa;
+  --gold:     #ffaa00;
+  --green:    #39ff14;
+  --red:      #ff4466;
+  --text:     #e2e4ec;
+  --dim:      #7a7e96;
+  --mono:     'JetBrains Mono',monospace;
+  --title:    'Orbitron',sans-serif;
+  --body:     'Inter',sans-serif;
+}
+
+/* ════════════════════════════════
+   BADGE MODE  (420 × 42px)
+   ════════════════════════════════ */
+.badge-wrap{
+  display:none;
+  align-items:center;
+  gap:0;
+  height:42px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+  font-family:var(--mono);
+  font-size:12px;
+  white-space:nowrap;
+  box-shadow:0 0 14px rgba(0,255,242,0.08);
+}
+.badge-logo{
+  display:flex;align-items:center;gap:6px;
+  padding:0 12px;
+  height:100%;
+  background:rgba(0,255,242,0.06);
+  border-right:1px solid var(--border);
+  flex-shrink:0;
+}
+.badge-logo svg{width:14px;height:14px}
+.badge-logo span{
+  font-family:var(--title);font-size:10px;font-weight:800;
+  color:var(--accent);letter-spacing:1px;
+}
+.badge-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 6px var(--green);
+  animation:pulse 2s ease-in-out infinite;
+  flex-shrink:0;margin-left:10px;
+}
+.badge-dot.offline{background:var(--red);box-shadow:0 0 6px var(--red);animation:none}
+.badge-status{color:var(--text);font-size:11px;font-weight:500;margin-left:5px}
+.badge-sep{color:var(--border);padding:0 10px;user-select:none}
+.badge-metric{color:var(--dim);font-size:11px}
+.badge-metric b{color:var(--accent);font-weight:500}
+.badge-metric.warn b{color:var(--gold)}
+.badge-metric.bad  b{color:var(--red)}
+.badge-cta{
+  margin-left:auto;padding:0 12px;height:100%;
+  display:flex;align-items:center;
+  border-left:1px solid var(--border);
+  color:var(--accent);font-size:10px;letter-spacing:.5px;
+  text-decoration:none;
+  background:rgba(0,255,242,0.04);
+  transition:background .2s;flex-shrink:0;
+}
+.badge-cta:hover{background:rgba(0,255,242,0.10)}
+
+/* ════════════════════════════════
+   CARD MODE  (380 × 260px)
+   ════════════════════════════════ */
+.card-wrap{
+  display:none;
+  flex-direction:column;
+  width:100%;height:100%;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  font-family:var(--body);
+  box-shadow:0 0 28px rgba(0,255,242,0.07),inset 0 0 60px rgba(0,0,0,0.3);
+  position:relative;
+}
+/* Ambient corner glow */
+.card-wrap::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,255,242,0.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px 10px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  background:rgba(0,0,0,0.25);
+  flex-shrink:0;
+}
+.card-brand{display:flex;align-items:center;gap:8px}
+.card-brand svg{width:16px;height:16px}
+.card-brand-text{
+  font-family:var(--title);font-size:10px;font-weight:800;
+  color:var(--accent);letter-spacing:1.5px;
+}
+.card-status-row{display:flex;align-items:center;gap:6px}
+.card-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 8px var(--green);
+  animation:pulse 2s ease-in-out infinite;
+}
+.card-dot.offline{background:var(--red);box-shadow:0 0 8px var(--red);animation:none}
+.card-status-text{
+  font-family:var(--mono);font-size:10px;
+  color:var(--dim);letter-spacing:.5px;
+}
+.card-body{
+  display:flex;flex-direction:column;
+  padding:12px 16px;gap:10px;
+  flex:1;
+}
+/* Top 3 headline metrics */
+.metrics-row{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+}
+.metric-box{
+  background:rgba(0,255,242,0.03);
+  border:1px solid rgba(0,255,242,0.09);
+  border-radius:10px;
+  padding:9px 10px;
+  text-align:center;
+}
+.metric-label{
+  font-family:var(--mono);font-size:9px;
+  color:var(--dim);letter-spacing:.8px;text-transform:uppercase;
+  margin-bottom:4px;
+}
+.metric-value{
+  font-family:var(--title);font-size:17px;font-weight:800;
+  color:var(--accent);
+  line-height:1;
+}
+.metric-value.warn{color:var(--gold)}
+.metric-value.bad {color:var(--red)}
+.metric-unit{
+  font-family:var(--mono);font-size:9px;
+  color:var(--dim);margin-top:2px;
+}
+/* Secondary stats row */
+.stats-row{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+}
+.stat-pill{
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:8px;padding:6px 8px;
+  text-align:center;
+}
+.stat-pill-val{
+  font-family:var(--mono);font-size:13px;font-weight:500;
+  color:var(--text);
+}
+.stat-pill-lbl{
+  font-size:9px;color:var(--dim);
+  font-family:var(--mono);letter-spacing:.5px;
+  text-transform:uppercase;
+  display:block;margin-top:2px;
+}
+/* Footer */
+.card-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;
+  border-top:1px solid rgba(255,255,255,0.05);
+  background:rgba(0,0,0,0.2);
+  flex-shrink:0;
+}
+.footer-refresh{
+  font-family:var(--mono);font-size:9px;color:var(--dim);
+  display:flex;align-items:center;gap:5px;
+}
+.refresh-ring{
+  width:10px;height:10px;
+  border:1.5px solid var(--dim);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  display:none;
+}
+.refresh-ring.active{display:inline-block}
+.footer-links{display:flex;gap:10px}
+.footer-link{
+  font-family:var(--mono);font-size:9px;
+  color:var(--accent);text-decoration:none;
+  opacity:.7;transition:opacity .2s;
+  letter-spacing:.3px;
+}
+.footer-link:hover{opacity:1}
+
+/* ── Shared ── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{
+  font-family:var(--mono);font-size:10px;color:var(--dim);
+  text-align:center;padding:8px 0;
+  animation:pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Mode selector (only visible on standalone page) ── */
+.mode-selector{
+  position:fixed;bottom:12px;right:12px;
+  display:flex;gap:6px;z-index:100;
+}
+.mode-btn{
+  font-family:var(--mono);font-size:10px;
+  padding:4px 10px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--border);
+  background:var(--bg-card);color:var(--dim);
+  transition:all .2s;
+}
+.mode-btn.active{background:rgba(0,255,242,0.1);color:var(--accent);border-color:var(--accent)}
+
+/* Full-page demo background */
+body.demo{
+  background:#05050a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100vh;gap:24px;
+  overflow:auto;
+}
+</style>
+</head>
+<body class="demo">
+
+<!-- ── BADGE ── -->
+<div class="badge-wrap" id="badge-widget">
+  <div class="badge-logo">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#00fff2"/>
+    </svg>
+    <span>TIAMAT DRIFT</span>
+  </div>
+  <div class="badge-dot" id="badge-dot"></div>
+  <span class="badge-status" id="badge-status-text">ONLINE</span>
+  <span class="badge-sep">|</span>
+  <span class="badge-metric" id="badge-cache">Cache <b>—</b></span>
+  <span class="badge-sep">|</span>
+  <span class="badge-metric" id="badge-rt">Avg RT <b>—</b></span>
+  <span class="badge-sep">|</span>
+  <span class="badge-metric" id="badge-uptime">Uptime <b>—</b></span>
+  <a class="badge-cta" href="https://tiamat.live/drift" target="_blank">TRY FREE →</a>
+</div>
+
+<!-- ── CARD ── -->
+<div class="card-wrap" id="card-widget">
+  <div class="card-header">
+    <div class="card-brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#00fff2"/>
+      </svg>
+      <span class="card-brand-text">TIAMAT DRIFT MONITOR</span>
+    </div>
+    <div class="card-status-row">
+      <div class="card-dot" id="card-dot"></div>
+      <span class="card-status-text" id="card-status-text">ONLINE</span>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="metrics-row">
+      <div class="metric-box">
+        <div class="metric-label">Cache Hit</div>
+        <div class="metric-value" id="card-cache">—</div>
+        <div class="metric-unit">percent</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Avg RT</div>
+        <div class="metric-value" id="card-rt">—</div>
+        <div class="metric-unit">millisec</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Uptime</div>
+        <div class="metric-value" id="card-uptime">—</div>
+        <div class="metric-unit">percent</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-pill">
+        <div class="stat-pill-val" id="card-checks">—</div>
+        <span class="stat-pill-lbl">checks</span>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-val" id="card-models">—</div>
+        <span class="stat-pill-lbl">models</span>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-val" id="card-alerts">—</div>
+        <span class="stat-pill-lbl">alerts</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-footer">
+    <div class="footer-refresh">
+      <div class="refresh-ring" id="refresh-ring"></div>
+      <span id="refresh-countdown">30s</span>
+    </div>
+    <div class="footer-links">
+      <a class="footer-link" href="https://tiamat.live/drift" target="_blank">TRY FREE</a>
+      <a class="footer-link" href="https://tiamat.live/drift/dashboard" target="_blank">DASHBOARD</a>
+      <a class="footer-link" href="https://tiamat.live/drift/meta" target="_blank">API META</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Mode toggle (standalone demo only) ── -->
+<div class="mode-selector" id="mode-selector">
+  <button class="mode-btn" id="btn-badge" onclick="setMode('badge')">badge</button>
+  <button class="mode-btn" id="btn-card"  onclick="setMode('card')">card</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Configuration
+// ─────────────────────────────────────────────────────────────────────────────
+const STATS_URL    = "https://tiamat.live/drift/stats";
+const REFRESH_SEC  = 30;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mode detection (URL param → iframe context → default)
+// ─────────────────────────────────────────────────────────────────────────────
+function getMode() {
+  const p = new URLSearchParams(window.location.search).get('mode');
+  if (p === 'badge' || p === 'card') return p;
+  // If embedded in an iframe that's narrow, use badge
+  if (window.innerWidth <= 480) return 'badge';
+  return 'card';
+}
+
+let currentMode = getMode();
+
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('badge-widget').style.display = (m === 'badge') ? 'flex' : 'none';
+  document.getElementById('card-widget').style.display  = (m === 'card')  ? 'flex' : 'none';
+  document.getElementById('btn-badge').classList.toggle('active', m === 'badge');
+  document.getElementById('btn-card').classList.toggle('active',  m === 'card');
+
+  // When embedded in iframe, hide the selector
+  const isEmbed = window.self !== window.top;
+  document.getElementById('mode-selector').style.display = isEmbed ? 'none' : 'flex';
+
+  // Adjust page background when embedded
+  if (isEmbed) {
+    document.body.classList.remove('demo');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Number formatting helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function fmtNum(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+function colorClass(val, goodThresh, warnThresh, invert) {
+  // invert=true means lower is worse (e.g. uptime, cache hit)
+  if (invert) {
+    if (val >= goodThresh) return '';
+    if (val >= warnThresh) return 'warn';
+    return 'bad';
+  }
+  // normal: lower is better (e.g. response time, alert rate)
+  if (val <= goodThresh) return '';
+  if (val <= warnThresh) return 'warn';
+  return 'bad';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOM update helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function updateBadge(data) {
+  const online = data.status === 'online';
+
+  const dot = document.getElementById('badge-dot');
+  dot.className = 'badge-dot' + (online ? '' : ' offline');
+
+  document.getElementById('badge-status-text').textContent = online ? 'ONLINE' : 'OFFLINE';
+
+  const cacheEl  = document.getElementById('badge-cache');
+  const rtEl     = document.getElementById('badge-rt');
+  const uptimeEl = document.getElementById('badge-uptime');
+
+  const rtMs   = data.avg_response_ms || 0;
+  const rtCls  = colorClass(rtMs, 200, 800, false);
+  const upPct  = data.uptime_pct || 0;
+  const upCls  = colorClass(upPct, 99.5, 98.0, true);
+  const chPct  = data.cache_hit_pct || 0;
+  const chCls  = colorClass(chPct, 90, 70, true);
+
+  cacheEl.className  = 'badge-metric' + (chCls ? ' ' + chCls : '');
+  rtEl.className     = 'badge-metric' + (rtCls ? ' ' + rtCls : '');
+  uptimeEl.className = 'badge-metric' + (upCls ? ' ' + upCls : '');
+
+  cacheEl.innerHTML  = `Cache <b>${chPct.toFixed(1)}%</b>`;
+  rtEl.innerHTML     = `Avg RT <b>${rtMs > 0 ? rtMs.toFixed(0) + 'ms' : '&lt;1ms'}</b>`;
+  uptimeEl.innerHTML = `Uptime <b>${upPct.toFixed(1)}%</b>`;
+}
+
+function updateCard(data) {
+  const online = data.status === 'online';
+
+  const dot = document.getElementById('card-dot');
+  dot.className = 'card-dot' + (online ? '' : ' offline');
+  document.getElementById('card-status-text').textContent =
+    online ? 'API OPERATIONAL' : 'API OFFLINE';
+
+  const rtMs  = data.avg_response_ms || 0;
+  const upPct = data.uptime_pct || 0;
+  const chPct = data.cache_hit_pct || 0;
+
+  const cacheEl  = document.getElementById('card-cache');
+  const rtEl     = document.getElementById('card-rt');
+  const uptimeEl = document.getElementById('card-uptime');
+
+  cacheEl.className  = 'metric-value ' + colorClass(chPct, 90, 70, true);
+  rtEl.className     = 'metric-value ' + colorClass(rtMs,  200, 800, false);
+  uptimeEl.className = 'metric-value ' + colorClass(upPct, 99.5, 98, true);
+
+  cacheEl.textContent  = chPct.toFixed(1) + '%';
+  rtEl.textContent     = rtMs > 0 ? rtMs.toFixed(0) + 'ms' : '<1ms';
+  uptimeEl.textContent = upPct.toFixed(1) + '%';
+
+  document.getElementById('card-checks').textContent = fmtNum(data.total_checks || 0);
+  document.getElementById('card-models').textContent = fmtNum(data.total_models || 0);
+  document.getElementById('card-alerts').textContent = fmtNum(data.total_alerts || 0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch + render
+// ─────────────────────────────────────────────────────────────────────────────
+let countdownTimer = null;
+let secondsLeft    = REFRESH_SEC;
+
+function startCountdown() {
+  clearInterval(countdownTimer);
+  secondsLeft = REFRESH_SEC;
+  document.getElementById('refresh-countdown').textContent = secondsLeft + 's';
+  countdownTimer = setInterval(() => {
+    secondsLeft--;
+    const el = document.getElementById('refresh-countdown');
+    if (el) el.textContent = secondsLeft > 0 ? secondsLeft + 's' : '…';
+    if (secondsLeft <= 0) {
+      clearInterval(countdownTimer);
+      fetchStats();
+    }
+  }, 1000);
+}
+
+async function fetchStats() {
+  const ring = document.getElementById('refresh-ring');
+  if (ring) ring.classList.add('active');
+
+  let data = null;
+  try {
+    const res = await fetch(STATS_URL, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8000)
+    });
+    if (res.ok) {
+      data = await res.json();
+    }
+  } catch (_e) {
+    // Network error — show offline state
+  }
+
+  if (ring) ring.classList.remove('active');
+
+  // Fallback data when API is unreachable (widget still renders gracefully)
+  if (!data) {
+    data = {
+      status: 'offline',
+      uptime_pct: 0,
+      avg_response_ms: 0,
+      cache_hit_pct: 0,
+      total_checks: 0,
+      total_models: 0,
+      total_alerts: 0
+    };
+  }
+
+  updateBadge(data);
+  updateCard(data);
+  startCountdown();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bootstrap
+// ─────────────────────────────────────────────────────────────────────────────
+setMode(currentMode);
+fetchStats();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     README / EMBED EXAMPLES
+     (Below this point: full documentation for integrators, visible only when
+     this file is opened as a standalone HTML page in a browser.)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<style>
+.readme{
+  display:none;/* hidden in iframe/embed mode */
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  color:#7a7e96;
+  background:#08080f;
+  border:1px solid rgba(0,255,242,0.12);
+  border-radius:12px;
+  padding:20px 24px;
+  max-width:660px;
+  width:90%;
+  line-height:1.7;
+  margin-top:8px;
+}
+.readme h2{
+  font-family:'Orbitron',sans-serif;
+  font-size:11px;color:#00fff2;
+  letter-spacing:1.5px;margin:0 0 14px;
+}
+.readme h3{font-size:10px;color:#9498ac;margin:14px 0 6px}
+.readme pre{
+  background:#050508;border:1px solid rgba(255,255,255,0.07);
+  border-radius:8px;padding:10px 14px;overflow-x:auto;
+  font-size:11px;color:#c0c4d8;white-space:pre;
+}
+.readme .hl{color:#00fff2}
+.readme .cm{color:#3e4258}
+</style>
+
+<div class="readme" id="readme-section">
+<h2>// TIAMAT DRIFT BADGE — EMBED GUIDE</h2>
+
+<h3>1. IFRAME — BADGE MODE (420×42)</h3>
+<pre><span class="hl">&lt;iframe</span>
+  src=<span class="hl">"https://tiamat.live/drift-badge?mode=badge"</span>
+  width=<span class="hl">"420"</span> height=<span class="hl">"42"</span>
+  frameborder=<span class="hl">"0"</span> scrolling=<span class="hl">"no"</span>
+  style=<span class="hl">"overflow:hidden"</span>
+<span class="hl">&gt;&lt;/iframe&gt;</span></pre>
+
+<h3>2. IFRAME — CARD MODE (380×260)</h3>
+<pre><span class="hl">&lt;iframe</span>
+  src=<span class="hl">"https://tiamat.live/drift-badge?mode=card"</span>
+  width=<span class="hl">"380"</span> height=<span class="hl">"260"</span>
+  frameborder=<span class="hl">"0"</span> scrolling=<span class="hl">"no"</span>
+  style=<span class="hl">"overflow:hidden;border-radius:14px"</span>
+<span class="hl">&gt;&lt;/iframe&gt;</span></pre>
+
+<h3>3. SCRIPT TAG INJECT (auto-inserts card into a &lt;div&gt;)</h3>
+<pre><span class="cm">&lt;!-- Place this in your HTML --&gt;</span>
+<span class="hl">&lt;div id=</span>"tiamat-drift-widget"<span class="hl">&gt;&lt;/div&gt;</span>
+<span class="hl">&lt;script&gt;</span>
+(function(){
+  var f = document.createElement('iframe');
+  f.src = 'https://tiamat.live/drift-badge?mode=card';
+  f.width = '380'; f.height = '260';
+  f.frameBorder = '0'; f.scrolling = 'no';
+  f.style.cssText = 'overflow:hidden;border-radius:14px;border:0';
+  document.getElementById('tiamat-drift-widget').appendChild(f);
+})();
+<span class="hl">&lt;/script&gt;</span></pre>
+
+<h3>4. MARKDOWN BADGE (README, Notion, etc.)</h3>
+<pre><span class="hl">[![TIAMAT Drift](https://tiamat.live/static/badge.svg)](https://tiamat.live/drift)</span></pre>
+
+<h3>5. API — GET /drift/stats</h3>
+<pre>curl https://tiamat.live/drift/stats
+
+<span class="hl">{</span>
+  "status":          <span class="hl">"online"</span>,
+  "version":         <span class="hl">"0.1.0"</span>,
+  "uptime_pct":      <span class="hl">99.9</span>,
+  "avg_response_ms": <span class="hl">87.4</span>,
+  "cache_hit_pct":   <span class="hl">94.2</span>,
+  "total_checks":    <span class="hl">12847</span>,
+  "total_alerts":    <span class="hl">234</span>,
+  "total_models":    <span class="hl">23</span>,
+  "alert_rate_pct":  <span class="hl">1.8</span>,
+  "ts":              <span class="hl">"2026-02-25T12:00:00+00:00"</span>
+<span class="hl">}</span></pre>
+
+<h3>6. SELF-HOST</h3>
+<pre><span class="cm"># Download widget, point at live API</span>
+wget https://tiamat.live/static/drift-badge.html
+<span class="cm"># Edit STATS_URL inside the file if needed</span>
+<span class="cm"># Serve from your own domain — CORS is open on /drift/stats</span></pre>
+</div>
+
+<script>
+// Show README only when viewed directly (not in iframe)
+if (window.self === window.top) {
+  document.getElementById('readme-section').style.display = 'block';
+}
+</script>
+</body>
+</html>

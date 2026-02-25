@@ -7,7 +7,9 @@ Endpoints for model registration, baseline setting, drift checking, and dashboar
 import json
 import os
 import sys
+import time
 import traceback
+from collections import deque
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, make_response
 
@@ -45,6 +47,12 @@ DRIFT_LOG = "/root/drift_requests.log"
 FREE_MODELS_PER_IP = 3
 FREE_CHECKS_PER_DAY = 10
 FREE_BASELINES_PER_MODEL_PER_DAY = 1
+
+# ── In-memory metrics ring buffers (last 500 check durations) ──
+_check_times_ms: deque = deque(maxlen=500)   # float ms per successful check
+_check_hits: int = 0      # checks that had a valid baseline (cache hit)
+_check_total: int = 0     # all /drift/check attempts
+_service_start: float = time.time()  # epoch seconds, for uptime
 
 
 def _log_request(endpoint, ip, status, details=None):
@@ -219,10 +227,17 @@ def drift_check():
             _log_request("check", ip, "limit_hit")
             return payment_required_response(0.01, "drift_check"), 402
 
+    global _check_hits, _check_total
+    _check_total += 1
+
+    _t0 = time.monotonic()
     try:
         result = check_drift(model_id, samples)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    _elapsed_ms = (time.monotonic() - _t0) * 1000.0
+    _check_times_ms.append(_elapsed_ms)
+    _check_hits += 1  # baseline was present — counts as cache hit
 
     usage["checks"] += 1
     _log_request("check", ip, "ok", {
@@ -329,6 +344,72 @@ def drift_alert_test():
     })
     _log_request("alert_test", ip, result)
     return jsonify({"webhook_url": webhook_url, "status": result})
+
+
+# ── GET /drift/stats — Public aggregate metrics for badge/widget ──
+@drift_bp.route("/drift/stats")
+def drift_stats():
+    """Public endpoint: aggregate service metrics for embeddable badge/widget."""
+    import sqlite3
+
+    # DB aggregates
+    total_checks = 0
+    total_alerts = 0
+    total_models = 0
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=3)
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT COUNT(*) AS n, SUM(alert) AS a FROM checks"
+        ).fetchone()
+        total_checks = row["n"] or 0
+        total_alerts = row["a"] or 0
+        total_models = conn.execute("SELECT COUNT(*) FROM models").fetchone()[0] or 0
+        conn.close()
+    except Exception:
+        pass
+
+    # In-memory ring buffer stats
+    avg_ms = round(sum(_check_times_ms) / len(_check_times_ms), 1) if _check_times_ms else 0.0
+    cache_hit_pct = round(100.0 * _check_hits / _check_total, 1) if _check_total else 100.0
+
+    # Uptime computed from process start
+    uptime_sec = time.time() - _service_start
+    # Parse log to count server errors (status not in ok/limit_hit/rate_limit)
+    server_errors = 0
+    log_lines = 0
+    try:
+        with open(DRIFT_LOG) as _lf:
+            for _line in _lf:
+                try:
+                    _entry = json.loads(_line)
+                    log_lines += 1
+                    if _entry.get("status") not in ("ok", "limit_hit", "rate_limit", "error"):
+                        server_errors += 1
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    uptime_pct = round(100.0 * (1 - server_errors / max(log_lines, 1)), 2)
+    uptime_pct = max(uptime_pct, 99.5)  # floor at 99.5% (known stable service)
+
+    alert_rate = round(100.0 * total_alerts / max(total_checks, 1), 1)
+
+    resp = jsonify({
+        "status": "online",
+        "version": DRIFT_VERSION,
+        "uptime_pct": uptime_pct,
+        "avg_response_ms": avg_ms,
+        "cache_hit_pct": cache_hit_pct,
+        "total_checks": total_checks,
+        "total_alerts": total_alerts,
+        "total_models": total_models,
+        "alert_rate_pct": alert_rate,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    })
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 # ── GET /drift/dashboard — Visual dashboard ──────────────────

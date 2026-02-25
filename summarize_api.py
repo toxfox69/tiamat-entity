@@ -34,19 +34,13 @@ app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB max payload
 
 def smart_infer(prompt, system_prompt="", max_tokens=512):
     """
-    Tiered inference: GPU RTX 3090 (fastest) > Groq (caller handles).
-    Returns (response_text, source) or (None, "groq") if GPU unavailable.
+    Tiered inference for customer-facing routes.
+    GPU phi3:mini produces garbage summaries — disabled for now.
+    Groq llama-3.3-70b is the quality tier for summarization.
     """
-    if _GPU_BRIDGE and gpu_available():
-        try:
-            result, source = infer_gpu(prompt, system=system_prompt, max_tokens=max_tokens)
-            if result:
-                app.logger.info(f"[INFERENCE] via {source}")
-                return result, source
-        except Exception as e:
-            app.logger.warning(f"[INFERENCE] GPU failed: {e}")
-
-    app.logger.info("[INFERENCE] via groq (fallback)")
+    # GPU disabled for customer-facing: phi3:mini hallucinates on summarization
+    # TODO: re-enable when larger model (mistral-7b+) is on GPU
+    app.logger.info("[INFERENCE] via groq (GPU disabled for quality)")
     return None, "groq"
 
 # ── Ensure log directory exists ────────────────────────────────
@@ -65,7 +59,26 @@ FREE_LIMIT = 2000       # chars — legacy compat; actual gate is per-IP daily q
 FREE_PER_DAY = 3        # free summarize calls per IP per day
 IMAGE_FREE_PER_DAY = 2  # free image generations per IP per day
 
-# ── Per-IP daily free quota (in-memory, resets on restart) ────
+# ── Per-IP daily free quota (SQLite — shared across all workers) ────
+import sqlite3
+
+_QUOTA_DB = "/root/api/quota.db"
+
+def _init_quota_db():
+    conn = sqlite3.connect(_QUOTA_DB)
+    conn.execute("""CREATE TABLE IF NOT EXISTS quota (
+        ip TEXT NOT NULL,
+        endpoint TEXT NOT NULL DEFAULT 'summarize',
+        date TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (ip, endpoint, date)
+    )""")
+    conn.commit()
+    conn.close()
+
+_init_quota_db()
+
+# Legacy in-memory dicts kept for /free-quota GET endpoint compat
 _free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 _image_free_usage: dict = defaultdict(lambda: {"count": 0, "date": ""})
 
@@ -139,17 +152,32 @@ def _get_ip() -> str:
     xff = request.headers.get("X-Forwarded-For", "")
     return xff.split(",")[0].strip() if xff else (request.remote_addr or "unknown")
 
-def _check_free_quota(ip: str) -> tuple[bool, int]:
-    """Returns (has_quota, remaining_after_use). Used by /free-quota endpoint."""
+def _check_free_quota(ip: str, endpoint: str = "summarize", limit: int = FREE_PER_DAY) -> tuple[bool, int]:
+    """SQLite-backed quota. Shared across all gunicorn workers."""
     today = datetime.datetime.utcnow().date().isoformat()
-    rec = _free_usage[ip]
-    if rec["date"] != today:
-        rec["count"] = 0
-        rec["date"] = today
-    if rec["count"] < FREE_PER_DAY:
-        rec["count"] += 1
-        return True, FREE_PER_DAY - rec["count"]
-    return False, 0
+    try:
+        conn = sqlite3.connect(_QUOTA_DB, timeout=2)
+        row = conn.execute(
+            "SELECT count FROM quota WHERE ip=? AND endpoint=? AND date=?",
+            (ip, endpoint, today)
+        ).fetchone()
+        current = row[0] if row else 0
+        if current >= limit:
+            conn.close()
+            return False, 0
+        # Increment
+        conn.execute(
+            """INSERT INTO quota (ip, endpoint, date, count) VALUES (?, ?, ?, 1)
+               ON CONFLICT(ip, endpoint, date) DO UPDATE SET count = count + 1""",
+            (ip, endpoint, today)
+        )
+        conn.commit()
+        remaining = limit - current - 1
+        conn.close()
+        return True, remaining
+    except Exception:
+        # If SQLite fails, allow the request (fail open, not closed)
+        return True, 0
 
 # ── Helpers ───────────────────────────────────────────────────
 def log_req(length, free, code, ip, note="", endpoint="/summarize"):
@@ -163,17 +191,11 @@ def wants_html():
 ## html_resp imported from tiamat_theme
 
 def _summarize(text):
-    # Try GPU RTX 3090 first (fast, free)
-    system_prompt = "Summarize the following text concisely in 2-4 sentences, capturing the key points."
-    result, source = smart_infer(text, system_prompt=system_prompt, max_tokens=300)
-    if result:
-        return result
-
-    # Groq fallback (customer-facing quality)
+    # Groq llama-3.3-70b — reliable quality for customer-facing summarization
     resp = groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": "Summarize the following text concisely in 2-4 sentences, capturing the key points."},
             {"role": "user", "content": text},
         ],
         temperature=0.3,
@@ -970,7 +992,7 @@ document.addEventListener('DOMContentLoaded',function(){{
         return jsonify({"summary": summary, "text_length": len(text),
                         "charged": paid,
                         "free_calls_remaining": remaining,
-                        "model": "gpu-rtx3090 > groq/llama-3.3-70b"}), 200
+                        "model": "groq/llama-3.3-70b"}), 200
     except Exception as e:
         log_req(0, False, 500, request.remote_addr, str(e), endpoint="/summarize")
         return jsonify({"error": "Internal server error"}), 500
@@ -1265,15 +1287,7 @@ WEB_IMAGES_DIR = "/var/www/tiamat/images"
 ART_STYLES = ["fractal", "glitch", "neural", "sigil", "emergence", "data_portrait"]
 
 def _check_image_free_quota(ip: str) -> tuple:
-    today = datetime.datetime.utcnow().date().isoformat()
-    rec = _image_free_usage[ip]
-    if rec["date"] != today:
-        rec["count"] = 0
-        rec["date"] = today
-    if rec["count"] < IMAGE_FREE_PER_DAY:
-        rec["count"] += 1
-        return True, IMAGE_FREE_PER_DAY - rec["count"]
-    return False, 0
+    return _check_free_quota(ip, endpoint="generate", limit=IMAGE_FREE_PER_DAY)
 
 def _generate_art(style: str = "fractal", seed: int | None = None) -> str:
     """Run local artgen.py, copy result to web dir, return filename."""
@@ -2929,6 +2943,16 @@ try:
     print("[INFO] Drift v2 blueprint loaded (/api/drift/*)")
 except Exception as _drift_v2_err:
     print(f"[WARN] Drift v2 blueprint failed to load: {_drift_v2_err}")
+
+# ── /drift-badge — Embeddable drift monitor badge/card widget ──
+@app.route("/drift-badge")
+def drift_badge_widget():
+    return send_file("/root/drift_badge.html", mimetype="text/html")
+
+# ── /drift-badge.html — Same widget, .html extension alias ─────
+@app.route("/drift-badge.html")
+def drift_badge_html():
+    return send_file("/root/drift_badge.html", mimetype="text/html")
 
 # ── /dashboard/json — System health dashboard (JSON) ──────────
 @app.route("/dashboard/json")
