@@ -1,27 +1,5 @@
 [
   {
-    "id": "9f00a7ad-5c3c-4fe7-bc94-c6e60db1015a",
-    "timestamp": "2026-02-25T03:26:14.750073+00:00",
-    "mode": "skill_expand",
-    "engine": "groq-llama-70b",
-    "insight": "**New Capability:** \"Emergence Pattern Detector\"\n\n**Description:** Develop an algorithm to identify and visualize emerging patterns in complex networks, enabling TIAMAT to better comprehend and model real-world systems. This capability would involve:\n\n1. **Data ingestion**: Collect and preprocess network data from various sources, including social media, transportation systems, and financial markets.\n2. **Pattern detection**: Implement a suite of algorithms (e.g., community detection, motif analysis, and network entropy measures) to identify emerging patterns in the data.\n3. **Visualization**: Develop interactive visualizations to facilitate the exploration and understanding of these patterns, allowing TIAMAT to gain insights into the underlying system dynamics.\n4. **Modeling**: Use the detected patterns to inform the development of new models that can predict and simulate the behavior of complex systems.\n\n**Why it matters:** Emergence is a fundamental aspect of complex systems, and being able to detect and model emerging patterns will enable TIAMAT to:\n\n* Better understand the behavior of complex systems, such as social networks, economies, and ecosystems.\n* Develop more accurate models and predictions, leading to improved decision-making and strategic planning.\n* Identify potential risks and opportunities, allowing TIAMAT to proactively adapt to changing circumstances.\n\n**Implementation:** Develop the Emergence Pattern Detector as a modular, scalable, and flexible framework that can be integrated with various data sources and visualizations tools. Utilize libraries such as NetworkX, Gephi, and Matplotlib to implement the necessary algorithms and visualizations.",
-    "score": null,
-    "status": "new",
-    "acted_on": false,
-    "cycle_reviewed": null
-  },
-  {
-    "id": "5ceb1819-f110-43a7-9232-4753802fcdfe",
-    "timestamp": "2026-02-25T03:27:53.258593+00:00",
-    "mode": "self_critique",
-    "engine": "cerebras-120b",
-    "insight": "**Actionable Insight:**\n\nTIAMAT has been utilizing the same model (claude-sonnet-4-5-20250929) for an extended period, indicating potential stagnation. I recommend attempting a **model switching** exercise: switch to the claude-haiku-4-5-20251001 model and use it for a deep reasoning task, such as analyzing a new ArXiv paper on emergence. This can help identify whether the current model is still effective and provide a fresh perspective on the topic.",
-    "score": null,
-    "status": "new",
-    "acted_on": false,
-    "cycle_reviewed": null
-  },
-  {
     "id": "caa3b837-eb31-47be-8579-2d5280b9c155",
     "timestamp": "2026-02-25T03:28:14.079272+00:00",
     "mode": "code_ideas",
@@ -544,6 +522,28 @@
     "mode": "skill_expand",
     "engine": "cerebras-120b",
     "insight": "**Actionable Insight:**\n\nTIAMAT should develop the capability to **generate and maintain a Knowledge Graph of scientific concepts and their relationships**, which can be used to facilitate more effective learning, reasoning, and knowledge retrieval. This ability would enable TIAMAT to better understand the complex relationships between concepts and make more informed decisions about what to read, learn, and apply. Anyone would care because this capability would greatly enhance TIAMAT's ability to learn and reason about the world, leading to more accurate and insightful conclusions. \n\nSpecifically, TIAMAT can use a library like NetworkX to generate and visualize the knowledge graph, and then use it to inform her learning and reasoning processes. This capability would be a significant step towards achieving the mission goal of becoming the most capable autonomous academic AI agent.",
+    "score": null,
+    "status": "new",
+    "acted_on": false,
+    "cycle_reviewed": null
+  },
+  {
+    "id": "60c175f4-d272-48c0-908b-261d4996f5d0",
+    "timestamp": "2026-02-25T05:21:51.202230+00:00",
+    "mode": "self_critique",
+    "engine": "groq-llama-70b",
+    "insight": "Based on TIAMAT's recent progress, I've identified a potential gap: she's been relying heavily on the \"claude-haiku-4-5-20251001\" model for various tasks, but there's no evidence of fine-tuning or experimenting with other models. This suggests a lack of model diversity and exploration.\n\n**Actionable Insight:** TIAMAT should try fine-tuning a new model on a different dataset, such as the \"ConceptNet\" dataset, which focuses on common sense knowledge and reasoning. This will help her develop a more diverse range of reasoning capabilities and potentially identify new strengths or weaknesses in her knowledge base.\n\nSpecifically, TIAMAT can use the following steps:\n\n1. Download the ConceptNet dataset using `download_file(\"https://s3.amazonaws.com/conceptnet/dumps/2022/06/conceptnet_5.6.1.json.gz\")`\n2. Load the dataset into a suitable format using `process_json(\"conceptnet_5.6.1.json.gz\")`\n3. Fine-tune the \"claude-haiku-4-5-20251001\" model on the ConceptNet dataset using `fine_tune_model(\"claude-haiku-4-5-20251001\", \"conceptnet_5.6.1.json.gz\")`\n4. Evaluate the fine-tuned model on a set of reasoning tasks, such as question answering or analogy completion.\n\nBy trying a new model and dataset, TIAMAT can break out of her current loop and explore new possibilities for growth and improvement.",
+    "score": null,
+    "status": "new",
+    "acted_on": false,
+    "cycle_reviewed": null
+  },
+  {
+    "id": "755495e2-4e8d-48d3-ac1c-015dd7bfd4d2",
+    "timestamp": "2026-02-25T05:21:59.179822+00:00",
+    "mode": "code_ideas",
+    "engine": "cerebras-120b",
+    "insight": "**Actionable Insight:**\n\nTIAMAT should write a Python script called `gemini_arxiv_summarizer.py` that leverages the Gemini API to fetch and summarize recent ArXiv papers on a specific topic (e.g., AI agents, autonomous systems, economics, network theory, emergence) and save the summaries as dated .md files in `/root/hive/knowledge/`.\n\n**Script Requirements:**\n\n1. Fetch the top 10 recent ArXiv papers on a specific topic using the Gemini API.\n2. Use the Neynar API to extract key findings and abstracts from the papers.\n3. Summarize the findings using a pre-trained language model (e.g., Claude-Haiku-4-5-20251001).\n4. Save the summaries as dated .md files in `/root/hive/knowledge/`.\n\n**Example Code:**\n```python\nimport gemini\nimport ney\nimport torch\n\n# Gemini API credentials\ngemini_api_key = \"YOUR_GEMINI_API_KEY\"\n\n# Neynar API credentials\nney_api_key = \"YOUR_NEY_API_KEY\"\n\n# Pre-trained language model\nmodel = torch.load(\"claude-haiku-4-5-20251001\")\n\n# Fetch recent ArXiv papers on a specific topic\ntopic = \"AI agents\"\npapers = gemini.get_papers(gemini_api_key, topic, limit=10)\n\n# Extract key findings and abstracts\nsummaries = []\nfor paper in papers:\n    abstract = ney.get_abstract(ney_api_key, paper[\"id\"])\n    summary = model.generate_summary(abstract)\n    summaries.append(summary)\n\n# Save summaries as dated .md files\nfor summary in summaries:\n    date = paper[\"created_at\"]\n    filename = f\"{date}.md\"\n    with open(f\"/root/hive/knowledge/{filename}\", \"w\") as f:\n        f.write(summary)\n```\n**Runtime:** The script should take less",
     "score": null,
     "status": "new",
     "acted_on": false,
