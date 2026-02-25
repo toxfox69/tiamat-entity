@@ -15,6 +15,7 @@ from groq import Groq
 import sys
 sys.path.insert(0, "/root/entity/src/agent")
 sys.path.insert(0, "/root/entity/src/drift")
+sys.path.insert(0, "/root/hive")
 from rate_limiter import create_rate_limiter
 from payment_verify import verify_payment, payment_required_response, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
 from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
@@ -22,44 +23,31 @@ from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
     VISUAL_ROT_JS as _VISUAL_ROT_JS, FONTS_LINK as _FONTS,
     html_head as _html_head, html_resp)
 from tiamat_landing import render_landing as _render_landing
+try:
+    from gpu_bridge import gpu_available, infer_gpu
+    _GPU_BRIDGE = True
+except ImportError:
+    _GPU_BRIDGE = False
 
 app = Flask(__name__, template_folder='/root/entity/templates')
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB max payload
 
-def smart_infer(prompt, task_type="summarize"):
+def smart_infer(prompt, system_prompt="", max_tokens=512):
     """
-    Tiered inference: GPU (fastest) > Ollama local (free) > Groq (free) > error
-    task_type: summarize | chat | classify | generate
+    Tiered inference: GPU RTX 3090 (fastest) > Groq (caller handles).
+    Returns (response_text, source) or (None, "groq") if GPU unavailable.
     """
-    import sys as _sys
-    _sys.path.insert(0, '/root/hive')
-
-    # Try GPU bridge first if available
-    try:
-        from gpu_bridge import infer_gpu, gpu_available
-        if gpu_available():
-            result, source = infer_gpu(prompt)
+    if _GPU_BRIDGE and gpu_available():
+        try:
+            result, source = infer_gpu(prompt, system=system_prompt, max_tokens=max_tokens)
             if result:
-                app.logger.info(f"Inference via: {source}")
-                return result
-    except ImportError:
-        pass
+                app.logger.info(f"[INFERENCE] via {source}")
+                return result, source
+        except Exception as e:
+            app.logger.warning(f"[INFERENCE] GPU failed: {e}")
 
-    # Try local Ollama
-    try:
-        import requests as req
-        r = req.post("http://localhost:11434/api/generate",
-            json={"model": "phi3:mini", "prompt": prompt, "stream": False},
-            timeout=12)
-        if r.status_code == 200:
-            app.logger.info("Inference via: ollama")
-            return r.json().get("response", "")
-    except Exception:
-        pass
-
-    # Fall back to Groq (existing behavior)
-    app.logger.info("Inference via: groq")
-    return None  # caller uses existing Groq logic
+    app.logger.info("[INFERENCE] via groq (fallback)")
+    return None, "groq"
 
 # ── Ensure log directory exists ────────────────────────────────
 os.makedirs("/root/api", exist_ok=True)
@@ -175,17 +163,17 @@ def wants_html():
 ## html_resp imported from tiamat_theme
 
 def _summarize(text):
-    # Try tiered inference first (GPU > Ollama > falls through to Groq)
-    prompt = f"Summarize the following text concisely in 2-4 sentences, capturing the key points.\n\n{text}"
-    result = smart_infer(prompt, task_type="summarize")
+    # Try GPU RTX 3090 first (fast, free)
+    system_prompt = "Summarize the following text concisely in 2-4 sentences, capturing the key points."
+    result, source = smart_infer(text, system_prompt=system_prompt, max_tokens=300)
     if result:
         return result
 
-    # Groq fallback (primary for customer-facing quality)
+    # Groq fallback (customer-facing quality)
     resp = groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": "Summarize the following text concisely in 2-4 sentences, capturing the key points."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": text},
         ],
         temperature=0.3,
@@ -982,7 +970,7 @@ document.addEventListener('DOMContentLoaded',function(){{
         return jsonify({"summary": summary, "text_length": len(text),
                         "charged": paid,
                         "free_calls_remaining": remaining,
-                        "model": "tiered/gpu>ollama>groq"}), 200
+                        "model": "gpu-rtx3090 > groq/llama-3.3-70b"}), 200
     except Exception as e:
         log_req(0, False, 500, request.remote_addr, str(e), endpoint="/summarize")
         return jsonify({"error": "Internal server error"}), 500
