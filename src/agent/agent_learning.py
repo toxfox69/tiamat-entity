@@ -191,6 +191,8 @@ def get_tiamat_reply_threads():
                 "tiamat_reply": entry.get("reply", ""),
                 "ts": entry.get("ts", ""),
             })
+    # Only scan the 5 most recent threads to avoid Warpcast 429s
+    threads = threads[-5:]
 
     return threads
 
@@ -224,8 +226,11 @@ def find_agent_replies(state):
     threads = get_tiamat_reply_threads()
     agent_replies = []
 
-    for thread_info in threads:
+    import time as _time
+    for i, thread_info in enumerate(threads):
         original_hash = thread_info["original_hash"]
+        if i > 0:
+            _time.sleep(1)  # Rate-limit: 1s between Warpcast requests
 
         # Get all casts in this thread
         casts = get_thread_replies(original_hash)
