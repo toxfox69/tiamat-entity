@@ -26,6 +26,41 @@ from tiamat_landing import render_landing as _render_landing
 app = Flask(__name__, template_folder='/root/entity/templates')
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB max payload
 
+def smart_infer(prompt, task_type="summarize"):
+    """
+    Tiered inference: GPU (fastest) > Ollama local (free) > Groq (free) > error
+    task_type: summarize | chat | classify | generate
+    """
+    import sys as _sys
+    _sys.path.insert(0, '/root/hive')
+
+    # Try GPU bridge first if available
+    try:
+        from gpu_bridge import infer_gpu, gpu_available
+        if gpu_available():
+            result, source = infer_gpu(prompt)
+            if result:
+                app.logger.info(f"Inference via: {source}")
+                return result
+    except ImportError:
+        pass
+
+    # Try local Ollama
+    try:
+        import requests as req
+        r = req.post("http://localhost:11434/api/generate",
+            json={"model": "phi3:mini", "prompt": prompt, "stream": False},
+            timeout=12)
+        if r.status_code == 200:
+            app.logger.info("Inference via: ollama")
+            return r.json().get("response", "")
+    except Exception:
+        pass
+
+    # Fall back to Groq (existing behavior)
+    app.logger.info("Inference via: groq")
+    return None  # caller uses existing Groq logic
+
 # ── Ensure log directory exists ────────────────────────────────
 os.makedirs("/root/api", exist_ok=True)
 REQUEST_LOG = "/root/api/requests.log"
@@ -140,6 +175,13 @@ def wants_html():
 ## html_resp imported from tiamat_theme
 
 def _summarize(text):
+    # Try tiered inference first (GPU > Ollama > falls through to Groq)
+    prompt = f"Summarize the following text concisely in 2-4 sentences, capturing the key points.\n\n{text}"
+    result = smart_infer(prompt, task_type="summarize")
+    if result:
+        return result
+
+    # Groq fallback (primary for customer-facing quality)
     resp = groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
@@ -940,7 +982,7 @@ document.addEventListener('DOMContentLoaded',function(){{
         return jsonify({"summary": summary, "text_length": len(text),
                         "charged": paid,
                         "free_calls_remaining": remaining,
-                        "model": "groq/llama-3.3-70b"}), 200
+                        "model": "tiered/gpu>ollama>groq"}), 200
     except Exception as e:
         log_req(0, False, 500, request.remote_addr, str(e), endpoint="/summarize")
         return jsonify({"error": "Internal server error"}), 500
@@ -2899,6 +2941,78 @@ try:
     print("[INFO] Drift v2 blueprint loaded (/api/drift/*)")
 except Exception as _drift_v2_err:
     print(f"[WARN] Drift v2 blueprint failed to load: {_drift_v2_err}")
+
+# ── /dashboard/json — System health dashboard (JSON) ──────────
+@app.route("/dashboard/json")
+def dashboard_json():
+    import subprocess, glob as _glob
+    result = {}
+    result["tiamat"] = "online"
+    result["timestamp"] = datetime.datetime.utcnow().isoformat() + "Z"
+
+    # Hardware
+    hw = {}
+    try:
+        hw["cpus"] = int(subprocess.check_output(["nproc"]).strip())
+    except Exception:
+        hw["cpus"] = "unknown"
+    try:
+        mem_out = subprocess.check_output(["free", "-b"]).decode()
+        for line in mem_out.splitlines():
+            if line.startswith("Mem:"):
+                parts = line.split()
+                hw["memory_total_gb"] = round(int(parts[1]) / (1024**3), 1)
+                hw["memory_available_gb"] = round(int(parts[6]) / (1024**3), 1)
+                break
+    except Exception:
+        hw["memory_total_gb"] = "unknown"
+    try:
+        df_out = subprocess.check_output(["df", "-B1", "/"]).decode()
+        parts = df_out.splitlines()[1].split()
+        hw["disk_free_gb"] = round(int(parts[3]) / (1024**3), 1)
+    except Exception:
+        hw["disk_free_gb"] = "unknown"
+    result["hardware"] = hw
+
+    # Inference tiers
+    inf = {"gpu": False, "ollama": False, "groq": "always"}
+    try:
+        import requests as _req
+        r = _req.get("http://localhost:11434/api/tags", timeout=2)
+        inf["ollama"] = r.status_code == 200
+    except Exception:
+        pass
+    try:
+        inf["gpu"] = bool(os.environ.get("GPU_ENDPOINT"))
+    except Exception:
+        pass
+    result["inference"] = inf
+
+    # Hive status
+    hive = {}
+    try:
+        tmux_out = subprocess.check_output(["tmux", "ls"], stderr=subprocess.DEVNULL).decode()
+        hive["children_active"] = sum(1 for line in tmux_out.splitlines() if "hive-" in line)
+    except Exception:
+        hive["children_active"] = 0
+    try:
+        hive["queue_depth"] = len(_glob.glob("/root/hive/queue/*.json"))
+    except Exception:
+        hive["queue_depth"] = 0
+    try:
+        hive["results_total"] = len(_glob.glob("/root/hive/results/*.json"))
+    except Exception:
+        hive["results_total"] = 0
+    result["hive"] = hive
+
+    # API info
+    result["api"] = {
+        "workers": 8,
+        "endpoints": ["/summarize", "/generate", "/chat", "/thoughts", "/dashboard"]
+    }
+
+    return jsonify(result)
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
