@@ -5,8 +5,8 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 1687,
-    "lastRun": "2026-02-25T05:03:16.548Z",
+    "runs": 1701,
+    "lastRun": "2026-02-25T05:20:40.954Z",
     "lastResult": "{\"error\": \"All engines failed. gemini-2.0-flash: Gemini 429: {\\n  \\\"error\\\": {\\n    \\\"code\\\": 429,\\n    \\\"message\\\": \\\"You exceeded your current quota, please check your plan and billing deta | groq-llama-70b: Groq(llama-3.3-70b-versatile) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.3-70b-versatile` in o | 8b: Groq(llama-3.1-8b-instant) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.1-8b-instant` in orga | cerebras-120b: Cerebras 429: {\\\"message\\\":\\"
   },
   {
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 951,
-    "lastRun": "2026-02-25T05:03:05.813Z",
-    "lastResult": "{\"error\": \"Question gen failed: gemini-2.0-flash: Gemini 429: {\\n  \\\"error\\\": {\\n    \\\"code\\\": 429,\\n    \\\"message\\\": \\\"You exceeded your current quota, please check your plan and billing deta | groq-llama-70b: Groq(llama-3.3-70b-versatile) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.3-70b-versatile` in o | 8b: Groq(llama-3.1-8b-instant) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.1-8b-instant` in orga | cerebras-120b: Cerebras 429: {\\\"message\\\":"
+    "runs": 956,
+    "lastRun": "2026-02-25T05:17:25.769Z",
+    "lastResult": "{\"mode\": \"strategy\", \"question\": \"What are the top 3 most resource-intensive tools and APIs used by TIAMAT in the past 24 hours, and how can I optimize their usage to reduce the overal\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Optimize NLP module by reducing the frequency of entity recognition tasks\", \"Implement caching for frequently accessed entities in the Knowledge Graph Query \", \"Limit the length of "
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 895,
-    "lastRun": "2026-02-25T05:03:13.928Z",
+    "runs": 908,
+    "lastRun": "2026-02-25T05:20:38.652Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -35,8 +35,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 703,
-    "lastRun": "2026-02-25T05:03:17.730Z",
+    "runs": 717,
+    "lastRun": "2026-02-25T05:20:42.004Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -45,9 +45,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 187,
-    "lastRun": "2026-02-25T05:03:17.574Z",
-    "lastResult": "[2026-02-25T05:03:17.476527Z] API Status: CONNECTION_ERROR, Working: False\nError: HTTPConnectionPool(host='localhost', port=3000): Max retries exceeded with url: /api/summarize (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=3000): Failed to establish a new con\n"
+    "runs": 201,
+    "lastRun": "2026-02-25T05:20:41.902Z",
+    "lastResult": "[2026-02-25T05:20:41.780587Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "verify_summarize_api",
@@ -55,8 +55,8 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 186,
-    "lastRun": "2026-02-25T05:03:17.058Z",
-    "lastResult": "[2026-02-25T05:03:16.978629Z] API Status: CONNECTION_ERROR, Working: False\nError: HTTPConnectionPool(host='localhost', port=3000): Max retries exceeded with url: /api/summarize (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=3000): Failed to establish a new con\n"
+    "runs": 200,
+    "lastRun": "2026-02-25T05:20:41.412Z",
+    "lastResult": "[2026-02-25T05:20:41.312041Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   }
 ]

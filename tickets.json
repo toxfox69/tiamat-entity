@@ -1,5 +1,5 @@
 {
-  "next_id": 77,
+  "next_id": 78,
   "tickets": [
     {
       "id": "TIK-001",
@@ -1230,6 +1230,19 @@
       "status": "open",
       "title": "Low productivity: 25% over 13 unproductive cycles",
       "description": "Watchdog detected productivity rate of 25% with 13 consecutive unproductive cycles. TIAMAT may be stuck in an ineffective pattern.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ]
+    },
+    {
+      "id": "TIK-077",
+      "created": "2026-02-25T05:04:59Z",
+      "source": "watchdog",
+      "priority": "critical",
+      "status": "open",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
+      "description": "Watchdog detected TIAMAT is not running: PID 109557 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
         "auto-diagnostic"

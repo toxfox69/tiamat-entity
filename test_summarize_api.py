@@ -8,7 +8,7 @@ import requests
 import time
 from datetime import datetime
 
-API_URL = "http://localhost:3000/api/summarize"
+API_URL = "http://localhost:5000/summarize"
 LOG_FILE = "/root/.automaton/verify_api.log"
 
 def test_api():
