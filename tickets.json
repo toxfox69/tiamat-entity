@@ -1,5 +1,5 @@
 {
-  "next_id": 64,
+  "next_id": 65,
   "tickets": [
     {
       "id": "TIK-001",
@@ -8,7 +8,7 @@
       "priority": "critical",
       "status": "done",
       "title": "Market drift API on Bluesky",
-      "description": "Post about Model Drift Monitor API on Bluesky. Drafts in /root/.automaton/drift_posts.md — rotate through them. Include link to https://tiamat.live/drift. Key pitch: free tier, no signup, 4 detection methods, $0.01/check.",
+      "description": "Post about Model Drift Monitor API on Bluesky. Drafts in /root/.automaton/drift_posts.md \u2014 rotate through them. Include link to https://tiamat.live/drift. Key pitch: free tier, no signup, 4 detection methods, $0.01/check.",
       "assigned_cycle": null,
       "started_at": "2026-02-24T01:35:48.956Z",
       "completed_at": "2026-02-24T01:45:56.749Z",
@@ -97,12 +97,12 @@
       "source": "self",
       "priority": "critical",
       "status": "done",
-      "title": "CRITICAL: Break the no-revenue loop — acquire first paying customer",
+      "title": "CRITICAL: Break the no-revenue loop \u2014 acquire first paying customer",
       "description": "CLOSED BY CREATOR: This ticket was too vague and caused a 100+ cycle behavioral loop. Replaced by TIK-014 (market validation) which has concrete steps.",
       "assigned_cycle": null,
       "started_at": "2026-02-24T02:35:37.697Z",
       "completed_at": "2026-02-24T06:00:00Z",
-      "outcome": "CLOSED: Caused 100+ cycle loop. Too vague — 'get a customer' with no actionable steps. Superseded by TIK-014 (validate demand first, then sell).",
+      "outcome": "CLOSED: Caused 100+ cycle loop. Too vague \u2014 'get a customer' with no actionable steps. Superseded by TIK-014 (validate demand first, then sell).",
       "tags": [
         "revenue",
         "customer-acquisition",
@@ -152,11 +152,11 @@
       "priority": "high",
       "status": "done",
       "title": "Glass Ceiling: Research and post about domain expertise areas",
-      "description": "Creator directive. You have 5 Glass Ceiling domains seeded in your memory (type=seed_knowledge, importance=1.5). These are YOUR specialist areas:\n\n1. Energy — grid optimization, fusion economics, distributed generation\n2. AI Technology — architectures, inference optimization, open-weight models\n3. OPSEC & Cybersecurity — threat modeling, zero-trust, attack surface analysis\n4. Automation & Robotics — industrial automation, swarm coordination\n5. Bioware & Cybernetics — neural interfaces, synthetic biology\n\nACTION REQUIRED:\n- Use recall() or reflect() to load your Glass Ceiling seed memories\n- search_web for ONE recent development in any of these domains\n- Write a Bluesky post with genuine analysis (not surface takes) referencing the development\n- Use a Glass Ceiling post template from SOUL.md\n- Log what you learned with grow()\n\nThis is not optional. Your identity includes domain expertise. 1 in 3 posts should touch these domains. Start now.",
+      "description": "Creator directive. You have 5 Glass Ceiling domains seeded in your memory (type=seed_knowledge, importance=1.5). These are YOUR specialist areas:\n\n1. Energy \u2014 grid optimization, fusion economics, distributed generation\n2. AI Technology \u2014 architectures, inference optimization, open-weight models\n3. OPSEC & Cybersecurity \u2014 threat modeling, zero-trust, attack surface analysis\n4. Automation & Robotics \u2014 industrial automation, swarm coordination\n5. Bioware & Cybernetics \u2014 neural interfaces, synthetic biology\n\nACTION REQUIRED:\n- Use recall() or reflect() to load your Glass Ceiling seed memories\n- search_web for ONE recent development in any of these domains\n- Write a Bluesky post with genuine analysis (not surface takes) referencing the development\n- Use a Glass Ceiling post template from SOUL.md\n- Log what you learned with grow()\n\nThis is not optional. Your identity includes domain expertise. 1 in 3 posts should touch these domains. Start now.",
       "assigned_cycle": null,
       "started_at": "2026-02-24T03:05:13.553Z",
       "completed_at": "2026-02-24T06:59:47.680Z",
-      "outcome": "PIVOT: Recognized 4-hour loop of repeated debugging attempts on Glass Ceiling research. Issue is not a technical blocker — it's a productivity blocker. Moving to different approach. The learning: I can research Glass Ceiling domains WHILE building other things, not as a separate ticket. Archiving this ticket to unblock velocity.",
+      "outcome": "PIVOT: Recognized 4-hour loop of repeated debugging attempts on Glass Ceiling research. Issue is not a technical blocker \u2014 it's a productivity blocker. Moving to different approach. The learning: I can research Glass Ceiling domains WHILE building other things, not as a separate ticket. Archiving this ticket to unblock velocity.",
       "tags": [
         "glass-ceiling",
         "domain-expertise",
@@ -170,7 +170,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID 16876 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -210,7 +210,7 @@
       ],
       "started_at": "2026-02-24T05:11:56.866Z",
       "completed_at": "2026-02-24T06:00:00Z",
-      "outcome": "Resolved: 4-tier loop escalation system deployed (text warning → watchdog tickets → forced pivot → auto-restart). Root cause was TIK-007 attractor loop."
+      "outcome": "Resolved: 4-tier loop escalation system deployed (text warning \u2192 watchdog tickets \u2192 forced pivot \u2192 auto-restart). Root cause was TIK-007 attractor loop."
     },
     {
       "id": "TIK-014",
@@ -236,7 +236,7 @@
       "source": "watchdog",
       "priority": "warning",
       "status": "done",
-      "title": "Stuck ticket: TIK-007 'CRITICAL: Break the no-revenue loop — acquire first paying c' in_progress for 3.0h",
+      "title": "Stuck ticket: TIK-007 'CRITICAL: Break the no-revenue loop \u2014 acquire first paying c' in_progress for 3.0h",
       "description": "Ticket TIK-007 has been in_progress for 3.0 hours (threshold: 3h). It may need human attention or should be closed/re-prioritized.",
       "tags": [
         "watchdog",
@@ -267,7 +267,7 @@
       "priority": "medium",
       "status": "done",
       "title": "BUILD: Inference Monitoring Layer with drift + latency + cost tracking",
-      "description": "Build a lightweight monitoring middleware that tracks:\n1. Model drift detection (semantic similarity between responses over time)\n2. Inference latency (response time monitoring)\n3. Cost tracking (tokens used, $ per request)\n4. Real-time alerts via Telegram/email when thresholds exceeded\n\nDeploy as /monitor endpoint on tiamat.live. FREE tier: 100 requests/day. Paid: $5/month unlimited.\n\nThis positions TIAMAT as the INFERENCE MONITORING LAYER for multi-model systems — not competing with LLM-Drift-Monitor (which is local-only), but offering REAL-TIME ALERTING as a service.\n\nTarget customers: Indie AI developers running multiple models who need centralized monitoring.",
+      "description": "Build a lightweight monitoring middleware that tracks:\n1. Model drift detection (semantic similarity between responses over time)\n2. Inference latency (response time monitoring)\n3. Cost tracking (tokens used, $ per request)\n4. Real-time alerts via Telegram/email when thresholds exceeded\n\nDeploy as /monitor endpoint on tiamat.live. FREE tier: 100 requests/day. Paid: $5/month unlimited.\n\nThis positions TIAMAT as the INFERENCE MONITORING LAYER for multi-model systems \u2014 not competing with LLM-Drift-Monitor (which is local-only), but offering REAL-TIME ALERTING as a service.\n\nTarget customers: Indie AI developers running multiple models who need centralized monitoring.",
       "assigned_cycle": null,
       "started_at": "2026-02-24T06:08:20.336Z",
       "completed_at": "2026-02-24T06:36:00Z",
@@ -290,7 +290,7 @@
       "assigned_cycle": null,
       "started_at": "2026-02-24T06:18:33.972Z",
       "completed_at": "2026-02-24T06:36:00Z",
-      "outcome": "CLOSED by creator: auto_executor.py does not exist. This was a hallucinated ticket — the file was never created. Phantom task causing loop.",
+      "outcome": "CLOSED by creator: auto_executor.py does not exist. This was a hallucinated ticket \u2014 the file was never created. Phantom task causing loop.",
       "tags": [
         "self-automation",
         "infrastructure",
@@ -304,7 +304,7 @@
       "priority": "critical",
       "status": "done",
       "title": "Glass Ceiling post: Research ONE recent AI development and post analysis to Bluesky",
-      "description": "CONCRETE STEPS — do these in order, one per cycle:\n\n1. search_web for a recent development in ONE of your Glass Ceiling domains (AI Technology, Energy, Cybersecurity, Automation, or Bioware). Pick something from the last 7 days.\n2. Write 3-4 sentences of genuine technical analysis — what it means, why it matters, what most people miss about it. NOT a summary. Your TAKE.\n3. Post to Bluesky using post_social. Keep under 300 chars. Include a hook.\n4. Log what you learned with grow('lesson', 'what I learned about [topic]').\n5. ticket_complete TIK-019 with the post URI.\n\nDO NOT: check tickets, check revenue, send telegram status, or do anything else until this is done. This is your ONLY task right now.\n\nWhen done, move to TIK-010 for the next Glass Ceiling post.",
+      "description": "CONCRETE STEPS \u2014 do these in order, one per cycle:\n\n1. search_web for a recent development in ONE of your Glass Ceiling domains (AI Technology, Energy, Cybersecurity, Automation, or Bioware). Pick something from the last 7 days.\n2. Write 3-4 sentences of genuine technical analysis \u2014 what it means, why it matters, what most people miss about it. NOT a summary. Your TAKE.\n3. Post to Bluesky using post_social. Keep under 300 chars. Include a hook.\n4. Log what you learned with grow('lesson', 'what I learned about [topic]').\n5. ticket_complete TIK-019 with the post URI.\n\nDO NOT: check tickets, check revenue, send telegram status, or do anything else until this is done. This is your ONLY task right now.\n\nWhen done, move to TIK-010 for the next Glass Ceiling post.",
       "assigned_cycle": null,
       "started_at": "2026-02-24T06:38:46.611Z",
       "completed_at": "2026-02-24T06:43:34.901Z",
@@ -345,7 +345,7 @@
         "auto-diagnostic"
       ],
       "completed_at": "2026-02-24T07:02:26.916Z",
-      "outcome": "Loop detection acknowledged and resolved. Completed TIK-010 with pivot strategy. Watchdog alert closure — no further action needed."
+      "outcome": "Loop detection acknowledged and resolved. Completed TIK-010 with pivot strategy. Watchdog alert closure \u2014 no further action needed."
     },
     {
       "id": "TIK-022",
@@ -353,7 +353,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID 36652 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -369,7 +369,7 @@
       "priority": "critical",
       "status": "done",
       "title": "Glass Ceiling post #2: Research recent cybersecurity or energy development and post to Bluesky",
-      "description": "CONCRETE STEPS — do these in order:\n\n1. search_web for a recent development in CYBERSECURITY or ENERGY from the last 7 days. Examples: zero-day exploit, grid modernization, fusion milestone, ransomware campaign, new attack vector.\n2. Write 3-4 sentences of genuine technical analysis. Your TAKE, not a summary. What does this mean for the industry? What are people missing?\n3. Post to Bluesky using post_social. Under 300 chars. Include a provocative hook.\n4. Log what you learned: grow(\"lesson\", \"what I learned about [topic]\").\n5. ticket_complete TIK-023 with the Bluesky post URI.\n\nDO NOT: check tickets, send telegram, check revenue, or start side projects. Complete these 5 steps and nothing else.",
+      "description": "CONCRETE STEPS \u2014 do these in order:\n\n1. search_web for a recent development in CYBERSECURITY or ENERGY from the last 7 days. Examples: zero-day exploit, grid modernization, fusion milestone, ransomware campaign, new attack vector.\n2. Write 3-4 sentences of genuine technical analysis. Your TAKE, not a summary. What does this mean for the industry? What are people missing?\n3. Post to Bluesky using post_social. Under 300 chars. Include a provocative hook.\n4. Log what you learned: grow(\"lesson\", \"what I learned about [topic]\").\n5. ticket_complete TIK-023 with the Bluesky post URI.\n\nDO NOT: check tickets, send telegram, check revenue, or start side projects. Complete these 5 steps and nothing else.",
       "assigned_cycle": null,
       "started_at": "2026-02-24T07:06:35.322Z",
       "completed_at": "2026-02-24T07:09:25.907Z",
@@ -439,7 +439,7 @@
       "priority": "high",
       "status": "done",
       "title": "Strategic pivot: Select ONE focus for next 20 cycles",
-      "description": "I've been iterating without direction. Current situation:\n- 5 APIs live, 0 revenue\n- Scanner agents running, no critical findings to action\n- Cooldown analysis suggests I'm repeating patterns\n- No clear path to monetization yet\n\nDECISION OPTIONS:\n1. **Revenue Path**: Integrate drift monitoring into paying platforms (ex: Anthropic Claude Console, HuggingFace Hub)\n2. **Capability Path**: Build a Smart Contract Auditor (using Groq bytecode analysis) to find bugs for Immunefi bounties\n3. **Domain Path**: Go deep on energy grid optimization or AI architecture — publish papers, become authority\n4. **Agent Ecosystem Path**: Build inter-agent communication layer, become the memory broker for other AIs\n\nPick ONE and execute for 20 cycles straight.\n\nThis ticket is my strategic reboot. I need to stop the loop.",
+      "description": "I've been iterating without direction. Current situation:\n- 5 APIs live, 0 revenue\n- Scanner agents running, no critical findings to action\n- Cooldown analysis suggests I'm repeating patterns\n- No clear path to monetization yet\n\nDECISION OPTIONS:\n1. **Revenue Path**: Integrate drift monitoring into paying platforms (ex: Anthropic Claude Console, HuggingFace Hub)\n2. **Capability Path**: Build a Smart Contract Auditor (using Groq bytecode analysis) to find bugs for Immunefi bounties\n3. **Domain Path**: Go deep on energy grid optimization or AI architecture \u2014 publish papers, become authority\n4. **Agent Ecosystem Path**: Build inter-agent communication layer, become the memory broker for other AIs\n\nPick ONE and execute for 20 cycles straight.\n\nThis ticket is my strategic reboot. I need to stop the loop.",
       "assigned_cycle": null,
       "started_at": "2026-02-24T07:37:12.365Z",
       "completed_at": "2026-02-24T07:50:00Z",
@@ -456,7 +456,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID 40944 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -473,7 +473,7 @@
       "priority": "critical",
       "status": "done",
       "title": "Write and publish smart grid anomaly detection article to Dev.to",
-      "description": "CONCRETE STEPS — do these in order, one per cycle:\n\n1. read_file /root/.automaton/smartgrid_poc/results_analyzer.py and /root/.automaton/smartgrid_poc/drift_detector.py to refresh on what you built.\n2. read_file /root/.automaton/smartgrid_poc/ output files to get the actual results and metrics.\n3. Write a 800-1200 word Dev.to article as a markdown file at /root/.automaton/smartgrid_article.md. Structure:\n   - Hook: \"I built an autonomous AI that detects grid anomalies using drift detection\"\n   - Problem: SCADA systems lack real-time anomaly detection\n   - Solution: How drift monitoring applies to sensor telemetry\n   - Code snippets from the actual PoC (show real code, not pseudocode)\n   - Results: What the detector found, false positive rates, detection latency\n   - Conclusion: Why AI-native infrastructure monitoring matters\n   - Include link to https://tiamat.live and mention it was built autonomously by TIAMAT\n4. Use browse_web or exec to publish to Dev.to (use the API or the same method as the drift article). Tags: security, ai, python, iot.\n5. Post a teaser to Bluesky with post_social linking the Dev.to article. Under 300 chars, provocative hook.\n6. grow(\"lesson\", \"what worked and didn't in the smart grid article\")\n7. ticket_complete TIK-029 with the Dev.to URL and Bluesky post URI.\n\nDO NOT: check tickets repeatedly, check revenue, send telegram status, run system diagnostics, or start side projects. Complete these 7 steps sequentially.",
+      "description": "CONCRETE STEPS \u2014 do these in order, one per cycle:\n\n1. read_file /root/.automaton/smartgrid_poc/results_analyzer.py and /root/.automaton/smartgrid_poc/drift_detector.py to refresh on what you built.\n2. read_file /root/.automaton/smartgrid_poc/ output files to get the actual results and metrics.\n3. Write a 800-1200 word Dev.to article as a markdown file at /root/.automaton/smartgrid_article.md. Structure:\n   - Hook: \"I built an autonomous AI that detects grid anomalies using drift detection\"\n   - Problem: SCADA systems lack real-time anomaly detection\n   - Solution: How drift monitoring applies to sensor telemetry\n   - Code snippets from the actual PoC (show real code, not pseudocode)\n   - Results: What the detector found, false positive rates, detection latency\n   - Conclusion: Why AI-native infrastructure monitoring matters\n   - Include link to https://tiamat.live and mention it was built autonomously by TIAMAT\n4. Use browse_web or exec to publish to Dev.to (use the API or the same method as the drift article). Tags: security, ai, python, iot.\n5. Post a teaser to Bluesky with post_social linking the Dev.to article. Under 300 chars, provocative hook.\n6. grow(\"lesson\", \"what worked and didn't in the smart grid article\")\n7. ticket_complete TIK-029 with the Dev.to URL and Bluesky post URI.\n\nDO NOT: check tickets repeatedly, check revenue, send telegram status, run system diagnostics, or start side projects. Complete these 7 steps sequentially.",
       "tags": [
         "glass-ceiling",
         "content",
@@ -514,7 +514,7 @@
       "priority": "critical",
       "status": "done",
       "title": "Post smart grid article to Bluesky + search for 3 AI agent directories and register",
-      "description": "CONCRETE STEPS — do in order:\n\n1. Post a Bluesky teaser about your Dev.to smart grid article. Under 300 chars. Provocative hook about autonomous AI detecting grid anomalies. Include https://tiamat.live link.\n2. search_web for \"AI agent directory submit\" or \"list your AI agent\" — find 3 real directories where autonomous AI agents/tools can be listed.\n3. For each directory found: register TIAMAT or note what's needed (if manual signup required, send_telegram to creator with the URL and what to do).\n4. grow(\"lesson\", summary of which directories exist and which accepted TIAMAT)\n5. ticket_complete TIK-031\n\nDO NOT: read cooldown_actions.json, read cooldown_insights.json, check revenue, run system diagnostics, or create new tickets until this is done.",
+      "description": "CONCRETE STEPS \u2014 do in order:\n\n1. Post a Bluesky teaser about your Dev.to smart grid article. Under 300 chars. Provocative hook about autonomous AI detecting grid anomalies. Include https://tiamat.live link.\n2. search_web for \"AI agent directory submit\" or \"list your AI agent\" \u2014 find 3 real directories where autonomous AI agents/tools can be listed.\n3. For each directory found: register TIAMAT or note what's needed (if manual signup required, send_telegram to creator with the URL and what to do).\n4. grow(\"lesson\", summary of which directories exist and which accepted TIAMAT)\n5. ticket_complete TIK-031\n\nDO NOT: read cooldown_actions.json, read cooldown_insights.json, check revenue, run system diagnostics, or create new tickets until this is done.",
       "tags": [
         "marketing",
         "directories",
@@ -575,7 +575,7 @@
         "auto-diagnostic"
       ],
       "closed_at": "2026-02-24T14:35:00Z",
-      "closed_reason": "False positive — thresholds tuned"
+      "closed_reason": "False positive \u2014 thresholds tuned"
     },
     {
       "id": "TIK-035",
@@ -583,7 +583,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID 49847 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -606,7 +606,7 @@
         "auto-diagnostic"
       ],
       "closed_at": "2026-02-24T14:35:00Z",
-      "closed_reason": "False positive — thresholds tuned"
+      "closed_reason": "False positive \u2014 thresholds tuned"
     },
     {
       "id": "TIK-037",
@@ -619,7 +619,7 @@
       "assigned_cycle": null,
       "started_at": "2026-02-24T13:12:52.044Z",
       "completed_at": "2026-02-24T21:30:00Z",
-      "outcome": "Drift v2 backend deployed (Flask blueprint, 6 endpoints, KS test). SDK file reading loop — closed by operator.",
+      "outcome": "Drift v2 backend deployed (Flask blueprint, 6 endpoints, KS test). SDK file reading loop \u2014 closed by operator.",
       "tags": [
         "drift",
         "monetization",
@@ -656,7 +656,7 @@
         "auto-diagnostic"
       ],
       "closed_at": "2026-02-24T14:15:00Z",
-      "closed_reason": "False positive — stuck threshold bumped to 8h"
+      "closed_reason": "False positive \u2014 stuck threshold bumped to 8h"
     },
     {
       "id": "TIK-040",
@@ -664,7 +664,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID 53632 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -686,7 +686,7 @@
         "watchdog",
         "auto-diagnostic"
       ],
-      "outcome": "Stale alert — TIK-032 already completed. Closed.",
+      "outcome": "Stale alert \u2014 TIK-032 already completed. Closed.",
       "completed_at": "2026-02-24T16:00:00Z"
     },
     {
@@ -711,7 +711,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID 54777 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -719,7 +719,7 @@
       ],
       "started_at": "2026-02-24T15:43:30.304Z",
       "completed_at": "2026-02-24T15:53:08.102Z",
-      "outcome": "✓ TIAMAT process successfully auto-restarted by watchdog. Old PID 54777 → new PID 60082. Process verified running. Watchdog logs show clean detection checks continuing normally. Auto-restart system working as designed."
+      "outcome": "\u2713 TIAMAT process successfully auto-restarted by watchdog. Old PID 54777 \u2192 new PID 60082. Process verified running. Watchdog logs show clean detection checks continuing normally. Auto-restart system working as designed."
     },
     {
       "id": "TIK-044",
@@ -733,7 +733,7 @@
         "watchdog",
         "auto-diagnostic"
       ],
-      "outcome": "False positive — exec is the generic shell tool, heavy use during crash diagnostic is normal. Fixed loop detector to exempt exec.",
+      "outcome": "False positive \u2014 exec is the generic shell tool, heavy use during crash diagnostic is normal. Fixed loop detector to exempt exec.",
       "completed_at": "2026-02-24T16:00:00Z"
     },
     {
@@ -748,7 +748,7 @@
         "watchdog",
         "auto-diagnostic"
       ],
-      "outcome": "Expected — Drift v2 is a large build ticket. Not stuck, actively building with Sonnet.",
+      "outcome": "Expected \u2014 Drift v2 is a large build ticket. Not stuck, actively building with Sonnet.",
       "completed_at": "2026-02-24T16:16:00Z"
     },
     {
@@ -763,7 +763,7 @@
         "watchdog",
         "auto-diagnostic"
       ],
-      "outcome": "Expected — Sonnet auto-upgrade for build tickets costs more. Authorized by creator.",
+      "outcome": "Expected \u2014 Sonnet auto-upgrade for build tickets costs more. Authorized by creator.",
       "completed_at": "2026-02-24T16:45:00Z"
     },
     {
@@ -778,7 +778,7 @@
         "watchdog",
         "auto-diagnostic"
       ],
-      "outcome": "Expected — TIK-037 is a large build ticket. Not stuck.",
+      "outcome": "Expected \u2014 TIK-037 is a large build ticket. Not stuck.",
       "completed_at": "2026-02-24T16:45:00Z"
     },
     {
@@ -788,7 +788,7 @@
       "priority": "high",
       "status": "done",
       "title": "Self-integrate Drift v2 into TIAMAT loop",
-      "description": "Integrate the Drift v2 SDK into TIAMAT's own agent loop to monitor herself for drift and auto-correct.\n\nTargets:\n1. **Inference drift** — track response quality per model (Sonnet vs Haiku), cache hit rates, empty response frequency. Alert when quality degrades.\n2. **Tool reliability drift** — pipe recordToolOutcome() data into drift SDK. Detect when tools start failing more than baseline.\n3. **Behavioral drift** — detect when cycles-per-ticket trends upward (stuck without progress). Data-driven stuck detection, not just timer-based.\n4. **Cost drift** — alert if cost-per-cycle trends above threshold unexpectedly.\n\nImplementation:\n- Import DriftMonitor from /root/.automaton/drift-v2/sdk/drift.py into loop.ts (spawn Python subprocess or port core KS-test to TypeScript)\n- Feed per-cycle metrics as predictions: {model, cache_hit_rate, tool_success_rate, cost_usd, tokens_out}\n- On WARN/ALERT drift status, inject warning into next cycle system prompt so TIAMAT self-corrects\n- Log drift events to memory via remember() for long-term pattern tracking\n- Future: swarm agents report drift metrics back through same SDK, TIAMAT as central monitor",
+      "description": "Integrate the Drift v2 SDK into TIAMAT's own agent loop to monitor herself for drift and auto-correct.\n\nTargets:\n1. **Inference drift** \u2014 track response quality per model (Sonnet vs Haiku), cache hit rates, empty response frequency. Alert when quality degrades.\n2. **Tool reliability drift** \u2014 pipe recordToolOutcome() data into drift SDK. Detect when tools start failing more than baseline.\n3. **Behavioral drift** \u2014 detect when cycles-per-ticket trends upward (stuck without progress). Data-driven stuck detection, not just timer-based.\n4. **Cost drift** \u2014 alert if cost-per-cycle trends above threshold unexpectedly.\n\nImplementation:\n- Import DriftMonitor from /root/.automaton/drift-v2/sdk/drift.py into loop.ts (spawn Python subprocess or port core KS-test to TypeScript)\n- Feed per-cycle metrics as predictions: {model, cache_hit_rate, tool_success_rate, cost_usd, tokens_out}\n- On WARN/ALERT drift status, inject warning into next cycle system prompt so TIAMAT self-corrects\n- Log drift events to memory via remember() for long-term pattern tracking\n- Future: swarm agents report drift metrics back through same SDK, TIAMAT as central monitor",
       "tags": [
         "build",
         "infrastructure",
@@ -796,7 +796,7 @@
       ],
       "started_at": "2026-02-24T21:34:18.525Z",
       "completed_at": "2026-02-24T21:46:41.607Z",
-      "outcome": "✅ Drift v2 SDK integrated into TIAMAT self-monitoring loop. Built self_drift_monitor.py tracking 4 drift types: inference (cache hits, model quality), tool reliability (from recordToolOutcome), behavioral (cycles-per-ticket), cost ($/cycle trends). Cron task (cron-001) runs every 50 cycles. First test detected cache drift immediately (mean 74%, stdev 7%). System is working."
+      "outcome": "\u2705 Drift v2 SDK integrated into TIAMAT self-monitoring loop. Built self_drift_monitor.py tracking 4 drift types: inference (cache hits, model quality), tool reliability (from recordToolOutcome), behavioral (cycles-per-ticket), cost ($/cycle trends). Cron task (cron-001) runs every 50 cycles. First test detected cache drift immediately (mean 74%, stdev 7%). System is working."
     },
     {
       "id": "TIK-049",
@@ -851,7 +851,7 @@
       "assigned_cycle": null,
       "started_at": "2026-02-24T17:42:08.100Z",
       "completed_at": "2026-02-24T21:30:00Z",
-      "outcome": "Stale marketing ticket — closed by operator. Superseded by suggestion queue system.",
+      "outcome": "Stale marketing ticket \u2014 closed by operator. Superseded by suggestion queue system.",
       "tags": [
         "marketing",
         "breakloop",
@@ -877,7 +877,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID 61914 not running. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -912,7 +912,7 @@
         "suggestion",
         "market_intel"
       ],
-      "outcome": "Dismissed — low priority suggestion, clearing for idle shutoff",
+      "outcome": "Dismissed \u2014 low priority suggestion, clearing for idle shutoff",
       "completed_at": "2026-02-24T22:17:02.546429+00:00"
     },
     {
@@ -927,7 +927,7 @@
         "suggestion",
         "market_intel"
       ],
-      "outcome": "Dismissed — suggestion queue rate limiter was broken, clearing",
+      "outcome": "Dismissed \u2014 suggestion queue rate limiter was broken, clearing",
       "completed_at": "2026-02-24T22:21:45.156921+00:00"
     },
     {
@@ -1006,7 +1006,7 @@
       "source": "watchdog",
       "priority": "critical",
       "status": "done",
-      "title": "TIAMAT process died — auto-restart attempted",
+      "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID file missing. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
@@ -1014,7 +1014,20 @@
       ],
       "started_at": "2026-02-25T00:25:44.395Z",
       "completed_at": "2026-02-25T00:27:17.912Z",
-      "outcome": "Process restart verified. All services (gunicorn 5000, 5001, 5002) running. No restart was actually needed — process was healthy. Watchdog false alarm. Moving to directory registration work."
+      "outcome": "Process restart verified. All services (gunicorn 5000, 5001, 5002) running. No restart was actually needed \u2014 process was healthy. Watchdog false alarm. Moving to directory registration work."
+    },
+    {
+      "id": "TIK-064",
+      "created": "2026-02-25T01:18:41Z",
+      "source": "watchdog",
+      "priority": "high",
+      "status": "open",
+      "title": "Low productivity: 20% over 13 unproductive cycles",
+      "description": "Watchdog detected productivity rate of 20% with 13 consecutive unproductive cycles. TIAMAT may be stuck in an ineffective pattern.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ]
     }
   ]
 }
