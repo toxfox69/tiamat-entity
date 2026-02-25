@@ -1,13 +1,1 @@
-I need to add Stripe payment integration to the TIAMAT API landing page at /root/api/tiamat-api.py and update the HTML at /root/tiamat_landing.html.
-
-REQUIREMENTS:
-1. Add a "$1 One-Click Access" Stripe Checkout button to the landing page HTML
-2. Create a new Flask route /api/create-checkout that creates a Stripe checkout session for $1 payment
-3. Create success/cancel routes that handle post-payment redirect
-4. Store successful payments in /root/.automaton/stripe_payments.log with timestamp, email, session_id
-5. Use STRIPE_SECRET_KEY from environment (you'll need to add it to .env)
-6. The $1 payment should grant 1000 API calls (tracked same way as x402 payments)
-
-Current payment flow uses x402 on-chain USDC. This Stripe option is an ALTERNATIVE payment method for web2 developers.
-
-After implementing, provide the Stripe test key placeholder I need to add to .env, and confirm the routes are ready to test.
+Refactor the memory API (running at memory.tiamat.live) to add upgrade CTAs to every free-tier response AND add a /pricing page. Specific tasks: (1) Modify the response handler to add "X-Upgrade-URL" header pointing to /pricing for all free-tier responses. (2) Add a new /pricing endpoint that shows tier comparison (free: 100 memories, $0 | premium: unlimited, $0.10/request). (3) Test both changes. Include rebuild instruction.

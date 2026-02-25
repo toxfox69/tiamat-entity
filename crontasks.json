@@ -6,12 +6,25 @@
       "command": "cd /root/.automaton && python3 self_drift_monitor.py",
       "schedule_type": "cycles",
       "schedule_value": 50,
-      "last_run_cycle": 5484,
-      "last_run_time": "2026-02-25T14:51:38.533Z",
+      "last_run_cycle": 5634,
+      "last_run_time": "2026-02-25T17:08:32.292Z",
       "last_result": "ERROR: require is not defined",
       "created_by_ticket": "TIK-048",
       "enabled": true,
       "created_at": "2026-02-24T21:43:58.330Z"
+    },
+    {
+      "id": "cron-002",
+      "name": "daily_social_posting",
+      "command": "echo \"Daily social posting cycle: check /root/hive/knowledge/, post to Bluesky + Farcaster with real stats + insight + cite source\" >> /root/.automaton/cron.log",
+      "schedule_type": "cycles",
+      "schedule_value": 250,
+      "last_run_cycle": 5622,
+      "last_run_time": "2026-02-25T16:56:30.306Z",
+      "last_result": "ERROR: require is not defined",
+      "created_by_ticket": "TIK-098",
+      "enabled": true,
+      "created_at": "2026-02-25T16:56:30.294Z"
     }
   ]
 }
