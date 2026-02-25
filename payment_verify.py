@@ -260,4 +260,10 @@ def payment_required_response(amount_usdc: float, endpoint: str = "") -> dict:
         "pay_page": "https://tiamat.live/pay",
         "free_reset": "Limits reset daily at midnight UTC",
         "endpoint": endpoint,
+        "quick_start": {
+            "step_1": f"Send {amount_usdc} USDC on Base chain to {TIAMAT_WALLET}",
+            "step_2": "Copy the transaction hash",
+            "step_3": "Add it to your next request as X-Payment header",
+            "example_curl": f'curl -X POST https://tiamat.live{endpoint} -H "Content-Type: application/json" -H "X-Payment: YOUR_TX_HASH" -d \'{{"text": "your text here"}}\'',
+        },
     }
