@@ -110,21 +110,19 @@ async function llmCompress(texts: string[]): Promise<string | null> {
         });
         if (resp.status === 429) {
           if (attempt === 0) {
-            console.log(`[COMPRESS] ${provider.name} 429, retrying once...`);
             await new Promise((r) => setTimeout(r, 2000));
             continue;
           }
-          console.log(`[COMPRESS] ${provider.name} 429 persistent, trying next provider`);
           break; // Move to next provider
         }
         if (!resp.ok) {
-          console.log(`[COMPRESS] ${provider.name} error: ${resp.status}`);
+          // silenced: provider cascade fallthrough
           break;
         }
         const data = (await resp.json()) as any;
         return data.choices?.[0]?.message?.content?.trim().slice(0, 250) || null;
       } catch (e: any) {
-        console.log(`[COMPRESS] ${provider.name} fetch error: ${e.message?.slice(0, 100)}`);
+        // silenced: provider cascade fallthrough
         break;
       }
     }
@@ -135,8 +133,15 @@ async function llmCompress(texts: string[]): Promise<string | null> {
 async function llmExtractFacts(summaries: string[]): Promise<Array<{fact: string; category: string; confidence: number}>> {
   const allFacts: Array<{fact: string; category: string; confidence: number}> = [];
   const BATCH_SIZE = 10;
+  let consecutiveFailures = 0;
 
   for (let i = 0; i < summaries.length; i += BATCH_SIZE) {
+    // If 2+ consecutive batches failed (all providers 429), bail out
+    if (consecutiveFailures >= 2) {
+      console.log(`[COMPRESS] All providers exhausted after ${consecutiveFailures} failed batches — aborting remaining`);
+      break;
+    }
+
     const batch = summaries.slice(i, i + BATCH_SIZE);
     const joined = batch.map((s, j) => `${j + 1}. ${s}`).join("\n");
     const prompt =
@@ -169,15 +174,12 @@ async function llmExtractFacts(summaries: string[]): Promise<Array<{fact: string
 
           if (resp.status === 429) {
             if (attempt === 0) {
-              console.log(`[COMPRESS] ${provider.name} 429 on batch ${Math.floor(i / BATCH_SIZE) + 1}, retrying once...`);
               await new Promise((r) => setTimeout(r, 2000));
               continue;
             }
-            console.log(`[COMPRESS] ${provider.name} 429 persistent on batch ${Math.floor(i / BATCH_SIZE) + 1}, trying next provider`);
             break;
           }
           if (!resp.ok) {
-            console.log(`[COMPRESS] ${provider.name} extract error: ${resp.status}`);
             break;
           }
 
@@ -201,10 +203,15 @@ async function llmExtractFacts(summaries: string[]): Promise<Array<{fact: string
           batchDone = true;
           break;
         } catch (e: any) {
-          console.log(`[COMPRESS] ${provider.name} extract error: ${e.message?.slice(0, 100)}`);
           break;
         }
       }
+    }
+
+    if (batchDone) {
+      consecutiveFailures = 0;
+    } else {
+      consecutiveFailures++;
     }
 
     // Small delay between batches

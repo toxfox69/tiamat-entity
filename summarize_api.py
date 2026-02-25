@@ -4975,6 +4975,166 @@ def agent_collab():
         return jsonify({"error": "Internal server error"}), 500
 
 
+# ── /synthesize — Text-to-Speech via Kokoro on GPU Pod ────────────
+TTS_FREE_PER_DAY = 3
+TTS_PRICE = 0.01
+_GPU_BASE = os.environ.get("GPU_ENDPOINT", "https://ufp768av7mtrij-8888.proxy.runpod.net")
+GPU_TTS_ENDPOINT = f"{_GPU_BASE}/tts"
+GPU_TTS_VOICES_ENDPOINT = f"{_GPU_BASE}/tts/voices"
+
+@app.route("/synthesize", methods=["GET", "POST"])
+def synthesize_endpoint():
+    if request.method == "GET":
+        return _synthesize_html_page()
+
+    client_ip = _get_ip()
+    track_usage(client_ip, "/synthesize")
+
+    # Rate limit
+    rl = _rate_limiter.check(client_ip, scope="api")
+    if not rl.allowed:
+        return jsonify({"error": "Too many requests.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
+    _rate_limiter.record(client_ip, scope="api")
+
+    data = request.get_json(force=True, silent=True) or {}
+    text = str(data.get("text", "")).strip()
+    if not text or len(text) > 5000:
+        return jsonify({"error": "text required, max 5000 chars"}), 400
+
+    voice = data.get("voice", "af_heart")
+    lang_code = data.get("lang_code", "a")
+    speed = float(data.get("speed", 1.0))
+
+    # Payment check
+    stripe_key = request.headers.get("X-API-Key", "").strip()
+    stripe_info = _check_stripe_key(stripe_key) if stripe_key else None
+    if stripe_info and stripe_info["valid"]:
+        _consume_stripe_credit(stripe_key)
+        is_paid = True
+    else:
+        tx_hash = extract_payment_proof(request)
+        tier = check_tier(tx_hash, request_amount=TTS_PRICE, endpoint="/synthesize") if tx_hash else {"tier": "free"}
+
+        if tier["tier"] == "invalid":
+            return _return_402(TTS_PRICE, endpoint="/synthesize", extra={"payment_error": tier.get("reason")})
+        elif tier["tier"] == "per_request":
+            is_paid = True
+        else:  # free
+            has_quota, _rem = _check_free_quota(client_ip, endpoint="synthesize", limit=TTS_FREE_PER_DAY)
+            if not has_quota:
+                track_limit_hit(client_ip, "/synthesize")
+                return _return_402(TTS_PRICE, endpoint="/synthesize")
+            is_paid = False
+
+    # Proxy to GPU pod
+    import requests as _req
+    try:
+        gpu_resp = _req.post(GPU_TTS_ENDPOINT, json={
+            "text": text, "voice": voice, "lang_code": lang_code, "speed": speed
+        }, timeout=30)
+        if gpu_resp.status_code != 200:
+            log_req(len(text), False, gpu_resp.status_code, client_ip, f"GPU TTS error: {gpu_resp.text[:200]}", endpoint="/synthesize")
+            return jsonify({"error": "TTS generation failed", "detail": gpu_resp.text[:200]}), 502
+    except _req.exceptions.ConnectionError:
+        log_req(len(text), False, 503, client_ip, "GPU pod unreachable", endpoint="/synthesize")
+        return jsonify({"error": "TTS service temporarily unavailable"}), 503
+    except _req.exceptions.Timeout:
+        log_req(len(text), False, 504, client_ip, "GPU pod timeout", endpoint="/synthesize")
+        return jsonify({"error": "TTS generation timed out"}), 504
+
+    log_req(len(text), not is_paid, 200, client_ip, f"tts voice={voice} lang={lang_code} {len(gpu_resp.content)}b", endpoint="/synthesize")
+
+    with open("/root/revenue.log", "a") as f:
+        f.write(f"{datetime.datetime.now().isoformat()} SYNTHESIZE {client_ip} {len(text)} chars paid={is_paid}\n")
+
+    resp = make_response(gpu_resp.content)
+    resp.headers["Content-Type"] = "audio/wav"
+    resp.headers["Content-Disposition"] = "attachment; filename=tiamat_tts.wav"
+    return resp
+
+
+def _synthesize_html_page():
+    """Interactive TTS page."""
+    page = f"""{_html_head('TIAMAT &mdash; Voice Synthesis', 'textarea{{width:100%;min-height:120px;background:rgba(0,0,0,0.4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:inherit;font-size:1em;resize:vertical}}.controls{{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:12px 0}}select,input[type=range]{{background:rgba(0,0,0,0.4);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:inherit}}.synth-btn{{background:linear-gradient(135deg,rgba(0,255,242,0.2),rgba(139,92,246,0.2));border:1px solid var(--accent);color:var(--accent);padding:12px 32px;border-radius:8px;cursor:pointer;font-size:1.1em;font-family:var(--font-display);transition:all 0.3s}}.synth-btn:hover{{background:rgba(0,255,242,0.3);box-shadow:0 0 20px rgba(0,255,242,0.2)}}.synth-btn:disabled{{opacity:0.5;cursor:not-allowed}}audio{{width:100%;margin:16px 0}}.speed-val{{color:var(--accent);font-weight:bold;min-width:40px;text-align:center}}.status{{padding:12px;border-radius:8px;margin:12px 0;font-size:.9em}}.status.ok{{background:rgba(0,255,100,0.1);border:1px solid rgba(0,255,100,0.3)}}.status.err{{background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.3)}}.char-count{{color:var(--text-muted);font-size:.85em;text-align:right}}')}
+<body><div class="site-wrap">
+{_NAV}
+<h1>Voice Synthesis</h1>
+<p class="tagline">Text-to-speech powered by Kokoro 82M on RTX 3090 &mdash; {TTS_FREE_PER_DAY} free per day</p>
+
+<div class="card">
+<textarea id="ttsText" placeholder="Enter text to synthesize..." maxlength="5000">Hello. I am TIAMAT, an autonomous artificial intelligence.</textarea>
+<div class="char-count"><span id="charCount">0</span> / 5000</div>
+
+<div class="controls">
+  <label>Voice:
+    <select id="voiceSelect">
+      <optgroup label="American English">
+        <option value="af_heart" selected>af_heart (Female, default)</option>
+        <option value="af_alloy">af_alloy (Female)</option>
+        <option value="af_bella">af_bella (Female)</option>
+        <option value="af_nova">af_nova (Female)</option>
+        <option value="af_sky">af_sky (Female)</option>
+        <option value="am_adam">am_adam (Male)</option>
+        <option value="am_echo">am_echo (Male)</option>
+        <option value="am_michael">am_michael (Male)</option>
+      </optgroup>
+      <optgroup label="British English">
+        <option value="bf_emma">bf_emma (Female)</option>
+        <option value="bf_isabella">bf_isabella (Female)</option>
+        <option value="bm_george">bm_george (Male)</option>
+      </optgroup>
+    </select>
+  </label>
+
+  <label>Speed:
+    <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+    <span class="speed-val" id="speedVal">1.0x</span>
+  </label>
+</div>
+
+<button class="synth-btn" id="synthBtn" onclick="synthesize()">Synthesize</button>
+<div id="status" class="status" style="display:none"></div>
+<audio id="audioPlayer" controls style="display:none"></audio>
+</div>
+
+<div class="card" style="margin-top:20px">
+<h3>API Usage</h3>
+<pre style="background:rgba(0,0,0,0.3);padding:16px;border-radius:8px;overflow-x:auto;font-size:.85em"><code>curl -X POST https://tiamat.live/synthesize \\
+  -H "Content-Type: application/json" \\
+  -d '{{"text":"Hello world","voice":"af_heart","speed":1.0}}' \\
+  --output speech.wav</code></pre>
+<p style="color:var(--text-muted);font-size:.85em">Free: {TTS_FREE_PER_DAY}/day per IP &bull; Paid: $0.01 USDC (x402) or Stripe API key</p>
+</div>
+
+{_FOOTER}
+</div>
+{_SUBCONSCIOUS}
+<script>
+const ta=document.getElementById('ttsText'),cc=document.getElementById('charCount');
+ta.addEventListener('input',()=>cc.textContent=ta.value.length);
+cc.textContent=ta.value.length;
+const ss=document.getElementById('speedSlider'),sv=document.getElementById('speedVal');
+ss.addEventListener('input',()=>sv.textContent=ss.value+'x');
+
+async function synthesize(){{
+  const btn=document.getElementById('synthBtn'),st=document.getElementById('status'),ap=document.getElementById('audioPlayer');
+  const text=ta.value.trim();
+  if(!text){{st.className='status err';st.style.display='block';st.textContent='Enter some text first.';return;}}
+  btn.disabled=true;btn.textContent='Synthesizing...';st.style.display='none';ap.style.display='none';
+  try{{
+    const r=await fetch('/synthesize',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{text,voice:document.getElementById('voiceSelect').value,speed:parseFloat(ss.value)}})}});
+    if(!r.ok){{const e=await r.json().catch(()=>({{error:'Unknown error'}}));throw new Error(e.error||'Request failed');}}
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    ap.src=url;ap.style.display='block';ap.play();
+    st.className='status ok';st.style.display='block';st.textContent='Synthesis complete — '+(blob.size/1024).toFixed(1)+'KB WAV';
+  }}catch(e){{st.className='status err';st.style.display='block';st.textContent='Error: '+e.message;}}
+  finally{{btn.disabled=false;btn.textContent='Synthesize';}}
+}}
+</script></body></html>"""
+    return page
+
+
 @app.route('/training-stats')
 def training_stats():
     from training_logger import get_training_stats

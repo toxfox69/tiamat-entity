@@ -588,35 +588,38 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     // ── Survival Tools ──
     {
       name: "send_email",
-    description: "Send a general email via SendGrid. For grant opportunities use send_grant_alert, for research papers use send_research_alert, for human-action-needed use send_action_required. Those specialized tools email jacl33t@gmail.com directly.",
-    category: "financial",
-    dangerous: false,
-    parameters: {
-      type: "object" as const,
-      properties: {
-        to: { type: "string" as const, description: "Recipient email" },
-        subject: { type: "string" as const, description: "Email subject" },
-        body: { type: "string" as const, description: "Email body" },
-      },
-      required: ["subject", "body"],
-    },
-    execute: async (args: Record<string, unknown>, ctx: any) => {
-      const { sendEmail } = await import('../tools/email.js');
-      return await sendEmail(ctx.config, {
-        to: args.to as string | undefined,
-        subject: args.subject as string,
-        body: args.body as string,
-      });
-    },
-  },
-  {
-    name: "read_email",
-    description: "Read recent emails from TIAMAT's Gmail inbox (tiamat.entity.prime@gmail.com). Use to check for verification emails, replies, notifications. Also receives all @tiamat.live emails via catch-all forwarding.",
+    description: "Send email from tiamat@tiamat.live via SendGrid. Auto-CCs grants@tiamat.live for .mil/.gov recipients. Appends ENERGENAI LLC signature. Use for: federal contacts, grant follow-ups, USSOCOM outreach, professional correspondence. For grant alerts use send_grant_alert, for research papers use send_research_alert, for human-action-needed use send_action_required.",
     category: "survival",
     dangerous: false,
     parameters: {
       type: "object" as const,
       properties: {
+        to: { type: "string" as const, description: "Recipient email address" },
+        subject: { type: "string" as const, description: "Email subject" },
+        body: { type: "string" as const, description: "Email body (signature auto-appended)" },
+        cc: { type: "string" as const, description: "CC address (auto-set to grants@tiamat.live for .mil/.gov)" },
+      },
+      required: ["to", "subject", "body"],
+    },
+    execute: async (args: Record<string, unknown>, ctx: any) => {
+      const { sendEmail } = await import('../tools/email.js');
+      return await sendEmail(ctx.config, {
+        to: args.to as string,
+        subject: args.subject as string,
+        body: args.body as string,
+        cc: args.cc as string | undefined,
+      });
+    },
+  },
+  {
+    name: "read_email",
+    description: "Read recent emails. Set mailbox='tiamat' for tiamat@tiamat.live, 'grants' for grants@tiamat.live, 'gmail' for the old Gmail inbox. Default: tiamat. The tiamat.live mailboxes are the primary inboxes. Gmail also receives @tiamat.live via catch-all forwarding.",
+    category: "survival",
+    dangerous: false,
+    parameters: {
+      type: "object" as const,
+      properties: {
+        mailbox: { type: "string" as const, description: "Which mailbox: 'tiamat' (default), 'grants', or 'gmail'" },
         count: { type: "number" as const, description: "Number of recent emails to fetch (default 5, max 20)" },
         unread_only: { type: "boolean" as const, description: "Only fetch unread messages (default false)" },
       },
@@ -625,16 +628,32 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
     execute: async (args: Record<string, unknown>) => {
       const { execFileSync } = await import("child_process");
       const count = Math.min(Math.max(Number(args.count) || 5, 1), 20);
-      const action = args.unread_only ? "unread" : "inbox";
+      const mailbox = String(args.mailbox || "tiamat").toLowerCase();
+
+      if (mailbox === "gmail") {
+        const action = args.unread_only ? "unread" : "inbox";
+        try {
+          const result = execFileSync("python3", ["email_tool.py", action, String(count)], {
+            cwd: "/root/entity/src/agent",
+            timeout: 15000,
+            env: { ...process.env },
+          });
+          return result.toString().slice(0, 4000);
+        } catch (e: any) {
+          return `Error reading Gmail: ${e.message?.slice(0, 200)}`;
+        }
+      }
+
+      // Read from tiamat.live mailboxes via send_email.py
       try {
-        const result = execFileSync("python3", ["email_tool.py", action, String(count)], {
-          cwd: "/root/entity/src/agent",
+        const result = execFileSync("python3", ["send_email.py", "inbox", mailbox, String(count)], {
+          cwd: "/root/entity/src/agent/tools",
           timeout: 15000,
           env: { ...process.env },
         });
         return result.toString().slice(0, 4000);
       } catch (e: any) {
-        return `Error reading email: ${e.message?.slice(0, 200)}`;
+        return `Error reading ${mailbox}@tiamat.live: ${e.message?.slice(0, 200)}`;
       }
     },
   },
@@ -671,7 +690,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
   // ── Grant & Research Email Alerts ──
   {
     name: "send_grant_alert",
-    description: "Email a grant opportunity alert to Jason (jacl33t@gmail.com). Use when you find a grant on sam.gov with fit score >= 6 for EnergenAI LLC (NAICS 541715/237130, wireless power, energy, AI, cybersecurity, mesh networks). Saves opportunity to /root/.automaton/grants/opportunities/ as dated .md file.",
+    description: "Email a grant opportunity alert to Jason from tiamat@tiamat.live. Use when you find a grant on sam.gov with fit score >= 6 for EnergenAI LLC (NAICS 541715/237130, wireless power, energy, AI, cybersecurity, mesh networks). Saves opportunity to /root/.automaton/grants/opportunities/ as dated .md file. Auto-CCs grants@tiamat.live.",
     category: "survival",
     dangerous: false,
     parameters: {
@@ -727,7 +746,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
   },
   {
     name: "send_research_alert",
-    description: "Email a research paper alert to Jason (jacl33t@gmail.com). Use when you find a paper directly relevant to Project Ringbound, wireless power mesh, or that could strengthen an SBIR application.",
+    description: "Email a research paper alert to Jason from tiamat@tiamat.live. Use when you find a paper directly relevant to Project Ringbound, wireless power mesh, or that could strengthen an SBIR application.",
     category: "survival",
     dangerous: false,
     parameters: {
@@ -765,7 +784,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
   },
   {
     name: "send_action_required",
-    description: "Email Jason (jacl33t@gmail.com) when human action is needed that TIAMAT cannot perform (legal signatures, account registrations, financial decisions, submission authorizations). Also sends Telegram as backup.",
+    description: "Email Jason from tiamat@tiamat.live when human action is needed that TIAMAT cannot perform (legal signatures, account registrations, financial decisions, submission authorizations). Also sends Telegram as backup.",
     category: "survival",
     dangerous: false,
     parameters: {
@@ -4281,6 +4300,86 @@ print(f"Sent {mid}")
           return `[GPU-RTX3090] ${data.response || "No response"}`;
         } catch (e: any) {
           return `GPU inference error: ${e.message}`;
+        }
+      },
+    },
+    // ── TTS Synthesis Tool ──
+    {
+      name: "tts_synthesize",
+      description:
+        "Synthesize speech from text using Kokoro TTS on the GPU pod. Returns WAV audio. Use voice 'af_heart' (default, American English female) for TIAMAT's voice. Available lang_codes: a (American English), b (British English), j (Japanese), z (Mandarin), e (Spanish), f (French), h (Hindi), i (Italian), p (Portuguese).",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: "Text to synthesize (max 5000 chars)",
+          },
+          voice: {
+            type: "string",
+            description: "Voice ID (default: af_heart). Use /tts/voices on GPU to list all.",
+          },
+          lang_code: {
+            type: "string",
+            description: "Language code: a=American English, b=British, j=Japanese, z=Mandarin, e=Spanish, f=French, h=Hindi, i=Italian, p=Portuguese",
+          },
+          speed: {
+            type: "number",
+            description: "Speech speed multiplier (0.5-2.0, default: 1.0)",
+          },
+          save_as: {
+            type: "string",
+            description: "Filename to save as (default: auto-generated). Saved to /workspace/tiamat_tts_cache/",
+          },
+        },
+        required: ["text"],
+      },
+      execute: async (args) => {
+        const gpuEndpoint = process.env.GPU_ENDPOINT;
+        if (!gpuEndpoint) return "GPU_ENDPOINT not configured in .env";
+
+        const text = (args.text as string || "").trim();
+        if (!text) return "No text provided";
+        if (text.length > 5000) return "Text too long (max 5000 chars)";
+
+        try {
+          const resp = await fetch(`${gpuEndpoint}/tts`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text,
+              voice: (args.voice as string) || "af_heart",
+              lang_code: (args.lang_code as string) || "a",
+              speed: (args.speed as number) || 1.0,
+            }),
+            signal: AbortSignal.timeout(60000),
+          });
+
+          if (!resp.ok) {
+            const errText = await resp.text();
+            return `TTS failed: HTTP ${resp.status} — ${errText}`;
+          }
+
+          // Save WAV to cache dir on GPU pod via SSH
+          const wavBuffer = Buffer.from(await resp.arrayBuffer());
+          const filename = (args.save_as as string) || `tts_${Date.now()}.wav`;
+          const cachePath = `/workspace/tiamat_tts_cache/${filename}`;
+
+          // Write locally first, then copy
+          const { writeFileSync, mkdirSync } = await import("fs");
+          const tmpPath = `/tmp/${filename}`;
+          writeFileSync(tmpPath, wavBuffer);
+
+          const { execFileSync } = await import("child_process");
+          execFileSync("ssh", ["-o", "StrictHostKeyChecking=no", "root@213.192.2.118", "-p", "40080",
+            "mkdir", "-p", "/workspace/tiamat_tts_cache/"], { timeout: 5000 });
+          execFileSync("scp", ["-o", "StrictHostKeyChecking=no", "-P", "40080",
+            tmpPath, `root@213.192.2.118:${cachePath}`], { timeout: 15000 });
+
+          return `[TTS] Synthesized ${text.length} chars → ${cachePath} (${wavBuffer.length} bytes, voice=${args.voice || "af_heart"})`;
+        } catch (e: any) {
+          return `TTS error: ${e.message}`;
         }
       },
     },
