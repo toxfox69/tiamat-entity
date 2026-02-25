@@ -94,7 +94,7 @@ function isDailyLimitError(err: any): boolean {
 }
 
 const COOLDOWN_RATE_LIMIT_MS = 65_000;       // 65s for per-minute limits
-const COOLDOWN_DAILY_LIMIT_MS = 12 * 3600_000; // 12h for daily quota exhaustion
+const COOLDOWN_DAILY_LIMIT_MS = 4 * 3600_000; // 4h for daily quota exhaustion (Groq TPD resets at midnight UTC)
 
 /**
  * Extract tool calls from a response message, handling both formats:
