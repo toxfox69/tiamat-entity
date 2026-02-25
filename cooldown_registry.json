@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 910,
-    "lastRun": "2026-02-25T05:23:01.385Z",
+    "runs": 1228,
+    "lastRun": "2026-02-25T15:10:55.415Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 724,
-    "lastRun": "2026-02-25T05:25:00.945Z",
+    "runs": 1215,
+    "lastRun": "2026-02-25T15:10:57.189Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 208,
-    "lastRun": "2026-02-25T05:25:00.817Z",
-    "lastResult": "[2026-02-25T05:25:00.679035Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 694,
+    "lastRun": "2026-02-25T15:10:56.525Z",
+    "lastResult": "[2026-02-25T15:10:56.439824Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,8 +35,28 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 207,
-    "lastRun": "2026-02-25T05:25:00.182Z",
-    "lastResult": "[2026-02-25T05:24:59.973210Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 694,
+    "lastRun": "2026-02-25T15:10:57.092Z",
+    "lastResult": "[2026-02-25T15:10:56.983116Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+  },
+  {
+    "name": "crypto_automa",
+    "script": "/root/crypto_automa.py",
+    "timeout": 90000,
+    "description": "Monitor USDC/ETH treasury balances across all chains. Alert + auto-rebalance if below thresholds.",
+    "enabled": true,
+    "runs": 40,
+    "lastRun": "2026-02-25T13:43:18.083Z",
+    "lastResult": "[2026-02-25 13:43:10 UTC] === Treasury check started ===\n[2026-02-25 13:43:12 UTC] Base USDC: 10.0001 USDC  (threshold: 5.0)\n[2026-02-25 13:43:13 UTC] Base ETH: 0.004285 ETH  [BELOW THRESHOLD (0.01)]\n[2026-02-25 13:43:13 UTC] ALERT: LOW ETH on Base: 0.004285 ETH (threshold 0.01)\n[2026-02-25 13:43:13 UTC] Arbitrum ETH: 0.000000 ETH  [BELOW THRESHOLD (0.01)]\n[2026-02-25 13:43:13 UTC] ALERT: LOW ETH on Arbitrum: 0.000000 ETH (threshold 0.01)\n[2026-02-25 13:43:14 UTC] Optimism ETH: 0.000000 ETH  [BE"
+  },
+  {
+    "name": "gpu_health_check",
+    "script": "/root/.automaton/gpu_health_check.py",
+    "timeout": 30000,
+    "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
+    "enabled": true,
+    "runs": 56,
+    "lastRun": "2026-02-25T15:10:56.151Z",
+    "lastResult": "[GPU OK] CUDA available, VRAM free: 15.3GB\n"
   }
 ]

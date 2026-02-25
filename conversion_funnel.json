@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "generated_at": "2026-02-25T07:33:22.726200Z",
+    "sources": {
+      "nginx_logs": [
+        "/var/log/nginx/access.log",
+        "/var/log/nginx/access.log.1",
+        "/var/log/nginx/access.log.2.gz",
+        "/var/log/nginx/access.log.3.gz"
+      ],
+      "app_request_log": "/root/api/requests.log",
+      "payments_db": "/root/api/payments.db",
+      "tiamat_log": "/root/.automaton/tiamat.log"
+    },
+    "note_on_7297": "The '7297 requests' figure TIAMAT cited was a 7297ms GPU inference latency misread as a request count. Actual verified API request counts are in requests_by_endpoint below (nginx + app log cross-reference)."
+  },
+  "total_requests": 449,
+  "requests_by_endpoint": {
+    "/chat": 41,
+    "/drift/baseline": 0,
+    "/drift/check": 0,
+    "/generate": 61,
+    "/memory": 2,
+    "/research": 10,
+    "/summarize": 299,
+    "/unknown": 36
+  },
+  "payment_attempts": {
+    "/memory": 1
+  },
+  "successful_payments": {
+    "/summarize": 1
+  },
+  "failed_payments": {},
+  "failed_payment_errors": [
+    "[2026-02-21T01:31:29.538Z] [THOUGHT] That's for npm. Let me install via pip instead. First, let me check the summarize_api.py to see if x402 is already being used:",
+    "[2026-02-22T00:16:34.402Z] [THOUGHT] The localhost IP is already marked as used. Let me add a test IP to bypass this for now, and document that the API needs:",
+    "tion 45 [REFLECT] scored: 0.0 \u2014 No evidence of any paid conversion or payment-related activity was observed in the 45-cycle window, so the strategic prediction of \u22651 paid conversion failed completely.",
+    "[REASONING] Prediction 62 [REFLECT] scored: 0.0 \u2014 The /pay page was never restored and no USDC payment occurred, so the strategic premise failed completely.",
+    "EASONING] Prediction 63 [REFLECT] scored: 0.0 \u2014 No evidence the /pay endpoint was ever exercised or produced a USDC payment, so the strategic bet that technical unblocking would unlock revenue failed.",
+    "n 71 [ROUTINE] scored: 0.0 \u2014 No $5 USDC payment was received within 24h, the /pay page was never successfully deployed, and the ticket remained open, so every verifiable part of the prediction failed.",
+    "[REASONING] Prediction 80 [ROUTINE] scored: 0.0 \u2014 No evidence of any USDC balance >10.0001 or on-chain payment transaction was found, so the prediction failed.",
+    "[REASONING] Prediction 99 [ROUTINE] scored: 0.0 \u2014 No on-chain USDC payment was recorded within the 100-visitor window, so the prediction failed.",
+    "[REASONING] Prediction 104 [ROUTINE] scored: 0.0 \u2014 No USDC payment was recorded within the 100-call window, so the core prediction failed.",
+    "D] scored: 0.0 \u2014 The curl command never returned 'FOUND' because the automation SKU was never actually added to the live payment flow, so the grep check failed and the prediction was completely wrong.",
+    "FLECT] scored: 0.0 \u2014 The premium tier was never actually created\u2014no payment_count > 0 was observed\u2014so the strategic bet that a $10/1000-mem tier would yield revenue within 30 cycles failed completely.",
+    "[REASONING] Prediction 140 [MARKET] scored: 0.0 \u2014 USDC balance remained at exactly 10.0001 throughout the observation period, indicating no paying customer completed payment, so the prediction failed."
+  ],
+  "revenue_by_endpoint": {
+    "/summarize": "$0.0100"
+  },
+  "total_revenue": "$0.0100",
+  "conversion_rates": {
+    "/chat": "0.00%",
+    "/research": "0.00%",
+    "/memory": "0.00%",
+    "/summarize": "0.33%",
+    "/generate": "0.00%"
+  },
+  "database_summary": {
+    "payments_db": {
+      "verified_tx_count": 1,
+      "premium_sub_count": 1,
+      "real_revenue_usdc": 0.0,
+      "note": "All current DB entries are test/dummy hashes \u2014 no real payments"
+    },
+    "quota_db": {
+      "usage_by_endpoint": {
+        "/summarize": 7,
+        "/hf_image": 1
+      }
+    },
+    "freetier_db": {
+      "total_unique_ips": 4,
+      "real_external_ips": 3
+    }
+  },
+  "top_3_blockers": [
+    {
+      "blocker": "35% of API requests are TIAMAT's own self-tests (127.0.0.1 / 10.17.0.2) \u2014 inflating request counts, masking real user traffic",
+      "impact": "HIGH",
+      "fix": "Exclude 127.0.0.1 and 10.17.0.2 from all request counters. Add a real analytics dashboard that shows ONLY external IPs. The '7297 requests' claim was from a 7297ms inference latency being misread as a request count \u2014 actual external requests \u2248 141."
+    },
+    {
+      "blocker": "86% of /summarize requests return 402 'daily quota exceeded' \u2014 TIAMAT's own verify loops (verify_summarize_api / verify_api_running) exhaust the 3/day free quota for 127.0.0.1 before any real user calls",
+      "impact": "HIGH",
+      "fix": "Whitelist 127.0.0.1 from the free-tier rate limiter (it's the server itself). OR change verify scripts to use a paid X-Payment header for self-tests. Currently every ~60s TIAMAT calls /summarize and burns a quota slot. Fix in: /root/entity/src/agent/rate_limiter.py or /root/.automaton/test_summarize_api.py"
+    },
+    {
+      "blocker": "payments.db contains ONLY test/dummy hashes (0xaaa..., 0xbbb...) \u2014 zero real USDC transactions have been verified. The payment wall is working (returns 402 correctly) but no user has completed a payment.",
+      "impact": "HIGH",
+      "fix": "The funnel is: (1) user hits 402, (2) reads how_to_pay JSON, (3) sends USDC on Base, (4) retries with X-Payment: <tx_hash>. Step 2\u21923 is the dropout. Add a /pay page with MetaMask 'Pay Now' button (already partially built). OR lower friction: accept payment via Stripe \u2192 mint USDC proxy. Also: verify_payment() is never called with a real tx \u2014 add logging to capture any payment header attempts."
+    }
+  ],
+  "recommendations": "CRITICAL: 35% of API requests are TIAMAT's own self-tests (127.0.0.1 / 10.17.0.2) \u2014 inflating request counts, masking real user tr... | PRIORITY ORDER: (1) Fix self-test quota exhaustion \u2014 it creates false 402s. (2) Add /chat and /generate to landing page with working demos \u2014 they have 0 traffic. (3) Build MetaMask 'Pay Now' button on /pay page \u2014 current how_to_pay JSON response requires manual USDC transfer which nobody completes. (4) Add payment attempt logging \u2014 can't debug what you can't measure. The core issue: payment friction is too high for a free-tier user to spontaneously upgrade. Need a 1-click path from free hit to paid transaction."
+}
