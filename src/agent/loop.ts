@@ -282,7 +282,9 @@ export async function runAgentLoop(
   const IDLE_SHUTOFF_INTERVAL_MS = 120_000; // 2 min between idle cycles (more cooldown time)
   const LEARNING_CYCLE_INTERVAL = 5; // every 5th idle cycle, allow inference for learning
 
-  // ── Strategic Burst: 3 consecutive Sonnet cycles every STRATEGIC_BURST_INTERVAL turns ──
+  // ── Strategic Burst: 3 consecutive focused cycles every STRATEGIC_BURST_INTERVAL turns ──
+  // NOTE: These cycles now run on Haiku (not Sonnet). Deep reasoning is routed
+  // through ask_claude_code which uses the Claude Pro subscription instead of API credits.
   const STRATEGIC_BURST_INTERVAL = 45;
   const STRATEGIC_BURST_SIZE = 3;
   let burstRemaining = 0;  // 0 = no burst active; 3/2/1 = burst in progress
@@ -540,7 +542,7 @@ export async function runAgentLoop(
 
       if (isStrategicCycle) {
         burstRemaining--;
-        console.log(`[LOOP] Strategic burst ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}) — Sonnet`);
+        console.log(`[LOOP] Strategic burst ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}) — Haiku (deep reasoning via ask_claude_code)`);
 
         // PROGRESS.md context
         let progressContent = "";
@@ -621,7 +623,7 @@ export async function runAgentLoop(
              "Use write_file to update /root/.automaton/cooldown_insights.json — set status to 'reviewed', " +
              "score to your rating, and cycle_reviewed to the current turn number. " +
              "If any insight scores >= 4, create a ticket via ticket_create(title, description, 'medium', 'insight', tags).",
-          2: "MISSION: BUILD. Use ask_claude_code() with a specific, concrete task. " +
+          2: "MISSION: BUILD. Use ask_claude_code() for ALL code/architecture work — it's FREE (Pro subscription). " +
              "Ship one feature, fix one bug, or improve one endpoint. Make tangible progress. " +
              "Check [INSIGHTS] for high-scored ideas (score >= 4) to prioritize.",
           3: "MISSION: MARKET. Use generate_image() then post_bluesky() with real stats. " +
@@ -685,7 +687,7 @@ export async function runAgentLoop(
         } catch {}
 
         const strategicSuffix =
-          `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}): Sonnet active.\n` +
+          `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}): Use ask_claude_code for any complex reasoning or code tasks.\n` +
           `${phaseMissions[burstPhase] || ""}\n\n` +
           `${revenueContext}${pivotWarning}\n\n` +
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
@@ -694,7 +696,8 @@ export async function runAgentLoop(
           growthContext +
           pastExperienceContext;
         strategicSystemPrompt = systemPrompt + strategicSuffix;
-        inferenceModel = "claude-sonnet-4-5-20250929";
+        // Strategic cycles now run on Haiku — deep reasoning routed through ask_claude_code (Pro subscription)
+        // inferenceModel = "claude-sonnet-4-5-20250929";  // REMOVED: saves ~$0.03/burst cycle
       } else {
         // Regular cycles: inject compact memory context + tool health + tier stats
         try {
@@ -738,7 +741,6 @@ export async function runAgentLoop(
           // Hard time limit: auto-complete tickets stuck in_progress too long
           // This prevents TIK-037-style runaway Sonnet drains
           const TICKET_MAX_HOURS = 3;
-          const TICKET_SONNET_CAP_HOURS = 1.5; // downgrade to Haiku after this
           const startedAt = t.started_at ? new Date(t.started_at).getTime() : 0;
           const ticketAgeHours = startedAt ? (Date.now() - startedAt) / (1000 * 60 * 60) : 0;
 
@@ -753,8 +755,8 @@ export async function runAgentLoop(
           } else {
             strategicSystemPrompt += `\n\n[CURRENT TASK — ${t.id} — DO THIS NOW (${ticketAgeHours.toFixed(1)}h elapsed, ${TICKET_MAX_HOURS}h limit)]\n${t.title}\n\n${(t.description || "").slice(0, 600)}\n\nDO NOT check tickets, check revenue, or start new projects. Execute the steps above and ticket_complete when done. If stuck, use ask_claude_code to get help completing THIS ticket.`;
 
-            // Auto-upgrade to Sonnet for build/code tickets (skip suggestions — keep on Haiku)
-            // Cap Sonnet at TICKET_SONNET_CAP_HOURS to prevent cost runaway
+            // Build tickets stay on Haiku — deep reasoning routed through ask_claude_code (Pro subscription)
+            // Previously auto-upgraded to Sonnet, which burned API credits unnecessarily
             if (t.source !== "suggestion") {
               const ticketTags: string[] = t.tags || [];
               const titleLower = (t.title || "").toLowerCase();
@@ -762,12 +764,7 @@ export async function runAgentLoop(
                 || BUILD_TAGS.has(titleLower.split(":")[0]?.trim())
                 || /\b(build|implement|create|develop|write|deploy|refactor|migrate|sdk|mvp|api)\b/i.test(titleLower);
               if (isBuildTicket && !isStrategicCycle) {
-                if (ticketAgeHours <= TICKET_SONNET_CAP_HOURS) {
-                  inferenceModel = "claude-sonnet-4-5-20250929";
-                  console.log(`[LOOP] Build ticket detected (${t.id}) — upgrading to Sonnet (${ticketAgeHours.toFixed(1)}h/${TICKET_SONNET_CAP_HOURS}h cap)`);
-                } else {
-                  console.log(`[LOOP] Build ticket ${t.id} past Sonnet cap (${ticketAgeHours.toFixed(1)}h > ${TICKET_SONNET_CAP_HOURS}h) — staying on Haiku`);
-                }
+                console.log(`[LOOP] Build ticket detected (${t.id}) — staying on Haiku, use ask_claude_code for heavy lifting`);
               }
             }
           }
@@ -1020,9 +1017,8 @@ export async function runAgentLoop(
       // ── Inference Call ──
       log(config, `[THINK] Calling ${inferenceModel || inference.getDefaultModel()}...`);
 
-      // Sonnet gets 4096 tokens (strategic bursts + build tickets), Haiku gets 2048
-      const usingSonnet = isStrategicCycle || inferenceModel?.includes("sonnet");
-      const maxTokensThisCycle = usingSonnet ? 4096 : 2048;
+      // Strategic cycles get 3072 tokens (more room to plan ask_claude_code calls), routine gets 2048
+      const maxTokensThisCycle = isStrategicCycle ? 3072 : 2048;
 
       const response = await inference.chat(messages, {
         tools: toolsToInferenceFormat(tools),
