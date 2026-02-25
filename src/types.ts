@@ -319,6 +319,7 @@ export interface InferenceOptions {
   temperature?: number;
   tools?: InferenceToolDefinition[];
   stream?: boolean;
+  tier?: "free" | "haiku" | "sonnet";
 }
 
 export interface InferenceToolDefinition {

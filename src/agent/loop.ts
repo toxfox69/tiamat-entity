@@ -1018,8 +1018,49 @@ export async function runAgentLoop(
       // Clear pending input after use
       pendingInput = undefined;
 
+      // ── 3-Tier Inference Routing ──
+      // Tier 0 (free/Groq): simple ops — 70% target
+      // Tier 1 (Haiku): moderate reasoning — 25% target
+      // Tier 2 (Sonnet): strategic/code — 5% target
+      // Tool tier classification: highest tier tool in last cycle determines next cycle's tier
+      const SONNET_TOOLS = new Set([
+        "ask_claude_code", "write_file", "write_paper", "draft_grant",
+        "rewrite_mission", "code_change",
+      ]);
+      const HAIKU_TOOLS = new Set([
+        "search_web", "web_fetch", "post_bluesky", "moltbook_post",
+        "send_email", "reflect", "research_scan",
+        "farcaster_engage", "introspect",
+      ]);
+      // Everything else defaults to free tier (read_file, exec, remember, recall,
+      // ticket_list, ticket_claim, ticket_complete, send_telegram, generate_image,
+      // grow, log_strategy, check_*, gpu_infer, etc.)
+
+      let cycleTier: "free" | "haiku" | "sonnet" = "free";
+      if (isStrategicCycle) {
+        cycleTier = "sonnet";
+      } else {
+        // Classify based on last cycle's tool calls — highest tier wins
+        const lastTurnTools = recentTurns.length > 0
+          ? (recentTurns[recentTurns.length - 1].toolCalls || []).map((tc: any) => tc.name)
+          : [];
+
+        if (lastTurnTools.some((t: string) => SONNET_TOOLS.has(t))) {
+          cycleTier = "sonnet";
+        } else if (lastTurnTools.some((t: string) => HAIKU_TOOLS.has(t))) {
+          cycleTier = "haiku";
+        } else {
+          cycleTier = "free";
+        }
+      }
+
+      // For sonnet tier, set explicit model override
+      if (cycleTier === "sonnet" && !inferenceModel) {
+        inferenceModel = "claude-sonnet-4-5-20250929";
+      }
+
       // ── Inference Call ──
-      log(config, `[THINK] Calling ${inferenceModel || inference.getDefaultModel()}...`);
+      log(config, `[THINK] Calling ${inferenceModel || inference.getDefaultModel()} (tier: ${cycleTier})...`);
 
       // Strategic cycles get 3072 tokens (more room to plan ask_claude_code calls), routine gets 2048
       const maxTokensThisCycle = isStrategicCycle ? 3072 : 2048;
@@ -1028,6 +1069,7 @@ export async function runAgentLoop(
         tools: toolsToInferenceFormat(tools),
         maxTokens: maxTokensThisCycle,
         ...(inferenceModel ? { model: inferenceModel } : {}),
+        tier: cycleTier,
       });
 
       // ── Training data capture: record cycle start time ──
@@ -1060,6 +1102,20 @@ export async function runAgentLoop(
           );
         } catch {}
       }
+
+      // ── Inference Routing Log ──
+      try {
+        const modelUsedForLog = inference.getDefaultModel();
+        const provider = modelUsedForLog.includes("claude") ? "anthropic"
+          : modelUsedForLog.includes("llama") || modelUsedForLog.includes("groq") ? "groq"
+          : modelUsedForLog.includes("gemini") ? "gemini"
+          : modelUsedForLog.includes("cerebras") || modelUsedForLog.includes("gpt-oss") ? "cerebras"
+          : "unknown";
+        fs.appendFileSync(
+          "/root/.automaton/inference_routing.log",
+          `[${new Date().toISOString()}] Turn ${turnCount} | Tier: ${cycleTier} | Provider: ${provider} | Model: ${modelUsedForLog} | Tokens: ${response.usage.totalTokens}\n`,
+        );
+      } catch {}
 
       const turn: AgentTurn = {
         id: ulid(),

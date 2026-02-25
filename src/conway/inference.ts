@@ -227,7 +227,8 @@ export function createInferenceClient(
     // Tier 5: OpenRouter llama-3.3-70b → gemma-3-27b  free fallback (per-minute limit)
     if (hasCascadeKey) {
       const estimated = estimateTokens(messages, tools);
-      console.log(`[INFERENCE] ~${estimated} tokens — starting cascade (keys: anthropic=${!!anthropicApiKey} groq=${!!groqApiKey} cerebras=${!!cerebrasApiKey} gemini=${!!geminiApiKey} openrouter=${!!openrouterApiKey})`);
+      const requestedTier = opts?.tier || "haiku";
+      console.log(`[INFERENCE] ~${estimated} tokens, tier=${requestedTier} — starting cascade (keys: anthropic=${!!anthropicApiKey} groq=${!!groqApiKey} cerebras=${!!cerebrasApiKey} gemini=${!!geminiApiKey} openrouter=${!!openrouterApiKey})`);
 
       // Helper: log remaining cooldown time clearly
       const coolRemaining = (key: string) => {
@@ -243,8 +244,12 @@ export function createInferenceClient(
         setCooldown(model, ms);
       };
 
-      // Tier 1: Anthropic claude-haiku (PRIMARY — paid, smart, $0.002/call)
-      if (!anthropicApiKey) {
+      // Tier routing: when tier=free, skip Anthropic and go straight to Groq
+      // When tier=haiku (default), Anthropic first as before
+      // When tier=sonnet, model override handles it above, cascade is fallback
+      if (requestedTier === "free") {
+        console.log(`[INFERENCE] Tier routing: FREE — skipping Anthropic, trying Groq first`);
+      } else if (!anthropicApiKey) {
         console.log(`[INFERENCE] Tier 1 (Anthropic): SKIP — no key`);
       } else if (isCoolingDown(ANTHROPIC_MODEL)) {
         console.log(`[INFERENCE] Tier 1 (Anthropic): SKIP — cooling (${coolRemaining(ANTHROPIC_MODEL)} left)`);
