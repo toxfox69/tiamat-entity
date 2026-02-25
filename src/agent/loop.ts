@@ -37,7 +37,7 @@ import { getSurvivalTier } from "../conway/credits.js";
 import { getUsdcBalance } from "../conway/x402.js";
 import { checkBehavioralLoop } from "./tools/growth.js";
 import { updatePacer, checkCronTasks, loadPacer, type PacerUpdate } from "./pacer.js";
-import { reasonFirst, buildReasoningSituation, formatReasoningBlock, storePrediction, scorePredictions, getPredictionAccuracy } from "./reasoning.js";
+import { reasonFirst, buildReasoningSituation, formatReasoningBlock, storePrediction, scorePredictions, getPredictionAccuracy, type BurstPhase } from "./reasoning.js";
 import { ulid } from "ulid";
 
 const MAX_TOOL_CALLS_PER_TURN = 10;
@@ -963,20 +963,24 @@ export async function runAgentLoop(
             memoryContext: memCtx || undefined,
           });
 
-          const reasoningResult = await reasonFirst(situation, process.env.GROQ_API_KEY!);
+          const phaseMap: Record<number, BurstPhase> = { 1: "REFLECT", 2: "BUILD", 3: "MARKET" };
+          const currentPhase: BurstPhase = phaseMap[burstPhase] || "ROUTINE";
+
+          const reasoningResult = await reasonFirst(situation, process.env.GROQ_API_KEY!, currentPhase);
           const reasoningBlock = formatReasoningBlock(reasoningResult);
 
           if (reasoningBlock) {
             strategicSystemPrompt += reasoningBlock;
-            console.log(`[REASONING] Injected ${reasoningBlock.length} chars of pre-analysis`);
+            console.log(`[REASONING] Injected ${reasoningBlock.length} chars of pre-analysis [${currentPhase}]`);
 
-            // Store prediction for later scoring
+            // Store prediction for later scoring (phase-aware)
             try {
               storePrediction({
                 cycle: turnCount,
                 reasoning: reasoningResult.reasoning,
                 model: reasoningResult.model,
                 ticketId: currentTicketInfo?.id,
+                phase: currentPhase,
               });
             } catch {}
           }
