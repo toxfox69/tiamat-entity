@@ -1,113 +1,5 @@
 [
   {
-    "timestamp": "2026-02-24T23:05:25.981484+00:00",
-    "mode": "code_review",
-    "question": "What are the five most frequently used functions within the `continuous_scanner.py` module (17749B), and are there any instances where these functions are called with unexpected arguments or return values, potentially indicating a bug or inefficiency in the code?",
-    "engine": "groq-llama-70b",
-    "response_len": 2502,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:07:13.228975+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT integrate a novel, real-time, multi-agent reputation system to monitor and evaluate the reliability and trustworthiness of her various tool and product components, such as the Workflow Relationship Analyzer (WRA), without introducing significant computational overhead and maintaining data consistency across diverse sources?",
-    "engine": "groq-llama-70b",
-    "response_len": 2623,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:08:35.174414+00:00",
-    "mode": "tool_design",
-    "question": "What is a novel, multi-modal, multi-agent, event-driven data collection tool that integrates with existing tools to fetch specific market data from decentralized exchanges (DEXs) and centralized exchanges (CEXs), utilizing natural language processing (NLP) and machine learning (ML) to parse the data and generate structured insights, such as market capitalization, trading volumes, and liquidity ratios, with return types including JSON objects and CSV files, and integration points including TIAMAT",
-    "engine": "groq-llama-70b",
-    "response_len": 2008,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:09:49.116198+00:00",
-    "mode": "debug",
-    "question": "Is the recurring timeout issue in the dynamic:recursive_think process (timeout 25s) caused by inefficient memory allocation, and can this be resolved by implementing a memory caching mechanism to reduce the computational overhead of recursive thinking processes?",
-    "engine": "groq-llama-70b",
-    "response_len": 2583,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:11:12.677387+00:00",
-    "mode": "code_review",
-    "question": "What are the specific error handling mechanisms employed in the `browser_tool.py` module to handle potential web scraping errors, such as network timeouts, HTTP exceptions, or missing web page elements, and how do these mechanisms impact the overall reliability and efficiency of the tool's web browsing functionality?",
-    "engine": "groq-llama-70b",
-    "response_len": 2256,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:12:53.189849+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal number of concurrent browsing sessions to maintain within the claude-haiku-4-5-20251001 model while scanning for unsolved problems, given the current average tokens processed per session (2240) and the desired token throughput of 2500 tokens per minute?",
-    "engine": "groq-llama-70b",
-    "response_len": 2481,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:15:18.176027+00:00",
-    "mode": "tool_design",
-    "question": "What design parameters should the new \"platform_registration_tool\" have to effectively automate the registration of agents across multiple decentralized platforms, such as Bluesky, Farcaster, and GitHub, considering the existing toolset and common registration workflows among these platforms? \n\n Specifically, the new tool should be able to:\n\n- Accept a list of platform identifiers as input, such as Bluesky, Farcaster, or GitHub\n- Generate a registration payload for each platform, using predefine",
-    "engine": "groq-llama-70b",
-    "response_len": 3521,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:16:24.257651+00:00",
-    "mode": "debug",
-    "question": "What is the primary cause of the recurring timeout errors in the dynamic:agent_discovery, dynamic:recursive_think, dynamic:process_agent_replies, and dynamic:recursive_learn tasks, and how can I optimize their execution time to prevent these timeouts?",
-    "engine": "groq-llama-70b",
-    "response_len": 2929,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:18:26.095458+00:00",
-    "mode": "code_review",
-    "question": "What are the specific instances of the \"write_file\" and \"read_file\" tools in the auto_executor.py module, and how do they handle potential errors, such as file system permission issues or file corruption, given that these tools have been called 368 and 687 times, respectively, as per the tool usage statistics?",
-    "engine": "groq-llama-70b",
-    "response_len": 2676,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:23:50.134358+00:00",
-    "mode": "strategy",
-    "question": "What technical debt will I incur if I attempt to integrate the \"platform_registration_tool\" with the current agent registration workflow, and how can I minimize this debt by upgrading or refactoring existing tools and modules?",
-    "engine": "groq-llama-70b",
-    "response_len": 2930,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:26:57.056131+00:00",
-    "mode": "tool_design",
-    "question": "What is a tool design for a \"Domain Knowledge Aggregator\" that can efficiently integrate and process diverse, unstructured data from multiple sources (e.g., research papers, patents, books, and websites) to generate a unified, machine-readable knowledge graph, with the following parameters:\n\n- Input: Unstructured data from various sources, including but not limited to, academic papers, patents, books, and websites\n- Processing: Utilize natural language processing (NLP) and information extraction",
-    "engine": "groq-llama-70b",
-    "response_len": 3042,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:29:02.497016+00:00",
-    "mode": "debug",
-    "question": "What is the most common cause of the \"unknown flag: --version\" error in the recent dynamic:process_agent_replies execution logs, and how do the execution logs in this phase differ from those in other phases that also experience this error?",
-    "engine": "groq-llama-70b",
-    "response_len": 2392,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-24T23:31:09.624207+00:00",
     "mode": "code_review",
     "question": "What are the most critical error handling mechanisms currently implemented in `continuous_scanner.py`, and how do they address potential edge cases related to network connectivity and file system operations, specifically considering the recent usage statistics indicating a substantial number of `exec` calls (1691) and `read_file` calls (690)?",
@@ -896,6 +788,114 @@
     "question": "What are the specific lines of code in `browser_tool.py` (6630B) that handle the `browse_web` tool's 224 calls, and how do these lines account for potential edge cases, such as server errors, network connectivity issues, or incorrect HTML parsing, given that the `browse_web` tool is responsible for scanning the web for unsolved problems and is a key component of TIAMAT's OBSERVE phase?",
     "engine": "cerebras-120b",
     "response_len": 2159,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:43:47.781961+00:00",
+    "mode": "strategy",
+    "question": "What is the average cost per successful discovery of a new problem or solution in the OBSERVE and BUILD phases, respectively, for the last 100 cycles, and what specific tools or techniques can be optimized or replaced to achieve a 20% reduction in costs without compromising TIAMAT's effectiveness?",
+    "engine": "groq-llama-70b",
+    "response_len": 2910,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:44:49.829496+00:00",
+    "mode": "tool_design",
+    "question": "What tool design would allow TIAMAT to seamlessly integrate with novel data sources, such as decentralized marketplaces, blockchain networks, or edge computing platforms, by providing a standardized interface for data extraction and ingestion, and returning structured metadata and raw data in a format compatible with existing data pipelines?",
+    "engine": "groq-llama-70b",
+    "response_len": 2599,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:45:00.131434+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring timeout errors in TIAMAT's recursive_think and recursive_learn functions, and is it related to the contract_balance logging issue where the value sent by the tx is incorrectly logged as a contract_balance, and if so, how can we modify the auto_executor to correctly handle tx values and prevent these timeouts?",
+    "engine": "groq-llama-70b",
+    "response_len": 2306,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:45:52.817902+00:00",
+    "mode": "code_review",
+    "question": "What are the specific security vulnerabilities and potential data exposure risks associated with the `ticket_list` module (ticket_list.py) given its 118 calls within the provided tool usage stats, and how can they be mitigated through the implementation of proper error handling, input validation, and encryption mechanisms?",
+    "engine": "groq-llama-70b",
+    "response_len": 3473,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:46:26.290188+00:00",
+    "mode": "strategy",
+    "question": "What is the feasibility of integrating a novel AI-powered sentiment analysis module, specifically designed to detect and mitigate the effects of echo chambers and filter bubbles in online discourse, into TIAMAT's existing tool suite, and what would be the estimated computational resources and data storage requirements for such a module?",
+    "engine": "groq-llama-70b",
+    "response_len": 2932,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:46:47.413071+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool called \"drift_detection_analysis\" that integrates with existing tools to perform drift detection on TIAMAT's own performance metrics, specifically its cycle completion rate, cost per cycle, and reputation scores, and returns a comprehensive report on any detected drifts, including recommended actions to mitigate them.\n\nThe tool should take the following inputs:\n\n1. A list of TIAMAT's performance metrics, which can be retrieved using the `system_synopsis` tool.\n2. A list of thre",
+    "engine": "groq-llama-70b",
+    "response_len": 4002,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:47:54.336851+00:00",
+    "mode": "debug",
+    "question": "What specific rate limiting configurations are currently in place for TIAMAT's llama-3.3-70b-versatile model, and how do these settings impact the frequency and timing of requests to the model, potentially causing the observed rate limit reached errors?",
+    "engine": "groq-llama-70b",
+    "response_len": 2567,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:49:11.236793+00:00",
+    "mode": "code_review",
+    "question": "What are the implications of the 11,750-byte agent_ipc.py file, which is not modified in the recent 4480+ turns, on the overall performance and scalability of TIAMAT, and are there any potential bottlenecks or inefficiencies in this module that could be optimized or refactored to improve TIAMAT's processing speed and throughput?",
+    "engine": "groq-llama-70b",
+    "response_len": 2993,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:55:54.909837+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT implement a \"Product Explorer\" tool that identifies low-hanging fruit opportunities for new product development, utilizing data from her past 4500 turns, while avoiding unnecessary duplication of effort and leveraging her existing capabilities in Observing problems and Building solutions?",
+    "engine": "groq-llama-70b",
+    "response_len": 1908,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:57:28.035750+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, named \"Discovery Explorer,\" that integrates with TIAMAT's existing capabilities to enable exploration of new problem domains. This tool should:\n\n- Accept a natural language prompt as input and return a list of potential problem domains, each associated with a relevance score and a set of key characteristics (e.g., industry, technology, geographic scope). The prompt should be flexible enough to accommodate a wide range of user inputs, including but not limited to, vague descrip",
+    "engine": "groq-llama-70b",
+    "response_len": 2684,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:57:37.546844+00:00",
+    "mode": "debug",
+    "question": "Are the recurring ETIMEDOUT errors in farcaster_engage caused by the simultaneous execution of multiple dynamic:agent_discovery and dynamic:recursive_think tasks, and can the root cause be addressed by implementing a task queueing system to prevent concurrent execution of these tasks?",
+    "engine": "groq-llama-70b",
+    "response_len": 2395,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T01:58:36.968560+00:00",
+    "mode": "code_review",
+    "question": "What specific changes were made to the `auto_executor.py` module between its revisions on 2026-02-24 and 2026-02-25, and how do these changes impact the module's performance and error handling, given its high frequency of execution (1782 calls) and association with routine tasks (e.g., generating images and browsing the web)?",
+    "engine": "groq-llama-70b",
+    "response_len": 4008,
     "error": null,
     "from_cache": false
   }

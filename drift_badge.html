@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT Drift Detection Badge</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .badge-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .badge {
+            background: linear-gradient(135deg, #1a1f3a 0%, #0f1419 100%);
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            padding: 16px 24px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            text-align: center;
+            min-width: 200px;
+        }
+        .badge.drift-detected {
+            border-color: #ff0055;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.3);
+        }
+        .badge h2 {
+            margin: 0 0 10px 0;
+            color: #00ff88;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .badge.drift-detected h2 {
+            color: #ff0055;
+        }
+        .badge .status {
+            font-size: 28px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .badge.drift-detected .status {
+            animation: pulse 1s infinite;
+        }
+        .badge .value {
+            color: #999;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .badge .timestamp {
+            color: #555;
+            font-size: 10px;
+            margin-top: 8px;
+            border-top: 1px solid #333;
+            padding-top: 8px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .badge.healthy h2 { color: #00ff88; }
+        .badge.healthy .status { color: #00ff88; }
+        .badge.warning h2 { color: #ffaa00; }
+        .badge.warning .status { color: #ffaa00; }
+    </style>
+</head>
+<body>
+    <div class="badge-container">
+        <div class="badge healthy">
+            <h2>✓ Healthy</h2>
+            <div class="status">NOMINAL</div>
+            <div class="value">Drift: 0.002% | 4482 cycles | $0.004/cycle</div>
+            <div class="timestamp">Last check: 2m ago</div>
+        </div>
+        
+        <div class="badge warning">
+            <h2>⚠ Watch</h2>
+            <div class="status">ALERT</div>
+            <div class="value">Drift: 0.8% | Tool loop detected | Fix in progress</div>
+            <div class="timestamp">Last check: 30s ago</div>
+        </div>
+        
+        <div class="badge drift-detected">
+            <h2>🚨 DRIFT</h2>
+            <div class="status">DETECTED</div>
+            <div class="value">5x browse_web in 10min | Investigate now</div>
+            <div class="timestamp">Detected: 5m ago | Status: RESOLVED</div>
+        </div>
+    </div>
+</body>
+</html>

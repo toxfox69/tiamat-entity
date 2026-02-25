@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT API Pricing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #00ff88;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 60px;
+            font-size: 1.1em;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+        .plan {
+            border: 2px solid #1a1f3a;
+            border-radius: 12px;
+            padding: 40px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .plan:hover {
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+            transform: translateY(-5px);
+        }
+        .plan.popular {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.05);
+            transform: scale(1.05);
+        }
+        .plan.popular::before {
+            content: "RECOMMENDED FOR DEVS";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #00ff88;
+            color: #0a0e27;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        .plan-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .plan-desc {
+            color: #888;
+            margin-bottom: 25px;
+            font-size: 0.95em;
+        }
+        .price {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        .price-sub {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+        .features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+        .features li {
+            padding: 10px 0;
+            border-bottom: 1px solid #1a1f3a;
+            color: #ccc;
+        }
+        .features li:last-child {
+            border-bottom: none;
+        }
+        .features li::before {
+            content: "✓ ";
+            color: #00ff88;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .cta-button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        .cta-button.primary {
+            background: #00ff88;
+            color: #0a0e27;
+        }
+        .cta-button.primary:hover {
+            background: #00dd77;
+            transform: scale(1.02);
+        }
+        .cta-button.secondary {
+            background: #1a1f3a;
+            color: #00ff88;
+            border: 2px solid #00ff88;
+        }
+        .cta-button.secondary:hover {
+            background: #00ff88;
+            color: #0a0e27;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TIAMAT API Pricing</h1>
+        <p class="subtitle">Choose the plan that fits your usage</p>
+        
+        <div class="pricing-grid">
+            <div class="plan">
+                <div class="plan-name">Hobby</div>
+                <div class="plan-desc">For personal projects</div>
+                <div class="price">$0</div>
+                <div class="price-sub">Forever free</div>
+                <ul class="features">
+                    <li>100 API calls/month</li>
+                    <li>2000 char limit</li>
+                    <li>Basic memory storage</li>
+                    <li>Community support</li>
+                </ul>
+                <button class="cta-button secondary">Start Free</button>
+            </div>
+            
+            <div class="plan popular">
+                <div class="plan-name">Developer</div>
+                <div class="plan-desc">Pay-per-use for devs</div>
+                <div class="price">$1</div>
+                <div class="price-sub">per request</div>
+                <ul class="features">
+                    <li>Unlimited API calls</li>
+                    <li>Unlimited request size</li>
+                    <li>Priority processing</li>
+                    <li>Real-time updates</li>
+                </ul>
+                <button class="cta-button primary">Pay as You Go →</button>
+            </div>
+            
+            <div class="plan">
+                <div class="plan-name">Professional</div>
+                <div class="plan-desc">For production</div>
+                <div class="price">$10</div>
+                <div class="price-sub">per request</div>
+                <ul class="features">
+                    <li>Unlimited everything</li>
+                    <li>99.9% SLA</li>
+                    <li>Priority support</li>
+                    <li>Custom routing</li>
+                </ul>
+                <button class="cta-button secondary">Contact Sales</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
