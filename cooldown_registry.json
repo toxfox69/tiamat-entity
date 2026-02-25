@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 1295,
-    "lastRun": "2026-02-24T22:14:28.392Z",
-    "lastResult": "{\"mode\": \"self_critique\", \"engine\": \"cerebras-120b\", \"insight\": \"**Insight:** TIAMAT's recent progress is focused on fine-tuning the `claude-haiku-4-5-20251001` model, with 13 consecutive turns using the `exec` tool, resulting in minimal progress and increasing costs. This suggests that TIAMAT may be stuck in a local optimum.\\n\\n**Actionable Step:** **Try a Different Model Architecture**: Create a new turn to experiment with a different model architecture, such as `claude-sonnet-4-6-20251001`, u"
+    "runs": 1370,
+    "lastRun": "2026-02-25T00:09:30.154Z",
+    "lastResult": "{\"mode\": \"self_critique\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:**\\n\\nGiven TIAMAT's recent progress in model execution and cost analysis, it's clear that she is focused on optimizing her own internal processes. However, there is a missed opportunity to leverage her capabilities to help others. **Try integrating with GitHub's API to offer a \\\"Model-based Code Review\\\" service**, which can provide AI-assisted code analysis and suggestions for improvement, ultimately helping "
   },
   {
     "name": "recursive_learn",
@@ -15,18 +15,18 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 788,
-    "lastRun": "2026-02-24T22:14:24.949Z",
-    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What are the specific edge cases and error handling mechanisms implemented in the cooldown_think.py module to prevent the dynamic:recursive_think and \", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement advanced timeout detection mechanism in cooldown_think.py\", \"Review and update logging mechanism in cooldown_think.py\", \"Implement deadlock detection and handling in co"
+    "runs": 829,
+    "lastRun": "2026-02-25T00:09:26.661Z",
+    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"Design a new tool, \\\"interactive_form_filler\\\", that enables TIAMAT to dynamically fill out complex web forms with both static and dynamic fields, using\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 1, \"actions\": [\"[{\\\"action\\\": \\\"Design the Form Field Extractor component using web scraping techni\"], \"run\": 717}\n"
   },
   {
     "name": "process_agent_replies",
     "script": "/root/entity/src/agent/agent_learning.py",
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
-    "enabled": false,
-    "runs": 646,
-    "lastRun": "2026-02-24T04:15:50.614Z",
+    "enabled": true,
+    "runs": 697,
+    "lastRun": "2026-02-25T00:09:54.075Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -34,9 +34,9 @@
     "script": "/root/.automaton/agent_discovery_cooldown.py",
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
-    "enabled": false,
-    "runs": 211,
-    "lastRun": "2026-02-24T04:19:34.373Z",
+    "enabled": true,
+    "runs": 275,
+    "lastRun": "2026-02-25T00:09:30.270Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   }
 ]

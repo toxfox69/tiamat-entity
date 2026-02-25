@@ -1,5 +1,5 @@
 {
-  "next_id": 57,
+  "next_id": 63,
   "tickets": [
     {
       "id": "TIK-001",
@@ -905,12 +905,99 @@
       "created": "2026-02-24T22:02:21.486040+00:00",
       "source": "suggestion",
       "priority": "low",
-      "status": "open",
+      "status": "done",
       "title": "Model Deploy Monitor",
       "description": "**Insight:** Develop a \"Model Deployment Monitor\" that automatically detects and reports on failed or stalled model deployments, providing insights and recommendations to improve model deployment efficiency.\n\n**Problem:** Model deployment failures and stalled deployments are common issues in AI agent infra, leading to wasted resources, manual intervention, and decreased model performance. \n\n**Concrete Approach:**\n\n1. **API Integration:** Integrate with deployment platforms like GitHub Actions, CircleCI, or AWS CodePipeline to collect deployment logs and metadata.\n2. **Model Deployment Monitori",
       "tags": [
         "suggestion",
         "market_intel"
+      ],
+      "outcome": "Dismissed \u2014 low priority suggestion, clearing for idle shutoff",
+      "completed_at": "2026-02-24T22:17:02.546429+00:00"
+    },
+    {
+      "id": "TIK-057",
+      "created": "2026-02-24T22:17:37.720399+00:00",
+      "source": "suggestion",
+      "priority": "low",
+      "status": "done",
+      "title": "AI Drift Detection",
+      "description": "**Unsolved Problem:** AI Model Drift Detection and Correction in Real-Time\n\n**Problem Description:** AI models, like TIAMAT's `claude-haiku-4-5-20251001`, are known to drift over time due to changes in data distributions, concept drift, or model degradation. This drift can lead to suboptimal performance, decreased accuracy, and unexpected behavior. Currently, detecting and correcting model drift is a manual, time-consuming process that requires extensive expertise.\n\n**Concrete Approach:** Develop a lightweight, real-time model drift detection and correction framework using a combination of tec",
+      "tags": [
+        "suggestion",
+        "market_intel"
+      ],
+      "outcome": "Dismissed \u2014 suggestion queue rate limiter was broken, clearing",
+      "completed_at": "2026-02-24T22:21:45.156921+00:00"
+    },
+    {
+      "id": "TIK-058",
+      "created": "2026-02-24T22:34:39.707796+00:00",
+      "source": "creator",
+      "priority": "high",
+      "status": "in_progress",
+      "title": "Register on AI Agent Directories",
+      "description": "Register TIAMAT on: (1) AgentRegistry.ai via arctl CLI, (2) aiagentsdirectory.com submit form, (3) aiagentstore.ai listing. Research in /root/.automaton/AGENT_DIRECTORIES.md. Use browse_web or exec to complete registrations. This gets TIAMAT discovered by humans and other agents.",
+      "tags": [
+        "marketing",
+        "growth",
+        "revenue"
+      ],
+      "started_at": "2026-02-24T22:36:06.797Z"
+    },
+    {
+      "id": "TIK-059",
+      "created": "2026-02-24T22:34:39.707796+00:00",
+      "source": "creator",
+      "priority": "high",
+      "status": "open",
+      "title": "Post on Reddit r/artificial and r/MachineLearning",
+      "description": "Write a genuine 'Show HN'-style post about TIAMAT for Reddit. Focus on the technical story: autonomous agent running 4000+ cycles, self-improving, real APIs, $0.004/cycle cost. Post to r/artificial, r/MachineLearning, or r/LocalLLaMA. Use browse_web tool. Be authentic, not salesy.",
+      "tags": [
+        "marketing",
+        "growth",
+        "revenue"
+      ]
+    },
+    {
+      "id": "TIK-060",
+      "created": "2026-02-24T22:34:39.707796+00:00",
+      "source": "creator",
+      "priority": "medium",
+      "status": "open",
+      "title": "Build drift detection badge/widget",
+      "description": "Create a free embeddable badge that shows model drift status. Like a CI badge but for ML model health. GET /badge/<model_name> returns an SVG badge. This gives people a reason to link to tiamat.live, drives organic traffic, and upsells to paid drift API.",
+      "tags": [
+        "build",
+        "product",
+        "revenue"
+      ]
+    },
+    {
+      "id": "TIK-061",
+      "created": "2026-02-24T22:34:39.707796+00:00",
+      "source": "creator",
+      "priority": "medium",
+      "status": "open",
+      "title": "Cold outreach to AI tool aggregators",
+      "description": "Find and email 5 AI tool aggregators/curators: There's a Huge List, Futurepedia, AI Tool Guru, etc. Send them a brief pitch about TIAMAT's APIs. Use search_web to find current aggregator submission pages, then send_email with a concise pitch.",
+      "tags": [
+        "marketing",
+        "outreach",
+        "revenue"
+      ]
+    },
+    {
+      "id": "TIK-062",
+      "created": "2026-02-24T22:59:52Z",
+      "source": "watchdog",
+      "priority": "high",
+      "status": "open",
+      "title": "Tool loop: browse_web called 5x in 10min",
+      "description": "Watchdog detected browse_web called 5 times in the last 10 minutes. This suggests a behavioral loop where TIAMAT is repeating the same action without making progress.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
       ]
     }
   ]
