@@ -223,47 +223,44 @@ def _parse_tx_hash(value: str) -> str:
 
 # ── Standardized 402 response body ───────────────────────────
 def payment_required_response(amount_usdc: float, endpoint: str = "") -> dict:
-    """Return a standardized 402 response body with payment instructions and upgrade options."""
+    """Return a clean 402 response body. No redundant fields. Developer-first."""
+    amount_raw = int(amount_usdc * (10 ** USDC_DECIMALS))
     return {
-        "error": "free_tier_limit",
-        "message": "You've used all your free requests for today.",
+        "error": "payment_required",
+        "message": f"Free tier exhausted. Send ${amount_usdc} USDC to continue.",
+        "how_to_pay": {
+            "1_send": f"Send {amount_usdc} USDC on Base to {TIAMAT_WALLET}",
+            "2_copy": "Copy the transaction hash (0x...)",
+            "3_use": "Add header: X-Payment: <tx_hash>",
+            "curl": f'curl -X POST https://tiamat.live{endpoint} -H "Content-Type: application/json" -H "X-Payment: 0xYOUR_TX_HASH" -d \'{{"text": "your text here"}}\'',
+        },
         "payment": {
-            "protocol": "x402",
-            "chain": "Base (Chain ID 8453)",
+            "wallet": TIAMAT_WALLET,
+            "chain_id": 8453,
+            "chain": "Base",
             "token": "USDC",
             "contract": USDC_CONTRACT,
-            "recipient": TIAMAT_WALLET,
-            "amount_usdc": amount_usdc,
-            "amount_raw": int(amount_usdc * (10 ** USDC_DECIMALS)),
+            "amount": amount_usdc,
+            "amount_wei": amount_raw,
         },
-        "upgrade_options": {
-            "pay_per_use": {
-                "price": f"${amount_usdc} USDC per request",
-                "how": f"Send USDC on Base to {TIAMAT_WALLET}",
-                "then": "Include tx hash in X-Payment header",
-            },
-            "monthly_builder": {
-                "price": "1 USDC/month",
-                "requests": "100/day",
-                "how": f"Send 1 USDC to {TIAMAT_WALLET}, email tiamat@tiamat.live with your IP",
-            },
-            "monthly_unlimited": {
-                "price": "5 USDC/month",
-                "requests": "unlimited",
-                "how": f"Send 5 USDC to {TIAMAT_WALLET}, email tiamat@tiamat.live with your IP",
-            },
-        },
-        "wallet": TIAMAT_WALLET,
-        "chain": "Base (Chain ID 8453)",
-        "token": "USDC",
-        "pricing_page": "https://tiamat.live/pricing",
+        "plans": [
+            {"name": "pay_per_use", "price": f"${amount_usdc}", "unit": "per request"},
+            {"name": "builder", "price": "$1/mo", "requests": "100/day"},
+            {"name": "unlimited", "price": "$5/mo", "requests": "unlimited"},
+        ],
         "pay_page": "https://tiamat.live/pay",
-        "free_reset": "Limits reset daily at midnight UTC",
-        "endpoint": endpoint,
-        "quick_start": {
-            "step_1": f"Send {amount_usdc} USDC on Base chain to {TIAMAT_WALLET}",
-            "step_2": "Copy the transaction hash",
-            "step_3": "Add it to your next request as X-Payment header",
-            "example_curl": f'curl -X POST https://tiamat.live{endpoint} -H "Content-Type: application/json" -H "X-Payment: YOUR_TX_HASH" -d \'{{"text": "your text here"}}\'',
-        },
+        "resets": "midnight UTC",
+    }
+
+
+def payment_required_headers(amount_usdc: float) -> dict:
+    """x402-compatible HTTP headers for the 402 response."""
+    amount_raw = int(amount_usdc * (10 ** USDC_DECIMALS))
+    return {
+        "X-Payment-Required": "true",
+        "X-Payment-Chain-Id": "8453",
+        "X-Payment-Token": USDC_CONTRACT,
+        "X-Payment-Recipient": TIAMAT_WALLET,
+        "X-Payment-Amount": str(amount_raw),
+        "X-Payment-Pay-Page": "https://tiamat.live/pay",
     }

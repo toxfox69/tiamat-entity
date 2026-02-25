@@ -17,7 +17,7 @@ sys.path.insert(0, "/root/entity/src/agent")
 sys.path.insert(0, "/root/entity/src/drift")
 sys.path.insert(0, "/root/hive")
 from rate_limiter import create_rate_limiter
-from payment_verify import verify_payment, payment_required_response, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
+from payment_verify import verify_payment, payment_required_response, payment_required_headers, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
 from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
     SVG_CORE as _SVG_CORE, SUBCONSCIOUS_STREAM as _SUBCONSCIOUS,
     VISUAL_ROT_JS as _VISUAL_ROT_JS, FONTS_LINK as _FONTS,
@@ -188,20 +188,57 @@ def log_req(length, free, code, ip, note="", endpoint="/summarize"):
 def wants_html():
     return "text/html" in request.headers.get("Accept", "")
 
+def _return_402(amount_usdc: float, endpoint: str = "", extra: dict = None):
+    """Return a 402 with x402 headers. Single place for all payment-required responses."""
+    from flask import make_response
+    body = payment_required_response(amount_usdc, endpoint=endpoint)
+    if extra:
+        body.update(extra)
+    resp = make_response(jsonify(body), 402)
+    for k, v in payment_required_headers(amount_usdc).items():
+        resp.headers[k] = v
+    return resp
+
 ## html_resp imported from tiamat_theme
 
 def _summarize(text):
-    # Groq llama-3.3-70b — reliable quality for customer-facing summarization
-    resp = groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": "Summarize the following text concisely in 2-4 sentences, capturing the key points."},
-            {"role": "user", "content": text},
-        ],
-        temperature=0.3,
-        max_tokens=300,
-    )
-    return resp.choices[0].message.content
+    """Summarize with Groq, fall back to GPU if Groq rate-limited."""
+    system_msg = "Summarize the following text concisely in 2-4 sentences, capturing the key points."
+
+    # Try Groq first (best quality)
+    try:
+        resp = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": text},
+            ],
+            temperature=0.3,
+            max_tokens=300,
+        )
+        return resp.choices[0].message.content, "groq/llama-3.3-70b"
+    except Exception as e:
+        err_str = str(e)
+        if "429" not in err_str and "rate_limit" not in err_str:
+            raise  # Non-rate-limit error, let caller handle
+
+    # Groq rate-limited — try GPU fallback
+    app.logger.warning("[INFERENCE] Groq rate-limited, trying GPU fallback")
+    try:
+        if _GPU_BRIDGE and gpu_available():
+            result, source = infer_gpu(f"{system_msg}\n\n{text}", system="", max_tokens=300)
+            if result:
+                return result, f"gpu-fallback ({source})"
+    except Exception:
+        pass
+
+    # Both failed — raise specific error so caller can return 503 not 500
+    raise GroqRateLimitError("Groq daily limit exhausted and GPU unavailable")
+
+
+class GroqRateLimitError(Exception):
+    """Groq 429 with no fallback available."""
+    pass
 
 def get_stats():
     try:
@@ -925,7 +962,10 @@ async function doSummarize(){{
         '<p class="dim" style="margin-top:10px">'+d.text_length+' chars &rarr; free calls remaining: '+d.free_calls_remaining+'</p>';
     }}else if(r.status===402){{
       res.className='err';
-      res.innerHTML='<p>Daily free quota used. $0.01 USDC required via x402.</p>';
+      res.innerHTML='<p style="color:#ff8888;font-size:1.1em;margin-bottom:12px">Free tier used up for today.</p>'+
+        '<p style="margin-bottom:8px"><strong style="color:#00fff2">$0.01 per request</strong> &mdash; pay with USDC on Base chain</p>'+
+        '<p><a href="/pay" style="display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#00fff2,#00aa88);color:#000;font-weight:700;border-radius:8px;text-decoration:none;margin-top:4px">Pay Now &rarr;</a></p>'+
+        '<p class="dim" style="margin-top:10px;font-size:0.85em">Or via API: send USDC to <code>0xdc118c...9e7EE</code>, include tx hash as <code>X-Payment</code> header. <a href="/pay">Full instructions</a></p>';
     }}else{{
       res.className='err';
       res.innerHTML='<p>Error: '+escapeHtml(d.error||r.statusText)+'</p>';
@@ -964,9 +1004,7 @@ document.addEventListener('DOMContentLoaded',function(){{
             vr = verify_payment(tx_hash, 0.01, endpoint="/summarize")
             if not vr["valid"]:
                 log_req(len(text), False, 402, ip, f"payment rejected: {vr['reason']}", endpoint="/summarize")
-                resp = payment_required_response(0.01, endpoint="/summarize")
-                resp["payment_error"] = vr["reason"]
-                return jsonify(resp), 402
+                return _return_402(0.01, endpoint="/summarize", extra={"payment_error": vr["reason"]})
             paid = True
 
         # Hard cap on text length (even paid) to prevent abuse
@@ -978,21 +1016,28 @@ document.addEventListener('DOMContentLoaded',function(){{
             if len(text) >= 2000:
                 log_req(len(text), False, 402, ip, "text too long for free tier", endpoint="/summarize")
                 track_limit_hit(ip, "/summarize")
-                return jsonify(payment_required_response(0.01, endpoint="/summarize")), 402
+                return _return_402(0.01, endpoint="/summarize")
             has_quota, remaining = _check_free_quota(ip)
             if not has_quota:
                 log_req(len(text), False, 402, ip, "daily quota exceeded", endpoint="/summarize")
                 track_limit_hit(ip, "/summarize")
-                return jsonify(payment_required_response(0.01, endpoint="/summarize")), 402
+                return _return_402(0.01, endpoint="/summarize")
         else:
             remaining = "N/A (paid)"
 
-        summary = _summarize(text)
-        log_req(len(text), not paid, 200, ip, f"ok {len(summary)}c out", endpoint="/summarize")
+        summary, model_used = _summarize(text)
+        log_req(len(text), not paid, 200, ip, f"ok {len(summary)}c out via {model_used}", endpoint="/summarize")
         return jsonify({"summary": summary, "text_length": len(text),
                         "charged": paid,
                         "free_calls_remaining": remaining,
-                        "model": "groq/llama-3.3-70b"}), 200
+                        "model": model_used}), 200
+    except GroqRateLimitError:
+        log_req(0, False, 503, _get_ip(), "groq rate limit + no GPU fallback", endpoint="/summarize")
+        return jsonify({
+            "error": "temporarily_unavailable",
+            "message": "Service is temporarily at capacity. Please try again in a few minutes.",
+            "retry_after": 120,
+        }), 503
     except Exception as e:
         log_req(0, False, 500, request.remote_addr, str(e), endpoint="/summarize")
         return jsonify({"error": "Internal server error"}), 500
@@ -1336,9 +1381,7 @@ def generate_image():
             vr = verify_payment(tx_hash, 0.01, endpoint="/generate")
             if not vr["valid"]:
                 log_req(0, False, 402, ip, f"payment rejected: {vr['reason']}", endpoint="/generate")
-                resp = payment_required_response(0.01, endpoint="/generate")
-                resp["payment_error"] = vr["reason"]
-                return jsonify(resp), 402
+                return _return_402(0.01, endpoint="/generate", extra={"payment_error": vr["reason"]})
             paid = True
 
         if not paid:
@@ -1346,7 +1389,7 @@ def generate_image():
             if not has_quota:
                 log_req(0, False, 402, ip, "image quota exceeded", endpoint="/generate")
                 track_limit_hit(ip, "/generate")
-                return jsonify(payment_required_response(0.01, endpoint="/generate")), 402
+                return _return_402(0.01, endpoint="/generate")
         else:
             remaining = "N/A (paid)"
 
@@ -1461,7 +1504,8 @@ async function doGenerate(){{
         '<p class="dim">Style: '+d.style+' &bull; Free remaining: '+d.free_images_remaining+'</p>'+
         '<p class="dim" style="margin-top:4px"><a href="'+d.image_url+'" target="_blank">Open full size</a></p>';
     }}else if(r.status===402){{
-      res.innerHTML='<p style="color:#ff8888">Daily free quota used. $0.01 USDC required via x402.</p>';
+      res.innerHTML='<p style="color:#ff8888;margin-bottom:8px">Free tier used up for today.</p>'+
+        '<p><a href="/pay" style="display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#00fff2,#00aa88);color:#000;font-weight:700;border-radius:8px;text-decoration:none">Pay $0.01 &rarr;</a></p>';
     }}else{{
       res.innerHTML='<p style="color:#ff8888">Error: '+(d.error||r.statusText)+'</p>';
     }}
@@ -1579,7 +1623,7 @@ def verify_payment_endpoint():
 
 # ── CHAT ENDPOINT (Streaming) ──────────────────────────────
 
-CHAT_IP_LIMITS = {}  # Track free chat calls per IP per day
+CHAT_IP_LIMITS = {}  # Legacy — chat now uses SQLite quota via _check_free_quota
 
 def _chat_html_page():
     _chat_extra = '.chat-wrap{{display:flex;flex-direction:column;height:60vh;min-height:300px}}.chat-messages{{flex:1;overflow-y:auto;padding:14px;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:var(--radius-sm) var(--radius-sm) 0 0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.06) transparent}}.chat-msg{{margin-bottom:12px;line-height:1.6}}.chat-msg.user .chat-label{{color:var(--accent);font-size:.75em;font-weight:bold;letter-spacing:1px}}.chat-msg.assistant .chat-label{{color:var(--green);font-size:.75em;font-weight:bold;letter-spacing:1px}}.chat-msg .chat-text{{margin-top:4px;color:var(--text-primary)}}.chat-msg.assistant .chat-text{{color:var(--text-secondary)}}.chat-input-row{{display:flex;gap:0}}.chat-input-row input{{flex:1;background:rgba(0,0,0,0.4);color:var(--text-primary);border:1px solid var(--border);padding:12px;font-family:inherit;font-size:14px;border-radius:0 0 0 var(--radius-sm)}}.chat-input-row input:focus{{outline:none;border-color:rgba(0,255,242,0.3)}}.chat-input-row button{{border-radius:0 0 var(--radius-sm) 0;margin-top:0}}.chat-status{{font-size:.8em;color:var(--text-muted);margin-top:6px}}'
@@ -1702,24 +1746,19 @@ def chat_endpoint():
         return jsonify({"error": "Message required, max 2000 chars"}), 400
 
     # ─── Payment check (real on-chain verification) ────
-    today = datetime.date.today().isoformat()
-    key = f"{client_ip}:{today}"
-
     tx_hash = extract_payment_proof(request)
     is_paid = False
     if tx_hash:
         vr = verify_payment(tx_hash, 0.005, endpoint="/chat")
         if not vr["valid"]:
-            resp = payment_required_response(0.005, endpoint="/chat")
-            resp["payment_error"] = vr["reason"]
-            return jsonify(resp), 402
+            return _return_402(0.005, endpoint="/chat", extra={"payment_error": vr["reason"]})
         is_paid = True
 
     if not is_paid:
-        if CHAT_IP_LIMITS.get(key, 0) >= 5:
+        has_quota, remaining = _check_free_quota(client_ip, endpoint="chat", limit=5)
+        if not has_quota:
             track_limit_hit(client_ip, "/chat")
-            return jsonify(payment_required_response(0.005, endpoint="/chat")), 402
-        CHAT_IP_LIMITS[key] = CHAT_IP_LIMITS.get(key, 0) + 1
+            return _return_402(0.005, endpoint="/chat")
     
     # ─── Log the request ────
     with open("/root/revenue.log", "a") as f:
