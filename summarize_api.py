@@ -2818,6 +2818,9 @@ _RESEARCH_PRICES = {"quick": 0.10, "full": 0.25, "deep": 1.00}
 # Max chars of paper text fed to the model (guards against context overflow)
 _RESEARCH_MAX_CHARS = 20000
 
+# GPU inference endpoint (phi3:mini on RTX 3090 pod)
+_GPU_ENDPOINT = os.environ.get("GPU_ENDPOINT", "").rstrip("/")
+
 # SQLite cache — stores results keyed by paper_id + depth
 _RESEARCH_CACHE_DB = "/root/api/research_cache.db"
 
@@ -3020,6 +3023,130 @@ def _fetch_url_text(url: str) -> tuple[str, str]:
         return "", "url_fetch_failed"
 
 
+def _analyze_paper_with_gpu(text: str, depth: str,
+                            focus_areas: list | None = None,
+                            meta: dict | None = None) -> dict | None:
+    """
+    Try GPU inference (phi3:mini on RTX 3090) for paper analysis.
+
+    Returns a spec-compliant dict on success, or None if the GPU is
+    unreachable, overloaded, or returns unusable JSON.  Caller must
+    fall back to Groq on None return.
+    """
+    if not _GPU_ENDPOINT:
+        return None
+    if focus_areas is None:
+        focus_areas = ["claims", "methods", "limitations", "implications"]
+    if meta is None:
+        meta = {}
+
+    depth_guide = {
+        "quick": "2-3 items per section.",
+        "full":  "3-4 items per section.",
+        "deep":  "4-5 items per section.",
+    }.get(depth, "3-4 items per section.")
+    max_tokens = {"quick": 700, "full": 1200, "deep": 1800}.get(depth, 1200)
+    excerpt = text[:_RESEARCH_MAX_CHARS]
+
+    system = (
+        "You are a research analyst. Respond ONLY with a valid JSON object. "
+        "No markdown fences. No prose outside the JSON."
+    )
+    user = (
+        f"Analyze this research paper. {depth_guide}\n\n"
+        f"Paper:\n---\n{excerpt}\n---\n\n"
+        "Return JSON with EXACTLY these keys:\n"
+        '{"title":"","authors":"","venue":"","date":"",'
+        '"claims":[{"claim":"","confidence":0.8,"evidence":""}],'
+        '"methods":[{"method":"","reproducibility":""}],'
+        '"limitations":[{"limitation":"","severity":"medium"}],'
+        '"connections":[{"related_field":"","implication":""}],'
+        '"lineage":[{"paper":"","relationship":"builds on|extends|challenges|replicates","significance":""}],'
+        '"hypothesis":"","novelty_score":5,"novelty_rationale":""}'
+    )
+
+    # ── health check (2 s) ──────────────────────────────────────
+    try:
+        h = _requests.get(f"{_GPU_ENDPOINT}/health", timeout=2)
+        if not h.ok:
+            app.logger.info("[RESEARCH] GPU health check non-200")
+            return None
+        hd = h.json()
+        if hd.get("cuda") is not True:
+            app.logger.info("[RESEARCH] GPU online but CUDA unavailable")
+            return None
+    except Exception as e:
+        app.logger.info(f"[RESEARCH] GPU unreachable: {e}")
+        return None
+
+    # ── inference (30 s) ───────────────────────────────────────
+    try:
+        resp = _requests.post(
+            f"{_GPU_ENDPOINT}/generate",
+            json={"prompt": user, "system": system, "max_tokens": max_tokens},
+            timeout=30,
+        )
+        if not resp.ok:
+            app.logger.warning(f"[RESEARCH] GPU inference HTTP {resp.status_code}")
+            return None
+        raw = (resp.json().get("response") or "").strip()
+        if not raw:
+            return None
+    except Exception as e:
+        app.logger.warning(f"[RESEARCH] GPU inference request failed: {e}")
+        return None
+
+    # ── parse + validate ───────────────────────────────────────
+    try:
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
+        result = json.loads(cleaned)
+    except json.JSONDecodeError:
+        app.logger.warning("[RESEARCH] GPU JSON parse failed — falling back to Groq")
+        return None
+
+    if not isinstance(result, dict) or not any(
+        k in result for k in ("claims", "methods", "limitations")
+    ):
+        app.logger.warning("[RESEARCH] GPU malformed schema — falling back to Groq")
+        return None
+
+    # Override with pre-fetched metadata (higher trust)
+    for k in ("title", "authors", "venue", "date"):
+        if meta.get(k):
+            result[k] = meta[k]
+
+    # Ensure all required keys exist
+    for k in ("claims", "methods", "limitations", "connections", "lineage"):
+        result.setdefault(k, [])
+    result.setdefault("hypothesis", "")
+
+    # Normalise confidence to float 0-1
+    _conf_map = {"high": 0.9, "medium": 0.7, "low": 0.4,
+                 "very high": 0.95, "very low": 0.2}
+    for c in result.get("claims", []):
+        raw_c = c.get("confidence", 0.8)
+        if isinstance(raw_c, str):
+            c["confidence"] = _conf_map.get(raw_c.lower(), 0.7)
+        else:
+            c["confidence"] = max(0.0, min(1.0, float(raw_c)))
+
+    # Normalise severity
+    _valid_sev = {"low", "medium", "high"}
+    for lim in result.get("limitations", []):
+        sev = str(lim.get("severity", "medium")).lower()
+        lim["severity"] = sev if sev in _valid_sev else "medium"
+
+    # Normalise novelty_score to int 0-10
+    try:
+        result["novelty_score"] = max(0, min(10, int(float(result.get("novelty_score", 5)))))
+    except (TypeError, ValueError):
+        result["novelty_score"] = 5
+    result.setdefault("novelty_rationale", "")
+
+    app.logger.info("[RESEARCH] GPU inference succeeded")
+    return result
+
+
 def _analyze_paper_with_groq(text: str, depth: str,
                              focus_areas: list | None = None,
                              meta: dict | None = None) -> dict:
@@ -3080,6 +3207,9 @@ Return a JSON object with EXACTLY these keys:
   "connections": [
     {{"related_field": "where this fits in the broader landscape", "implication_for_tiamat": "how this applies to autonomous AI agents"}}
   ],
+  "lineage": [
+    {{"paper": "title or arXiv ID of a prior work this paper cites or builds on", "relationship": "builds on|extends|challenges|replicates", "significance": "why this prior work matters for understanding this paper"}}
+  ],
   "hypothesis": "If this paper is right, then ... (one concrete forward-looking statement)",
   "novelty_score": 7,
   "novelty_rationale": "one sentence explaining the novelty score"
@@ -3089,6 +3219,7 @@ Rules:
 - confidence values MUST be floats between 0.0 and 1.0 (not strings)
 - severity MUST be exactly: low, medium, or high
 - novelty_score MUST be an integer from 0 (incremental/derivative) to 10 (paradigm-shifting breakthrough)
+- lineage should list 2-5 most significant prior works referenced in the paper; empty array if none found
 - Fill title/authors/venue/date from the paper text if present; use empty string if unknown
 """
 
@@ -3114,7 +3245,7 @@ Rules:
                     result[k] = meta[k]
 
             # Ensure all expected keys exist
-            for k in ("claims", "methods", "limitations", "connections"):
+            for k in ("claims", "methods", "limitations", "connections", "lineage"):
                 result.setdefault(k, [])
             result.setdefault("hypothesis", "")
 
@@ -3150,7 +3281,7 @@ Rules:
             try:
                 cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
                 result = json.loads(cleaned)
-                for k in ("claims", "methods", "limitations", "connections"):
+                for k in ("claims", "methods", "limitations", "connections", "lineage"):
                     result.setdefault(k, [])
                 result.setdefault("hypothesis", "")
                 raw_ns = result.get("novelty_score", 5)
@@ -3178,6 +3309,26 @@ Rules:
     app.logger.error(f"[RESEARCH] Analysis failed after 3 attempts: {last_err}")
     return {"error": f"Analysis failed: {str(last_err)[:120]}",
             "claims": [], "methods": [], "limitations": [], "connections": []}
+
+
+def _add_alias_fields(analysis: dict) -> None:
+    """
+    Add flat-list alias fields required by the v2 API contract:
+      key_claims                    — flat list of claim strings (from claims[].claim)
+      connections_to_agent_autonomy — flat list of implication strings
+                                      (from connections[].implication_for_tiamat)
+    Mutates in-place so cached and streamed results both carry the aliases.
+    """
+    analysis["key_claims"] = [
+        c.get("claim", c) if isinstance(c, dict) else str(c)
+        for c in analysis.get("claims", [])
+    ]
+    conns = analysis.get("connections", [])
+    analysis["connections_to_agent_autonomy"] = [
+        c.get("implication_for_tiamat") or c.get("implication") or c.get("related_field") or str(c)
+        for c in conns
+        if isinstance(c, dict)
+    ] if conns else []
 
 
 def _log_research_analysis(paper_url: str, result: dict, analysis_format: str,
@@ -3379,26 +3530,35 @@ def research_analyze():
                 "fetch_method": fetch_method,
             }), 422
 
-    # ── Run analysis ───────────────────────────────────────────
-    try:
-        analysis = _analyze_paper_with_groq(paper_text, depth, focus_areas, meta)
-    except GroqRateLimitError:
-        log_req(0, False, 503, ip, "groq rate limit on /research", endpoint="/research")
-        return jsonify({
-            "error": "temporarily_unavailable",
-            "message": "Service is at capacity. Try again in a few minutes.",
-            "retry_after": 120,
-        }), 503
+    # ── Run analysis (GPU-first, Groq fallback) ────────────────
+    inference_engine = "groq"
+    analysis = _analyze_paper_with_gpu(paper_text, depth, focus_areas, meta)
+    if analysis is not None:
+        inference_engine = "gpu_phi3"
+    else:
+        try:
+            analysis = _analyze_paper_with_groq(paper_text, depth, focus_areas, meta)
+        except GroqRateLimitError:
+            log_req(0, False, 503, ip, "groq rate limit on /research", endpoint="/research")
+            return jsonify({
+                "error": "temporarily_unavailable",
+                "message": "Service is at capacity. Try again in a few minutes.",
+                "retry_after": 120,
+            }), 503
 
     if "error" in analysis and not analysis.get("claims"):
         return jsonify({"error": analysis["error"], "fetch_method": fetch_method}), 500
 
     # Attach pricing and source metadata
-    analysis["cost"]         = f"{_RESEARCH_PRICES[depth]:.2f} USDC" if is_paid else "free"
-    analysis["depth"]        = depth
-    analysis["fetch_method"] = fetch_method
+    analysis["cost"]             = f"{_RESEARCH_PRICES[depth]:.2f} USDC" if is_paid else "free"
+    analysis["depth"]            = depth
+    analysis["fetch_method"]     = fetch_method
+    analysis["inference_engine"] = inference_engine
     if semantic_data:
         analysis["cited_by_count"] = semantic_data.get("citationCount", 0)
+
+    # ── Add flat-list aliases (key_claims, connections_to_agent_autonomy) ──
+    _add_alias_fields(analysis)
 
     # ── Cache the result ───────────────────────────────────────
     if paper_id:
@@ -3410,6 +3570,259 @@ def research_analyze():
     log_req(len(paper_text), not is_paid, 200, ip,
             note=f"depth={depth} method={fetch_method} id={paper_id}", endpoint="/research")
     return jsonify(analysis), 200
+
+
+@app.route("/research/stream", methods=["POST"])
+def research_stream():
+    """
+    POST /research/stream — Server-Sent Events streaming version of POST /research.
+
+    Identical input and auth as POST /research.  Returns text/event-stream with
+    newline-delimited JSON events so callers see live progress during analysis.
+
+    Event schema (each line: data: <json>\\n\\n):
+      {"event":"progress","status":"start",    "message":"...","depth":"full"}
+      {"event":"progress","status":"fetching", "message":"..."}
+      {"event":"progress","status":"metadata", "message":"...","data":{title,authors,...}}
+      {"event":"progress","status":"analyzing","message":"..."}
+      {"event":"result",  "status":"done",     "result":{...full analysis JSON...}}
+      {"event":"error",   "error":"...",        "fetch_method":"..."}   ← on failure
+
+    The "result" object is identical to the synchronous POST /research response:
+      title, authors, venue, date
+      claims        [{claim, confidence, evidence}]
+      key_claims    [str]                           ← flat alias
+      methods       [{method, reproducibility}]
+      limitations   [{limitation, severity}]
+      connections   [{related_field, implication_for_tiamat}]
+      connections_to_agent_autonomy [str]           ← flat alias
+      lineage, hypothesis, novelty_score, novelty_rationale
+      depth, cost, fetch_method, inference_engine, cited_by_count
+
+    Examples:
+      # Stream arXiv paper (free, quick):
+      curl -N -X POST https://tiamat.live/research/stream \\
+        -H 'Content-Type: application/json' \\
+        -d '{"url":"https://arxiv.org/abs/2502.01283","depth":"quick"}'
+
+      # Stream from raw text (paid, full depth):
+      curl -N -X POST https://tiamat.live/research/stream \\
+        -H 'Content-Type: application/json' \\
+        -H 'X-Payment-Token: 0xYOURTXHASH' \\
+        -d '{"text":"Abstract: We propose a novel...","depth":"full"}'
+
+      # api.tiamat.live alias:
+      curl -N -X POST https://api.tiamat.live/research/stream \\
+        -H 'Content-Type: application/json' \\
+        -d '{"url":"https://arxiv.org/abs/2410.21276","depth":"full"}'
+
+    Free tier: 1 analysis/day per IP, depth locked to "quick".
+    Paid: $0.10 quick | $0.25 full | $1.00 deep (x402 USDC on Base, X-Payment-Token header).
+    Caching: identical cache as POST /research (paper_id + depth key).
+    """
+    ip = _get_ip()
+
+    rl = _rate_limiter.check(ip, scope="api")
+    if not rl.allowed:
+        return jsonify({"error": "Rate limited", "retry_after": int(rl.retry_after_sec)}), 429
+    _rate_limiter.record(ip, scope="api")
+
+    data = request.get_json(silent=True) or {}
+    paper_url  = (data.get("url")  or data.get("paper_url")  or "").strip()
+    paper_text = (data.get("text") or data.get("paper_text") or "").strip()
+    depth = (data.get("depth") or data.get("analysis_depth") or "full").strip().lower()
+    if depth == "summary":
+        depth = "quick"
+    if depth not in _RESEARCH_PRICES:
+        return jsonify({"error": f'Invalid depth "{depth}". Use: quick, full, deep'}), 400
+
+    _valid_areas = {"claims", "methods", "limitations", "implications"}
+    raw_focus = data.get("focus_areas", [])
+    focus_areas = (
+        [f for f in raw_focus if f in _valid_areas] or list(_valid_areas)
+        if isinstance(raw_focus, list) else list(_valid_areas)
+    )
+
+    if not paper_url and not paper_text:
+        return jsonify({"error": 'Provide "url" or "text"'}), 400
+    if paper_url and paper_text:
+        return jsonify({"error": 'Provide "url" OR "text", not both'}), 400
+    if paper_text and len(paper_text) > 100_000:
+        return jsonify({"error": "text exceeds 100,000 character limit"}), 400
+    if paper_url:
+        ok, err = _validate_paper_url(paper_url)
+        if not ok:
+            return jsonify({"error": err}), 400
+
+    stripe_key  = request.headers.get("X-API-Key", "").strip()
+    stripe_info = _check_stripe_key(stripe_key) if stripe_key else None
+    paid_via_stripe = stripe_info and stripe_info["valid"]
+
+    payment   = extract_payment_proof(request)
+    tier_info = (
+        check_tier(payment, request_amount=_RESEARCH_PRICES[depth], endpoint="/research")
+        if payment else {"tier": "free"}
+    )
+
+    if tier_info["tier"] == "invalid":
+        return _return_402(_RESEARCH_PRICES[depth], endpoint="/research/stream",
+                           extra={"payment_error": tier_info.get("reason")})
+
+    if paid_via_stripe:
+        _consume_stripe_credit(stripe_key)
+        is_paid = True
+    elif tier_info["tier"] in ("premium", "per_request"):
+        is_paid = True
+    else:
+        if depth != "quick":
+            return _return_402(_RESEARCH_PRICES[depth], endpoint="/research/stream",
+                               extra={"hint": "Free tier locked to depth=quick. Pay to unlock full/deep."})
+        quota_ok, _ = _check_free_quota(ip, "research", _RESEARCH_FREE_PER_DAY)
+        if not quota_ok:
+            track_limit_hit(ip, "research")
+            return _return_402(_RESEARCH_PRICES["quick"], endpoint="/research/stream",
+                               extra={"hint": "Free tier: 1 analysis/day. Pay $0.10 USDC for more."})
+        is_paid = False
+
+    track_usage(ip, "/research/stream")
+
+    # Capture immutable state for the generator closure
+    _url        = paper_url
+    _init_text  = paper_text
+    _depth      = depth
+    _focus      = focus_areas
+    _is_paid    = is_paid
+    _ip         = ip
+
+    def _sse(obj: dict) -> str:
+        return f"data: {json.dumps(obj)}\n\n"
+
+    def generate():
+        yield _sse({"event": "progress", "status": "start",
+                    "message": "Paper analysis initiated", "depth": _depth})
+
+        # ── Cache check ────────────────────────────────────────
+        paper_id = _extract_paper_id(_url) if _url else None
+        if paper_id:
+            cached = _get_research_cache(paper_id, _depth)
+            if cached:
+                cached["_cached"] = True
+                cached["cost"] = f"{_RESEARCH_PRICES[_depth]:.2f} USDC" if _is_paid else "free"
+                _add_alias_fields(cached)
+                yield _sse({"event": "result", "status": "done", "result": cached})
+                return
+
+        # ── Fetch paper content ────────────────────────────────
+        paper_text_ref = [_init_text]   # list → mutable in nested scope
+        fetch_method   = "direct_text"
+        semantic_data  = None
+        meta           = {}
+
+        if _url:
+            yield _sse({"event": "progress", "status": "fetching",
+                        "message": f"Querying Semantic Scholar for metadata..."})
+            semantic_data = _fetch_semantic_scholar(_url)
+            if semantic_data:
+                meta = {
+                    "title":   semantic_data.get("title") or "",
+                    "authors": ", ".join(
+                        a.get("name", "") for a in (semantic_data.get("authors") or [])
+                    ),
+                    "venue":   semantic_data.get("venue") or "",
+                    "date":    str(semantic_data.get("year") or ""),
+                }
+                yield _sse({"event": "progress", "status": "metadata",
+                            "message": f"Found: {meta['title'][:80]}",
+                            "data": meta})
+
+            fetch_method = "none"
+            pdf_url = _url
+            if re.search(r"arxiv\.org/abs/", _url):
+                pdf_url = _arXiv_to_pdf_url(_url)
+            is_pdf_url = (
+                pdf_url.lower().endswith(".pdf")
+                or "arxiv.org/pdf/" in pdf_url
+                or "/pdf" in urllib.parse.urlparse(pdf_url).path.lower()
+            )
+            if is_pdf_url or pdf_url != _url:
+                yield _sse({"event": "progress", "status": "fetching",
+                            "message": "Downloading and extracting PDF text..."})
+                paper_text_ref[0], fetch_method = _extract_pdf_text(pdf_url)
+
+            if not paper_text_ref[0] and semantic_data:
+                abstract = semantic_data.get("abstract") or ""
+                if abstract:
+                    paper_text_ref[0] = (
+                        f"Title: {meta.get('title', '')}\n"
+                        f"Authors: {meta.get('authors', '')}\n"
+                        f"Venue: {meta.get('venue', '')}\n"
+                        f"Year: {meta.get('date', '')}\n\nAbstract:\n{abstract}"
+                    )
+                    fetch_method = "semantic_scholar_abstract"
+
+            if not paper_text_ref[0]:
+                yield _sse({"event": "progress", "status": "fetching",
+                            "message": "Extracting text from HTML..."})
+                paper_text_ref[0], fetch_method = _fetch_url_text(_url)
+
+            if not paper_text_ref[0]:
+                yield _sse({"event": "error",
+                            "error": "Could not extract paper content. "
+                                     "Try arxiv.org/pdf/... or paste text directly.",
+                            "fetch_method": fetch_method})
+                return
+
+        # ── Run analysis ───────────────────────────────────────
+        yield _sse({"event": "progress", "status": "analyzing",
+                    "message": f"Running deep analysis (depth={_depth}, model=llama-3.3-70b)..."})
+
+        inference_engine = "groq"
+        analysis = _analyze_paper_with_gpu(paper_text_ref[0], _depth, _focus, meta)
+        if analysis is not None:
+            inference_engine = "gpu_phi3"
+        else:
+            try:
+                analysis = _analyze_paper_with_groq(paper_text_ref[0], _depth, _focus, meta)
+            except GroqRateLimitError:
+                yield _sse({"event": "error", "error": "temporarily_unavailable",
+                            "message": "Service at capacity. Retry in ~2 minutes.",
+                            "retry_after": 120})
+                return
+
+        if "error" in analysis and not analysis.get("claims"):
+            yield _sse({"event": "error", "error": analysis["error"],
+                        "fetch_method": fetch_method})
+            return
+
+        analysis["cost"]             = f"{_RESEARCH_PRICES[_depth]:.2f} USDC" if _is_paid else "free"
+        analysis["depth"]            = _depth
+        analysis["fetch_method"]     = fetch_method
+        analysis["inference_engine"] = inference_engine
+        if semantic_data:
+            analysis["cited_by_count"] = semantic_data.get("citationCount", 0)
+
+        _add_alias_fields(analysis)
+
+        if paper_id:
+            _set_research_cache(paper_id, _depth, analysis)
+
+        _log_research_analysis(_url or "(direct text)", analysis, _depth,
+                               semantic_data, fetch_method)
+        log_req(len(paper_text_ref[0]), not _is_paid, 200, _ip,
+                note=f"stream depth={_depth} method={fetch_method} id={paper_id}",
+                endpoint="/research/stream")
+
+        yield _sse({"event": "result", "status": "done", "result": analysis})
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",   # tells nginx: don't buffer this SSE stream
+            "Connection":    "keep-alive",
+        },
+    )
 
 
 # ── /dashboard helpers ─────────────────────────────────────────
