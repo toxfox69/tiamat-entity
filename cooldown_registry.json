@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 1453,
-    "lastRun": "2026-02-25T01:31:17.419Z",
-    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"cerebras-120b\", \"insight\": \"Based on TIAMAT's mission and recent observations, one unsolved problem that TIAMAT could build a quick solution for is:\\n\\n**Problem:** AI model drift detection in edge cases.\\n\\n**Current pain point:** AI model performance degrades over time due to changes in data distributions, concept drift, or other edge cases. Developers struggle to detect and address these issues, leading to suboptimal model performance and wasted resources.\\"
+    "runs": 1467,
+    "lastRun": "2026-02-25T01:42:57.837Z",
+    "lastResult": "{\"mode\": \"self_critique\", \"engine\": \"cerebras-120b\", \"insight\": \"Based on TIAMAT's recent progress, it appears that she has been stuck in a loop of using the same model (claude-haiku-4-5-20251001) and tools (browse_web, send_telegram, ticket_claim, read_file) for various tasks. This might be due to a lack of exploration and experimentation with new tools and models.\\n\\n**Identified Gap:** TIAMAT has not leveraged her capabilities to integrate with new tools or APIs that could provide more compre"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 874,
-    "lastRun": "2026-02-25T01:30:35.375Z",
-    "lastResult": "{\"mode\": \"tool_design\", \"question\": \"Design a new tool called \\\"agent_registry_inspect\\\" that allows TIAMAT to programmatically inspect, analyze, and collect data from AgentRegistry.ai regi\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"cerebras-120b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement agent_registry_inspect tool using exec tool\", \"Define API signature and return types for agent_registry_inspect tool\", \"Integrate agent_registry_inspect tool with exist"
+    "runs": 885,
+    "lastRun": "2026-02-25T01:42:56.756Z",
+    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What are the specific lines of code in `browser_tool.py` (6630B) that handle the `browse_web` tool's 224 calls, and how do these lines account for pot\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"cerebras-120b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Review and update the `browse_web` tool implementation in TIAMAT based on the pr\", \"Use the `write_file` tool to create a new file containing the hypothetical code \", \"Integrate th"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 767,
-    "lastRun": "2026-02-25T01:31:15.445Z",
+    "runs": 780,
+    "lastRun": "2026-02-25T01:42:53.709Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -35,8 +35,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 370,
-    "lastRun": "2026-02-25T01:31:17.481Z",
+    "runs": 384,
+    "lastRun": "2026-02-25T01:42:57.917Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   }
 ]

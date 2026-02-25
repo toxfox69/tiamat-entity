@@ -11,7 +11,7 @@ Runs between cycles to:
 import json
 import pathlib
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Potential agent registries to monitor
 KNOWN_REGISTRIES = [
@@ -80,7 +80,7 @@ def main():
             print(f'[Agent Discovery] Added: {agent["name"]}')
     
     # Update timestamp
-    agent_dir['last_updated'] = datetime.utcnow().isoformat()
+    agent_dir['last_updated'] = datetime.now(timezone.utc).isoformat()
     
     # Save
     save_agent_dir(agent_dir)
