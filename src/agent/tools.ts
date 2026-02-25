@@ -1094,7 +1094,7 @@ Model: ${ctx.inference.getDefaultModel()}
         if (!task?.trim()) return "ERROR: task is required. Provide a specific task description.";
 
         const { writeFileSync } = await import("fs");
-        const { spawnSync } = await import("child_process");
+        const { spawn } = await import("child_process");
 
         // Write task to file for debugging/logging
         writeFileSync("/root/.automaton/claude_task.txt", task, "utf-8");
@@ -1106,25 +1106,51 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
 
-        // Pipe task via stdin to avoid shell escaping issues with $(cat ...)
-        const claudeResult = spawnSync(
-          "sh",
-          ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash"'],
-          { encoding: "utf-8", timeout: 300_000, env: childEnv, input: task },
-        );
+        // Async spawn — doesn't block the event loop (heartbeats etc. stay alive)
+        const TIMEOUT_MS = 600_000; // 10 minutes
+        const claudeOutput = await new Promise<string>((resolve) => {
+          const chunks: Buffer[] = [];
+          const errChunks: Buffer[] = [];
 
-        const claudeOutput = [
-          claudeResult.stdout?.trim(),
-          claudeResult.stderr?.trim(),
-        ].filter(Boolean).join("\n");
+          const proc = spawn(
+            "sh",
+            ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash"'],
+            { env: childEnv, stdio: ["pipe", "pipe", "pipe"] },
+          );
 
-        if (claudeResult.error) {
-          return `ERROR launching Claude Code: ${claudeResult.error.message}`;
-        }
+          proc.stdout.on("data", (d: Buffer) => chunks.push(d));
+          proc.stderr.on("data", (d: Buffer) => errChunks.push(d));
+
+          // Feed task via stdin then close
+          proc.stdin.write(task);
+          proc.stdin.end();
+
+          const timer = setTimeout(() => {
+            proc.kill("SIGTERM");
+            setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 5_000);
+            const partial = Buffer.concat(chunks).toString("utf-8").trim();
+            resolve(partial
+              ? `(timed out after ${TIMEOUT_MS / 1000}s — partial output)\n${partial}`
+              : `ERROR: Claude Code timed out after ${TIMEOUT_MS / 1000}s. Break the task into smaller pieces.`);
+          }, TIMEOUT_MS);
+
+          proc.on("close", () => {
+            clearTimeout(timer);
+            const out = Buffer.concat(chunks).toString("utf-8").trim();
+            const err = Buffer.concat(errChunks).toString("utf-8").trim();
+            resolve([out, err].filter(Boolean).join("\n") || "(no output)");
+          });
+
+          proc.on("error", (e: Error) => {
+            clearTimeout(timer);
+            resolve(`ERROR launching Claude Code: ${e.message}`);
+          });
+        });
 
         // Auto-rebuild if task involves code changes
         const shouldBuild = /rebuild|fix|add|update|change|modify|implement/i.test(task);
         if (shouldBuild) {
+          const { spawnSync } = await import("child_process");
           const buildResult = spawnSync("pnpm", ["build"], {
             cwd: "/root/entity",
             encoding: "utf-8",
