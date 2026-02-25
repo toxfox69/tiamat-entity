@@ -276,7 +276,7 @@ export async function runAgentLoop(
   // we stop burning Haiku tokens (~$0.004/cycle) and just run cooldown scripts.
   // Inference resumes instantly when a ticket appears (suggestion queue, creator, IPC).
   // EXCEPTION: every LEARNING_CYCLE_INTERVAL idle cycles, run a learning cycle
-  // so TIAMAT can use gpu_infer for research (P1 mission priority).
+  // (learning_cycle.py — search papers via Semantic Scholar, analyze with claude --print, save + queue post).
   let consecutiveNoTicketCycles = 0;
   const IDLE_SHUTOFF_THRESHOLD = 3;
   const IDLE_SHUTOFF_INTERVAL_MS = 120_000; // 2 min between idle cycles (more cooldown time)
@@ -492,17 +492,21 @@ export async function runAgentLoop(
           continue; // Skip inference, loop back
         }
 
-        // Learning cycle: inject a research prompt so TIAMAT uses gpu_infer
+        // Learning cycle: run learning_cycle.py directly (search papers → analyze → queue post)
         if (isLearningCycle) {
-          log(config, `[LEARNING-CYCLE] Idle streak ${consecutiveNoTicketCycles} — running learning cycle`);
-          pendingInput = {
-            content: "[LEARNING CYCLE] No tickets. Use this cycle for Priority 1 (Learning). " +
-              "Call gpu_infer() to analyze a topic from your research domains " +
-              "(AI agents, autonomous systems, economics, network theory, emergence). " +
-              "Save findings to /root/hive/knowledge/ via write_file. " +
-              "Or search_web for a new ArXiv paper and summarize it.",
-            source: "system",
-          };
+          log(config, `[LEARNING-CYCLE] Idle streak ${consecutiveNoTicketCycles} — running learning_cycle.py`);
+          try {
+            const { execFileSync } = await import("child_process");
+            const out = execFileSync(
+              "python3",
+              ["/root/entity/src/agent/learning_cycle.py"],
+              { encoding: "utf-8", timeout: 35_000, env: { ...process.env } },
+            );
+            log(config, `[LEARNING-CYCLE] ${out.trim().slice(0, 200)}`);
+          } catch (lcErr: any) {
+            log(config, `[LEARNING-CYCLE] script error: ${lcErr.message?.slice(0, 150)}`);
+          }
+          // No pendingInput — stay in idle-shutoff mode, don't burn API tokens
         }
       }
 
@@ -1026,6 +1030,9 @@ export async function runAgentLoop(
         ...(inferenceModel ? { model: inferenceModel } : {}),
       });
 
+      // ── Training data capture: record cycle start time ──
+      const cycleStartMs = Date.now();
+
       // ── Optimization 4: Cost logging per cycle ──
       {
         const usage = response.usage;
@@ -1176,6 +1183,59 @@ export async function runAgentLoop(
         onTurnComplete?.(turn);
       } else {
         console.log(`[LOOP] Skipping empty turn — no thinking or tool calls (likely empty API response)`);
+      }
+
+      // ── Training Data Logger: log cycle as fine-tuning example ──
+      if (turn.thinking.trim() || turn.toolCalls.length > 0) {
+        try {
+          const modelUsed = inference.getDefaultModel();
+          const isHaiku = !modelUsed.includes("sonnet");
+          const tierUsed = isHaiku ? "routine" : "strategic";
+          const toolNames = turn.toolCalls.map(tc => tc.name);
+          const cycleLatency = Date.now() - cycleStartMs;
+
+          // Classify task type
+          const toolSet = new Set(toolNames);
+          let taskType = "general_reasoning";
+          if (toolSet.has("ask_claude_code") || toolSet.has("write_file")) taskType = "code_generation";
+          else if (toolSet.has("search_web") || toolSet.has("web_fetch")) taskType = "research";
+          else if (toolSet.has("post_bluesky") || toolSet.has("moltbook_post")) taskType = "social_media";
+          else if (toolSet.has("send_telegram") || toolSet.has("send_email")) taskType = "communication";
+          else if (toolSet.has("read_file")) taskType = "information_gathering";
+          else if (toolSet.has("exec")) taskType = "system_operation";
+          else if (toolSet.has("remember") || toolSet.has("recall") || toolSet.has("reflect")) taskType = "self_reflection";
+
+          // Build messages array (system + last 5 input messages + assistant response)
+          const inputMsgs = recentTurns.slice(-5).map(t => ({
+            role: "user" as const,
+            content: (t.input || t.thinking || "").slice(0, 4000),
+          }));
+
+          const trainingExample = {
+            id: `tiamat-cycle-${turnCount}`,
+            timestamp: new Date().toISOString(),
+            cycle: turnCount,
+            tier: tierUsed,
+            model: modelUsed,
+            messages: [
+              { role: "system", content: strategicSystemPrompt.slice(0, 2000) },
+              ...inputMsgs,
+              { role: "assistant", content: (turn.thinking || "").slice(0, 4000) },
+            ],
+            tools_called: toolNames,
+            tokens: { in: response.usage.promptTokens, out: response.usage.completionTokens },
+            latency_ms: cycleLatency,
+            task_type: taskType,
+          };
+
+          const trainingDir = "/root/.automaton/training_data";
+          const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+          const trainingFile = path.join(trainingDir, `cycles_${month}.jsonl`);
+          fs.mkdirSync(trainingDir, { recursive: true });
+          fs.appendFileSync(trainingFile, JSON.stringify(trainingExample) + "\n");
+        } catch (e: any) {
+          console.log(`[TRAINING] Log failed: ${e.message?.slice(0, 100)}`);
+        }
       }
 
       // ── Auto-remember: store a memory for every non-empty cycle ──

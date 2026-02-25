@@ -3080,12 +3080,15 @@ Return a JSON object with EXACTLY these keys:
   "connections": [
     {{"related_field": "where this fits in the broader landscape", "implication_for_tiamat": "how this applies to autonomous AI agents"}}
   ],
-  "hypothesis": "If this paper is right, then ... (one concrete forward-looking statement)"
+  "hypothesis": "If this paper is right, then ... (one concrete forward-looking statement)",
+  "novelty_score": 7,
+  "novelty_rationale": "one sentence explaining the novelty score"
 }}
 
 Rules:
 - confidence values MUST be floats between 0.0 and 1.0 (not strings)
 - severity MUST be exactly: low, medium, or high
+- novelty_score MUST be an integer from 0 (incremental/derivative) to 10 (paradigm-shifting breakthrough)
 - Fill title/authors/venue/date from the paper text if present; use empty string if unknown
 """
 
@@ -3131,6 +3134,14 @@ Rules:
                 sev = str(lim.get("severity", "medium")).lower()
                 lim["severity"] = sev if sev in _valid_sev else "medium"
 
+            # Normalise novelty_score to int 0-10
+            raw_ns = result.get("novelty_score", 5)
+            try:
+                result["novelty_score"] = max(0, min(10, int(float(raw_ns))))
+            except (TypeError, ValueError):
+                result["novelty_score"] = 5
+            result.setdefault("novelty_rationale", "")
+
             return result
 
         except json.JSONDecodeError as e:
@@ -3142,6 +3153,12 @@ Rules:
                 for k in ("claims", "methods", "limitations", "connections"):
                     result.setdefault(k, [])
                 result.setdefault("hypothesis", "")
+                raw_ns = result.get("novelty_score", 5)
+                try:
+                    result["novelty_score"] = max(0, min(10, int(float(raw_ns))))
+                except (TypeError, ValueError):
+                    result["novelty_score"] = 5
+                result.setdefault("novelty_rationale", "")
                 return result
             except Exception:
                 pass
@@ -3194,18 +3211,27 @@ def research_analyze():
     POST /research — deep academic paper analysis.
 
     Body (JSON):
-      paper_url      : str  — ArXiv/DOI/PDF URL (or paper_text)
-      paper_text     : str  — raw paper text (or paper_url)
-      analysis_depth : str  — "quick" | "full" | "deep"  (default: "full")
-                               Legacy alias: analysis_format="summary" → quick, "deep" → deep
-      focus_areas    : list — ["claims","methods","limitations","implications"]
+      url         : str  — arXiv/DOI/PDF URL  (mutually exclusive with text)
+      text        : str  — raw paper content  (mutually exclusive with url)
+      depth       : str  — "quick" | "full" | "deep"  (default: "full")
+      focus_areas : list — ["claims","methods","limitations","implications"]
 
-    Returns spec-compliant JSON: title, authors, venue, date, claims, methods,
-    limitations, connections, hypothesis, cost.
+    Legacy aliases accepted: paper_url, paper_text, analysis_depth, analysis_format.
+
+    Response JSON:
+      title, authors, venue, date
+      claims        : [{claim, confidence, evidence}]
+      methods       : [{method, reproducibility}]
+      limitations   : [{limitation, severity}]
+      connections   : [{related_field, implication_for_tiamat}]
+      hypothesis    : str
+      novelty_score : int 0-10
+      novelty_rationale : str
+      depth, cost, fetch_method, cited_by_count (when available)
 
     Free tier : 1 analysis/day, depth locked to "quick".
     Paid      : $0.10 quick | $0.25 full | $1.00 deep (x402 USDC on Base).
-    Caching   : results stored by DOI/arXiv ID, served instantly on repeat calls.
+    Caching   : results keyed by DOI/arXiv ID + depth, served instantly on repeat.
     """
     ip = _get_ip()
 
@@ -3217,17 +3243,20 @@ def research_analyze():
     _rate_limiter.record(ip, scope="api")
 
     # ── Parse + validate input ─────────────────────────────────
+    # Primary field names: url, text, depth
+    # Legacy aliases accepted: paper_url, paper_text, analysis_depth, analysis_format
     data = request.get_json(silent=True) or {}
-    paper_url  = (data.get("paper_url")  or "").strip()
-    paper_text = (data.get("paper_text") or "").strip()
+    paper_url  = (data.get("url")  or data.get("paper_url")  or "").strip()
+    paper_text = (data.get("text") or data.get("paper_text") or "").strip()
 
-    # analysis_depth is the primary field; legacy analysis_format is also accepted
-    depth = (data.get("analysis_depth") or data.get("analysis_format") or "full").strip().lower()
-    # Map legacy values
+    depth = (
+        data.get("depth") or data.get("analysis_depth") or data.get("analysis_format") or "full"
+    ).strip().lower()
+    # Map legacy aliases
     if depth == "summary":
         depth = "quick"
     if depth not in _RESEARCH_PRICES:
-        return jsonify({"error": f'Invalid analysis_depth "{depth}". Use: quick, full, deep'}), 400
+        return jsonify({"error": f'Invalid depth "{depth}". Use: quick, full, deep'}), 400
 
     # Validate focus_areas
     _valid_areas = {"claims", "methods", "limitations", "implications"}
@@ -3236,11 +3265,11 @@ def research_analyze():
                    if isinstance(raw_focus, list) else list(_valid_areas))
 
     if not paper_url and not paper_text:
-        return jsonify({"error": 'Provide "paper_url" or "paper_text"'}), 400
+        return jsonify({"error": 'Provide "url" (arXiv/DOI) or "text" (raw paper content)'}), 400
     if paper_url and paper_text:
-        return jsonify({"error": 'Provide "paper_url" OR "paper_text", not both'}), 400
+        return jsonify({"error": 'Provide "url" OR "text", not both'}), 400
     if paper_text and len(paper_text) > 100_000:
-        return jsonify({"error": "paper_text exceeds 100,000 character limit"}), 400
+        return jsonify({"error": "text exceeds 100,000 character limit"}), 400
 
     if paper_url:
         ok, err = _validate_paper_url(paper_url)
@@ -4531,6 +4560,12 @@ def agent_collab():
     except Exception as e:
         log_req(0, False, 500, request.remote_addr or "unknown", str(e), endpoint="/agent-collab")
         return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route('/training-stats')
+def training_stats():
+    from training_logger import get_training_stats
+    return jsonify(get_training_stats())
 
 
 if __name__ == "__main__":
