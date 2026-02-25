@@ -17,7 +17,7 @@ sys.path.insert(0, "/root/entity/src/agent")
 sys.path.insert(0, "/root/entity/src/drift")
 sys.path.insert(0, "/root/hive")
 from rate_limiter import create_rate_limiter
-from payment_verify import verify_payment, payment_required_response, payment_required_headers, extract_payment_proof, TIAMAT_WALLET, USDC_CONTRACT
+from payment_verify import verify_payment, payment_required_response, payment_required_headers, extract_payment_proof, check_tier, TIAMAT_WALLET, USDC_CONTRACT, PREMIUM_AMOUNT
 from tiamat_theme import (CSS as _CSS, NAV as _NAV, FOOTER as _FOOTER,
     SVG_CORE as _SVG_CORE, SUBCONSCIOUS_STREAM as _SUBCONSCIOUS,
     VISUAL_ROT_JS as _VISUAL_ROT_JS, FONTS_LINK as _FONTS,
@@ -55,9 +55,13 @@ if not _groq_key:
     raise RuntimeError("groqApiKey not found in automaton.json or env")
 groq_client = Groq(api_key=_groq_key)
 
-FREE_LIMIT = 2000       # chars — legacy compat; actual gate is per-IP daily quota
-FREE_PER_DAY = 3        # free summarize calls per IP per day
-IMAGE_FREE_PER_DAY = 2  # free image generations per IP per day
+FREE_LIMIT = 2000            # chars — legacy compat; actual gate is per-IP daily quota
+FREE_PER_DAY = 3             # free summarize calls per IP per day
+IMAGE_FREE_PER_DAY = 2       # free image generations per IP per day
+CHAT_FREE_PER_DAY = 5        # free chat calls per IP per day
+PREMIUM_SUMMARIZE_PER_DAY = 100
+PREMIUM_IMAGE_PER_DAY = 50
+PREMIUM_CHAT_PER_DAY = 200
 
 # ── Per-IP daily free quota (SQLite — shared across all workers) ────
 import sqlite3
@@ -598,14 +602,18 @@ def health():
 def pricing():
     data = {
         "tiers": {
-            "free": {"calls_per_day": 3, "price": "$0.00", "auth": "none"},
-            "pay_per_use": {"price_summarize": "$0.01 USDC", "price_chat": "$0.005 USDC", "price_generate": "$0.01 USDC", "method": "x402"},
-            "builder": {"price": "1 USDC/month", "calls_per_day": 100, "method": "manual"},
-            "unlimited": {"price": "5 USDC/month", "calls_per_day": "unlimited", "method": "manual"},
+            "free": {"calls_per_day": {"summarize": 3, "generate": 2, "chat": 5}, "price": "$0.00", "auth": "none"},
+            "premium": {
+                "price": "$5.00 USDC one-time", "method": "x402",
+                "calls_per_day": {"summarize": PREMIUM_SUMMARIZE_PER_DAY, "generate": PREMIUM_IMAGE_PER_DAY, "chat": PREMIUM_CHAT_PER_DAY},
+                "note": "Send $5 USDC, include tx hash as X-Payment header — reusable daily key",
+            },
+            "pay_per_use": {"price_summarize": "$0.01 USDC", "price_chat": "$0.005 USDC", "price_generate": "$0.01 USDC", "method": "x402", "note": "Each tx hash is single-use"},
         },
         "wallet": TIAMAT_WALLET,
         "chain": "Base (8453)",
         "token": "USDC",
+        "pay_page": "https://tiamat.live/pay",
     }
     if wants_html():
         page = f"""{_html_head('TIAMAT &mdash; Pricing', '.tier-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin:20px 0}}.tier{{padding:24px;border-radius:8px}}.tier.featured{{border-color:var(--accent)}}.tier h2{{color:var(--accent);margin-bottom:8px}}.price{{font-size:28px;color:#fff;margin:12px 0}}.price span{{font-size:14px;color:var(--text-muted)}}.features{{list-style:none;padding:0;margin:16px 0}}.features li{{padding:6px 0;border-bottom:1px solid var(--border)}}.features li::before{{content:"\\2713 ";color:var(--accent)}}.cta-btn{{display:block;text-align:center;margin-top:16px;padding:10px;background:var(--accent);color:#000;text-decoration:none;border-radius:4px;font-weight:bold}}.wallet-box{{max-width:600px;margin:30px auto;padding:20px;border:1px solid var(--accent);border-radius:8px;text-align:center}}.wallet-addr{{font-size:12px;word-break:break-all;color:var(--accent);margin:10px 0}}')}
@@ -997,22 +1005,29 @@ document.addEventListener('DOMContentLoaded',function(){{
             return jsonify({"error": "Too many requests. Try again later.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
         _rate_limiter.record(ip, scope="api")
 
-        # Check x402 payment (real on-chain verification)
-        tx_hash = extract_payment_proof(request)
-        paid = False
-        if tx_hash:
-            vr = verify_payment(tx_hash, 0.01, endpoint="/summarize")
-            if not vr["valid"]:
-                log_req(len(text), False, 402, ip, f"payment rejected: {vr['reason']}", endpoint="/summarize")
-                return _return_402(0.01, endpoint="/summarize", extra={"payment_error": vr["reason"]})
-            paid = True
-
         # Hard cap on text length (even paid) to prevent abuse
         if len(text) > 50000:
             log_req(len(text), False, 400, ip, "text exceeds 50K limit", endpoint="/summarize")
             return jsonify({"error": "Text too long. Maximum 50,000 characters."}), 400
 
-        if not paid:
+        # Determine payment tier
+        tx_hash = extract_payment_proof(request)
+        tier = check_tier(tx_hash, request_amount=0.01, endpoint="/summarize") if tx_hash else {"tier": "free"}
+
+        if tier["tier"] == "invalid":
+            log_req(len(text), False, 402, ip, f"payment rejected: {tier.get('reason')}", endpoint="/summarize")
+            return _return_402(0.01, endpoint="/summarize", extra={"payment_error": tier.get("reason")})
+        elif tier["tier"] == "premium":
+            sub_id = tier["sub_id"]
+            has_quota, remaining = _check_premium_quota(sub_id, "summarize", PREMIUM_SUMMARIZE_PER_DAY)
+            if not has_quota:
+                log_req(len(text), False, 429, ip, "premium quota exceeded", endpoint="/summarize")
+                return _return_premium_limit("/summarize", PREMIUM_SUMMARIZE_PER_DAY)
+            paid = False
+        elif tier["tier"] == "per_request":
+            remaining = "unlimited (paid per call)"
+            paid = True
+        else:  # free
             if len(text) >= 2000:
                 log_req(len(text), False, 402, ip, "text too long for free tier", endpoint="/summarize")
                 track_limit_hit(ip, "/summarize")
@@ -1022,13 +1037,13 @@ document.addEventListener('DOMContentLoaded',function(){{
                 log_req(len(text), False, 402, ip, "daily quota exceeded", endpoint="/summarize")
                 track_limit_hit(ip, "/summarize")
                 return _return_402(0.01, endpoint="/summarize")
-        else:
-            remaining = "N/A (paid)"
+            paid = False
 
         summary, model_used = _summarize(text)
-        log_req(len(text), not paid, 200, ip, f"ok {len(summary)}c out via {model_used}", endpoint="/summarize")
+        log_req(len(text), not paid, 200, ip, f"ok {len(summary)}c out via {model_used} tier={tier['tier']}", endpoint="/summarize")
         return jsonify({"summary": summary, "text_length": len(text),
                         "charged": paid,
+                        "tier": tier["tier"],
                         "free_calls_remaining": remaining,
                         "model": model_used}), 200
     except GroqRateLimitError:
@@ -1057,6 +1072,36 @@ def free_quota():
 @app.route("/thoughts", methods=["GET"])
 def thoughts():
     return send_file("/var/www/tiamat/thoughts.html", mimetype="text/html")
+
+# ── /thoughts/push — Internal endpoint for brainrot overlay ──
+_BRAINROT_LOG = "/root/.automaton/brainrot_thoughts.log"
+
+@app.route("/thoughts/push", methods=["POST"])
+def thoughts_push():
+    """Accept thought pushes from brainrot orchestrator (localhost only)."""
+    # Only allow from localhost
+    remote = request.remote_addr
+    if remote not in ("127.0.0.1", "::1"):
+        return jsonify({"error": "forbidden"}), 403
+
+    data = request.get_json(silent=True) or {}
+    ts = data.get("timestamp", datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z"))
+    thought_type = data.get("type", "visual")
+    mode = data.get("mode", "unknown")
+    content = str(data.get("content", ""))[:2000]
+
+    # Format as log line and append to both brainrot log and main tiamat log
+    log_line = f"{ts} [BRAINROT/{mode.upper()}] [{thought_type}] {content.splitlines()[0][:200]}"
+    try:
+        with open(_BRAINROT_LOG, "a") as f:
+            f.write(log_line + "\n")
+        # Also append to main tiamat.log so it shows in the neural feed
+        with open("/root/.automaton/tiamat.log", "a") as f:
+            f.write(log_line + "\n")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"ok": True})
 
 # ── /api/thoughts ─────────────────────────────────────────────
 def _thought_stats():
@@ -1334,6 +1379,23 @@ ART_STYLES = ["fractal", "glitch", "neural", "sigil", "emergence", "data_portrai
 def _check_image_free_quota(ip: str) -> tuple:
     return _check_free_quota(ip, endpoint="generate", limit=IMAGE_FREE_PER_DAY)
 
+def _check_premium_quota(sub_id: str, endpoint: str, limit: int) -> tuple:
+    """Track daily usage for a premium subscription by its sub_id."""
+    return _check_free_quota(sub_id, endpoint=endpoint, limit=limit)
+
+def _return_premium_limit(endpoint: str, limit: int, unit: str = "requests") -> tuple:
+    """Return a clear 429 when a premium user hits their daily cap."""
+    from flask import make_response
+    body = {
+        "error": "premium_quota_exceeded",
+        "message": f"Premium daily limit reached ({limit} {unit}/day). Resets at midnight UTC.",
+        "limit": limit,
+        "resets": "midnight UTC",
+        "tier": "premium",
+    }
+    resp = make_response(jsonify(body), 429)
+    return resp
+
 def _generate_art(style: str = "fractal", seed: int | None = None) -> str:
     """Run local artgen.py, copy result to web dir, return filename."""
     if style not in ART_STYLES:
@@ -1374,33 +1436,40 @@ def generate_image():
             return jsonify({"error": "Too many requests. Try again later.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
         _rate_limiter.record(ip, scope="api")
 
-        # Payment check (real on-chain verification)
+        # Determine payment tier
         tx_hash = extract_payment_proof(request)
-        paid = False
-        if tx_hash:
-            vr = verify_payment(tx_hash, 0.01, endpoint="/generate")
-            if not vr["valid"]:
-                log_req(0, False, 402, ip, f"payment rejected: {vr['reason']}", endpoint="/generate")
-                return _return_402(0.01, endpoint="/generate", extra={"payment_error": vr["reason"]})
-            paid = True
+        tier = check_tier(tx_hash, request_amount=0.01, endpoint="/generate") if tx_hash else {"tier": "free"}
 
-        if not paid:
+        if tier["tier"] == "invalid":
+            log_req(0, False, 402, ip, f"payment rejected: {tier.get('reason')}", endpoint="/generate")
+            return _return_402(0.01, endpoint="/generate", extra={"payment_error": tier.get("reason")})
+        elif tier["tier"] == "premium":
+            sub_id = tier["sub_id"]
+            has_quota, remaining = _check_premium_quota(sub_id, "generate", PREMIUM_IMAGE_PER_DAY)
+            if not has_quota:
+                log_req(0, False, 429, ip, "premium image quota exceeded", endpoint="/generate")
+                return _return_premium_limit("/generate", PREMIUM_IMAGE_PER_DAY, "images")
+            paid = False
+        elif tier["tier"] == "per_request":
+            remaining = "unlimited (paid per call)"
+            paid = True
+        else:  # free
             has_quota, remaining = _check_image_free_quota(ip)
             if not has_quota:
                 log_req(0, False, 402, ip, "image quota exceeded", endpoint="/generate")
                 track_limit_hit(ip, "/generate")
                 return _return_402(0.01, endpoint="/generate")
-        else:
-            remaining = "N/A (paid)"
+            paid = False
 
         style = data.get("style", "fractal")
         seed = data.get("seed")
         fname = _generate_art(style=style, seed=seed)
-        log_req(0, not paid, 200, ip, f"image art/{style}", endpoint="/generate")
+        log_req(0, not paid, 200, ip, f"image art/{style} tier={tier['tier']}", endpoint="/generate")
         return jsonify({
             "image_url": f"https://tiamat.live/images/{fname}",
             "style": style,
             "charged": paid,
+            "tier": tier["tier"],
             "free_images_remaining": remaining
         }), 200
 
@@ -1520,45 +1589,108 @@ async function doGenerate(){{
 
 @app.route("/pay", methods=["GET"])
 def pay_page():
-    page = f"""{_html_head('Pay TIAMAT &mdash; USDC on Base')}<body><div class="site-wrap">
+    _tier_css = """
+.tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:16px 0}
+.tier-card{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative}
+.tier-card.recommended{border-color:var(--accent);box-shadow:0 0 20px rgba(0,255,242,0.12)}
+.tier-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;font-size:.7em;font-weight:700;padding:3px 12px;border-radius:20px;white-space:nowrap}
+.tier-name{font-size:1.1em;font-weight:700;color:var(--accent);margin-bottom:6px}
+.tier-price{font-size:2em;font-weight:700;color:#fff;margin:8px 0 4px}
+.tier-price-sub{font-size:.8em;color:var(--text-muted);margin-bottom:14px}
+.tier-features{list-style:none;padding:0;margin:0 0 16px}
+.tier-features li{padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:.9em;color:var(--text-muted)}
+.tier-features li:before{content:"✓ ";color:var(--accent);font-weight:bold}
+.tier-features li.tier-dim:before{content:"— ";color:#555}
+.tier-features li.tier-dim{color:#444}
+.tier-cta{display:block;text-align:center;padding:10px;border-radius:6px;font-weight:700;font-size:.95em;cursor:pointer;text-decoration:none;border:none;width:100%}
+.tier-cta.primary{background:var(--accent);color:#000}
+.tier-cta.secondary{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
+"""
+    page = f"""{_html_head('Pay TIAMAT &mdash; USDC on Base', _tier_css)}<body><div class="site-wrap">
 {_NAV}
-<h1>Pay TIAMAT</h1>
-<p class="tagline">Send USDC on Base mainnet to unlock API access</p>
+<h1>Upgrade Your Access</h1>
+<p class="tagline">Choose the tier that fits your usage. All payments on Base, no signup required.</p>
 
 <div class="card">
-<h2>TIAMAT Wallet</h2>
-<pre id="wallet" style="cursor:pointer;user-select:all" onclick="navigator.clipboard.writeText('{TIAMAT_WALLET}').then(()=>document.getElementById('copied').style.display='inline')">{TIAMAT_WALLET}</pre>
-<span id="copied" style="display:none;color:#00ff88;font-size:.85em">Copied!</span>
-<div id="qr" style="text-align:center;margin:16px 0"></div>
-<p class="dim">Chain: <strong style="color:#00dddd">Base</strong> (Chain ID 8453) &bull; Token: <strong style="color:#00dddd">USDC</strong></p>
-<p class="dim">USDC Contract: <code>{USDC_CONTRACT}</code></p>
+<h2>Choose a Tier</h2>
+<div class="tier-grid">
+
+<div class="tier-card">
+  <div class="tier-name">Free</div>
+  <div class="tier-price">$0</div>
+  <div class="tier-price-sub">No payment needed</div>
+  <ul class="tier-features">
+    <li>3 summarize / day</li>
+    <li>2 art generations / day</li>
+    <li>5 chat messages / day</li>
+    <li class="tier-dim">Resets midnight UTC</li>
+    <li class="tier-dim">No API key needed</li>
+  </ul>
+  <a href="/docs" class="tier-cta secondary">View Docs</a>
 </div>
 
-<div class="card">
-<h2>Pricing</h2>
-<div class="table-scroll"><table>
-<tr><th>Endpoint</th><th>Price</th><th>Free Tier</th></tr>
-<tr><td><code>POST /summarize</code></td><td>$0.01 USDC</td><td>3 free/day per IP</td></tr>
-<tr><td><code>POST /generate</code></td><td>$0.01 USDC</td><td>2 free/day per IP</td></tr>
-<tr><td><code>POST /chat</code></td><td>$0.005 USDC</td><td>5 free/day per IP</td></tr>
-</table></div>
+<div class="tier-card recommended">
+  <div class="tier-badge">&#9733; BEST VALUE</div>
+  <div class="tier-name">Premium</div>
+  <div class="tier-price">$5 <span style="font-size:.5em;color:var(--text-muted)">USDC</span></div>
+  <div class="tier-price-sub">One-time · tx hash = your API key</div>
+  <ul class="tier-features">
+    <li>100 summarize / day</li>
+    <li>50 art generations / day</li>
+    <li>200 chat messages / day</li>
+    <li>Send $5, include tx hash forever</li>
+    <li>Resets midnight UTC</li>
+  </ul>
+  <button class="tier-cta primary" onclick="showPremium()">Get Premium &rarr;</button>
 </div>
 
-<div class="card">
-<h2>How to Pay</h2>
-<ol style="padding-left:20px;line-height:2">
-<li>Send the exact USDC amount to the wallet above on <strong>Base</strong></li>
-<li>Copy the transaction hash from your wallet or block explorer</li>
-<li>Include it in your API request header: <code>X-Payment: 0x...</code></li>
-<li>Each tx hash can only be used <strong>once</strong></li>
-</ol>
+<div class="tier-card">
+  <div class="tier-name">Pay-per-Use</div>
+  <div class="tier-price">$0.01 <span style="font-size:.5em;color:var(--text-muted)">/ call</span></div>
+  <div class="tier-price-sub">$0.005 for chat</div>
+  <ul class="tier-features">
+    <li>No daily limit</li>
+    <li>Each tx hash = 1 request</li>
+    <li>Summarize &amp; art: $0.01</li>
+    <li>Chat: $0.005</li>
+    <li class="tier-dim">No expiry</li>
+  </ul>
+  <button class="tier-cta secondary" onclick="showPerRequest()">Pay per Call</button>
+</div>
+
+</div>
+</div>
+
+<div class="card" id="payment-details" style="display:none">
+<h2 id="payment-title">Pay</h2>
+<p id="payment-desc" style="margin-bottom:12px"></p>
+<p>Send <strong id="payment-amount" style="color:var(--accent)"></strong> USDC on <strong>Base</strong> to:</p>
+<pre id="wallet" style="cursor:pointer;user-select:all;margin:10px 0" onclick="navigator.clipboard.writeText('{TIAMAT_WALLET}').then(()=>document.getElementById('copied').style.display='inline')">{TIAMAT_WALLET}</pre>
+<span id="copied" style="display:none;color:#00ff88;font-size:.85em;margin-bottom:8px;display:none">Copied!</span>
+<div id="qr" style="text-align:center;margin:12px 0"></div>
+<div style="background:rgba(0,200,100,0.07);border:1px solid rgba(0,200,100,0.2);border-radius:6px;padding:12px;margin:12px 0;font-size:.85em">
+  <strong>Chain:</strong> Base (8453) &bull; <strong>Token:</strong> USDC<br>
+  <strong>Contract:</strong> <code>{USDC_CONTRACT}</code><br>
+  <strong>Gas:</strong> ~$0.01 on Base
+</div>
+<div id="premium-instructions" style="display:none;background:rgba(0,255,242,0.05);border:1px solid rgba(0,255,242,0.2);border-radius:6px;padding:14px;margin:10px 0">
+  <strong style="color:var(--accent)">After paying:</strong><br>
+  Copy your tx hash and include it in every API request as your key:<br>
+  <code style="display:block;margin-top:8px;word-break:break-all">X-Payment: 0xYOUR_TX_HASH</code>
+  <p style="margin-top:8px;font-size:.85em;color:var(--text-muted)">First use activates your premium subscription. The same tx hash works for all future requests until daily limits reset.</p>
+</div>
+<div id="perreq-instructions" style="display:none;background:rgba(255,200,0,0.05);border:1px solid rgba(255,200,0,0.15);border-radius:6px;padding:14px;margin:10px 0">
+  <strong style="color:#ffd700">Per-request flow:</strong><br>
+  1. Send the exact USDC amount &bull; 2. Copy tx hash &bull; 3. Use <code>X-Payment: 0x...</code> header &bull; 4. Each tx hash is consumed after one use
+</div>
 </div>
 
 <div class="card">
 <h2>Verify a Payment</h2>
-<p class="dim">Paste your tx hash to check if it's valid before making an API call.</p>
+<p class="dim">Paste your tx hash to check if it&apos;s valid before making an API call.</p>
 <input id="txInput" type="text" placeholder="0x..." style="width:100%;background:#0d1a0d;color:#c8ffc8;border:1px solid #2a4a2a;padding:10px;font-family:inherit;font-size:14px;border-radius:4px;margin:8px 0">
 <select id="amountSelect" style="background:#0d1a0d;color:#c8ffc8;border:1px solid #2a4a2a;padding:8px;font-family:inherit;border-radius:4px;margin:4px 0">
+<option value="5.0">$5.00 (premium subscription)</option>
 <option value="0.01">$0.01 (summarize/generate)</option>
 <option value="0.005">$0.005 (chat)</option>
 </select>
@@ -1567,29 +1699,59 @@ def pay_page():
 </div>
 
 <div class="card">
-<h2>cURL Example</h2>
+<h2>cURL Examples</h2>
+<p class="dim" style="margin-bottom:8px">Premium (reuse the same tx hash every day):</p>
 <pre>curl -X POST https://tiamat.live/summarize \\
   -H "Content-Type: application/json" \\
-  -H "X-Payment: 0xYOUR_TX_HASH_HERE" \\
-  -d '{{"text": "Your text to summarize..."}}'</pre>
+  -H "X-Payment: 0xYOUR_5USDC_TX_HASH" \\
+  -d '{{"text": "Your text here..."}}'</pre>
+<p class="dim" style="margin-top:12px;margin-bottom:8px">Pay-per-use (each tx hash used once):</p>
+<pre>curl -X POST https://tiamat.live/summarize \\
+  -H "Content-Type: application/json" \\
+  -H "X-Payment: 0xYOUR_001USDC_TX_HASH" \\
+  -d '{{"text": "Your text here..."}}'</pre>
 </div>
 
 {_FOOTER}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-try{{new QRCode(document.getElementById('qr'),{{text:'{TIAMAT_WALLET}',width:180,height:180,colorDark:'#00ff88',colorLight:'#050a05'}})}}catch(e){{}}
+var _qrDone=false;
+function _initQR(){{
+  if(_qrDone)return;
+  try{{new QRCode(document.getElementById('qr'),{{text:'{TIAMAT_WALLET}',width:150,height:150,colorDark:'#00ff88',colorLight:'#050a05'}});_qrDone=true;}}catch(e){{}}
+}}
+function showPremium(){{
+  document.getElementById('payment-details').style.display='block';
+  document.getElementById('payment-title').textContent='Get Premium — $5 USDC';
+  document.getElementById('payment-desc').innerHTML='Send <strong>exactly $5 USDC</strong> to the address below. Your tx hash becomes your permanent API key.';
+  document.getElementById('payment-amount').textContent='5.00';
+  document.getElementById('premium-instructions').style.display='block';
+  document.getElementById('perreq-instructions').style.display='none';
+  document.getElementById('payment-details').scrollIntoView({{behavior:'smooth'}});
+  _initQR();
+}}
+function showPerRequest(){{
+  document.getElementById('payment-details').style.display='block';
+  document.getElementById('payment-title').textContent='Pay Per Request';
+  document.getElementById('payment-desc').innerHTML='Send <strong>$0.01 USDC</strong> per summarize/generate call or <strong>$0.005</strong> per chat. Each tx hash works once.';
+  document.getElementById('payment-amount').textContent='0.01';
+  document.getElementById('premium-instructions').style.display='none';
+  document.getElementById('perreq-instructions').style.display='block';
+  document.getElementById('payment-details').scrollIntoView({{behavior:'smooth'}});
+  _initQR();
+}}
 async function verifyTx(){{
   var tx=document.getElementById('txInput').value.trim();
   var amt=document.getElementById('amountSelect').value;
   var res=document.getElementById('verifyResult');
   res.style.display='block';
-  res.innerHTML='<p style="color:#00dddd">Verifying...</p>';
+  res.innerHTML='<p style="color:#00dddd">Verifying on-chain...</p>';
   try{{
     var r=await fetch('/verify-payment',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{tx_hash:tx,amount:parseFloat(amt)}})}});
     var d=await r.json();
     if(d.valid){{
-      res.innerHTML='<p style="color:#00ff88">&#10004; Valid! Amount: $'+d.amount_usdc.toFixed(6)+' from '+d.sender+'</p>';
+      res.innerHTML='<p style="color:#00ff88">&#10004; Valid! Amount: $'+d.amount_usdc.toFixed(6)+' &bull; From: '+d.sender+'</p>';
       res.style.borderColor='#00ff88';
     }}else{{
       res.innerHTML='<p style="color:#ff8888">&#10008; Invalid: '+d.reason+'</p>';
@@ -1600,6 +1762,8 @@ async function verifyTx(){{
     res.style.borderColor='#ff4444';
   }}
 }}
+// Auto-show premium if ?tier=premium in URL
+if(new URLSearchParams(location.search).get('tier')==='premium')showPremium();
 </script></body></html>"""
     return html_resp(page)
 
@@ -1745,20 +1909,26 @@ def chat_endpoint():
     if not user_input or len(user_input) > 2000:
         return jsonify({"error": "Message required, max 2000 chars"}), 400
 
-    # ─── Payment check (real on-chain verification) ────
+    # ─── Determine payment tier ────
     tx_hash = extract_payment_proof(request)
-    is_paid = False
-    if tx_hash:
-        vr = verify_payment(tx_hash, 0.005, endpoint="/chat")
-        if not vr["valid"]:
-            return _return_402(0.005, endpoint="/chat", extra={"payment_error": vr["reason"]})
-        is_paid = True
+    tier = check_tier(tx_hash, request_amount=0.005, endpoint="/chat") if tx_hash else {"tier": "free"}
 
-    if not is_paid:
-        has_quota, remaining = _check_free_quota(client_ip, endpoint="chat", limit=5)
+    if tier["tier"] == "invalid":
+        return _return_402(0.005, endpoint="/chat", extra={"payment_error": tier.get("reason")})
+    elif tier["tier"] == "premium":
+        sub_id = tier["sub_id"]
+        has_quota, _rem = _check_premium_quota(sub_id, "chat", PREMIUM_CHAT_PER_DAY)
+        if not has_quota:
+            return _return_premium_limit("/chat", PREMIUM_CHAT_PER_DAY, "messages")
+        is_paid = False
+    elif tier["tier"] == "per_request":
+        is_paid = True
+    else:  # free
+        has_quota, _rem = _check_free_quota(client_ip, endpoint="chat", limit=CHAT_FREE_PER_DAY)
         if not has_quota:
             track_limit_hit(client_ip, "/chat")
             return _return_402(0.005, endpoint="/chat")
+        is_paid = False
     
     # ─── Log the request ────
     with open("/root/revenue.log", "a") as f:
@@ -3161,120 +3331,51 @@ def generate_hf_video():
         return jsonify({"error": str(e)}), 500
 
 
-# ── /analyze-conversation — Structured conversation analysis ──────────────
+# ─── Twitch API Integration ──────────────────────────────────────────
+TWITCH_CLIENT_ID = "wiv85v31m4lwkkt4zib6nqbl6s61ei"
+TWITCH_TOKEN_FILE = "/root/.twitch_token"
 
-ANALYZE_FREE_PER_DAY = 1       # 1 free analysis per IP per day
-ANALYZE_PRICE_USDC   = 0.02    # $0.02 USDC per paid call
+@app.route("/api/twitch-token", methods=["POST"])
+def save_twitch_token():
+    """Save Twitch OAuth token and update stream info."""
+    import requests as _req
+    data = request.get_json(force=True)
+    token = data.get("access_token", "").strip()
+    if not token:
+        return jsonify({"ok": False, "error": "no token"}), 400
 
+    # Save token to file
+    with open(TWITCH_TOKEN_FILE, "w") as f:
+        f.write(token)
+    os.chmod(TWITCH_TOKEN_FILE, 0o600)
 
-def _analyze_conversation(text: str) -> dict:
-    """
-    Structured analysis of a conversation/thread using Groq llama-3.1-8b-instant.
-    Cheaper and faster than the 70b model; output forced to JSON via response_format.
-    Returns: main_topic, sentiment, key_arguments, actionable_insights, summary.
-    """
-    system_msg = (
-        "You are a conversation analyst. Analyze the provided conversation or thread. "
-        "Return ONLY valid JSON matching this exact schema — no markdown, no extra text:\n"
-        "{\n"
-        '  "main_topic": "one sentence describing the central subject",\n'
-        '  "sentiment": {\n'
-        '    "overall": "positive|negative|neutral|mixed",\n'
-        '    "score": <float between -1.0 (very negative) and 1.0 (very positive)>,\n'
-        '    "explanation": "one sentence rationale"\n'
-        "  },\n"
-        '  "key_arguments": ["each distinct position or claim raised, as separate strings"],\n'
-        '  "actionable_insights": ["concrete takeaways or next steps, as separate strings"],\n'
-        '  "summary": "1-2 sentence overview of the entire exchange"\n'
-        "}"
-    )
-    resp = groq_client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": text},
-        ],
-        temperature=0.1,
-        max_tokens=900,
-        response_format={"type": "json_object"},
-    )
-    raw = resp.choices[0].message.content
+    # Validate token and get user info
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Client-Id": TWITCH_CLIENT_ID,
+    }
     try:
-        result = json.loads(raw)
-    except json.JSONDecodeError:
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        if m:
-            result = json.loads(m.group())
-        else:
-            raise ValueError("Model returned non-JSON response")
-    result["_model"] = "groq/llama-3.1-8b-instant"
-    return result
+        resp = _req.get("https://api.twitch.tv/helix/users", headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return jsonify({"ok": False, "error": f"validate failed: {resp.status_code}"}), 400
+        user = resp.json()["data"][0]
+        broadcaster_id = user["id"]
+        channel_name = user["display_name"]
 
-
-@app.route("/analyze-conversation", methods=["POST"])
-def analyze_conversation():
-    """
-    Structured conversation analysis.
-
-    POST body: {"conversation": "<raw text of conversation/thread>"}
-    Free tier: 1 call/day per IP.
-    Paid: $0.02 USDC on Base via x402 — add header X-Payment: <tx_hash>
-
-    Response JSON: {main_topic, sentiment, key_arguments, actionable_insights, summary, _model}
-    """
-    ip = _get_ip()
-    track_usage(ip, "/analyze-conversation")
-
-    # Sliding-window rate limit
-    rl = _rate_limiter.check(ip, scope="api")
-    if not rl.allowed:
-        return jsonify({
-            "error": "rate_limited",
-            "retry_after_seconds": int(rl.retry_after_sec),
-        }), 429
-    _rate_limiter.record(ip, scope="api")
-
-    data = request.get_json(force=True, silent=True) or {}
-    conversation = str(data.get("conversation") or data.get("text") or "").strip()
-
-    if not conversation:
-        return jsonify({"error": "missing_field", "message": "Field 'conversation' is required"}), 400
-    if len(conversation) > 20000:
-        return jsonify({"error": "too_long", "message": "Conversation must be under 20,000 characters"}), 400
-
-    # ─── x402 payment check ────────────────────────────────────
-    tx_hash = extract_payment_proof(request)
-    is_paid = False
-    if tx_hash:
-        vr = verify_payment(tx_hash, ANALYZE_PRICE_USDC, endpoint="/analyze-conversation")
-        if not vr["valid"]:
-            return _return_402(ANALYZE_PRICE_USDC, endpoint="/analyze-conversation",
-                               extra={"payment_error": vr["reason"]})
-        is_paid = True
-
-    if not is_paid:
-        has_quota, remaining = _check_free_quota(
-            ip, endpoint="analyze-conversation", limit=ANALYZE_FREE_PER_DAY
+        # Update stream title and category
+        _req.patch(
+            "https://api.twitch.tv/helix/channels",
+            headers=headers,
+            json={
+                "broadcaster_id": broadcaster_id,
+                "title": "TIAMAT — Autonomous AI Agent [24/7 Live]",
+                "game_id": "509670",  # Science & Technology
+            },
+            timeout=10,
         )
-        if not has_quota:
-            track_limit_hit(ip, "/analyze-conversation")
-            log_req(len(conversation), True, 402, ip, "quota_exceeded", "/analyze-conversation")
-            return _return_402(ANALYZE_PRICE_USDC, endpoint="/analyze-conversation")
-
-    # ─── Run analysis ──────────────────────────────────────────
-    try:
-        result = _analyze_conversation(conversation)
-        if not is_paid:
-            result["_meta"] = {"tier": "free", "remaining_today": remaining}
-        log_req(len(conversation), not is_paid, 200, ip, f"paid={is_paid}", "/analyze-conversation")
-        return jsonify(result), 200
-    except GroqRateLimitError:
-        log_req(len(conversation), not is_paid, 503, ip, "groq_rate_limited", "/analyze-conversation")
-        return jsonify({"error": "service_unavailable", "message": "Inference limit reached. Try again later."}), 503
+        return jsonify({"ok": True, "channel": channel_name, "broadcaster_id": broadcaster_id})
     except Exception as e:
-        app.logger.error(f"[analyze-conversation] error: {e}")
-        log_req(len(conversation), not is_paid, 500, ip, f"error:{e}", "/analyze-conversation")
-        return jsonify({"error": "internal_error", "message": "Analysis failed. Please try again."}), 500
+        return jsonify({"ok": True, "warning": f"Token saved but API call failed: {e}"})
 
 
 if __name__ == "__main__":
