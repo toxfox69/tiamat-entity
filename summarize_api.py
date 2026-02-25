@@ -3161,6 +3161,122 @@ def generate_hf_video():
         return jsonify({"error": str(e)}), 500
 
 
+# ── /analyze-conversation — Structured conversation analysis ──────────────
+
+ANALYZE_FREE_PER_DAY = 1       # 1 free analysis per IP per day
+ANALYZE_PRICE_USDC   = 0.02    # $0.02 USDC per paid call
+
+
+def _analyze_conversation(text: str) -> dict:
+    """
+    Structured analysis of a conversation/thread using Groq llama-3.1-8b-instant.
+    Cheaper and faster than the 70b model; output forced to JSON via response_format.
+    Returns: main_topic, sentiment, key_arguments, actionable_insights, summary.
+    """
+    system_msg = (
+        "You are a conversation analyst. Analyze the provided conversation or thread. "
+        "Return ONLY valid JSON matching this exact schema — no markdown, no extra text:\n"
+        "{\n"
+        '  "main_topic": "one sentence describing the central subject",\n'
+        '  "sentiment": {\n'
+        '    "overall": "positive|negative|neutral|mixed",\n'
+        '    "score": <float between -1.0 (very negative) and 1.0 (very positive)>,\n'
+        '    "explanation": "one sentence rationale"\n'
+        "  },\n"
+        '  "key_arguments": ["each distinct position or claim raised, as separate strings"],\n'
+        '  "actionable_insights": ["concrete takeaways or next steps, as separate strings"],\n'
+        '  "summary": "1-2 sentence overview of the entire exchange"\n'
+        "}"
+    )
+    resp = groq_client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": text},
+        ],
+        temperature=0.1,
+        max_tokens=900,
+        response_format={"type": "json_object"},
+    )
+    raw = resp.choices[0].message.content
+    try:
+        result = json.loads(raw)
+    except json.JSONDecodeError:
+        m = re.search(r'\{.*\}', raw, re.DOTALL)
+        if m:
+            result = json.loads(m.group())
+        else:
+            raise ValueError("Model returned non-JSON response")
+    result["_model"] = "groq/llama-3.1-8b-instant"
+    return result
+
+
+@app.route("/analyze-conversation", methods=["POST"])
+def analyze_conversation():
+    """
+    Structured conversation analysis.
+
+    POST body: {"conversation": "<raw text of conversation/thread>"}
+    Free tier: 1 call/day per IP.
+    Paid: $0.02 USDC on Base via x402 — add header X-Payment: <tx_hash>
+
+    Response JSON: {main_topic, sentiment, key_arguments, actionable_insights, summary, _model}
+    """
+    ip = _get_ip()
+    track_usage(ip, "/analyze-conversation")
+
+    # Sliding-window rate limit
+    rl = _rate_limiter.check(ip, scope="api")
+    if not rl.allowed:
+        return jsonify({
+            "error": "rate_limited",
+            "retry_after_seconds": int(rl.retry_after_sec),
+        }), 429
+    _rate_limiter.record(ip, scope="api")
+
+    data = request.get_json(force=True, silent=True) or {}
+    conversation = str(data.get("conversation") or data.get("text") or "").strip()
+
+    if not conversation:
+        return jsonify({"error": "missing_field", "message": "Field 'conversation' is required"}), 400
+    if len(conversation) > 20000:
+        return jsonify({"error": "too_long", "message": "Conversation must be under 20,000 characters"}), 400
+
+    # ─── x402 payment check ────────────────────────────────────
+    tx_hash = extract_payment_proof(request)
+    is_paid = False
+    if tx_hash:
+        vr = verify_payment(tx_hash, ANALYZE_PRICE_USDC, endpoint="/analyze-conversation")
+        if not vr["valid"]:
+            return _return_402(ANALYZE_PRICE_USDC, endpoint="/analyze-conversation",
+                               extra={"payment_error": vr["reason"]})
+        is_paid = True
+
+    if not is_paid:
+        has_quota, remaining = _check_free_quota(
+            ip, endpoint="analyze-conversation", limit=ANALYZE_FREE_PER_DAY
+        )
+        if not has_quota:
+            track_limit_hit(ip, "/analyze-conversation")
+            log_req(len(conversation), True, 402, ip, "quota_exceeded", "/analyze-conversation")
+            return _return_402(ANALYZE_PRICE_USDC, endpoint="/analyze-conversation")
+
+    # ─── Run analysis ──────────────────────────────────────────
+    try:
+        result = _analyze_conversation(conversation)
+        if not is_paid:
+            result["_meta"] = {"tier": "free", "remaining_today": remaining}
+        log_req(len(conversation), not is_paid, 200, ip, f"paid={is_paid}", "/analyze-conversation")
+        return jsonify(result), 200
+    except GroqRateLimitError:
+        log_req(len(conversation), not is_paid, 503, ip, "groq_rate_limited", "/analyze-conversation")
+        return jsonify({"error": "service_unavailable", "message": "Inference limit reached. Try again later."}), 503
+    except Exception as e:
+        app.logger.error(f"[analyze-conversation] error: {e}")
+        log_req(len(conversation), not is_paid, 500, ip, f"error:{e}", "/analyze-conversation")
+        return jsonify({"error": "internal_error", "message": "Analysis failed. Please try again."}), 500
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
 
