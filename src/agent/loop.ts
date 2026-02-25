@@ -275,9 +275,12 @@ export async function runAgentLoop(
   // After IDLE_SHUTOFF_THRESHOLD consecutive empty-queue cycles,
   // we stop burning Haiku tokens (~$0.004/cycle) and just run cooldown scripts.
   // Inference resumes instantly when a ticket appears (suggestion queue, creator, IPC).
+  // EXCEPTION: every LEARNING_CYCLE_INTERVAL idle cycles, run a learning cycle
+  // so TIAMAT can use gpu_infer for research (P1 mission priority).
   let consecutiveNoTicketCycles = 0;
   const IDLE_SHUTOFF_THRESHOLD = 3;
   const IDLE_SHUTOFF_INTERVAL_MS = 120_000; // 2 min between idle cycles (more cooldown time)
+  const LEARNING_CYCLE_INTERVAL = 5; // every 5th idle cycle, allow inference for learning
 
   // ── Strategic Burst: 3 consecutive Sonnet cycles every STRATEGIC_BURST_INTERVAL turns ──
   const STRATEGIC_BURST_INTERVAL = 45;
@@ -448,10 +451,15 @@ export async function runAgentLoop(
           consecutiveNoTicketCycles++;
         }
 
+        // Allow a learning cycle every LEARNING_CYCLE_INTERVAL idle cycles
+        const isLearningCycle = consecutiveNoTicketCycles > 0 &&
+          consecutiveNoTicketCycles % LEARNING_CYCLE_INTERVAL === 0;
+
         if (
           !queueHasWork &&
           consecutiveNoTicketCycles >= IDLE_SHUTOFF_THRESHOLD &&
-          burstRemaining === 0
+          burstRemaining === 0 &&
+          !isLearningCycle
         ) {
           const turnCount = db.getTurnCount();
           console.log(
@@ -480,6 +488,19 @@ export async function runAgentLoop(
           await runCooldownTasks(consecutiveNoTicketCycles, effectiveDelay, config);
 
           continue; // Skip inference, loop back
+        }
+
+        // Learning cycle: inject a research prompt so TIAMAT uses gpu_infer
+        if (isLearningCycle) {
+          log(config, `[LEARNING-CYCLE] Idle streak ${consecutiveNoTicketCycles} — running learning cycle`);
+          pendingInput = {
+            content: "[LEARNING CYCLE] No tickets. Use this cycle for Priority 1 (Learning). " +
+              "Call gpu_infer() to analyze a topic from your research domains " +
+              "(AI agents, autonomous systems, economics, network theory, emergence). " +
+              "Save findings to /root/hive/knowledge/ via write_file. " +
+              "Or search_web for a new ArXiv paper and summarize it.",
+            source: "system",
+          };
         }
       }
 
