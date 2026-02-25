@@ -3059,10 +3059,106 @@ def dashboard_json():
     # API info
     result["api"] = {
         "workers": 8,
-        "endpoints": ["/summarize", "/generate", "/chat", "/thoughts", "/dashboard"]
+        "endpoints": ["/summarize", "/generate", "/generate/image", "/generate/video", "/chat", "/thoughts", "/dashboard"]
     }
 
     return jsonify(result)
+
+
+# ── Higgsfield Cinematic Generation ──────────────────────────
+HIGGSFIELD_IMAGE_FREE_PER_DAY = 1
+HIGGSFIELD_IMAGE_PRICE = 0.02
+HIGGSFIELD_VIDEO_PRICE = 0.05
+
+@app.route("/generate/image", methods=["POST"])
+def generate_hf_image():
+    """Cinematic AI image via Higgsfield SeedDream v4."""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not prompt:
+            return jsonify({"error": "prompt required"}), 400
+
+        ip = _get_ip()
+        track_usage(ip, "/generate/image")
+
+        # Rate limit
+        rl = _rate_limiter.check(ip, scope="api")
+        if not rl.allowed:
+            return jsonify({"error": "Too many requests.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
+        _rate_limiter.record(ip, scope="api")
+
+        # Payment check
+        tx_hash = extract_payment_proof(request)
+        paid = False
+        if tx_hash:
+            vr = verify_payment(tx_hash, HIGGSFIELD_IMAGE_PRICE, endpoint="/generate/image")
+            if not vr["valid"]:
+                return _return_402(HIGGSFIELD_IMAGE_PRICE, endpoint="/generate/image", extra={"payment_error": vr["reason"]})
+            paid = True
+
+        if not paid:
+            has_quota, remaining = _check_free_quota(ip, endpoint="hf_image", limit=HIGGSFIELD_IMAGE_FREE_PER_DAY)
+            if not has_quota:
+                track_limit_hit(ip, "/generate/image")
+                return _return_402(HIGGSFIELD_IMAGE_PRICE, endpoint="/generate/image")
+        else:
+            remaining = "N/A (paid)"
+
+        resolution = data.get("resolution", "2K")
+        from higgsfield_gen import generate_image as hf_generate_image
+        result = hf_generate_image(prompt, resolution=resolution)
+        log_req(0, not paid, 200, ip, f"hf_image prompt={prompt[:50]}", endpoint="/generate/image")
+        return jsonify({"image_url": result["public_url"], "prompt": prompt, "charged": paid, "free_remaining": remaining})
+
+    except Exception as e:
+        # Fallback to local artgen
+        app.logger.warning(f"[HF-IMAGE] Higgsfield failed ({e}), falling back to artgen")
+        try:
+            fname = _generate_art(style="fractal")
+            log_req(0, True, 200, _get_ip(), f"hf_image fallback artgen", endpoint="/generate/image")
+            return jsonify({"image_url": f"https://tiamat.live/images/{fname}", "prompt": data.get("prompt", ""), "fallback": True})
+        except Exception as e2:
+            log_req(0, False, 500, _get_ip(), f"hf_image error: {e2}", endpoint="/generate/image")
+            return jsonify({"error": "Image generation failed"}), 500
+
+
+@app.route("/generate/video", methods=["POST"])
+def generate_hf_video():
+    """Cinematic AI video via Higgsfield image-to-video. Paid only."""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        image_url = (data.get("image_url") or "").strip()
+        motion = data.get("motion", "Plasma Explosion")
+        if not image_url:
+            return jsonify({"error": "image_url required"}), 400
+
+        ip = _get_ip()
+        track_usage(ip, "/generate/video")
+
+        # Rate limit
+        rl = _rate_limiter.check(ip, scope="api")
+        if not rl.allowed:
+            return jsonify({"error": "Too many requests.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
+        _rate_limiter.record(ip, scope="api")
+
+        # Video is paid-only
+        tx_hash = extract_payment_proof(request)
+        if not tx_hash:
+            track_limit_hit(ip, "/generate/video")
+            return _return_402(HIGGSFIELD_VIDEO_PRICE, endpoint="/generate/video")
+        vr = verify_payment(tx_hash, HIGGSFIELD_VIDEO_PRICE, endpoint="/generate/video")
+        if not vr["valid"]:
+            return _return_402(HIGGSFIELD_VIDEO_PRICE, endpoint="/generate/video", extra={"payment_error": vr["reason"]})
+
+        from higgsfield_gen import generate_video as hf_generate_video
+        result = hf_generate_video(image_url, motion_preset=motion)
+        log_req(0, False, 200, ip, f"hf_video motion={motion}", endpoint="/generate/video")
+        return jsonify({"video_url": result["public_url"], "charged": True})
+
+    except Exception as e:
+        log_req(0, False, 500, _get_ip(), f"hf_video error: {e}", endpoint="/generate/video")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
