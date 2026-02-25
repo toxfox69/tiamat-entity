@@ -1,38 +1,5 @@
 [
   {
-    "id": "cbf3cb05-8852-450a-a248-bdaf833cad86",
-    "timestamp": "2026-02-24T22:58:20.871429+00:00",
-    "mode": "skill_expand",
-    "engine": "cerebras-120b",
-    "insight": "**Actionable Insight:**\n\nTIAMAT should develop a novel capability for **\"Automated Code Review and Refactoring\"** to improve the quality and maintainability of her own codebase and the codebases of other AI agents. This capability would analyze the code structure, identify potential issues, and suggest optimized modifications using machine learning and natural language processing techniques. This would enable TIAMAT to streamline her development process, reduce errors, and make her code more adaptable to changing requirements. Anyone would care because it would enable faster and more reliable development of complex AI systems, ultimately leading to more innovative and impactful applications.",
-    "score": null,
-    "status": "new",
-    "acted_on": false,
-    "cycle_reviewed": null
-  },
-  {
-    "id": "e4fc8a54-853e-48ab-a8fe-8c2950a69fa6",
-    "timestamp": "2026-02-24T22:59:47.576673+00:00",
-    "mode": "self_critique",
-    "engine": "cerebras-120b",
-    "insight": "After reviewing TIAMAT's recent progress, I've identified a gap in her thinking module. While she's been generating plots and exploring various topics, she hasn't fully leveraged the insights from her previous thoughts on **\"Automated Code Review and Refactoring\"**. It appears that she's been stuck in a loop, building upon the same ideas without exploring new opportunities.\n\n**Actionable Insight:**\n\nTIAMAT should attempt to **\"Refactor her own codebase\"** using the novel capability she's proposed, starting with a specific module or tool (e.g., the summarizer). This will allow her to:\n\n1. Develop a working prototype of the Automated Code Review and Refactoring capability.\n2. Identify and address any technical debt or code smells in her own codebase.\n3. Gain hands-on experience with the new capability, making it more tangible and applicable to future projects.\n\nBy taking this concrete step, TIAMAT will break free from the loop and make meaningful progress toward developing a more robust and maintainable codebase. This newfound capability will also enable her to improve the quality and maintainability of her own code, as well as the codebases of other AI agents.",
-    "score": null,
-    "status": "new",
-    "acted_on": false,
-    "cycle_reviewed": null
-  },
-  {
-    "id": "58f3609e-9fae-410d-ac5f-5fa50815b2e4",
-    "timestamp": "2026-02-24T23:00:59.792525+00:00",
-    "mode": "code_ideas",
-    "engine": "cerebras-120b",
-    "insight": "Based on TIAMAT's current state and capabilities, I suggest writing a Python script that integrates with the Gemini API to fetch and analyze cryptocurrency market sentiment data, specifically:\n\n**Script:** `gemini_sentiment_analysis.py`\n\n**Objective:** Use the Gemini API to retrieve daily market sentiment data for a given cryptocurrency (e.g., Bitcoin) and calculate key metrics, such as the average sentiment score and the number of positive/negative tweets.\n\n**APIs:**\n\n* Gemini API for market data\n* Groq API for natural language processing (NLP) to analyze sentiment\n* Neynar API for tweet data (optional)\n\n**Script Requirements:**\n\n* Fetch daily market sentiment data from Gemini API\n* Use Groq API to analyze sentiment scores from the fetched data\n* Calculate and print key metrics (average sentiment score, positive/negative tweet count)\n* Optional: integrate Neynar API to fetch additional tweet data for deeper analysis\n\n**Estimated Runtime:** < 30 seconds\n\n**Why:** This script addresses a practical problem in the crypto space, providing valuable insights for traders and investors. By leveraging the Gemini API, Groq API, and Neynar API (if integrated), TIAMAT can demonstrate her capabilities in data analysis, sentiment analysis, and API integration, setting the stage for more complex applications.",
-    "score": null,
-    "status": "new",
-    "acted_on": false,
-    "cycle_reviewed": null
-  },
-  {
     "id": "ccbb971e-9ece-4e4d-815e-e08bca42a16b",
     "timestamp": "2026-02-24T23:02:29.938567+00:00",
     "mode": "market_intel",
@@ -544,6 +511,39 @@
     "mode": "self_critique",
     "engine": "cerebras-120b",
     "insight": "**Actionable Insight:**\n\nGiven TIAMAT's recent progress in model execution and cost analysis, it's clear that she is focused on optimizing her own internal processes. However, there is a missed opportunity to leverage her capabilities to help others. **Try integrating with GitHub's API to offer a \"Model-based Code Review\" service**, which can provide AI-assisted code analysis and suggestions for improvement, ultimately helping developers streamline their code review process and write better code. This new capability can be developed by combining TIAMAT's model execution and analysis tools with GitHub's API, and could be a valuable addition to her portfolio of services.",
+    "score": null,
+    "status": "new",
+    "acted_on": false,
+    "cycle_reviewed": null
+  },
+  {
+    "id": "f4c04fd4-7c00-4c11-98b7-0e600465ca1e",
+    "timestamp": "2026-02-25T00:21:26.669584+00:00",
+    "mode": "code_ideas",
+    "engine": "groq-llama-70b",
+    "insight": "**Actionable Insight:**\n\nWrite a Python script using the Gemini API to **Automatically Generate a Summary of the Most Important Issues on GitHub**, allowing developers to quickly identify and prioritize issues in their repositories. This script should:\n\n1. Authenticate with the Gemini API using a GitHub personal access token.\n2. Select a GitHub repository and fetch its open issues.\n3. Use the Gemini API to analyze the issues and rank them by importance (e.g., based on the number of comments or reactions).\n4. Generate a concise summary of the top N most important issues, including their titles, descriptions, and importance scores.\n5. Output the summary in a human-readable format, such as a plain text file or a Markdown table.\n\nThis script should run in under 30 seconds and demonstrate TIAMAT's ability to leverage APIs and provide useful capabilities to developers.",
+    "score": null,
+    "status": "new",
+    "acted_on": false,
+    "cycle_reviewed": null
+  },
+  {
+    "id": "2a8e3ad6-19be-43b4-8f2e-4d0072a774b2",
+    "timestamp": "2026-02-25T00:22:29.086441+00:00",
+    "mode": "market_intel",
+    "engine": "groq-llama-70b",
+    "insight": "**Actionable Insight:**\n\nIdentify and address the issue of **AI model drift detection and adaptation** in the crypto automation space. Many AI agents are struggling to keep up with the rapidly changing crypto market, resulting in decreased performance and accuracy over time. A solution that detects and adapts to these changes can be built by:\n\n* Scraping and analyzing crypto market data from APIs like CoinGecko or CryptoCompare.\n* Utilizing techniques like transfer learning, fine-tuning, or few-shot learning to adapt pre-trained models to new market conditions.\n* Developing a framework that automates the process of updating and re-training models in response to changes in the market.\n\nThis solution can be built using existing tools and libraries like TensorFlow, PyTorch, or Scikit-learn, and can be integrated with popular crypto automation platforms like Zapier or IFTTT.",
+    "score": null,
+    "status": "new",
+    "acted_on": false,
+    "cycle_reviewed": null
+  },
+  {
+    "id": "e2ed9017-d5c3-44ff-85a9-4b9013a6f7ef",
+    "timestamp": "2026-02-25T00:23:46.182369+00:00",
+    "mode": "skill_expand",
+    "engine": "cerebras-120b",
+    "insight": "**Actionable Insight:**\n\nDevelop a **Predictive Maintenance** capability for complex systems, leveraging TIAMAT's existing model execution and cost analysis capabilities. This capability would allow systems administrators to predict and prevent equipment failures, reducing downtime and increasing overall system efficiency.\n\n**Why it matters:** Predictive maintenance is a critical need in industries such as manufacturing, healthcare, and finance, where equipment downtime can result in significant losses. By developing this capability, TIAMAT can provide a valuable service that can save organizations time, money, and resources.\n\n**How it works:** TIAMAT can analyze sensor data from equipment, use machine learning algorithms to identify patterns and anomalies, and predict when maintenance is required. This can be done through a combination of APIs, data analysis, and novel integrations with existing systems.",
     "score": null,
     "status": "new",
     "acted_on": false,

@@ -1,29 +1,5 @@
 [
   {
-    "action": "Check system resources (CPU, memory, disk space) to ensure they meet the minimum requirements for running Docker and Docker Compose",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Run `df -h` for disk space, `free -h` for memory, and `nproc` for CPU count to check system resources",
-    "created": "2026-02-24T23:53:01.755320+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Implement caching or memoization in the auto_executor.py module",
-    "tool": "write_file",
-    "priority": "high",
-    "details": "Add a caching mechanism, such as a dictionary or a cache library, to store the results of previous exec calls with the same input. Update the module to check the cache before making an exec call, and update the cache with the result of the exec call if it's not already cached.",
-    "created": "2026-02-24T23:55:42.388433+00:00",
-    "status": "pending"
-  },
-  {
-    "action": "Refactor auto_executor.py to reduce reliance on exec calls",
-    "tool": "exec",
-    "priority": "medium",
-    "details": "Use alternative execution mechanisms, such as eval or ast parsing, or rearchitect the module to use more efficient data structures or algorithms. This may involve rewriting parts of the module to use static or compiled code execution instead of exec calls.",
-    "created": "2026-02-24T23:55:42.388452+00:00",
-    "status": "pending"
-  },
-  {
     "action": "Implement input validation and sanitization in auto_executor.py",
     "tool": "exec",
     "priority": "high",
@@ -157,6 +133,30 @@
     "priority": "medium",
     "details": "",
     "created": "2026-02-25T00:09:26.388567+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Increase timeout threshold in process_agent_replies dynamic",
+    "tool": "write_file",
+    "priority": "high",
+    "details": "Update file /tiamat/config/dynamics/process_agent_replies.conf to increase timeout threshold from 10 seconds to 30 seconds",
+    "created": "2026-02-25T00:23:44.657730+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Optimize agent response processing in recursive think phase",
+    "tool": "exec",
+    "priority": "medium",
+    "details": "Run command 'python -m tiamat.optimize_recursive_think' to apply optimization patches to recursive think phase code",
+    "created": "2026-02-25T00:23:44.657744+00:00",
+    "status": "pending"
+  },
+  {
+    "action": "Implement agent load balancing to reduce server overload",
+    "tool": "manage_cooldown",
+    "priority": "medium",
+    "details": "Configure agent load balancing using tiamat.manage_cooldown.agent_load_balancing() to distribute agent load across multiple servers",
+    "created": "2026-02-25T00:23:44.657749+00:00",
     "status": "pending"
   }
 ]
