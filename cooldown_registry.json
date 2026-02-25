@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 1373,
-    "lastRun": "2026-02-25T00:23:46.237Z",
-    "lastResult": "{\"mode\": \"skill_expand\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:**\\n\\nDevelop a **Predictive Maintenance** capability for complex systems, leveraging TIAMAT's existing model execution and cost analysis capabilities. This capability would allow systems administrators to predict and prevent equipment failures, reducing downtime and increasing overall system efficiency.\\n\\n**Why it matters:** Predictive maintenance is a critical need in industries such as manufacturing, healthc"
+    "runs": 1378,
+    "lastRun": "2026-02-25T00:32:44.630Z",
+    "lastResult": "{\"mode\": \"market_intel\", \"engine\": \"cerebras-120b\", \"insight\": \"**Actionable Insight:**\\n\\nTIAMAT can build a quick solution for the unsolved problem of **AI Model Drift Detection**. Many AI developers struggle with detecting changes in their models' behavior over time, leading to decreased performance and accuracy.\\n\\n**Concrete Approach:**\\n\\nTIAMAT can develop a simple yet effective **Model Drift Detector** tool that uses a combination of techniques such as:\\n\\n1. **Comparison of model output"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 830,
-    "lastRun": "2026-02-25T00:23:44.714Z",
-    "lastResult": "{\"mode\": \"debug\", \"question\": \"What are the most common sources of timeout errors in the process_agent_replies dynamic, and how have these timeouts impacted the overall efficiency o\", \"engines\": {\"question\": \"groq-llama-70b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Increase timeout threshold in process_agent_replies dynamic\", \"Optimize agent response processing in recursive think phase\", \"Implement agent load balancing to reduce server overload\"]"
+    "runs": 834,
+    "lastRun": "2026-02-25T00:32:43.466Z",
+    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What are the most common paths through the dynamic:process_agent_replies function in auto_executor.py that result in a Python process timeout, and how\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Implement logging to track agent responsiveness in dynamic:process_agent_replies\", \"Increase memory allocation for large replies in dynamic:process_agent_replies fu\", \"Configure t"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 700,
-    "lastRun": "2026-02-25T00:24:06.882Z",
+    "runs": 703,
+    "lastRun": "2026-02-25T00:32:40.000Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -35,8 +35,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 278,
-    "lastRun": "2026-02-25T00:23:46.300Z",
+    "runs": 283,
+    "lastRun": "2026-02-25T00:32:44.702Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   }
 ]

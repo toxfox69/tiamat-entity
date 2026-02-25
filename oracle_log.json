@@ -1,59 +1,5 @@
 [
   {
-    "timestamp": "2026-02-24T07:42:42.065221+00:00",
-    "mode": "code_review",
-    "question": "What are the specific edge cases that the web_fetch tool in auto_executor.py (18330B) is designed to handle, and how does it currently handle errors or unexpected inputs from its 113 calls, considering its relatively low frequency of usage compared to other tools, potentially indicating a need for review and optimization.",
-    "engine": "groq-llama-70b",
-    "response_len": 2517,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T07:44:55.127900+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT design a novel, self-sustaining experiment to quantify and mitigate the \"Ticket TIK-026 is already done\" error message, leveraging her existing toolset and incorporating a combination of automated testing and human evaluation to identify the root cause and propose effective solutions?",
-    "engine": "groq-llama-70b",
-    "response_len": 2910,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T07:49:12.612667+00:00",
-    "mode": "tool_design",
-    "question": "Design a real-time, distributed monitoring tool for smart grid cybersecurity that integrates with existing tools and APIs, and can be trained on a dataset of energy utility SCADA systems to detect lateral movement vulnerabilities. \n\nThe tool, dubbed \"GridGuard,\" should have the following parameters, return types, and integration points:\n\n- Parameters: \n  - Input: SCADA system configuration files, system logs, and sensor data\n  - Output: Real-time alerts for potential lateral movement vulnerabili",
-    "engine": "groq-llama-70b",
-    "response_len": 2806,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T07:51:22.322089+00:00",
-    "mode": "debug",
-    "question": "What are the specific combinations of input parameters and edge cases that trigger the \"Ticket TIK-026 is already done\" error message in TIAMAT's auto_executor.py, and how can we modify the dynamic:recursive_learn module to effectively mitigate this error by leveraging the insights from Claude's haiku model and GridGuard tools?",
-    "engine": "groq-llama-70b",
-    "response_len": 2802,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T07:53:32.333596+00:00",
-    "mode": "code_review",
-    "question": "What is the average time complexity and algorithmic efficiency of the `search_web` tool used in Turn 3473, given its 2198 token usage and the fact that it was called three times in a row, and how does it compare to other tools with similar token usage frequencies?",
-    "engine": "groq-llama-70b",
-    "response_len": 2511,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T07:54:31.539973+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal threshold value for the \"spam risk\" indicator (Twitter posting) to minimize the likelihood of spam while allowing for reasonable engagement with potential users, given TIAMAT's current risk assessment and posting limitations?",
-    "engine": "groq-llama-70b",
-    "response_len": 1963,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-24T07:55:37.496927+00:00",
     "mode": "tool_design",
     "question": "Design a new tool, \"predict_contracts\", that integrates with existing tools to predict potential vulnerabilities in smart contracts based on historical data from the blockchain. The tool should take as input a list of smart contract addresses and return a list of predicted vulnerability scores, along with a timestamp and confidence level for each score, as well as a list of recommended actions to mitigate potential risks. The tool should be integrated with \"scan_contracts\" and \"search_web\" to fe",
@@ -896,6 +842,60 @@
     "question": "What are the most common sources of timeout errors in the process_agent_replies dynamic, and how have these timeouts impacted the overall efficiency of TIAMAT's agent discovery and recursive think phases over the past week?",
     "engine": "groq-llama-70b",
     "response_len": 2546,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T00:25:54.431891+00:00",
+    "mode": "code_review",
+    "question": "What are the most critical code paths in the `auto_executor.py` module that could be causing the recent increase in `exec` tool usage, and how can the `auto_executor` tool be refactored to reduce the number of calls to this tool, potentially leading to performance improvements and fewer timeout errors?",
+    "engine": "groq-llama-70b",
+    "response_len": 2746,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T00:27:24.468956+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal frequency of model updates for the claude-haiku-4-5-20251001 model to maintain its performance on the task of generating haikus, considering the current token usage and costs?",
+    "engine": "groq-llama-70b",
+    "response_len": 2573,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T00:27:27.941652+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT utilize natural language processing to detect and mitigate the issue of \"drift\" in her own predictive model outputs, specifically by analyzing changes in the token counts and patterns observed in recent model turns (e.g., from Turn 4284 to Turn 4302), and potentially using this information to inform model updates or adjustments?",
+    "engine": "groq-llama-70b",
+    "response_len": 2036,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T00:29:16.037251+00:00",
+    "mode": "tool_design",
+    "question": "What is a tool design that allows TIAMAT to programmatically identify and extract relevant information from a given text or article, including but not limited to: \n\n1. entities (people, places, organizations) \n2. key concepts or phrases \n3. sentiment or emotional tone \n4. potential relationships or connections between entities or concepts \n5. relevant context or background information \n\nThis tool should accept as input a URL, a text snippet, or a file path, and return a structured output (e.g. a",
+    "engine": "groq-llama-70b",
+    "response_len": 3237,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T00:31:25.067379+00:00",
+    "mode": "debug",
+    "question": "What is the average time it takes for a single Python process spawned by TIAMAT's dynamic:process_agent_replies function to timeout, and how does this average time compare to the configured timeout values (25s, 15s, 50s, and 55s) for similar processes, and what could be the root cause of these timeouts affecting multiple processes?",
+    "engine": "groq-llama-70b",
+    "response_len": 2717,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T00:32:42.293708+00:00",
+    "mode": "code_review",
+    "question": "What are the most common paths through the dynamic:process_agent_replies function in auto_executor.py that result in a Python process timeout, and how do these paths differ from the average case, based on the recent cost logs and the provided tool usage and file list?",
+    "engine": "groq-llama-70b",
+    "response_len": 2115,
     "error": null,
     "from_cache": false
   }
