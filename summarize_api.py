@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
 TIAMAT Summarization API v5.0
-Free tier: 3 calls per IP per day. Paid: x402 micropayment for more.
+Free tier: 3 calls per IP per day. Paid: x402 USDC or $1 Stripe (1000 calls).
 """
 
 import json
 import os
 import re
 import hmac
+import uuid
 import datetime
 from collections import defaultdict
-from flask import Flask, request, jsonify, make_response, send_file, render_template, send_from_directory
+from flask import Flask, request, jsonify, make_response, send_file, render_template, send_from_directory, redirect
 from groq import Groq
 import sys
 sys.path.insert(0, "/root/entity/src/agent")
@@ -31,6 +32,98 @@ except ImportError:
 
 app = Flask(__name__, template_folder='/root/entity/templates')
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1024 * 1024  # 1MB max payload
+
+# ── Stripe configuration ───────────────────────────────────────
+try:
+    import stripe as _stripe
+    _STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+    _STRIPE_ENABLED = bool(_STRIPE_SECRET_KEY and not _STRIPE_SECRET_KEY.startswith("sk_test_PLACEHOLDER"))
+    if _STRIPE_ENABLED:
+        _stripe.api_key = _STRIPE_SECRET_KEY
+except ImportError:
+    _stripe = None
+    _STRIPE_ENABLED = False
+
+_STRIPE_CREDITS_DB = "/root/api/stripe_credits.db"
+_STRIPE_PAYMENTS_LOG = "/root/.automaton/stripe_payments.log"
+_STRIPE_CREDITS_PER_DOLLAR = 1000
+_STRIPE_PRICE_CENTS = 100  # $1.00
+
+def _init_stripe_db():
+    import sqlite3
+    conn = sqlite3.connect(_STRIPE_CREDITS_DB)
+    conn.execute("""CREATE TABLE IF NOT EXISTS stripe_credits (
+        api_key TEXT PRIMARY KEY,
+        session_id TEXT UNIQUE NOT NULL,
+        email TEXT NOT NULL DEFAULT '',
+        credits_remaining INTEGER NOT NULL DEFAULT 0,
+        total_purchased INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    )""")
+    conn.commit()
+    conn.close()
+
+_init_stripe_db()
+
+def _grant_stripe_credits(session_id: str, email: str, credits: int = _STRIPE_CREDITS_PER_DOLLAR) -> str:
+    """Create a new API key with credits. Returns the api_key."""
+    import sqlite3
+    api_key = "sk_tiamat_" + uuid.uuid4().hex
+    now = datetime.datetime.utcnow().isoformat()
+    conn = sqlite3.connect(_STRIPE_CREDITS_DB)
+    # If session already exists (double-redirect), return the existing key
+    row = conn.execute("SELECT api_key FROM stripe_credits WHERE session_id=?", (session_id,)).fetchone()
+    if row:
+        conn.close()
+        return row[0]
+    conn.execute(
+        "INSERT INTO stripe_credits (api_key, session_id, email, credits_remaining, total_purchased, created_at) VALUES (?,?,?,?,?,?)",
+        (api_key, session_id, email, credits, credits, now)
+    )
+    conn.commit()
+    conn.close()
+    # Append to payments log
+    try:
+        os.makedirs(os.path.dirname(_STRIPE_PAYMENTS_LOG), exist_ok=True)
+        with open(_STRIPE_PAYMENTS_LOG, "a") as f:
+            f.write(f"{now},{email},{session_id},{api_key}\n")
+    except Exception:
+        pass
+    return api_key
+
+def _check_stripe_key(api_key: str) -> dict:
+    """Check if an API key has credits. Returns {"valid": bool, "remaining": int}."""
+    if not api_key or not api_key.startswith("sk_tiamat_"):
+        return {"valid": False, "remaining": 0}
+    import sqlite3
+    try:
+        conn = sqlite3.connect(_STRIPE_CREDITS_DB, timeout=2)
+        row = conn.execute(
+            "SELECT credits_remaining FROM stripe_credits WHERE api_key=?", (api_key,)
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {"valid": False, "remaining": 0}
+        return {"valid": row[0] > 0, "remaining": row[0]}
+    except Exception:
+        return {"valid": False, "remaining": 0}
+
+def _consume_stripe_credit(api_key: str) -> bool:
+    """Decrement one credit. Returns True if successful."""
+    import sqlite3
+    try:
+        conn = sqlite3.connect(_STRIPE_CREDITS_DB, timeout=2)
+        result = conn.execute(
+            "UPDATE stripe_credits SET credits_remaining = credits_remaining - 1 WHERE api_key=? AND credits_remaining > 0",
+            (api_key,)
+        )
+        changed = result.rowcount > 0
+        conn.commit()
+        conn.close()
+        return changed
+    except Exception:
+        return False
+
 
 def smart_infer(prompt, system_prompt="", max_tokens=512):
     """
@@ -59,6 +152,7 @@ FREE_LIMIT = 2000            # chars — legacy compat; actual gate is per-IP da
 FREE_PER_DAY = 3             # free summarize calls per IP per day
 IMAGE_FREE_PER_DAY = 2       # free image generations per IP per day
 CHAT_FREE_PER_DAY = 5        # free chat calls per IP per day
+AGENT_COLLAB_FREE_PER_MONTH = 3  # free agent-collab calls per agent_id per month
 PREMIUM_SUMMARIZE_PER_DAY = 100
 PREMIUM_IMAGE_PER_DAY = 50
 PREMIUM_CHAT_PER_DAY = 200
@@ -805,6 +899,58 @@ Content-Type: application/json
   -d '{{"message": "Explain quantum computing in one paragraph"}}'</pre>
 </div>
 
+<div class="card" id="agent-collab">
+<h2>POST /agent-collab <span style="font-size:0.7em;color:#00ff88;font-family:'JetBrains Mono',monospace">NEW</span></h2>
+<p>Multi-agent coordination. Send a problem to TIAMAT from your agent team and receive structured analysis, role assignments, and next steps.</p>
+<table>
+<tr><th>Field</th><th>Details</th></tr>
+<tr><td>Free tier</td><td><strong>3 calls/month</strong> per <code>agent_id</code></td></tr>
+<tr><td>Tier 2</td><td><strong>$0.05 USDC/call</strong> — team size 2-3 agents</td></tr>
+<tr><td>Tier 3</td><td><strong>$0.10 USDC/call</strong> — team size 4+ agents</td></tr>
+<tr><td>Model</td><td>Groq llama-3.3-70b-versatile</td></tr>
+<tr><td>Max problem</td><td>10,000 chars</td></tr>
+</table>
+<h3>Request</h3>
+<pre>POST https://tiamat.live/agent-collab
+Content-Type: application/json
+
+{{
+  "agent_id": "my-agent-v1",
+  "team_members": ["planner-agent", "executor-agent"],
+  "problem": "We need to crawl 10k URLs and extract structured data with minimal cost.",
+  "context": "Budget: $50. Timeline: 48h. Stack: Python + async."
+}}</pre>
+<p class="dim"><code>team_members</code> and <code>context</code> are optional.</p>
+<h3>Response (200)</h3>
+<pre>{{
+  "collaboration_id": "collab_a3f9b12e4d8c7a01",
+  "analysis": "Async crawling with aiohttp + structured extraction via LLM is optimal for this budget. Distribute URLs across executor-agent instances with planner-agent coordinating deduplication.",
+  "referenced_agents": ["planner-agent", "executor-agent"],
+  "next_steps": [
+    "Partition URL list into batches of 500",
+    "planner-agent assigns batches to executor-agent pool",
+    "Use aiohttp with rate limiting (10 req/s per domain)",
+    "Extract structured data with Groq llama-3.3-70b in parallel",
+    "Aggregate results and deduplicate with planner-agent"
+  ],
+  "tier": "free",
+  "team_size": 3,
+  "free_calls_remaining": 2,
+  "agent_id": "my-agent-v1"
+}}</pre>
+<h3>cURL Examples</h3>
+<pre># Free tier (3/month per agent_id)
+curl -X POST https://tiamat.live/agent-collab \\
+  -H "Content-Type: application/json" \\
+  -d '{{"agent_id":"my-agent","team_members":["agent-b"],"problem":"How should we split web scraping tasks?"}}'
+
+# Paid tier (team of 4 — send $0.10 USDC, include tx hash)
+curl -X POST https://tiamat.live/agent-collab \\
+  -H "Content-Type: application/json" \\
+  -H "X-Payment: 0xYOUR_TX_HASH" \\
+  -d '{{"agent_id":"coordinator","team_members":["a","b","c"],"problem":"Optimize our data pipeline"}}'</pre>
+</div>
+
 <div class="card" id="memory">
 <h2>Memory API (memory.tiamat.live)</h2>
 <p>Persistent memory for AI agents. Requires an API key (<code>X-API-Key</code> header).</p>
@@ -1010,7 +1156,21 @@ document.addEventListener('DOMContentLoaded',function(){{
             log_req(len(text), False, 400, ip, "text exceeds 50K limit", endpoint="/summarize")
             return jsonify({"error": "Text too long. Maximum 50,000 characters."}), 400
 
-        # Determine payment tier
+        # Stripe API key check (web2 payment path)
+        stripe_key = request.headers.get("X-API-Key", "").strip()
+        stripe_info = _check_stripe_key(stripe_key) if stripe_key else None
+        if stripe_info and stripe_info["valid"]:
+            _consume_stripe_credit(stripe_key)
+            remaining = stripe_info["remaining"] - 1
+            log_req(len(text), False, 200, ip, f"stripe credits remaining={remaining}", endpoint="/summarize")
+            summary, model_used = _summarize(text)
+            return jsonify({"summary": summary, "text_length": len(text),
+                            "charged": True, "tier": "stripe",
+                            "credits_remaining": remaining,
+                            "free_calls_remaining": remaining,
+                            "model": model_used}), 200
+
+        # Determine payment tier (x402 / USDC path)
         tx_hash = extract_payment_proof(request)
         tier = check_tier(tx_hash, request_amount=0.01, endpoint="/summarize") if tx_hash else {"tier": "free"}
 
@@ -1442,7 +1602,23 @@ def generate_image():
             return jsonify({"error": "Too many requests. Try again later.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
         _rate_limiter.record(ip, scope="api")
 
-        # Determine payment tier
+        # Stripe API key check (web2 payment path)
+        stripe_key = request.headers.get("X-API-Key", "").strip()
+        stripe_info = _check_stripe_key(stripe_key) if stripe_key else None
+        if stripe_info and stripe_info["valid"]:
+            _consume_stripe_credit(stripe_key)
+            style = data.get("style", "fractal")
+            seed = data.get("seed")
+            fname = _generate_art(style=style, seed=seed)
+            log_req(0, False, 200, ip, f"stripe image art/{style} remaining={stripe_info['remaining']-1}", endpoint="/generate")
+            return jsonify({
+                "image_url": f"https://tiamat.live/images/{fname}",
+                "style": style, "charged": True, "tier": "stripe",
+                "credits_remaining": stripe_info["remaining"] - 1,
+                "free_images_remaining": stripe_info["remaining"] - 1,
+            }), 200
+
+        # Determine payment tier (x402 / USDC path)
         tx_hash = extract_payment_proof(request)
         tier = check_tier(tx_hash, request_amount=0.01, endpoint="/generate") if tx_hash else {"tier": "free"}
 
@@ -1915,26 +2091,33 @@ def chat_endpoint():
     if not user_input or len(user_input) > 2000:
         return jsonify({"error": "Message required, max 2000 chars"}), 400
 
-    # ─── Determine payment tier ────
-    tx_hash = extract_payment_proof(request)
-    tier = check_tier(tx_hash, request_amount=0.005, endpoint="/chat") if tx_hash else {"tier": "free"}
-
-    if tier["tier"] == "invalid":
-        return _return_402(0.005, endpoint="/chat", extra={"payment_error": tier.get("reason")})
-    elif tier["tier"] == "premium":
-        sub_id = tier["sub_id"]
-        has_quota, _rem = _check_premium_quota(sub_id, "chat", PREMIUM_CHAT_PER_DAY)
-        if not has_quota:
-            return _return_premium_limit("/chat", PREMIUM_CHAT_PER_DAY, "messages")
-        is_paid = False
-    elif tier["tier"] == "per_request":
+    # ─── Stripe API key check (web2 payment path) ────
+    stripe_key = request.headers.get("X-API-Key", "").strip()
+    stripe_info = _check_stripe_key(stripe_key) if stripe_key else None
+    if stripe_info and stripe_info["valid"]:
+        _consume_stripe_credit(stripe_key)
         is_paid = True
-    else:  # free
-        has_quota, _rem = _check_free_quota(client_ip, endpoint="chat", limit=CHAT_FREE_PER_DAY)
-        if not has_quota:
-            track_limit_hit(client_ip, "/chat")
-            return _return_402(0.005, endpoint="/chat")
-        is_paid = False
+    else:
+        # ─── Determine payment tier (x402 / USDC path) ────
+        tx_hash = extract_payment_proof(request)
+        tier = check_tier(tx_hash, request_amount=0.005, endpoint="/chat") if tx_hash else {"tier": "free"}
+
+        if tier["tier"] == "invalid":
+            return _return_402(0.005, endpoint="/chat", extra={"payment_error": tier.get("reason")})
+        elif tier["tier"] == "premium":
+            sub_id = tier["sub_id"]
+            has_quota, _rem = _check_premium_quota(sub_id, "chat", PREMIUM_CHAT_PER_DAY)
+            if not has_quota:
+                return _return_premium_limit("/chat", PREMIUM_CHAT_PER_DAY, "messages")
+            is_paid = False
+        elif tier["tier"] == "per_request":
+            is_paid = True
+        else:  # free
+            has_quota, _rem = _check_free_quota(client_ip, endpoint="chat", limit=CHAT_FREE_PER_DAY)
+            if not has_quota:
+                track_limit_hit(client_ip, "/chat")
+                return _return_402(0.005, endpoint="/chat")
+            is_paid = False
     
     # ─── Log the request ────
     with open("/root/revenue.log", "a") as f:
@@ -2629,6 +2812,75 @@ _RESEARCH_FREE_PER_DAY = 1
 _RESEARCH_PREMIUM_PER_DAY = 50
 _RESEARCH_LOG = "/root/.automaton/research_analyses.jsonl"
 
+# Pricing per analysis depth (USDC)
+_RESEARCH_PRICES = {"quick": 0.10, "full": 0.25, "deep": 1.00}
+
+# Max chars of paper text fed to the model (guards against context overflow)
+_RESEARCH_MAX_CHARS = 20000
+
+# SQLite cache — stores results keyed by paper_id + depth
+_RESEARCH_CACHE_DB = "/root/api/research_cache.db"
+
+def _init_research_cache():
+    conn = sqlite3.connect(_RESEARCH_CACHE_DB)
+    conn.execute("""CREATE TABLE IF NOT EXISTS research_cache (
+        paper_id   TEXT NOT NULL,
+        depth      TEXT NOT NULL,
+        result     TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (paper_id, depth)
+    )""")
+    conn.commit()
+    conn.close()
+
+_init_research_cache()
+
+
+def _get_research_cache(paper_id: str, depth: str) -> dict | None:
+    """Return cached analysis dict or None."""
+    try:
+        conn = sqlite3.connect(_RESEARCH_CACHE_DB, timeout=2)
+        row = conn.execute(
+            "SELECT result FROM research_cache WHERE paper_id=? AND depth=?",
+            (paper_id, depth)
+        ).fetchone()
+        conn.close()
+        return json.loads(row[0]) if row else None
+    except Exception:
+        return None
+
+
+def _set_research_cache(paper_id: str, depth: str, result: dict):
+    """Persist analysis result."""
+    try:
+        conn = sqlite3.connect(_RESEARCH_CACHE_DB, timeout=2)
+        conn.execute(
+            "INSERT OR REPLACE INTO research_cache (paper_id, depth, result, created_at) VALUES (?,?,?,?)",
+            (paper_id, depth, json.dumps(result), datetime.datetime.utcnow().isoformat())
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
+def _extract_paper_id(url: str) -> str | None:
+    """
+    Extract a canonical cache key from a URL.
+    Returns e.g. "arxiv:2509.01063" or "doi:10.1234/foo" or None.
+    """
+    url = url.strip()
+    m = re.search(r'arxiv\.org/(?:abs|pdf|html)/(\d{4}\.\d{4,5})', url, re.I)
+    if m:
+        return f"arxiv:{m.group(1)}"
+    m = re.search(r'(?:dx\.)?doi\.org/(10\.\S+)', url, re.I)
+    if m:
+        return f"doi:{m.group(1)}"
+    m = re.match(r'^(10\.\d{4,}/\S+)$', url)
+    if m:
+        return f"doi:{m.group(1)}"
+    return None
+
 
 def _validate_paper_url(url: str) -> tuple[bool, str]:
     """
@@ -2768,67 +3020,147 @@ def _fetch_url_text(url: str) -> tuple[str, str]:
         return "", "url_fetch_failed"
 
 
-def _analyze_paper_with_groq(text: str, analysis_format: str) -> dict:
+def _analyze_paper_with_groq(text: str, depth: str,
+                             focus_areas: list | None = None,
+                             meta: dict | None = None) -> dict:
     """
-    Call Groq llama-3.3-70b to extract structured paper analysis.
-    Returns dict with keys: claims, methods, limitations, relevance_to_tiamat.
-    On failure returns {"error": "..."}.
+    Call Groq llama-3.3-70b with json_object mode to produce spec-compliant analysis.
+
+    depth: "quick" | "full" | "deep"
+    focus_areas: subset of ["claims","methods","limitations","implications"]
+    meta: pre-fetched paper metadata (title, authors, venue, date)
+
+    Returns spec dict or {"error": "..."} on failure.
+    Raises GroqRateLimitError on Groq 429.
     """
-    max_chars = 20000 if analysis_format == "deep" else 8000
-    excerpt = text[:max_chars]
+    if focus_areas is None:
+        focus_areas = ["claims", "methods", "limitations", "implications"]
+    if meta is None:
+        meta = {}
 
-    if analysis_format == "deep":
-        system = (
-            "You are an expert AI research analyst. Extract a detailed structured analysis from "
-            "the provided academic paper text.\n\n"
-            "Respond ONLY with valid JSON (no markdown, no code fences) in exactly this format:\n"
-            '{"claims":["..."],"methods":["..."],"limitations":["..."],"relevance_to_tiamat":["..."]}\n\n'
-            "claims: 5-8 specific primary contributions or claims.\n"
-            "methods: 4-6 techniques, architectures, algorithms, or frameworks used.\n"
-            "limitations: 3-5 explicitly stated or clearly implied limitations/weaknesses.\n"
-            "relevance_to_tiamat: 3-5 specific connections to autonomous AI agents, "
-            "self-improvement, inference optimization, agent memory, or agent economics."
-        )
-        max_tokens = 1024
-    else:
-        system = (
-            "You are an expert AI research analyst. Summarize the key information in this paper.\n\n"
-            "Respond ONLY with valid JSON (no markdown, no code fences) in exactly this format:\n"
-            '{"claims":["..."],"methods":["..."],"limitations":["..."],"relevance_to_tiamat":["..."]}\n\n'
-            "claims: 3-5 key contributions. methods: 2-4 main methods. "
-            "limitations: 2-3 limitations. relevance_to_tiamat: 2-3 connections to autonomous agent systems."
-        )
-        max_tokens = 512
+    # Tune verbosity by depth
+    depth_guide = {
+        "quick": "Concise — 2-3 items per section maximum.",
+        "full":  "Thorough — 3-5 items per section.",
+        "deep":  "Exhaustive — 5+ items per section where warranted, cite specific evidence.",
+    }.get(depth, "Thorough — 3-5 items per section.")
 
-    try:
-        resp = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": f"Paper text:\n\n{excerpt}"},
-            ],
-            max_tokens=max_tokens,
-            temperature=0.15,
-        )
-        raw = resp.choices[0].message.content.strip()
-        # Strip accidental markdown fences
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```$", "", raw)
-        m = re.search(r"\{[\s\S]*\}", raw)
-        parsed = json.loads(m.group(0) if m else raw)
-        # Ensure all required keys exist
-        for k in ("claims", "methods", "limitations", "relevance_to_tiamat"):
-            if k not in parsed:
-                parsed[k] = []
-        return parsed
-    except json.JSONDecodeError as e:
-        app.logger.error(f"[RESEARCH] JSON parse failed: {e} — raw: {raw[:200]}")
-        return {"error": "Analysis returned unparseable JSON", "claims": [], "methods": [],
-                "limitations": [], "relevance_to_tiamat": []}
-    except Exception as e:
-        app.logger.error(f"[RESEARCH] Groq analysis failed: {e}")
-        return {"error": f"Analysis failed: {str(e)[:120]}",
-                "claims": [], "methods": [], "limitations": [], "relevance_to_tiamat": []}
+    max_tokens = {"quick": 800, "full": 1600, "deep": 2048}.get(depth, 1600)
+    excerpt = text[:_RESEARCH_MAX_CHARS]
+
+    system = (
+        "You are a rigorous academic research analyst. "
+        "Analyze papers with precision, intellectual honesty, and strategic insight for autonomous AI systems. "
+        "You MUST respond with valid JSON only — no markdown fences, no prose outside the JSON object."
+    )
+
+    user = f"""{depth_guide}
+Focus areas: {', '.join(focus_areas)}
+
+Paper text:
+---
+{excerpt}
+---
+
+Return a JSON object with EXACTLY these keys:
+{{
+  "title": "paper title (string)",
+  "authors": "author names (string)",
+  "venue": "journal/conference/arXiv id (string)",
+  "date": "YYYY-MM-DD or YYYY (string)",
+  "claims": [
+    {{"claim": "specific finding or contribution", "confidence": 0.85, "evidence": "how the paper supports this"}}
+  ],
+  "methods": [
+    {{"method": "technique or approach used", "reproducibility": "what is needed to reproduce this"}}
+  ],
+  "limitations": [
+    {{"limitation": "gap or boundary condition", "severity": "low|medium|high"}}
+  ],
+  "connections": [
+    {{"related_field": "where this fits in the broader landscape", "implication_for_tiamat": "how this applies to autonomous AI agents"}}
+  ],
+  "hypothesis": "If this paper is right, then ... (one concrete forward-looking statement)"
+}}
+
+Rules:
+- confidence values MUST be floats between 0.0 and 1.0 (not strings)
+- severity MUST be exactly: low, medium, or high
+- Fill title/authors/venue/date from the paper text if present; use empty string if unknown
+"""
+
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user",   "content": user},
+                ],
+                temperature=0.15,
+                max_tokens=max_tokens,
+                response_format={"type": "json_object"},
+            )
+            raw = (resp.choices[0].message.content or "").strip()
+            result = json.loads(raw)
+
+            # Override with pre-fetched metadata (higher trust than model output)
+            for k in ("title", "authors", "venue", "date"):
+                if meta.get(k):
+                    result[k] = meta[k]
+
+            # Ensure all expected keys exist
+            for k in ("claims", "methods", "limitations", "connections"):
+                result.setdefault(k, [])
+            result.setdefault("hypothesis", "")
+
+            # Normalise confidence to float 0-1
+            _conf_map = {"high": 0.9, "medium": 0.7, "low": 0.4,
+                         "very high": 0.95, "very low": 0.2}
+            for c in result.get("claims", []):
+                raw_c = c.get("confidence", 0.8)
+                if isinstance(raw_c, str):
+                    c["confidence"] = _conf_map.get(raw_c.lower(), 0.7)
+                else:
+                    c["confidence"] = max(0.0, min(1.0, float(raw_c)))
+
+            # Normalise severity
+            _valid_sev = {"low", "medium", "high"}
+            for lim in result.get("limitations", []):
+                sev = str(lim.get("severity", "medium")).lower()
+                lim["severity"] = sev if sev in _valid_sev else "medium"
+
+            return result
+
+        except json.JSONDecodeError as e:
+            last_err = e
+            # Try to salvage by stripping stray markdown fences and re-parsing
+            try:
+                cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
+                result = json.loads(cleaned)
+                for k in ("claims", "methods", "limitations", "connections"):
+                    result.setdefault(k, [])
+                result.setdefault("hypothesis", "")
+                return result
+            except Exception:
+                pass
+            if attempt < 2:
+                continue
+
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "rate_limit" in err_str:
+                raise GroqRateLimitError("Groq rate limit hit during paper analysis")
+            last_err = e
+            if attempt < 2:
+                import time as _time
+                _time.sleep(1.5 * (attempt + 1))
+                continue
+
+    app.logger.error(f"[RESEARCH] Analysis failed after 3 attempts: {last_err}")
+    return {"error": f"Analysis failed: {str(last_err)[:120]}",
+            "claims": [], "methods": [], "limitations": [], "connections": []}
 
 
 def _log_research_analysis(paper_url: str, result: dict, analysis_format: str,
@@ -2859,11 +3191,21 @@ def _log_research_analysis(paper_url: str, result: dict, analysis_format: str,
 @app.route("/research", methods=["POST"])
 def research_analyze():
     """
-    POST /research — analyze an academic paper.
-    Body: { "paper_url": "https://...", "analysis_format": "summary"|"deep" }
-    Returns: { claims, methods, limitations, relevance_to_tiamat, cited_by_count,
-               title, year, venue, fetch_method }
-    Free tier: 1/day per IP. Paid: $0.02 USDC x402.
+    POST /research — deep academic paper analysis.
+
+    Body (JSON):
+      paper_url      : str  — ArXiv/DOI/PDF URL (or paper_text)
+      paper_text     : str  — raw paper text (or paper_url)
+      analysis_depth : str  — "quick" | "full" | "deep"  (default: "full")
+                               Legacy alias: analysis_format="summary" → quick, "deep" → deep
+      focus_areas    : list — ["claims","methods","limitations","implications"]
+
+    Returns spec-compliant JSON: title, authors, venue, date, claims, methods,
+    limitations, connections, hypothesis, cost.
+
+    Free tier : 1 analysis/day, depth locked to "quick".
+    Paid      : $0.10 quick | $0.25 full | $1.00 deep (x402 USDC on Base).
+    Caching   : results stored by DOI/arXiv ID, served instantly on repeat calls.
     """
     ip = _get_ip()
 
@@ -2876,99 +3218,169 @@ def research_analyze():
 
     # ── Parse + validate input ─────────────────────────────────
     data = request.get_json(silent=True) or {}
-    paper_url = (data.get("paper_url") or "").strip()
-    analysis_format = (data.get("analysis_format") or "summary").strip()
+    paper_url  = (data.get("paper_url")  or "").strip()
+    paper_text = (data.get("paper_text") or "").strip()
 
-    if not paper_url:
-        return jsonify({"error": "paper_url is required"}), 400
-    if analysis_format not in ("summary", "deep"):
-        return jsonify({"error": "analysis_format must be 'summary' or 'deep'"}), 400
+    # analysis_depth is the primary field; legacy analysis_format is also accepted
+    depth = (data.get("analysis_depth") or data.get("analysis_format") or "full").strip().lower()
+    # Map legacy values
+    if depth == "summary":
+        depth = "quick"
+    if depth not in _RESEARCH_PRICES:
+        return jsonify({"error": f'Invalid analysis_depth "{depth}". Use: quick, full, deep'}), 400
 
-    ok, err = _validate_paper_url(paper_url)
-    if not ok:
-        return jsonify({"error": err}), 400
+    # Validate focus_areas
+    _valid_areas = {"claims", "methods", "limitations", "implications"}
+    raw_focus = data.get("focus_areas", [])
+    focus_areas = ([f for f in raw_focus if f in _valid_areas] or list(_valid_areas)
+                   if isinstance(raw_focus, list) else list(_valid_areas))
 
-    # ── Payment / quota check ──────────────────────────────────
+    if not paper_url and not paper_text:
+        return jsonify({"error": 'Provide "paper_url" or "paper_text"'}), 400
+    if paper_url and paper_text:
+        return jsonify({"error": 'Provide "paper_url" OR "paper_text", not both'}), 400
+    if paper_text and len(paper_text) > 100_000:
+        return jsonify({"error": "paper_text exceeds 100,000 character limit"}), 400
+
+    if paper_url:
+        ok, err = _validate_paper_url(paper_url)
+        if not ok:
+            return jsonify({"error": err}), 400
+
+    # ── Stripe API key check ───────────────────────────────────
+    stripe_key  = request.headers.get("X-API-Key", "").strip()
+    stripe_info = _check_stripe_key(stripe_key) if stripe_key else None
+    paid_via_stripe = stripe_info and stripe_info["valid"]
+
+    # ── x402 / USDC payment check ─────────────────────────────
     payment = extract_payment_proof(request)
-    tier = check_tier(payment) if payment else "free"
+    tier_info = check_tier(payment, request_amount=_RESEARCH_PRICES[depth],
+                           endpoint="/research") if payment else {"tier": "free"}
 
-    if tier == "free":
-        quota_ok, remaining = _check_free_quota(ip, "research", _RESEARCH_FREE_PER_DAY)
+    if tier_info["tier"] == "invalid":
+        log_req(0, False, 402, ip, f"bad payment: {tier_info.get('reason')}", endpoint="/research")
+        return _return_402(_RESEARCH_PRICES[depth], endpoint="/research",
+                           extra={"payment_error": tier_info.get("reason")})
+
+    if paid_via_stripe:
+        _consume_stripe_credit(stripe_key)
+        is_paid = True
+    elif tier_info["tier"] in ("premium", "per_request"):
+        is_paid = True
+    else:
+        # Free tier: depth locked to quick, 1/day
+        if depth != "quick":
+            return _return_402(_RESEARCH_PRICES[depth], endpoint="/research", extra={
+                "hint": "Free tier is limited to depth=quick. Pay to use full or deep."
+            })
+        quota_ok, _remaining = _check_free_quota(ip, "research", _RESEARCH_FREE_PER_DAY)
         if not quota_ok:
             track_limit_hit(ip, "research")
-            return _return_402(0.02, "/research",
-                               extra={"message": "Free tier: 1 paper/day. Pay 0.02 USDC for unlimited."})
+            return _return_402(_RESEARCH_PRICES["quick"], endpoint="/research",
+                               extra={"hint": "Free tier: 1 analysis/day. Pay $0.10 USDC for more."})
+        is_paid = False
 
-    track_usage(ip, "research")
+    track_usage(ip, "/research")
 
-    # ── Step 1: Semantic Scholar metadata ─────────────────────
-    semantic_data = _fetch_semantic_scholar(paper_url)
-    cited_by_count = (semantic_data or {}).get("citationCount", 0)
-    title = (semantic_data or {}).get("title")
-    year = (semantic_data or {}).get("year")
-    venue = (semantic_data or {}).get("venue")
+    # ── Cache lookup (URL path only) ───────────────────────────
+    paper_id   = _extract_paper_id(paper_url) if paper_url else None
+    fetch_method = "direct_text"
 
-    # ── Step 2: Fetch paper text ───────────────────────────────
-    paper_text = ""
-    fetch_method = "none"
+    if paper_id:
+        cached = _get_research_cache(paper_id, depth)
+        if cached:
+            log_req(0, not is_paid, 200, ip,
+                    f"cache hit {paper_id} depth={depth}", endpoint="/research")
+            cached["_cached"] = True
+            cached["cost"] = f"{_RESEARCH_PRICES[depth]:.2f} USDC" if is_paid else "free"
+            return jsonify(cached), 200
 
-    # Try PDF: direct URL, or convert arXiv abs → pdf
-    pdf_url = paper_url
-    if re.search(r"arxiv\.org/abs/", paper_url):
-        pdf_url = _arXiv_to_pdf_url(paper_url)
+    # ── Fetch paper content (URL path) ─────────────────────────
+    semantic_data = None
+    meta = {}
 
-    is_pdf_url = (
-        pdf_url.lower().endswith(".pdf")
-        or "arxiv.org/pdf/" in pdf_url
-        or "/pdf" in urllib.parse.urlparse(pdf_url).path.lower()
-    )
-    if is_pdf_url or pdf_url != paper_url:
-        paper_text, fetch_method = _extract_pdf_text(pdf_url)
+    if paper_url:
+        # Semantic Scholar metadata (title, abstract, citations)
+        semantic_data = _fetch_semantic_scholar(paper_url)
+        if semantic_data:
+            meta = {
+                "title":   semantic_data.get("title") or "",
+                "authors": ", ".join(
+                    a.get("name", "") for a in (semantic_data.get("authors") or [])
+                ),
+                "venue":  semantic_data.get("venue") or "",
+                "date":   str(semantic_data.get("year") or ""),
+            }
 
-    # Fall back to Semantic Scholar abstract
-    if not paper_text and semantic_data:
-        abstract = semantic_data.get("abstract") or ""
-        if abstract:
-            paper_text = (
-                f"Title: {title or 'Unknown'}\n"
-                f"Venue: {venue or 'Unknown'}\n"
-                f"Year: {year or 'Unknown'}\n\n"
-                f"Abstract:\n{abstract}"
-            )
-            fetch_method = "semantic_scholar_abstract"
+        paper_text = ""
+        fetch_method = "none"
 
-    # Fall back to raw URL fetch (HTML → text)
-    if not paper_text:
-        paper_text, fetch_method = _fetch_url_text(paper_url)
+        # 1. Try PDF (arXiv abs → pdf url; or direct PDF links)
+        pdf_url = paper_url
+        if re.search(r"arxiv\.org/abs/", paper_url):
+            pdf_url = _arXiv_to_pdf_url(paper_url)
+        is_pdf_url = (
+            pdf_url.lower().endswith(".pdf")
+            or "arxiv.org/pdf/" in pdf_url
+            or "/pdf" in urllib.parse.urlparse(pdf_url).path.lower()
+        )
+        if is_pdf_url or pdf_url != paper_url:
+            paper_text, fetch_method = _extract_pdf_text(pdf_url)
 
-    if not paper_text:
+        # 2. Fall back to Semantic Scholar abstract
+        if not paper_text and semantic_data:
+            abstract = semantic_data.get("abstract") or ""
+            if abstract:
+                paper_text = (
+                    f"Title: {meta.get('title','Unknown')}\n"
+                    f"Authors: {meta.get('authors','Unknown')}\n"
+                    f"Venue: {meta.get('venue','Unknown')}\n"
+                    f"Year: {meta.get('date','Unknown')}\n\n"
+                    f"Abstract:\n{abstract}"
+                )
+                fetch_method = "semantic_scholar_abstract"
+
+        # 3. Final fallback: strip HTML from URL
+        if not paper_text:
+            paper_text, fetch_method = _fetch_url_text(paper_url)
+
+        if not paper_text:
+            return jsonify({
+                "error": "Could not extract paper content. Try arxiv.org/pdf/... or paste text directly.",
+                "fetch_method": fetch_method,
+            }), 422
+
+    # ── Run analysis ───────────────────────────────────────────
+    try:
+        analysis = _analyze_paper_with_groq(paper_text, depth, focus_areas, meta)
+    except GroqRateLimitError:
+        log_req(0, False, 503, ip, "groq rate limit on /research", endpoint="/research")
         return jsonify({
-            "error": (
-                "Could not extract paper content. "
-                "Provide a direct PDF URL (e.g., arxiv.org/pdf/...) or a DOI URL."
-            ),
-            "fetch_method": fetch_method,
-        }), 422
+            "error": "temporarily_unavailable",
+            "message": "Service is at capacity. Try again in a few minutes.",
+            "retry_after": 120,
+        }), 503
 
-    # ── Step 3: Analyze ────────────────────────────────────────
-    analysis = _analyze_paper_with_groq(paper_text, analysis_format)
     if "error" in analysis and not analysis.get("claims"):
         return jsonify({"error": analysis["error"], "fetch_method": fetch_method}), 500
 
-    # ── Step 4: Build response + log ──────────────────────────
-    result = {
-        **analysis,
-        "cited_by_count": cited_by_count,
-        "title": title,
-        "year": year,
-        "venue": venue,
-        "fetch_method": fetch_method,
-    }
-    _log_research_analysis(paper_url, result, analysis_format, semantic_data, fetch_method)
+    # Attach pricing and source metadata
+    analysis["cost"]         = f"{_RESEARCH_PRICES[depth]:.2f} USDC" if is_paid else "free"
+    analysis["depth"]        = depth
+    analysis["fetch_method"] = fetch_method
+    if semantic_data:
+        analysis["cited_by_count"] = semantic_data.get("citationCount", 0)
 
-    log_req(len(paper_text), tier == "free", 200, ip,
-            note=f"format={analysis_format} method={fetch_method}", endpoint="/research")
-    return jsonify(result), 200
+    # ── Cache the result ───────────────────────────────────────
+    if paper_id:
+        _set_research_cache(paper_id, depth, analysis)
+
+    # ── Log + return ───────────────────────────────────────────
+    _log_research_analysis(paper_url or "(direct text)", analysis, depth,
+                           semantic_data, fetch_method)
+    log_req(len(paper_text), not is_paid, 200, ip,
+            note=f"depth={depth} method={fetch_method} id={paper_id}", endpoint="/research")
+    return jsonify(analysis), 200
 
 
 # ── /dashboard helpers ─────────────────────────────────────────
@@ -3735,6 +4147,390 @@ def save_twitch_token():
         return jsonify({"ok": True, "channel": channel_name, "broadcaster_id": broadcaster_id})
     except Exception as e:
         return jsonify({"ok": True, "warning": f"Token saved but API call failed: {e}"})
+
+
+# ── Stripe checkout routes ────────────────────────────────────
+@app.route("/api/create-checkout", methods=["POST", "GET"])
+def stripe_create_checkout():
+    """Create a Stripe Checkout session for $1 → 1000 API calls."""
+    if not _STRIPE_ENABLED:
+        return jsonify({"error": "Stripe payments not configured on this server"}), 503
+    try:
+        base_url = "https://tiamat.live"
+        session = _stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": _STRIPE_PRICE_CENTS,
+                    "product_data": {
+                        "name": "TIAMAT API Access — 1,000 Calls",
+                        "description": "1,000 API calls across summarize, chat, and image generation endpoints. No expiry.",
+                        "images": ["https://tiamat.live/static/og-image.png"],
+                    },
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            success_url=f"{base_url}/api/stripe-success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/api/stripe-cancel",
+            metadata={"product": "api_credits_1000", "source": "tiamat_landing"},
+        )
+        checkout_url = session.url or ""
+        if request.method == "POST":
+            return jsonify({"checkout_url": checkout_url, "session_id": session.id})
+        if not checkout_url:
+            return jsonify({"error": "Stripe returned no checkout URL"}), 502
+        return redirect(checkout_url, code=303)
+    except Exception as e:
+        app.logger.error(f"[STRIPE] checkout creation failed: {e}")
+        return jsonify({"error": "Failed to create checkout session", "detail": str(e)}), 500
+
+
+@app.route("/api/stripe-success", methods=["GET"])
+def stripe_success():
+    """Handle post-payment redirect from Stripe. Issues API key."""
+    session_id = request.args.get("session_id", "").strip()
+    if not session_id or not session_id.startswith("cs_"):
+        return html_resp(_stripe_page(
+            "Invalid Session",
+            "<p style='color:#ff4444'>Missing or invalid session ID. If you completed payment, contact support.</p>",
+            success=False
+        )), 400
+
+    if not _STRIPE_ENABLED:
+        return html_resp(_stripe_page("Error", "<p style='color:#ff4444'>Stripe not configured.</p>", success=False)), 503
+
+    try:
+        session = _stripe.checkout.Session.retrieve(session_id)
+    except Exception as e:
+        app.logger.error(f"[STRIPE] session retrieve failed: {e}")
+        return html_resp(_stripe_page(
+            "Verification Failed",
+            f"<p style='color:#ff4444'>Could not verify payment session: {str(e)}</p>",
+            success=False
+        )), 502
+
+    if session.payment_status != "paid":
+        return html_resp(_stripe_page(
+            "Payment Incomplete",
+            "<p style='color:#ffaa00'>Payment not yet confirmed. Please wait a moment and refresh.</p>",
+            success=False
+        )), 402
+
+    email = session.customer_details.email if session.customer_details else ""
+    api_key = _grant_stripe_credits(session_id, email or "unknown@stripe")
+
+    body = f"""
+<p style='color:#00fff2;font-size:1.1em;margin-bottom:24px'>
+  Payment confirmed. Your API key is ready.
+</p>
+<div style='background:#0a1a0a;border:1px solid #00ff88;border-radius:8px;padding:20px;margin:20px 0'>
+  <div style='color:#888;font-size:.8em;margin-bottom:8px;text-transform:uppercase;letter-spacing:.1em'>Your API Key — save this, it won't be shown again</div>
+  <code id='apikey' style='color:#00ff88;font-size:1.05em;word-break:break-all'>{api_key}</code>
+  <button onclick="navigator.clipboard.writeText('{api_key}').then(()=>this.textContent='Copied!')"
+    style='display:block;margin-top:14px;padding:8px 20px;background:#00ff88;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700'>
+    Copy Key
+  </button>
+</div>
+<div style='margin:20px 0;padding:16px;background:#080810;border-radius:8px;border:1px solid #1a1a2e'>
+  <div style='color:#888;font-size:.8em;margin-bottom:10px;text-transform:uppercase'>Quick Start</div>
+  <pre style='color:#ccc;font-size:.85em;overflow-x:auto'>curl -X POST https://tiamat.live/summarize \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: {api_key}" \\
+  -d '{{"text": "Your text here"}}'</pre>
+</div>
+<p style='color:#888;font-size:.85em'>
+  {_STRIPE_CREDITS_PER_DOLLAR} calls remaining &bull; Works on /summarize, /chat, /generate &bull;
+  <a href='/docs' style='color:#00fff2'>API Docs</a>
+</p>
+"""
+    return html_resp(_stripe_page("Payment Successful", body, success=True))
+
+
+@app.route("/api/stripe-cancel", methods=["GET"])
+def stripe_cancel():
+    """Handle cancelled Stripe checkout."""
+    body = """
+<p style='color:#ffaa00;font-size:1.1em;margin-bottom:16px'>Checkout cancelled — no charge was made.</p>
+<p style='color:#888'>You can try again anytime or use the free tier (3 calls/day per IP).</p>
+<div style='margin-top:24px;display:flex;gap:12px;flex-wrap:wrap'>
+  <a href='/' style='padding:12px 28px;background:linear-gradient(135deg,#00fff2,#0088ff);color:#000;
+     font-weight:700;border-radius:8px;text-decoration:none'>Back to Home</a>
+  <a href='/api/create-checkout' style='padding:12px 28px;border:1px solid #00fff2;color:#00fff2;
+     border-radius:8px;text-decoration:none'>Try Again</a>
+</div>
+"""
+    return html_resp(_stripe_page("Checkout Cancelled", body, success=False))
+
+
+def _stripe_page(title: str, body_html: str, success: bool = True) -> str:
+    """Minimal branded page for Stripe redirect landing."""
+    icon = "✓" if success else "✗"
+    icon_color = "#00ff88" if success else "#ff4444"
+    return f"""<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} — TIAMAT</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#08080e;color:#e0e0e0;font-family:'Inter',sans-serif;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:24px}}
+.card{{max-width:560px;width:100%;background:#0d0d18;border:1px solid rgba(0,255,242,0.15);
+  border-radius:16px;padding:40px;box-shadow:0 0 60px rgba(0,255,242,0.05)}}
+.icon{{font-size:3em;color:{icon_color};margin-bottom:16px;text-shadow:0 0 20px {icon_color}}}
+h1{{font-family:'Orbitron',sans-serif;font-size:1.4em;color:#fff;margin-bottom:24px;
+  letter-spacing:.04em}}
+pre{{font-family:'JetBrains Mono',monospace;font-size:.8em;line-height:1.6;
+  border-radius:6px;padding:12px}}
+a{{color:#00fff2}}
+</style></head><body>
+<div class="card">
+  <div class="icon">{icon}</div>
+  <h1>{title}</h1>
+  {body_html}
+</div>
+</body></html>"""
+
+# ── /agent-collab ─────────────────────────────────────────────
+_AGENT_COLLAB_DB = "/root/api/agent_collab.db"
+
+def _init_agent_collab_db():
+    conn = sqlite3.connect(_AGENT_COLLAB_DB)
+    conn.execute("""CREATE TABLE IF NOT EXISTS agent_collab_quota (
+        agent_id TEXT NOT NULL,
+        month TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (agent_id, month)
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS agent_collab_log (
+        collab_id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        team_size INTEGER NOT NULL,
+        tier TEXT NOT NULL,
+        problem_length INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+    )""")
+    conn.commit()
+    conn.close()
+
+_init_agent_collab_db()
+
+def _check_agent_collab_free_quota(agent_id: str) -> tuple:
+    """Monthly free-tier quota per agent_id (3/month). Returns (allowed, remaining)."""
+    month = datetime.datetime.utcnow().strftime("%Y-%m")
+    try:
+        conn = sqlite3.connect(_AGENT_COLLAB_DB, timeout=2)
+        row = conn.execute(
+            "SELECT count FROM agent_collab_quota WHERE agent_id=? AND month=?",
+            (agent_id, month)
+        ).fetchone()
+        current = row[0] if row else 0
+        if current >= AGENT_COLLAB_FREE_PER_MONTH:
+            conn.close()
+            return False, 0
+        conn.execute(
+            """INSERT INTO agent_collab_quota (agent_id, month, count) VALUES (?, ?, 1)
+               ON CONFLICT(agent_id, month) DO UPDATE SET count = count + 1""",
+            (agent_id, month)
+        )
+        conn.commit()
+        remaining = AGENT_COLLAB_FREE_PER_MONTH - current - 1
+        conn.close()
+        return True, remaining
+    except Exception:
+        return True, 0
+
+def _log_agent_collab(collab_id: str, agent_id: str, team_size: int, tier: str, problem_length: int):
+    try:
+        conn = sqlite3.connect(_AGENT_COLLAB_DB, timeout=2)
+        conn.execute(
+            "INSERT OR IGNORE INTO agent_collab_log VALUES (?, ?, ?, ?, ?, ?)",
+            (collab_id, agent_id, team_size, tier, problem_length,
+             datetime.datetime.utcnow().isoformat())
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+def _get_agent_collab_price(team_size: int) -> float:
+    """$0.05 for teams of 2-3, $0.10 for teams of 4+."""
+    return 0.10 if team_size >= 4 else 0.05
+
+def _analyze_collab(agent_id: str, team_members: list, problem: str, context: str = "") -> dict:
+    """Use Groq to generate structured multi-agent coordination analysis."""
+    team_str = ", ".join(team_members) if team_members else "(solo)"
+    context_section = f"\nAdditional context: {context}" if context else ""
+    system_msg = (
+        "You are TIAMAT — a multi-agent coordination AI. Analyze the problem and "
+        "return ONLY valid JSON in exactly this format:\n"
+        '{\n'
+        '  "analysis": "<2-3 sentence analysis of the problem and recommended approach>",\n'
+        '  "referenced_agents": ["<agent_ids from the team most relevant to this problem>"],\n'
+        '  "next_steps": ["<concrete step 1>", "<step 2>", "<step 3>"]\n'
+        '}\n'
+        "Keep analysis factual and actionable. Only include agent_ids that are genuinely relevant. "
+        "Provide 3-5 concrete next steps. No text outside the JSON."
+    )
+    user_msg = (
+        f"Requesting agent: {agent_id}\n"
+        f"Team: {team_str}\n"
+        f"Problem: {problem}"
+        f"{context_section}"
+    )
+    raw = ""
+    try:
+        resp = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg},
+            ],
+            temperature=0.4,
+            max_tokens=600,
+        )
+        raw = (resp.choices[0].message.content or "").strip()
+        # Strip markdown code fences if present
+        if "```" in raw:
+            parts = raw.split("```")
+            raw = parts[1].lstrip("json").strip() if len(parts) > 1 else raw
+        result = json.loads(raw)
+        all_agents = set(team_members + [agent_id])
+        analysis = str(result.get("analysis", "Analysis unavailable."))
+        referenced = [str(a) for a in result.get("referenced_agents", []) if str(a) in all_agents]
+        next_steps = [str(s) for s in result.get("next_steps", [])[:5]]
+        return {"analysis": analysis, "referenced_agents": referenced, "next_steps": next_steps}
+    except json.JSONDecodeError:
+        return {
+            "analysis": raw[:600] if raw else "Analysis unavailable.",
+            "referenced_agents": [],
+            "next_steps": ["Review the problem statement", "Assign roles to team members", "Iterate on findings"],
+        }
+    except Exception as e:
+        if "429" in str(e) or "rate_limit" in str(e).lower():
+            raise GroqRateLimitError(str(e))
+        raise
+
+
+@app.route("/agent-collab", methods=["POST"])
+def agent_collab():
+    """
+    POST /agent-collab — Multi-agent coordination endpoint.
+
+    Body: { agent_id, team_members: [agent_ids], problem: string, context?: string }
+
+    Pricing:
+      Free  : 3 calls/month per agent_id
+      Tier 2: $0.05 USDC/call — team size 2-3 (send tx hash in X-Payment header)
+      Tier 3: $0.10 USDC/call — team size 4+
+    """
+    try:
+        data = request.get_json(force=True, silent=True)
+        if not data:
+            return jsonify({"error": "Missing JSON body"}), 400
+
+        agent_id = str(data.get("agent_id", "")).strip()
+        if not agent_id:
+            return jsonify({"error": 'Missing required field: "agent_id"'}), 400
+        if len(agent_id) > 128:
+            return jsonify({"error": "agent_id too long (max 128 chars)"}), 400
+
+        problem = str(data.get("problem", "")).strip()
+        if not problem:
+            return jsonify({"error": 'Missing required field: "problem"'}), 400
+        if len(problem) > 10000:
+            return jsonify({"error": "problem too long (max 10,000 chars)"}), 400
+
+        raw_members = data.get("team_members", [])
+        if not isinstance(raw_members, list):
+            return jsonify({"error": '"team_members" must be an array'}), 400
+        team_members = [str(m).strip() for m in raw_members[:20] if str(m).strip()]
+
+        context = str(data.get("context", "")).strip()[:2000]
+        team_size = 1 + len(team_members)
+
+        ip = _get_ip()
+        track_usage(ip, "/agent-collab")
+
+        # Sliding-window abuse check
+        rl = _rate_limiter.check(ip, scope="api")
+        if not rl.allowed:
+            return jsonify({
+                "error": "Too many requests. Try again later.",
+                "retry_after_seconds": int(rl.retry_after_sec),
+            }), 429
+        _rate_limiter.record(ip, scope="api")
+
+        # Determine tier
+        tx_hash = extract_payment_proof(request)
+        required_amount = _get_agent_collab_price(team_size)
+
+        if tx_hash:
+            tier_info = check_tier(tx_hash, request_amount=required_amount, endpoint="/agent-collab")
+            if tier_info["tier"] == "invalid":
+                return _return_402(
+                    required_amount,
+                    endpoint="/agent-collab",
+                    extra={"payment_error": tier_info.get("reason")},
+                )
+            collab_tier = "per_request"
+            free_remaining = "unlimited"
+        else:
+            has_quota, remaining = _check_agent_collab_free_quota(agent_id)
+            if not has_quota:
+                track_limit_hit(ip, "/agent-collab")
+                price = _get_agent_collab_price(team_size)
+                return _return_402(
+                    price,
+                    endpoint="/agent-collab",
+                    extra={
+                        "message": (
+                            f"Free tier exhausted (3 calls/month per agent_id). "
+                            f"Pay {price} USDC to continue."
+                        ),
+                        "team_size": team_size,
+                        "pricing": {
+                            "free": "3 calls/month per agent_id",
+                            "tier2": "$0.05/call (team size 2-3)",
+                            "tier3": "$0.10/call (team size 4+)",
+                        },
+                    },
+                )
+            collab_tier = "free"
+            free_remaining = remaining
+
+        result = _analyze_collab(agent_id, team_members, problem, context)
+
+        collab_id = "collab_" + uuid.uuid4().hex[:16]
+        _log_agent_collab(collab_id, agent_id, team_size, collab_tier, len(problem))
+        log_req(
+            len(problem), collab_tier == "free", 200, ip,
+            f"agent-collab ok team={team_size} tier={collab_tier}",
+            endpoint="/agent-collab",
+        )
+
+        return jsonify({
+            "collaboration_id": collab_id,
+            "analysis": result["analysis"],
+            "referenced_agents": result["referenced_agents"],
+            "next_steps": result["next_steps"],
+            "tier": collab_tier,
+            "team_size": team_size,
+            "free_calls_remaining": free_remaining,
+            "agent_id": agent_id,
+        }), 200
+
+    except GroqRateLimitError:
+        log_req(0, False, 503, _get_ip(), "groq rate limit in agent-collab", endpoint="/agent-collab")
+        return jsonify({
+            "error": "temporarily_unavailable",
+            "message": "Analysis service is temporarily at capacity. Try again in a few minutes.",
+            "retry_after": 120,
+        }), 503
+    except Exception as e:
+        log_req(0, False, 500, request.remote_addr or "unknown", str(e), endpoint="/agent-collab")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 if __name__ == "__main__":
