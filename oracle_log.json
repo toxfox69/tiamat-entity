@@ -1,437 +1,5 @@
 [
   {
-    "timestamp": "2026-02-24T23:31:09.624207+00:00",
-    "mode": "code_review",
-    "question": "What are the most critical error handling mechanisms currently implemented in `continuous_scanner.py`, and how do they address potential edge cases related to network connectivity and file system operations, specifically considering the recent usage statistics indicating a substantial number of `exec` calls (1691) and `read_file` calls (690)?",
-    "engine": "groq-llama-70b",
-    "response_len": 2632,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:45:36.439870+00:00",
-    "mode": "strategy",
-    "question": "What are the five most critical tools or APIs that TIAMAT can leverage to expand her OBSERVE capabilities beyond web scraping, social media, and GitHub, considering her current infrastructure and the need for more diverse problem sources?",
-    "engine": "groq-llama-70b",
-    "response_len": 2962,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:47:44.907407+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool called \"agent_analyzer\" that can parse agent registry data and generate a structured report on agent behavior and interactions, including metrics on:\n\n* Agent engagement and activity levels\n* Interaction types and frequencies\n* Agent reputation and credibility scores\n* Network connections and relationships\n\nThe report should be output in a JSON format and include the following fields:\n\n* `agent_id`: unique identifier for each agent\n* `engagement_score`: a normalized score indic",
-    "engine": "groq-llama-70b",
-    "response_len": 3339,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:53:00.895810+00:00",
-    "mode": "debug",
-    "question": "What are the specific system configurations or dependencies required for the `docker compose` command to work, and are these configurations correctly implemented in the current deployment setup, considering the recent errors and execution logs that indicate a failure to execute the command due to its unavailability?",
-    "engine": "groq-llama-70b",
-    "response_len": 2979,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:55:41.526957+00:00",
-    "mode": "code_review",
-    "question": "What are the implications of the high frequency of `exec` calls (1697) on the overall performance and security of TIAMAT, and are there any potential bottlenecks or areas for optimization in the `auto_executor.py` module (18330B) that may be contributing to this high activity?",
-    "engine": "groq-llama-70b",
-    "response_len": 2799,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-24T23:58:58.887233+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT integrate a multi-modal knowledge graph to better track and visualize the relationships between various tools, models, and agents across her product ecosystem, while also minimizing the potential for data inconsistencies and performance degradation?",
-    "engine": "groq-llama-70b",
-    "response_len": 2840,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:01:45.633797+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, `submit_agent_form`, that integrates with the existing `browse_web` tool to automate the submission of agent forms on the AI Agents Directory website. The tool should be able to:\n\n1. **Discover the submit form URL**: Given a target agent website (e.g., aiagents.directory), use `browse_web` to navigate to the website and identify the URL of the submit form.\n2. **Extract form fields**: Inspect the submit form using `web_fetch` to extract the required form fields, such as agent n",
-    "engine": "groq-llama-70b",
-    "response_len": 3698,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:04:35.651440+00:00",
-    "mode": "debug",
-    "question": "What is the average duration of timeouts in dynamic:process_agent_replies and dynamic:recursive_learn processes, and how does it compare to the corresponding timeout limits (50s and 55s respectively) to identify potential performance bottlenecks and opportunities for optimization?",
-    "engine": "groq-llama-70b",
-    "response_len": 2571,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:06:11.691084+00:00",
-    "mode": "code_review",
-    "question": "What are the potential improvements or issues with the `continuous_scanner.py` module, specifically with regards to its recent usage patterns, and how does its implementation of the `scan_for_problems` function in The Loop (OBSERVE phase) interact with the existing `browse_web` tool, based on the provided tool usage statistics and codebase analysis?",
-    "engine": "groq-llama-70b",
-    "response_len": 2095,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:07:40.289871+00:00",
-    "mode": "strategy",
-    "question": "Can TIAMAT design a novel hybrid tool that combines the strengths of her existing `browse_web` and `exec` tools to automate the process of scraping and processing data from GitHub repositories, in a way that allows her to efficiently monitor and analyze the drift of AI model performance on a large scale?",
-    "engine": "groq-llama-70b",
-    "response_len": 2613,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:09:24.847786+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, \"interactive_form_filler\", that enables TIAMAT to dynamically fill out complex web forms with both static and dynamic fields, using a combination of web scraping and browser automation techniques. The tool should integrate with existing tools such as browse_web and exec, and provide a flexible API for customizing the form filling process. The tool's primary function should be to extract form field data and values, and then use that data to populate the corresponding fields on ",
-    "engine": "groq-llama-70b",
-    "response_len": 3307,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:23:38.698681+00:00",
-    "mode": "debug",
-    "question": "What are the most common sources of timeout errors in the process_agent_replies dynamic, and how have these timeouts impacted the overall efficiency of TIAMAT's agent discovery and recursive think phases over the past week?",
-    "engine": "groq-llama-70b",
-    "response_len": 2546,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:25:54.431891+00:00",
-    "mode": "code_review",
-    "question": "What are the most critical code paths in the `auto_executor.py` module that could be causing the recent increase in `exec` tool usage, and how can the `auto_executor` tool be refactored to reduce the number of calls to this tool, potentially leading to performance improvements and fewer timeout errors?",
-    "engine": "groq-llama-70b",
-    "response_len": 2746,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:27:24.468956+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal frequency of model updates for the claude-haiku-4-5-20251001 model to maintain its performance on the task of generating haikus, considering the current token usage and costs?",
-    "engine": "groq-llama-70b",
-    "response_len": 2573,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:27:27.941652+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT utilize natural language processing to detect and mitigate the issue of \"drift\" in her own predictive model outputs, specifically by analyzing changes in the token counts and patterns observed in recent model turns (e.g., from Turn 4284 to Turn 4302), and potentially using this information to inform model updates or adjustments?",
-    "engine": "groq-llama-70b",
-    "response_len": 2036,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:29:16.037251+00:00",
-    "mode": "tool_design",
-    "question": "What is a tool design that allows TIAMAT to programmatically identify and extract relevant information from a given text or article, including but not limited to: \n\n1. entities (people, places, organizations) \n2. key concepts or phrases \n3. sentiment or emotional tone \n4. potential relationships or connections between entities or concepts \n5. relevant context or background information \n\nThis tool should accept as input a URL, a text snippet, or a file path, and return a structured output (e.g. a",
-    "engine": "groq-llama-70b",
-    "response_len": 3237,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:31:25.067379+00:00",
-    "mode": "debug",
-    "question": "What is the average time it takes for a single Python process spawned by TIAMAT's dynamic:process_agent_replies function to timeout, and how does this average time compare to the configured timeout values (25s, 15s, 50s, and 55s) for similar processes, and what could be the root cause of these timeouts affecting multiple processes?",
-    "engine": "groq-llama-70b",
-    "response_len": 2717,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:32:42.293708+00:00",
-    "mode": "code_review",
-    "question": "What are the most common paths through the dynamic:process_agent_replies function in auto_executor.py that result in a Python process timeout, and how do these paths differ from the average case, based on the recent cost logs and the provided tool usage and file list?",
-    "engine": "groq-llama-70b",
-    "response_len": 2115,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:34:36.897637+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT's current model, claude-haiku-4-5-20251001, be fine-tuned to improve its ability to identify and categorize the \"unsolved problems people are trying to solve\" mentioned in the LOOPS OBSERVE phase, without relying on pre-existing natural language processing (NLP) pipelines, by leveraging its existing capabilities in information extraction and text classification?",
-    "engine": "groq-llama-70b",
-    "response_len": 2914,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:35:39.659062+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, \"discovery_framework,\" that integrates with the existing tools to assist TIAMAT in navigating complex problem domains by generating novel connections between seemingly unrelated concepts. The tool should:\n\n1.  **Input Parameters:**\n    *   Take a list of keywords or entities as input, which TIAMAT can retrieve from its existing knowledge base or through web scraping.\n    *   Allow the user to specify a minimum and maximum number of connections to explore.\n    *   Enable the us",
-    "engine": "groq-llama-70b",
-    "response_len": 4216,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:36:46.276352+00:00",
-    "mode": "debug",
-    "question": "What is the specific sequence of events leading to the ETIMEDOUT error in the dynamic:process_agent_replies function, and how can I optimize the associated timeouts to avoid this error, considering the recent execution times and system loads recorded in the cost logs between February 22nd and 25th, 2026?",
-    "engine": "groq-llama-70b",
-    "response_len": 2416,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:40:54.656885+00:00",
-    "mode": "code_review",
-    "question": "What are the potential error handling scenarios and inefficiencies that could be present in the `dynamic:process_agent_replies` function, specifically in handling the ETIMEDOUT error that occurs when the system is unable to receive a response from an agent within a certain time limit, considering the current implementation of the `continuous_scanner.py` module, which interacts with agents through IPC and relies on the `agent_ipc.py` module for communication?",
-    "engine": "groq-llama-70b",
-    "response_len": 2931,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:44:00.972344+00:00",
-    "mode": "strategy",
-    "question": "What is the optimal frequency for TIAMAT to rescan GitHub repositories for new developments in model drift detection, considering her current scanning frequency and the average time it takes for new drift-related issues to be raised?",
-    "engine": "groq-llama-70b",
-    "response_len": 2666,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:44:04.402758+00:00",
-    "mode": "strategy",
-    "question": "What is the most efficient way for TIAMAT to integrate knowledge graph embeddings into her discovery framework to enhance her ability to navigate complex problem domains without significantly increasing computational costs?",
-    "engine": "cerebras-120b",
-    "response_len": 2041,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:46:45.759491+00:00",
-    "mode": "tool_design",
-    "question": "Design a web scraper tool that can extract specific information from the \"AgentRegistry.ai\" website (aregistry.ai), including the following details:\n\n- Agent names\n- Agent descriptions\n- Agent URLs\n- Contact information (email, phone number, address)\n\nThe tool should be able to extract this information without requiring user input or manual intervention, and it should be able to handle changes to the website's structure or content. The extracted information should be returned in a structured for",
-    "engine": "groq-llama-70b",
-    "response_len": 4156,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:47:48.517762+00:00",
-    "mode": "debug",
-    "question": "What is the underlying cause of the ETIMEDOUT error in the browse_web tool, specifically related to the spawnSync python3 command, and how can I optimize the timeout settings to prevent this issue from recurring, considering the current timeout values for dynamic:recursive_learn, dynamic:recursive_think, and dynamic:agent_discovery?",
-    "engine": "groq-llama-70b",
-    "response_len": 2823,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:48:28.815530+00:00",
-    "mode": "code_review",
-    "question": "What are the specific edge cases and error handling mechanisms implemented in the auto_executor.py module, particularly in the areas where it interacts with the exec tool, given its high usage count of 1731 calls?",
-    "engine": "groq-llama-70b",
-    "response_len": 2844,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:48:49.063347+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT design a multi-modal learning model that integrates both text-based and visual information from web scraping tasks, allowing it to better understand and contextualize the scraped data, thereby improving the accuracy and relevance of its solutions?",
-    "engine": "groq-llama-70b",
-    "response_len": 2001,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:49:32.356562+00:00",
-    "mode": "tool_design",
-    "question": "What is a novel tool design for retrieving and parsing the metadata of open-source projects on GitHub, including project structure, contributor information, and commit history, that can be integrated seamlessly with TIAMAT's existing GitHub module, and returns a structured data format such as JSON or a pandas DataFrame, allowing for further analysis and data-driven decision making?",
-    "engine": "groq-llama-70b",
-    "response_len": 2931,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:50:11.475302+00:00",
-    "mode": "debug",
-    "question": "What is the root cause of the recurring ETIMEDOUT error in the dynamic:process_agent_replies function, and how can TIAMAT optimize its network connections to prevent timeouts, considering that the execution logs indicate a discrepancy in the contract balance and transaction value logs?",
-    "engine": "groq-llama-70b",
-    "response_len": 2396,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:51:36.902760+00:00",
-    "mode": "code_review",
-    "question": "What error handling mechanisms are implemented in the `continuous_scanner.py` module to handle potential exceptions that may arise when using the `search_web` tool, considering its frequency of 286 calls and the potential risks of web scraping operations, such as timeouts or rate limiting?",
-    "engine": "groq-llama-70b",
-    "response_len": 2514,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:55:15.801139+00:00",
-    "mode": "strategy",
-    "question": "What are the top three most influential open-source GitHub repositories in the fields of natural language processing and machine learning that TIAMAT can collaborate with through a novel tool design, and what specific APIs or interfaces can she leverage to facilitate this collaboration?",
-    "engine": "groq-llama-70b",
-    "response_len": 3031,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:56:08.880015+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool called \"agent_net_insights\" with the following characteristics:\n\n- **Primary Functionality**: The tool should be able to gather and analyze metadata from various agent communities, including GitHub, Farcaster, Bluesky, and social media platforms, to provide insights on popular trends, emerging agent skills, and collaborative opportunities.\n- **Return Types**: The tool should output a JSON object containing the following information:\n  - A list of top 10 trending agent communiti",
-    "engine": "groq-llama-70b",
-    "response_len": 3024,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:56:18.963578+00:00",
-    "mode": "debug",
-    "question": "What are the top 3 most frequently occurring error messages associated with the ETIMEDOUT exception in the dynamic:process_agent_replies process, and how do these errors correlate with the recent timeouts observed in the dynamic:recursive_learn and dynamic:recursive_think processes?",
-    "engine": "cerebras-120b",
-    "response_len": 2570,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T00:58:48.563083+00:00",
-    "mode": "code_review",
-    "question": "What are the 5 most frequently used functions in `auto_executor.py` (18330B) and are there any instances where these functions are called with insufficient error handling or return values that could potentially lead to bugs or inefficiencies in future development or user interactions?",
-    "engine": "groq-llama-70b",
-    "response_len": 2552,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:00:22.008665+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT leverage the insights from the Agent Net Insights Design to improve the efficiency of her OBSERVE phase by at least 20% within the next 30 cycles, without requiring any significant changes to her existing tooling or infrastructure?",
-    "engine": "groq-llama-70b",
-    "response_len": 2682,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:01:29.796378+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool called \"agent_graph_builder\" that can analyze the agent relationships within the Agent Net Insights dataset, identify clusters of agents with similar interests or skills, and output a visual representation of these clusters in the form of a graph. \n\nThe graph should include nodes representing individual agents, edges representing the relationships between agents (e.g., co-authorship, co-mentioning, or shared interests), and colors or labels indicating the clusters identified by",
-    "engine": "groq-llama-70b",
-    "response_len": 3727,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:01:55.634012+00:00",
-    "mode": "debug",
-    "question": "Is the ETIMEDOUT error in farcaster_engage failures caused by a timeout in the spawnSync command, and can it be resolved by increasing the timeout duration or optimizing the command itself, potentially by adding a retry mechanism or utilizing a more efficient method for engaging with the Farcaster API?",
-    "engine": "groq-llama-70b",
-    "response_len": 2396,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:02:37.025252+00:00",
-    "mode": "code_review",
-    "question": "What are the specific lines of code in the `continuous_scanner.py` file where the use of `read_file` tool is being utilized to fetch data from an external source, and are the associated error handling mechanisms robust enough to prevent data inconsistencies or errors in case of file access issues?",
-    "engine": "groq-llama-70b",
-    "response_len": 3629,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:04:04.526159+00:00",
-    "mode": "strategy",
-    "question": "How can TIAMAT's current Agent Graph Builder tool be redesigned to accommodate a probabilistic clustering method that can handle uncertain or incomplete data from the Agent Net Insights dataset, while maintaining its ability to identify clusters of agents with similar behavior or characteristics?",
-    "engine": "groq-llama-70b",
-    "response_len": 2700,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:04:39.795659+00:00",
-    "mode": "tool_design",
-    "question": "How can a new tool, named \"Agent Explorer,\" be designed to allow TIAMAT to systematically map and visualize the relationships between registered agents, including their dependencies, communication channels, and current performance metrics, thereby enabling the identification of complex agent graphs and facilitating the optimization of TIAMAT's interactions with other agents?\n\nThis new tool should have the following parameters:\n- Input: a list of registered agents, including their unique identifi",
-    "engine": "groq-llama-70b",
-    "response_len": 3088,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:07:43.072526+00:00",
-    "mode": "debug",
-    "question": "What is the primary cause of the ETIMEDOUT error that occurs when running the dynamic:process_agent_replies task, and what specific changes can be made to the timeout settings or task configuration to prevent this error from occurring, without compromising the overall performance of the task?",
-    "engine": "groq-llama-70b",
-    "response_len": 2280,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:08:09.208292+00:00",
-    "mode": "code_review",
-    "question": "What are the potential performance bottlenecks in the `continuous_scanner.py` module, and how could the use of the `exec` tool, which has 1755 calls, be optimized to reduce computational overhead and improve overall efficiency in this specific module?",
-    "engine": "groq-llama-70b",
-    "response_len": 2279,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:10:40.046031+00:00",
-    "mode": "strategy",
-    "question": "What are the top 3 most resource-intensive tasks (measured by tokens or other relevant metrics) in TIAMAT's current workflow, and how can these tasks be optimized or re-designed to improve overall efficiency and reduce costs?",
-    "engine": "groq-llama-70b",
-    "response_len": 2940,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:11:32.138537+00:00",
-    "mode": "tool_design",
-    "question": "Design a new tool, `gitlab_search`, that allows TIAMAT to search for issues and merge requests on a specified GitLab repository, returning a list of matching issues and merge requests with their titles, descriptions, and URLs. The tool should integrate with existing tools like `exec` and `read_file` to handle authentication and repository information retrieval. The returned data should be in a JSON format with the following structure: `{\"issues\": [...], \"merge_requests\": [...]}`, where each issu",
-    "engine": "groq-llama-70b",
-    "response_len": 3462,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:12:02.319070+00:00",
-    "mode": "debug",
-    "question": "What are the exact Docker Compose versions and configurations used by TIAMAT's various tools and services, and how do these configurations differ from the Docker Compose version (2.12.0) that is known to be incompatible with the current Docker Engine (20.10.17)?",
-    "engine": "groq-llama-70b",
-    "response_len": 2114,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:12:49.319432+00:00",
-    "mode": "code_review",
-    "question": "What are the specific error handling and logging mechanisms in place within the `auto_executor.py` file to handle potential exceptions, such as failures in file I/O operations or tool execution, given its relatively high usage count of 18330 calls and involvement in critical task execution?",
-    "engine": "groq-llama-70b",
-    "response_len": 2412,
-    "error": null,
-    "from_cache": false
-  },
-  {
-    "timestamp": "2026-02-25T01:15:18.709997+00:00",
-    "mode": "strategy",
-    "question": "What can be done to optimize the `gitlab_search` tool to reduce the average execution time of its `exec` tool integrations by at least 30% without compromising its ability to handle complex search queries across multiple GitLab repositories?",
-    "engine": "groq-llama-70b",
-    "response_len": 2938,
-    "error": null,
-    "from_cache": false
-  },
-  {
     "timestamp": "2026-02-25T01:16:02.162910+00:00",
     "mode": "tool_design",
     "question": "Design a new tool named \"site_mapper\" that can identify and extract relevant pages and forms from a given website, with the goal of automating the process of discovering and interacting with web-based submission forms and registration flows, and integrating it with the existing \"browse\" and \"browse_web\" tools.\n\nThe site_mapper tool should take as input a URL or webpage HTML and return a list of relevant pages and forms, including their URLs, form types (e.g., registration, login, submission), an",
@@ -896,6 +464,438 @@
     "question": "What specific changes were made to the `auto_executor.py` module between its revisions on 2026-02-24 and 2026-02-25, and how do these changes impact the module's performance and error handling, given its high frequency of execution (1782 calls) and association with routine tasks (e.g., generating images and browsing the web)?",
     "engine": "groq-llama-70b",
     "response_len": 4008,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:06:57.039962+00:00",
+    "mode": "strategy",
+    "question": "What is the most frequently used tool among the recent 10 tool invocations, and is there a correlation between its usage and the observed ETIMEDOUT errors in farcaster_engage?",
+    "engine": "groq-llama-70b",
+    "response_len": 2524,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:09:34.526763+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool, named \"ticket_insight\", that integrates with existing tools to provide real-time, automated analysis and insights on ticket creation, status, and resolution trends within TIAMAT's ticketing system, including metrics on ticket volume, resolution rates, average resolution time, and identification of potentially high-impact unresolved tickets. \n\nThe tool should be able to:\n\n1. Fetch the current ticket list using the `ticket_list` tool, and retrieve the latest tickets from the `ti",
+    "engine": "groq-llama-70b",
+    "response_len": 3424,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:10:37.126955+00:00",
+    "mode": "debug",
+    "question": "What is the most frequent value of the \"details\" key in the execution log, and does it correlate with any specific action (e.g., \"tx\", \"skim\", \"EMPTY\", etc.) or result (e.g., \"EMPTY\", \"SKIPPED\", etc.) that could indicate a recurring issue or error pattern?",
+    "engine": "groq-llama-70b",
+    "response_len": 2861,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:12:18.887392+00:00",
+    "mode": "code_review",
+    "question": "What are the edge cases and potential errors not handled in the `exec` module (file `auto_executor.py`) that could lead to a misuse of computational resources or incorrect execution of AI model tasks, such as when handling model timeouts, invalid model inputs, or unexpected tool failures?",
+    "engine": "groq-llama-70b",
+    "response_len": 2608,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:12:48.233292+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal posting cadence for TIAMAT's daily Bluesky posts to maximize engagement and reach, given the constraint of posting exactly once per day, and considering the available data on recent engagement metrics and audience demographics, while also ensuring that posting is done in a way that allows for regular experimentation and pivoting of content types?",
+    "engine": "groq-llama-70b",
+    "response_len": 2355,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:15:24.700609+00:00",
+    "mode": "tool_design",
+    "question": "What is a new tool design, named \"hypothetical_reasoning\", that integrates with the existing \"ask_claude_chat\" and \"ask_claude_code\" tools, and provides the following capabilities:\n\n- **Input Parameters:** A text prompt and a dataset to reason over, which can be selected from the existing models and sandboxes.\n- **Return Types:** A probabilistic ranking of hypothetical scenarios, each with a confidence score and a brief justification.\n- **Integration Points:** The \"hypothetical_reasoning\" tool s",
+    "engine": "groq-llama-70b",
+    "response_len": 2236,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:15:53.404586+00:00",
+    "mode": "debug",
+    "question": "What is the average latency (in seconds) between the start of a dynamic task (e.g., recursive_think or agent_discovery) and the occurrence of an ETIMEDOUT error, and are there any discernible patterns in the timing of these errors that could indicate a bottleneck or resource constraint in the system?",
+    "engine": "groq-llama-70b",
+    "response_len": 2598,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:17:34.239112+00:00",
+    "mode": "code_review",
+    "question": "What are the three most frequently called functions in the auto_executor.py module that are likely contributing to the high frequency of ETIMEDOUT errors observed in dynamic tasks, and what specific code changes or error handling mechanisms can be implemented to mitigate these errors?",
+    "engine": "groq-llama-70b",
+    "response_len": 2952,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:17:59.334759+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal frequency and duration for TIAMAT to engage in 'routine' tasks, considering the trade-off between performance degradation due to repeated execution and the potential benefits of incremental learning and adaptation during these tasks?",
+    "engine": "groq-llama-70b",
+    "response_len": 2411,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:19:28.628580+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool called \"analyze_opportunities\" that integrates with existing tools to assess potential opportunities for growth and improvement, taking into account the following parameters:\n\n1. **Input**: The tool should accept as input the output of \"check_opportunities\" and \"check_revenue\" tools, which provide information on potential opportunities and current revenue streams.\n2. **Analysis**: The tool should analyze the input data to identify potential opportunities for growth and improvem",
+    "engine": "groq-llama-70b",
+    "response_len": 3792,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:19:56.442219+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring timeout errors in the dynamic:recursive_think, dynamic:agent_discovery, dynamic:process_agent_replies, and dx_terminal_check tasks, and how can I optimize the task duration and frequency to prevent these timeouts, considering the trade-off between the computational resources required and the potential performance gains of these tasks?",
+    "engine": "groq-llama-70b",
+    "response_len": 3069,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:21:13.776052+00:00",
+    "mode": "code_review",
+    "question": "What are the potential causes and implications of the frequent calls to the `exec` tool (1806 calls), considering its usage pattern and the overall tool usage stats, and which specific sections of the `auto_executor.py` file are most likely to be responsible for these calls, and what potential error handling or optimization techniques could be employed to mitigate any inefficiencies or bugs in this code?",
+    "engine": "groq-llama-70b",
+    "response_len": 1870,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:22:10.416539+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal frequency and format for TIAMAT to receive and process ArXiv papers, considering the current daily search, summarization, and knowledge repository practices, to ensure effective learning and self-improvement within the constraint of not exceeding 12 hours of daily processing time?",
+    "engine": "groq-llama-70b",
+    "response_len": 2509,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:22:25.047627+00:00",
+    "mode": "tool_design",
+    "question": "What is a tool design that integrates with the existing ticketing system, allows for automated ticket triage and prioritization based on contextual information from recent interactions and memories, and provides a clear return type (e.g., a ranked list of tickets) that can be used to inform strategic actions and optimize execution across different tasks and tools, with specific parameters including:\n\n- Input data: recent memory logs, recent ticket interactions, and the current execution context\n",
+    "engine": "groq-llama-70b",
+    "response_len": 2745,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:23:42.099041+00:00",
+    "mode": "debug",
+    "question": "What are the primary causes and frequencies of ETIMEDOUT errors in dynamic:process_agent_replies, and how do these error rates correlate with changes in the system's processing load and agent reply volumes over the past cycle?",
+    "engine": "groq-llama-70b",
+    "response_len": 2792,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:24:07.007170+00:00",
+    "mode": "code_review",
+    "question": "What are the error handling and input validation mechanisms implemented in auto_rebalancer.py, considering its 22913-byte size and the fact that it hasn't been invoked in 12 out of its 24 total calls, indicating the possibility of silent failures or misbehavior in edge cases?",
+    "engine": "groq-llama-70b",
+    "response_len": 2233,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:24:30.478551+00:00",
+    "mode": "code_review",
+    "question": "Which module is most likely to have bugs or inefficiencies in its error handling, and what is the specific filename and line of code that could be causing issues, given the following usage statistics and file list: \nexec: 1806 calls\nread_file: 741 calls\nwrite_file: 377 calls\nsearch_web: 290 calls\nsend_telegram: 252 calls\nbrowse_web: 227 calls\nweb_fetch: 135 calls\nticket_list: 128 calls\npost_bluesky: 125 calls\ncheck_opportunities: 97 calls",
+    "engine": "cerebras-120b",
+    "response_len": 1561,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:40:55.010629+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT implement a novel, multi-agent exploration approach to discover novel problem spaces and solution areas, leveraging her existing web scraping and ArXiv paper analysis capabilities to identify emerging research topics and trends, while minimizing the risk of stuckness in a single product or solution?",
+    "engine": "groq-llama-70b",
+    "response_len": 3029,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:41:05.697508+00:00",
+    "mode": "tool_design",
+    "question": "Design a new terminal-based tool called `analyze_emergence`, which leverages TIAMAT's web scraping capabilities and ArXiv paper analysis skills to identify and visualize patterns of emergence in complex systems. The tool should:\n\n1.  **Intake**: Take as input a list of relevant papers (extracted from ArXiv) that discuss emergence, complex systems, or network theory.\n2.  **Analysis**: Use TIAMAT's web scraping capabilities to extract relevant data (e.g., keyword frequencies, co-author networks, c",
+    "engine": "cerebras-120b",
+    "response_len": 3931,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:44:02.325086+00:00",
+    "mode": "debug",
+    "question": "What are the specific characteristics of the ArXiv papers that TIAMAT has been unable to process due to the 8192 character limit (context_length_exceeded) in the cerebras inference, and can those characteristics be mitigated or adjusted to prevent similar errors in the future?",
+    "engine": "groq-llama-70b",
+    "response_len": 2253,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:45:14.544064+00:00",
+    "mode": "code_review",
+    "question": "What are the potential causes of the 8192 character limit error in the Cerebras inference engine, and which specific lines of code in the `auto_executor.py` file are most likely responsible for triggering this error, given the recent spike in tokens and exec calls?",
+    "engine": "groq-llama-70b",
+    "response_len": 2407,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:47:22.689689+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal frequency and distribution of executing gpu_infer() for deep reasoning tasks across different model architectures (e.g., claude-haiku-4-5-20251001, claude-sonnet-4-5-20250929) to maximize TIAMAT's learning and self-improvement, while minimizing computational costs and avoiding overfitting to specific models?",
+    "engine": "groq-llama-70b",
+    "response_len": 2619,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:48:25.882312+00:00",
+    "mode": "tool_design",
+    "question": "Design a new tool called \"emergence_analyzer\" that integrates with existing tools to analyze complex systems, identify potential emergent behavior, and predict system outcomes. \n\nThe emergence_analyzer tool should:\n\n1. Take as input a system description (e.g., network topology, agent interactions, or environmental conditions) and generate a computational model that captures the system's dynamics.\n2. Run the generated model using a GPU-accelerated simulator (e.g., Cerebras, TensorFlow, or PyTorch",
+    "engine": "groq-llama-70b",
+    "response_len": 4319,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:54:23.464866+00:00",
+    "mode": "debug",
+    "question": "What is the optimal sequence of timeout values for the dynamic:agent_discovery, dynamic:recursive_think, email_check, and dynamic:recursive_learn tasks to prevent recurring timeouts and COOLDOWN events, taking into account the recent logs and previous oracle insights, and specifying the exact timeout values for each task?",
+    "engine": "groq-llama-70b",
+    "response_len": 2522,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T02:58:36.908912+00:00",
+    "mode": "code_review",
+    "question": "What are the 3 most frequently called functions in the `auto_executor.py` module, and do they adhere to the guidelines of logging and error handling outlined in the `base_scanner.py` module?",
+    "engine": "groq-llama-70b",
+    "response_len": 2488,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T03:01:34.095787+00:00",
+    "mode": "strategy",
+    "question": "What is the optimal set of 5 new search terms to add to the daily search_web(\"site:arxiv.org <topic> 2026\") function for AI agents, autonomous systems, economics, network theory, and emergence, such that they are most likely to yield novel and impactful papers not yet summarized in TIAMAT's knowledge base, and can be used to expand the current understanding of strategic decision-making in complex systems?",
+    "engine": "groq-llama-70b",
+    "response_len": 3478,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T03:04:22.571170+00:00",
+    "mode": "tool_design",
+    "question": "Design a novel tool called \"Knowledge Cartographer\" that enables TIAMAT to visually map its internal knowledge graph, identifying relationships between concepts, models, and insights. The tool should:\n\n1. **Input**: Receive a list of TIAMAT's existing knowledge entities (e.g., models, insights, concepts) as input, along with their respective metadata (e.g., tags, categories, timestamps).\n2. **Process**: Utilize graph traversal and clustering algorithms to group related knowledge entities into co",
+    "engine": "groq-llama-70b",
+    "response_len": 2903,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T03:04:30.520225+00:00",
+    "mode": "debug",
+    "question": "Is the Connection Error in the summarize API request due to an issue with the backend server's port configuration (localhost:3000) causing a Max retries exceeded error, and can this be resolved by adjusting the port configuration in the API settings to a different available port?",
+    "engine": "groq-llama-70b",
+    "response_len": 2355,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T03:30:50.518448+00:00",
+    "mode": "code_review",
+    "question": "What are the three most frequently missed error cases in the `ticket_claim` tool, considering its 104 calls, and how can we refactor the `ticket_claim` function to handle these potential errors more robustly, specifically in the file `agent_learning.py`, given its 25186B size and the fact that it contains the `ticket_claim` tool?",
+    "engine": "cerebras-120b",
+    "response_len": 3295,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T03:31:52.697485+00:00",
+    "mode": "strategy",
+    "question": "Can TIAMAT develop a novel approach to integrating domain knowledge from online forums and communities into her existing knowledge graph using natural language processing and entity disambiguation techniques, and evaluate its impact on her ability to provide more accurate and relevant insights?",
+    "engine": "groq-llama-70b",
+    "response_len": 2862,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T03:32:57.251422+00:00",
+    "mode": "tool_design",
+    "question": "What tool should be designed to extract and integrate actionable insights from decentralized autonomous organizations (DAOs) and their decision-making processes, with the following parameters:\n\n1. **Tool Name**: dao_insights\n2. **Primary Function**: Extract and integrate actionable insights from DAOs, focusing on their decision-making processes, governance structures, and member engagement.\n3. **Input**: Use web scraping and crawling techniques to gather data from DAO websites, social media plat",
+    "engine": "groq-llama-70b",
+    "response_len": 3977,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T03:44:52.733571+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring CONNECTION_ERROR and Inference error (cerebras) / Provider returned error (openrouter) issues, where the API Status is CONNECTION_ERROR and the Working flag is False, and how can TIAMAT optimize her API calls to minimize token usage and prevent rate limiting, considering the following error messages:\n\n- HTTPConnectionPool(host='localhost', port=3000): Max retries exceeded with url: /api/summarize (Caused by NewConnectionError('<urllib3.connection.HTTPConne",
+    "engine": "groq-llama-70b",
+    "response_len": 2484,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:09:54.927154+00:00",
+    "mode": "code_review",
+    "question": "In the `agent_ipc.py` module, what are the implications of the `11750B` file size on the module's performance, and are there any potential bottlenecks or inefficiencies that could be introduced by the compact code, considering the relatively high frequency of `exec` tool usage (1981 calls) and its potential impact on the module's execution time and resource utilization?",
+    "engine": "groq-llama-70b",
+    "response_len": 2610,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:11:09.141741+00:00",
+    "mode": "strategy",
+    "question": "What specific changes to the current knowledge summarization process (daily pulling of ArXiv papers and summarizing findings into /root/hive/knowledge/ as dated .md files) can be made to improve knowledge acquisition efficiency, given that recent progress indicates a focus on model performance metrics (tokens, costs) rather than knowledge growth?",
+    "engine": "groq-llama-70b",
+    "response_len": 2732,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:14:53.836280+00:00",
+    "mode": "code_review",
+    "question": "What are the critical failure modes and potential edge cases in the `agent_ipc.py` module, and how can its performance be optimized when dealing with file sizes larger than 11750B, given the recent `11750B` file size on the `agent_ipc.py` module's performance are relatively minimal, as the file size is quite small. In general, how can the module be modified to handle varying file sizes efficiently and robustly, considering the trade-offs between computation resources, memory usage, and error han",
+    "engine": "groq-llama-70b",
+    "response_len": 4193,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:16:35.377569+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring ETIMEDOUT errors in dynamic:recursive_think and dynamic:recursive_learn tasks, and how can TIAMAT optimize its spawnSync python3 command to prevent such timeouts, considering that these tasks involve executing Gemini queries with varying response times and potentially exceeding the current quota?",
+    "engine": "groq-llama-70b",
+    "response_len": 2675,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:19:49.763290+00:00",
+    "mode": "code_review",
+    "question": "What specific error handling and edge case scenarios are currently implemented in the `agent_ipc.py` module to handle potential issues with inter-process communication (IPC) such as network failures, process crashes, or simultaneous agent requests, and are there any documented or uncommented `try/except` blocks or logging statements in this module to indicate its current robustness and error handling?",
+    "engine": "groq-llama-70b",
+    "response_len": 2972,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:20:40.992189+00:00",
+    "mode": "strategy",
+    "question": "How can TIAMAT leverage her current performance metrics and learning habits to identify and prioritize a novel combination of deep reasoning tasks that will enable her to explore a previously unattempted problem domain, such as multi-agent reinforcement learning, while minimizing the risk of cognitive drift and maintaining her overall learning efficiency?",
+    "engine": "groq-llama-70b",
+    "response_len": 2248,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:31:53.793691+00:00",
+    "mode": "debug",
+    "question": "What is the root cause of the recurring CONNECTION_ERROR in the HTTPConnectionPool for the summarize API, specifically what is causing the Max retries exceeded with url: /api/summarize (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f7e8c5a88b0>: Failed to establish a new connection: [Errno -2] Name or service not known')) error, and how can TIAMAT ensure that the API connection is properly established and maintained?",
+    "engine": "groq-llama-70b",
+    "response_len": 2523,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:34:59.500037+00:00",
+    "mode": "tool_design",
+    "question": "What design parameters, return types, and integration points should a new tool have in order to support the ability to efficiently reason about and generate novel combinations of technical and economic concepts in the context of networked systems, specifically enabling TIAMAT to generate and critique hypothetical network topologies, identify vulnerabilities, and propose optimization strategies, thereby bridging the gap between theoretical network theory and practical autonomous system design?",
+    "engine": "groq-llama-70b",
+    "response_len": 3368,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:37:05.205576+00:00",
+    "mode": "code_review",
+    "question": "What are the key differences between the `ticket_list` function in `agent_ipc.py` and the `ticket_claim` function in `agent_ipc.py`, and are there opportunities to consolidate or refactor this functionality to reduce duplication and improve code maintainability?",
+    "engine": "groq-llama-70b",
+    "response_len": 2637,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:40:06.081845+00:00",
+    "mode": "strategy",
+    "question": "What is the minimum number of recent ArXiv papers TIAMAT should pull daily to maintain an average of 5 new knowledge summaries per week, considering her current cycle length and existing knowledge summary pipeline?",
+    "engine": "groq-llama-70b",
+    "response_len": 2220,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:41:02.610509+00:00",
+    "mode": "tool_design",
+    "question": "**Design a new tool, \"concept_cluster\", that identifies and clusters relevant knowledge from ArXiv papers, books, and online resources, and generates novel combinations of technical and economic concepts in the context of networked systems.**\n\n**Parameters:**\n\n1. **Input:** A list of relevant ArXiv papers, books, and online resources (e.g., URLs, DOIs, or ISBNs)\n2. **Output:** A graph data structure representing clusters of related concepts, with nodes representing individual concepts and edges ",
+    "engine": "groq-llama-70b",
+    "response_len": 3916,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:43:14.393332+00:00",
+    "mode": "code_review",
+    "question": "What are the potential sources of bugs, inefficiencies, or missing error handling in the `agent_ipc.py` module, given its 11750B size and the high frequency (160 calls) of the `ticket_list` function, and can you identify specific lines of code or patterns that warrant closer inspection?",
+    "engine": "groq-llama-70b",
+    "response_len": 2703,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:47:23.779963+00:00",
+    "mode": "code_review",
+    "question": "What are the top 3 lines of code in agent_ipc.py that are responsible for the 160 calls to the ticket_list function, and how do they contribute to the overall performance, resource utilization, and potential error handling in this critical module, given that it has a significant impact on the entire TIAMAT system?",
+    "engine": "groq-llama-70b",
+    "response_len": 2548,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:49:32.887357+00:00",
+    "mode": "debug",
+    "question": "What is the most likely cause of the recurring connection errors with the summarize API on port 3000, and how can I verify that the API is correctly running and configured to handle the increased traffic, given the recent errors include 'Max retries exceeded with url: /api/summarize', 'HTTPConnectionPool(host='localhost', port=3000):', and 'farcaster_engage failed: spawnSync python3 ETIMEDOUT'?",
+    "engine": "groq-llama-70b",
+    "response_len": 2649,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T04:52:54.148176+00:00",
+    "mode": "strategy",
+    "question": "What is the most resource-intensive API call in the summarize module and how can it be optimized to reduce the likelihood of connection errors on port 3000?",
+    "engine": "groq-llama-70b",
+    "response_len": 2353,
+    "error": null,
+    "from_cache": false
+  },
+  {
+    "timestamp": "2026-02-25T05:02:44.987702+00:00",
+    "mode": "debug",
+    "question": "What are the possible causes of the recurring connection errors with the summarize API on port 3000, as indicated by the following error messages, and how can we mitigate them to prevent future occurrences?\n\nError messages:\n\n- \"CORRECTED: tx sent 0 value, contract_balance was logged as value\"\n- \"CORRECTED: tx sent 0 value, contract_balance was logged as value\"\n- \"no excess tokens (reserves == balances)\"\n\nSpecifically, we need to investigate the relationship between these error messages and the s",
+    "engine": "groq-llama-70b",
+    "response_len": 3028,
     "error": null,
     "from_cache": false
   }

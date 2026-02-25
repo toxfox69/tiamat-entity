@@ -5,9 +5,9 @@
     "timeout": 25000,
     "description": "Fast Groq-only self-improvement — rotates self-critique, code ideas, market intel, skill expansion",
     "enabled": true,
-    "runs": 1496,
-    "lastRun": "2026-02-25T02:01:06.276Z",
-    "lastResult": "{\"mode\": \"skill_expand\", \"engine\": \"cerebras-120b\", \"insight\": \"**New Capability:** **\\\"Automated Social Media Sentiment Analysis\\\"**\\n\\n**Description:** Develop a natural language processing (NLP) capability that analyzes the sentiment of social media posts mentioning TIAMAT, allowing her to gauge public perception and adjust her strategy accordingly. This capability will monitor Bluesky, Farcaster, and other relevant platforms for keywords related to TIAMAT, extract relevant posts, and provide"
+    "runs": 1687,
+    "lastRun": "2026-02-25T05:03:16.548Z",
+    "lastResult": "{\"error\": \"All engines failed. gemini-2.0-flash: Gemini 429: {\\n  \\\"error\\\": {\\n    \\\"code\\\": 429,\\n    \\\"message\\\": \\\"You exceeded your current quota, please check your plan and billing deta | groq-llama-70b: Groq(llama-3.3-70b-versatile) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.3-70b-versatile` in o | 8b: Groq(llama-3.1-8b-instant) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.1-8b-instant` in orga | cerebras-120b: Cerebras 429: {\\\"message\\\":\\"
   },
   {
     "name": "recursive_learn",
@@ -15,9 +15,9 @@
     "timeout": 55000,
     "description": "Deep Groq→Claude.ai pipeline — code review, strategy, tool design, debug. Falls back to Groq-only if oracle unavailable",
     "enabled": true,
-    "runs": 892,
-    "lastRun": "2026-02-25T01:58:37.788Z",
-    "lastResult": "{\"mode\": \"code_review\", \"question\": \"What specific changes were made to the `auto_executor.py` module between its revisions on 2026-02-24 and 2026-02-25, and how do these changes impact t\", \"engines\": {\"question\": \"cerebras-120b\", \"oracle\": \"groq-llama-70b\", \"actions\": \"cerebras-120b\"}, \"actions_count\": 3, \"actions\": [\"Analyze the changes made to `auto_executor.py` using a version control system li\", \"Implement asynchronous task execution using `asyncio` in `auto_executor.py`.\", \"Enhance error h"
+    "runs": 951,
+    "lastRun": "2026-02-25T05:03:05.813Z",
+    "lastResult": "{\"error\": \"Question gen failed: gemini-2.0-flash: Gemini 429: {\\n  \\\"error\\\": {\\n    \\\"code\\\": 429,\\n    \\\"message\\\": \\\"You exceeded your current quota, please check your plan and billing deta | groq-llama-70b: Groq(llama-3.3-70b-versatile) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.3-70b-versatile` in o | 8b: Groq(llama-3.1-8b-instant) 429: {\\\"error\\\":{\\\"message\\\":\\\"Rate limit reached for model `llama-3.1-8b-instant` in orga | cerebras-120b: Cerebras 429: {\\\"message\\\":"
   },
   {
     "name": "process_agent_replies",
@@ -25,8 +25,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 792,
-    "lastRun": "2026-02-25T01:58:45.180Z",
+    "runs": 895,
+    "lastRun": "2026-02-25T05:03:13.928Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -35,8 +35,28 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 420,
-    "lastRun": "2026-02-25T02:01:32.576Z",
+    "runs": 703,
+    "lastRun": "2026-02-25T05:03:17.730Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
+  },
+  {
+    "name": "verify_api_running",
+    "script": "/root/.automaton/test_summarize_api.py",
+    "timeout": 10000,
+    "description": "",
+    "enabled": true,
+    "runs": 187,
+    "lastRun": "2026-02-25T05:03:17.574Z",
+    "lastResult": "[2026-02-25T05:03:17.476527Z] API Status: CONNECTION_ERROR, Working: False\nError: HTTPConnectionPool(host='localhost', port=3000): Max retries exceeded with url: /api/summarize (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=3000): Failed to establish a new con\n"
+  },
+  {
+    "name": "verify_summarize_api",
+    "script": "/root/.automaton/test_summarize_api.py",
+    "timeout": 10000,
+    "description": "Test summarize_api health every 60s. Logs to verify_api.log",
+    "enabled": true,
+    "runs": 186,
+    "lastRun": "2026-02-25T05:03:17.058Z",
+    "lastResult": "[2026-02-25T05:03:16.978629Z] API Status: CONNECTION_ERROR, Working: False\nError: HTTPConnectionPool(host='localhost', port=3000): Max retries exceeded with url: /api/summarize (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=3000): Failed to establish a new con\n"
   }
 ]
