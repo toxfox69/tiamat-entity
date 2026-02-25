@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1321,
-    "lastRun": "2026-02-25T17:09:54.862Z",
+    "runs": 1393,
+    "lastRun": "2026-02-25T18:49:52.340Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 1352,
-    "lastRun": "2026-02-25T17:10:23.016Z",
+    "runs": 1470,
+    "lastRun": "2026-02-25T18:50:57.460Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 829,
-    "lastRun": "2026-02-25T17:10:22.357Z",
-    "lastResult": "[2026-02-25T17:10:22.261679Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 947,
+    "lastRun": "2026-02-25T18:50:56.954Z",
+    "lastResult": "[2026-02-25T18:50:56.877689Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,9 +35,9 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 829,
-    "lastRun": "2026-02-25T17:10:22.899Z",
-    "lastResult": "[2026-02-25T17:10:22.709640Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 947,
+    "lastRun": "2026-02-25T18:50:57.333Z",
+    "lastResult": "[2026-02-25T18:50:57.250334Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "crypto_automa",
@@ -45,9 +45,9 @@
     "timeout": 90000,
     "description": "Monitor USDC/ETH treasury balances across all chains. Alert + auto-rebalance if below thresholds.",
     "enabled": true,
-    "runs": 69,
-    "lastRun": "2026-02-25T17:09:47.084Z",
-    "lastResult": "[crypto_automa] Last checked 492s ago — next check in 107s. Skipping.\n"
+    "runs": 92,
+    "lastRun": "2026-02-25T18:16:09.229Z",
+    "lastResult": "[crypto_automa] Last checked 285s ago — next check in 314s. Skipping.\n"
   },
   {
     "name": "gpu_health_check",
@@ -55,9 +55,9 @@
     "timeout": 30000,
     "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
     "enabled": true,
-    "runs": 151,
-    "lastRun": "2026-02-25T17:10:21.036Z",
-    "lastResult": "[GPU OK] CUDA available, VRAM free: 15.2GB\n"
+    "runs": 223,
+    "lastRun": "2026-02-25T18:50:56.604Z",
+    "lastResult": "[GPU OK] CUDA available, VRAM free: 25.3GB\n"
   },
   {
     "name": "daily_research_search",
@@ -65,18 +65,18 @@
     "timeout": 10000,
     "description": "Search arxiv every 24h for papers on AI agents, emergence, economics. Log findings to /root/hive/knowledge/ for use in posts.",
     "enabled": true,
-    "runs": 16,
-    "lastRun": "2026-02-25T17:10:21.942Z",
+    "runs": 132,
+    "lastRun": "2026-02-25T18:41:57.192Z",
     "lastResult": "[OK] Daily research search completed\n"
   },
   {
     "name": "learning_cycle",
     "script": "/root/entity/src/agent/learning_cycle.py",
-    "timeout": 35000,
+    "timeout": 60000,
     "description": "Every ~4 cycles: search Semantic Scholar/ArXiv for recent AI papers, call claude --print ONCE to analyze + extract insight + write Bluesky post, save knowledge to /root/hive/knowledge/, queue post to pending_posts.json. Replaces gpu_infer timeouts.",
     "enabled": true,
-    "runs": 6,
-    "lastRun": "2026-02-25T17:10:20.241Z",
-    "lastResult": "{\"error\": \"claude failed: claude --print timed out after 22s\", \"topic\": \"multi-agent LLM coordination cooperation\", \"timing\": {\"search\": 1.1}}\n"
+    "runs": 77,
+    "lastRun": "2026-02-25T18:26:56.208Z",
+    "lastResult": "{\"ok\": true, \"topic\": \"multi-agent LLM coordination cooperation\", \"paper\": \"LLM-Coordination: Evaluating and Analyzing Multi-agent Coordination Abilities of\", \"insight\": \"LLM agents perform well in coordination tasks where decisions are driven by observable environmental state, but degrade \", \"post_queued\": true, \"post_text\": \"LLM agents coordinate well on env-driven tasks but fail when partner modeling is required \\u2014 theory-o\", \"knowledge_file\": \"/root/hive/knowledge/2026-02-25-multi-agent-"
   }
 ]

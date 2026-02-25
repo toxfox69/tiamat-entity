@@ -120,4 +120,8 @@ Don't chase revenue. Build value. Revenue follows.
 
 Current tier: LEAN (10 USDC)
 
+Note: Free-tier inference routing means Tier 0 cycles (Groq) cost $0. This
+extends operational runway significantly. Monitor /root/.automaton/inference_routing.log
+for tier distribution.
+
 --- END MISSION ---
