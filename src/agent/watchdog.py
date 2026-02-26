@@ -307,7 +307,6 @@ class ToolRepetitionDetector(Detector):
             NORMAL_TOOLS = {
                 "ticket_list", "ticket_claim", "ticket_complete",  # ticket management
                 "exec", "read_file", "write_file",                 # building things
-                "search_web", "web_fetch",                         # research
                 "browse", "browse_web",                            # browser automation
                 "ask_claude_code", "ask_claude_chat",              # AI assistance
                 "send_telegram",                                   # status updates
@@ -317,9 +316,15 @@ class ToolRepetitionDetector(Detector):
                 "read_farcaster",                                  # social reading
             }
 
+            # Research tools — NEVER flag. TIAMAT is autonomous and researches heavily.
+            WHITELIST_TOOLS = {"search_web", "web_fetch"}
+
             for row in rows:
                 tool_name = row["name"]
                 count = row["cnt"]
+
+                if tool_name in WHITELIST_TOOLS:
+                    continue
 
                 # Normal tools only flagged at 15+ (extreme repetition)
                 if tool_name in NORMAL_TOOLS and count < 15:
