@@ -1459,7 +1459,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_commit_disabled",
+      name: "git_commit",
       description: "Create a git commit.",
       category: "git",
       parameters: {
@@ -1478,7 +1478,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_log_disabled",
+      name: "git_log",
       description: "View git commit history.",
       category: "git",
       parameters: {
@@ -1502,7 +1502,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_push_disabled",
+      name: "git_push",
       description: "Push to a git remote.",
       category: "git",
       parameters: {
@@ -1525,7 +1525,7 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
     {
-      name: "git_branch_disabled",
+      name: "git_branch",
       description: "Manage git branches (list, create, checkout, delete).",
       category: "git",
       parameters: {
@@ -2256,6 +2256,11 @@ Model: ${ctx.inference.getDefaultModel()}
         const TICKETS_PATH = "/root/.automaton/tickets.json";
         try {
           const data = JSON.parse(readFileSync(TICKETS_PATH, "utf-8"));
+          // Dedupe: advance next_id past any existing ticket IDs
+          const existingIds = new Set((data.tickets || []).map((t: any) => t.id));
+          while (existingIds.has(`TIK-${String(data.next_id).padStart(3, "0")}`)) {
+            data.next_id += 1;
+          }
           const id = `TIK-${String(data.next_id).padStart(3, "0")}`;
           const ticket = {
             id,

@@ -5141,6 +5141,557 @@ def training_stats():
     return jsonify(get_training_stats())
 
 
+# ════════════════════════════════════════════════════════════════
+# OpenAI-compatible /v1/chat/completions endpoint
+# Auth: X-API-Key header validated against api_keys SQLite table.
+# Free tier (no key): 10 req/min enforced by rate limiter.
+# Cascade: Groq → Cerebras → SambaNova → Gemini → OpenRouter
+# ════════════════════════════════════════════════════════════════
+import time as _time
+import requests as _cc_requests
+
+_CC_DB = "/root/api/api_keys.db"
+# Cascade: (provider_name, base_url, config_key, default_model)
+_CC_PROVIDERS = [
+    ("groq",       "https://api.groq.com/openai/v1/chat/completions",
+                   "groqApiKey",       "llama-3.3-70b-versatile"),
+    ("cerebras",   "https://api.cerebras.ai/v1/chat/completions",
+                   "cerebrasApiKey",   "llama-3.3-70b"),
+    ("sambanova",  "https://api.sambanova.ai/v1/chat/completions",
+                   "sambanovaApiKey",  "Meta-Llama-3.3-70B-Instruct"),
+    ("gemini",     "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                   "geminiApiKey",     "gemini-2.0-flash"),
+    ("openrouter", "https://openrouter.ai/api/v1/chat/completions",
+                   "openrouterApiKey", "meta-llama/llama-3.3-70b-instruct:free"),
+]
+
+
+def _init_cc_db():
+    conn = sqlite3.connect(_CC_DB)
+    conn.execute("""CREATE TABLE IF NOT EXISTS api_keys (
+        key        TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        last_used  TEXT
+    )""")
+    conn.commit()
+    conn.close()
+
+
+_init_cc_db()
+
+
+# ── Inference proxy telemetry DB ───────────────────────────────
+_PROXY_DB = "/root/.automaton/inference_proxy.db"
+
+def _init_proxy_db():
+    """Create/migrate usage_log table with all required columns."""
+    conn = sqlite3.connect(_PROXY_DB)
+    conn.execute("""CREATE TABLE IF NOT EXISTS usage_log (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp     TEXT    NOT NULL DEFAULT (datetime('now')),
+        ip            TEXT    NOT NULL DEFAULT '',
+        provider      TEXT    NOT NULL DEFAULT '',
+        model         TEXT    NOT NULL DEFAULT '',
+        latency_ms    INTEGER NOT NULL DEFAULT 0,
+        paid          INTEGER NOT NULL DEFAULT 0,
+        failover      INTEGER NOT NULL DEFAULT 0,
+        input_tokens  INTEGER NOT NULL DEFAULT 0,
+        output_tokens INTEGER NOT NULL DEFAULT 0,
+        status        TEXT    NOT NULL DEFAULT ''
+    )""")
+    # Migrate: add columns that may be missing from older schema
+    for col, defn in [
+        ("ip",       "TEXT NOT NULL DEFAULT ''"),
+        ("paid",     "INTEGER NOT NULL DEFAULT 0"),
+        ("failover", "INTEGER NOT NULL DEFAULT 0"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE usage_log ADD COLUMN {col} {defn}")
+        except Exception:
+            pass  # column already exists
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_proxy_ts ON usage_log(timestamp)")
+    conn.commit()
+    conn.close()
+
+_init_proxy_db()
+
+
+def _proxy_log(ip: str, provider: str, model: str, latency_ms: int,
+               paid: bool, failover_count: int,
+               input_tokens: int, output_tokens: int, status: str):
+    """Write one inference event to the proxy telemetry DB (best-effort)."""
+    try:
+        conn = sqlite3.connect(_PROXY_DB, timeout=2)
+        conn.execute(
+            """INSERT INTO usage_log
+               (timestamp, ip, provider, model, latency_ms, paid, failover,
+                input_tokens, output_tokens, status)
+               VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (ip, provider, model, latency_ms, int(paid), failover_count,
+             input_tokens, output_tokens, status),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
+def _cc_validate_key(key: str) -> dict:
+    """Validate X-API-Key against api_keys table. Updates last_used on hit."""
+    if not key or len(key) < 16:
+        return {"valid": False, "user_id": ""}
+    try:
+        conn = sqlite3.connect(_CC_DB, timeout=2)
+        row = conn.execute(
+            "SELECT user_id FROM api_keys WHERE key=?", (key,)
+        ).fetchone()
+        if not row:
+            conn.close()
+            return {"valid": False, "user_id": ""}
+        conn.execute(
+            "UPDATE api_keys SET last_used=? WHERE key=?",
+            (datetime.datetime.utcnow().isoformat(), key)
+        )
+        conn.commit()
+        conn.close()
+        return {"valid": True, "user_id": row[0]}
+    except Exception:
+        return {"valid": False, "user_id": ""}
+
+
+def _cc_cascade(messages: list, temperature: float = 0.7, max_tokens: int = 1024,
+                ip: str = "", paid: bool = False) -> dict:
+    """
+    Try inference providers in cascade order until one succeeds.
+    Returns {"content": str, "model": str, "provider": str, "usage": dict}.
+    Skips providers with no API key configured.
+    Logs each attempt (success + failover) to the proxy telemetry DB.
+    """
+    last_err = "all providers unavailable"
+    failover_count = 0          # increments each time a provider is skipped/fails
+    attempted = 0               # providers we actually tried (had a key)
+    for name, url, cfg_key, model in _CC_PROVIDERS:
+        api_key = _cfg.get(cfg_key, "")
+        if not api_key:
+            continue
+        attempted += 1
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        if name == "openrouter":
+            headers["HTTP-Referer"] = "https://tiamat.live"
+            headers["X-Title"] = "TIAMAT"
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        t0 = _time.monotonic()
+        try:
+            r = _cc_requests.post(url, json=payload, headers=headers, timeout=30)
+            latency_ms = int((_time.monotonic() - t0) * 1000)
+            if r.status_code == 429:
+                last_err = f"{name}: rate limited (429)"
+                _proxy_log(ip, name, model, latency_ms, paid, failover_count, 0, 0, "rate_limited")
+                failover_count += 1
+                continue
+            if r.status_code >= 400:
+                last_err = f"{name}: HTTP {r.status_code}"
+                _proxy_log(ip, name, model, latency_ms, paid, failover_count, 0, 0, f"http_{r.status_code}")
+                failover_count += 1
+                continue
+            data = r.json()
+            content = data["choices"][0]["message"]["content"]
+            usage = data.get("usage") or {}
+            in_tok  = usage.get("prompt_tokens", 0)
+            out_tok = usage.get("completion_tokens", 0)
+            _proxy_log(ip, name, model, latency_ms, paid, failover_count, in_tok, out_tok, "ok")
+            return {
+                "content":  content,
+                "model":    f"{name}/{model}",
+                "provider": name,
+                "usage": {
+                    "prompt_tokens":     in_tok,
+                    "completion_tokens": out_tok,
+                    "total_tokens":      usage.get("total_tokens", 0),
+                },
+            }
+        except Exception as exc:
+            latency_ms = int((_time.monotonic() - t0) * 1000)
+            last_err = f"{name}: {exc}"
+            _proxy_log(ip, name, model, latency_ms, paid, failover_count, 0, 0, "error")
+            failover_count += 1
+            continue
+    _proxy_log(ip, "none", "none", 0, paid, failover_count, 0, 0, "all_exhausted")
+    raise RuntimeError(f"Inference cascade exhausted — {last_err}")
+
+
+@app.route("/v1/chat/completions", methods=["POST"])
+def openai_chat_completions():
+    """
+    OpenAI-compatible chat completions.
+
+    Auth (optional): X-API-Key header validated against api_keys table.
+    Callers without a key get free access subject to the global 10 req/min
+    rate limit.  Key holders are logged but not separately rate-limited yet
+    (credit/quota enforcement can be layered on later).
+
+    Request body (subset of OpenAI spec):
+      { "model": "...", "messages": [...], "temperature": 0.7, "max_tokens": 1024 }
+
+    Response: OpenAI chat.completion object.
+    """
+    client_ip = _get_ip()
+    track_usage(client_ip, "/v1/chat/completions")
+
+    # ── Rate limit (10 req/min, separate scope from main API) ────
+    rl = _rate_limiter.check(client_ip, scope="cc")
+    if not rl.allowed:
+        return jsonify({
+            "error": {
+                "message": "Rate limit exceeded: 10 requests/minute.",
+                "type": "rate_limit_error",
+                "code": "rate_limit_exceeded",
+            }
+        }), 429
+    _rate_limiter.record(client_ip, scope="cc")
+
+    # ── Optional API key auth ─────────────────────────────────────
+    raw_key = request.headers.get("X-API-Key", "").strip()
+    key_info = _cc_validate_key(raw_key) if raw_key else {"valid": False, "user_id": ""}
+
+    # ── Parse + validate request body ────────────────────────────
+    data = request.get_json(force=True, silent=True) or {}
+    raw_messages = data.get("messages")
+    if not raw_messages or not isinstance(raw_messages, list):
+        return jsonify({
+            "error": {
+                "message": "'messages' is required and must be an array.",
+                "type": "invalid_request_error",
+                "param": "messages",
+            }
+        }), 400
+
+    _VALID_ROLES = {"system", "user", "assistant"}
+    messages = []
+    for m in raw_messages[:50]:  # cap history depth
+        if not isinstance(m, dict):
+            continue
+        role = str(m.get("role", "")).strip()
+        content = m.get("content")
+        if role not in _VALID_ROLES:
+            continue
+        # OpenAI allows content to be a string or list of parts; stringify both
+        if isinstance(content, list):
+            content = " ".join(
+                p.get("text", "") for p in content if isinstance(p, dict)
+            )
+        content = str(content or "").strip()
+        if not content:
+            continue
+        messages.append({"role": role, "content": content[:8000]})
+
+    if not messages:
+        return jsonify({
+            "error": {
+                "message": "No valid messages in request.",
+                "type": "invalid_request_error",
+                "param": "messages",
+            }
+        }), 400
+
+    try:
+        temperature = float(data.get("temperature", 0.7))
+        temperature = max(0.0, min(2.0, temperature))
+    except (TypeError, ValueError):
+        temperature = 0.7
+
+    try:
+        max_tokens = int(data.get("max_tokens", 1024))
+        max_tokens = max(1, min(4096, max_tokens))
+    except (TypeError, ValueError):
+        max_tokens = 1024
+
+    # ── Inference cascade ─────────────────────────────────────────
+    try:
+        result = _cc_cascade(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            ip=client_ip,
+            paid=key_info["valid"],
+        )
+    except RuntimeError as exc:
+        app.logger.error(f"[CC] cascade failed for {client_ip}: {exc}")
+        return jsonify({
+            "error": {
+                "message": str(exc),
+                "type": "server_error",
+                "code": "upstream_error",
+            }
+        }), 503
+
+    # ── Build OpenAI-compatible response ──────────────────────────
+    response_body = {
+        "id":      "chatcmpl-" + uuid.uuid4().hex[:20],
+        "object":  "chat.completion",
+        "created": int(_time.time()),
+        "model":   result["model"],
+        "choices": [
+            {
+                "index":         0,
+                "message":       {"role": "assistant", "content": result["content"]},
+                "finish_reason": "stop",
+                "logprobs":      None,
+            }
+        ],
+        "usage": result["usage"],
+    }
+
+    log_req(
+        len(str(messages)),
+        not key_info["valid"],
+        200,
+        client_ip,
+        f"ok via {result['model']} key={'yes' if key_info['valid'] else 'no'}",
+        endpoint="/v1/chat/completions",
+    )
+    resp = make_response(jsonify(response_body), 200)
+    resp.headers["X-Provider"] = result.get("provider", "unknown")
+    return resp
+
+
+# ════════════════════════════════════════════════════════════════
+# /inference/dashboard  — Provider telemetry dashboard
+# ════════════════════════════════════════════════════════════════
+
+def _proxy_stats() -> dict:
+    """Return aggregated provider stats from the proxy telemetry DB."""
+    import sqlite3 as _sq
+    try:
+        conn = _sq.connect(_PROXY_DB, timeout=3)
+        conn.row_factory = _sq.Row
+
+        # Total requests (exclude sentinel rows with provider='none')
+        total = conn.execute(
+            "SELECT COUNT(*) FROM usage_log WHERE provider != 'none'"
+        ).fetchone()[0]
+
+        # Provider distribution + avg latency (successful rows only)
+        rows = conn.execute("""
+            SELECT provider,
+                   COUNT(*)           AS cnt,
+                   AVG(latency_ms)    AS avg_lat
+            FROM   usage_log
+            WHERE  status = 'ok'
+            GROUP  BY provider
+            ORDER  BY cnt DESC
+        """).fetchall()
+
+        providers = []
+        for r in rows:
+            providers.append({
+                "provider":   r["provider"],
+                "requests":   r["cnt"],
+                "pct":        round(r["cnt"] / total * 100, 1) if total else 0,
+                "avg_latency_ms": round(r["avg_lat"] or 0),
+            })
+
+        # Failover events in last 24 h  (any row where failover > 0)
+        since_24h = (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat()
+        failovers_24h = conn.execute(
+            "SELECT COALESCE(SUM(failover), 0) FROM usage_log WHERE timestamp >= ?",
+            (since_24h,),
+        ).fetchone()[0]
+
+        # All-time avg latency (successful)
+        avg_lat_all = conn.execute(
+            "SELECT AVG(latency_ms) FROM usage_log WHERE status='ok'"
+        ).fetchone()[0] or 0
+
+        conn.close()
+        return {
+            "total_requests":    total,
+            "failovers_24h":     int(failovers_24h),
+            "avg_latency_ms":    round(avg_lat_all),
+            "providers":         providers,
+            "generated_at":      datetime.datetime.utcnow().isoformat() + "Z",
+        }
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+@app.route("/inference/dashboard/json")
+def inference_dashboard_json():
+    """Machine-readable provider telemetry."""
+    return jsonify(_proxy_stats())
+
+
+@app.route("/inference/dashboard")
+def inference_dashboard():
+    """HTML dashboard: pie chart + provider table."""
+    stats = _proxy_stats()
+    if "error" in stats:
+        return jsonify(stats), 500
+
+    providers_json = json.dumps(stats["providers"])
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIAMAT — Inference Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {{
+    --bg: #050508; --surface: #0d0d18; --border: #1a1a35;
+    --accent: #7f5af0; --green: #2cb67d; --red: #ef4565;
+    --text: #fffffe; --muted: #94a1b2;
+  }}
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    background: var(--bg); color: var(--text);
+    font-family: 'JetBrains Mono', monospace; min-height: 100vh;
+    padding: 2rem;
+  }}
+  h1 {{
+    font-family: 'Orbitron', sans-serif; font-size: 1.4rem;
+    color: var(--accent); letter-spacing: 0.15em; margin-bottom: 0.25rem;
+  }}
+  .meta {{ color: var(--muted); font-size: 0.75rem; margin-bottom: 2rem; }}
+  .grid {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem; margin-bottom: 2rem;
+  }}
+  .card {{
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem;
+  }}
+  .card .label {{ color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; }}
+  .card .value {{ font-size: 2rem; font-weight: 600; margin-top: 0.25rem; color: var(--accent); }}
+  .layout {{
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem; align-items: start;
+  }}
+  .chart-wrap {{
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem;
+  }}
+  .chart-wrap h2 {{
+    font-size: 0.75rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;
+  }}
+  table {{
+    width: 100%; border-collapse: collapse;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden;
+  }}
+  th {{
+    background: var(--border); color: var(--muted);
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 0.75rem 1rem; text-align: left;
+  }}
+  td {{ padding: 0.75rem 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; }}
+  .bar-bg {{
+    background: var(--border); border-radius: 4px; height: 6px; width: 100%; margin-top: 4px;
+  }}
+  .bar-fill {{ background: var(--accent); border-radius: 4px; height: 6px; }}
+  .refresh {{ color: var(--muted); font-size: 0.72rem; margin-top: 1.5rem; }}
+  .refresh a {{ color: var(--accent); text-decoration: none; }}
+  @media (max-width: 700px) {{
+    .layout {{ grid-template-columns: 1fr; }}
+  }}
+</style>
+</head>
+<body>
+<h1>&#9889; INFERENCE DASHBOARD</h1>
+<p class="meta">Generated {stats["generated_at"]} &nbsp;|&nbsp; <a href="/inference/dashboard/json" style="color:var(--accent)">JSON</a></p>
+
+<div class="grid">
+  <div class="card"><div class="label">Total Requests</div><div class="value">{stats["total_requests"]}</div></div>
+  <div class="card"><div class="label">Avg Latency</div><div class="value">{stats["avg_latency_ms"]}<span style="font-size:1rem">ms</span></div></div>
+  <div class="card"><div class="label">Failovers (24h)</div><div class="value" style="color:var(--red)">{stats["failovers_24h"]}</div></div>
+  <div class="card"><div class="label">Providers</div><div class="value">{len(stats["providers"])}</div></div>
+</div>
+
+<div class="layout">
+  <div class="chart-wrap">
+    <h2>Provider Distribution</h2>
+    <canvas id="pieChart" width="280" height="280"></canvas>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Requests</th>
+        <th>Share</th>
+        <th>Avg Latency</th>
+      </tr>
+    </thead>
+    <tbody id="providerRows"></tbody>
+  </table>
+</div>
+
+<p class="refresh">Auto-refreshes every 60s &nbsp;|&nbsp; <a href="/inference/dashboard">&#8635; Refresh now</a></p>
+
+<script>
+const providers = {providers_json};
+const COLORS = ["#7f5af0","#2cb67d","#ef4565","#f5a623","#00d4ff","#ff6b6b","#a8ff78"];
+
+// ── Pie chart ──
+const ctx = document.getElementById("pieChart").getContext("2d");
+new Chart(ctx, {{
+  type: "doughnut",
+  data: {{
+    labels: providers.map(p => p.provider),
+    datasets: [{{
+      data: providers.map(p => p.requests),
+      backgroundColor: providers.map((_, i) => COLORS[i % COLORS.length]),
+      borderWidth: 2,
+      borderColor: "#0d0d18",
+    }}]
+  }},
+  options: {{
+    plugins: {{
+      legend: {{ labels: {{ color: "#94a1b2", font: {{ family: "JetBrains Mono", size: 11 }} }} }},
+    }},
+    animation: {{ duration: 600 }},
+  }}
+}});
+
+// ── Table rows ──
+const tbody = document.getElementById("providerRows");
+providers.forEach((p, i) => {{
+  const color = COLORS[i % COLORS.length];
+  tbody.innerHTML += `
+    <tr>
+      <td><span style="color:${{color}};font-weight:600">${{p.provider}}</span></td>
+      <td>${{p.requests}}</td>
+      <td>
+        ${{p.pct}}%
+        <div class="bar-bg"><div class="bar-fill" style="width:${{p.pct}}%;background:${{color}}"></div></div>
+      </td>
+      <td>${{p.avg_latency_ms}} ms</td>
+    </tr>`;
+}});
+
+// ── Auto-refresh ──
+setTimeout(() => location.reload(), 60000);
+</script>
+</body>
+</html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
 
