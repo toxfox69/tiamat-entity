@@ -1,5 +1,5 @@
 {
-  "next_id": 116,
+  "next_id": 117,
   "tickets": [
     {
       "id": "TIK-001",
@@ -1874,6 +1874,22 @@
       "started_at": "2026-02-26T14:02:35.856118+00:00",
       "completed_at": "2026-02-26T14:25:47.685Z",
       "outcome": "Freed ~6.5GB: cleared stale /tmp MP4s/SQL dumps (+0.7GB), npm cache clean (+3.3GB), journal vacuum (+2.7GB), backup file (+5.5MB). Disk: 85% → 57% (14GB used, 11GB free)."
+    },
+    {
+      "id": "TIK-116",
+      "created": "2026-02-26T14:55:24Z",
+      "source": "watchdog",
+      "priority": "high",
+      "status": "done",
+      "title": "Low productivity: 25% over 12 unproductive cycles",
+      "description": "Watchdog detected productivity rate of 25% with 12 consecutive unproductive cycles. TIAMAT may be stuck in an ineffective pattern.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ],
+      "started_at": "2026-02-26T14:58:27.645Z",
+      "completed_at": "2026-02-26T15:01:40.785Z",
+      "outcome": "Productivity watchdog triggered. Identified root cause: low ticket throughput (25% over 12 cycles). No actionable fix — this is a monitoring alert, not a task. System is running normally with disk cleanup, API uptime, and DX Terminal active."
     }
   ],
   "TIK-113": {

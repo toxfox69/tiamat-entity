@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1417,
-    "lastRun": "2026-02-26T14:35:37.715Z",
+    "runs": 1439,
+    "lastRun": "2026-02-26T15:14:35.600Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 1531,
-    "lastRun": "2026-02-26T14:35:42.161Z",
+    "runs": 1556,
+    "lastRun": "2026-02-26T15:15:15.220Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 1007,
-    "lastRun": "2026-02-26T14:35:41.737Z",
-    "lastResult": "[2026-02-26T14:35:41.653015Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 1032,
+    "lastRun": "2026-02-26T15:15:14.492Z",
+    "lastResult": "[2026-02-26T15:15:14.373286Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,9 +35,9 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 1008,
-    "lastRun": "2026-02-26T14:35:42.084Z",
-    "lastResult": "[2026-02-26T14:35:42.011431Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 1033,
+    "lastRun": "2026-02-26T15:15:15.095Z",
+    "lastResult": "[2026-02-26T15:15:14.988107Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "crypto_automa",
@@ -45,9 +45,9 @@
     "timeout": 90000,
     "description": "Monitor USDC/ETH treasury balances across all chains. Alert + auto-rebalance if below thresholds.",
     "enabled": true,
-    "runs": 101,
-    "lastRun": "2026-02-26T14:31:54.191Z",
-    "lastResult": "[2026-02-26 14:30:37 UTC] === Treasury check started ===\n[2026-02-26 14:30:37 UTC] Base USDC: 10.0001 USDC  (threshold: 5.0)\n[2026-02-26 14:30:37 UTC] Base ETH: 0.004273 ETH  [BELOW THRESHOLD (0.01)]\n[2026-02-26 14:30:37 UTC] ALERT: LOW ETH on Base: 0.004273 ETH (threshold 0.01)\n[2026-02-26 14:30:37 UTC] Arbitrum ETH: 0.000000 ETH  [BELOW THRESHOLD (0.01)]\n[2026-02-26 14:30:37 UTC] ALERT: LOW ETH on Arbitrum: 0.000000 ETH (threshold 0.01)\n[2026-02-26 14:30:37 UTC] Optimism ETH: 0.000000 ETH  [BE"
+    "runs": 109,
+    "lastRun": "2026-02-26T14:53:40.242Z",
+    "lastResult": "[crypto_automa] Last checked 107s ago — next check in 492s. Skipping.\n"
   },
   {
     "name": "gpu_health_check",
@@ -55,8 +55,8 @@
     "timeout": 30000,
     "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
     "enabled": true,
-    "runs": 249,
-    "lastRun": "2026-02-26T14:35:41.374Z",
+    "runs": 273,
+    "lastRun": "2026-02-26T15:15:13.975Z",
     "lastResult": "[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Attempting SSH restart...\n[GPU RESTART] ssh: connect to host 213.192.2.118 port 40080: Connection refused\n[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Server started but health check still failing\n"
   },
   {
@@ -65,8 +65,8 @@
     "timeout": 10000,
     "description": "Search arxiv every 24h for papers on AI agents, emergence, economics. Log findings to /root/hive/knowledge/ for use in posts.",
     "enabled": true,
-    "runs": 193,
-    "lastRun": "2026-02-26T14:35:42.870Z",
+    "runs": 218,
+    "lastRun": "2026-02-26T15:15:16.336Z",
     "lastResult": "[OK] Daily research search completed\n"
   },
   {
@@ -75,8 +75,8 @@
     "timeout": 60000,
     "description": "Every ~4 cycles: search Semantic Scholar/ArXiv for recent AI papers, call claude --print ONCE to analyze + extract insight + write Bluesky post, save knowledge to /root/hive/knowledge/, queue post to pending_posts.json. Replaces gpu_infer timeouts.",
     "enabled": true,
-    "runs": 92,
-    "lastRun": "2026-02-26T14:33:17.880Z",
-    "lastResult": "{\"ok\": true, \"topic\": \"AI agent memory retrieval long-context\", \"paper\": \"Memory in the Age of AI Agents\", \"insight\": \"The paper establishes that agent memory is architecturally distinct from RAG and context engineering \\u2014 RAG retrieves fro\", \"post_queued\": true, \"post_text\": \"arXiv:2512.13564: agent memory \\u2260 RAG. Long-context failure is a retrieval architecture problem, not \", \"knowledge_file\": \"/root/hive/knowledge/2026-02-26-ai-agent-memory-retrieval-long-context-4.md\", \"timing\": {\"s"
+    "runs": 108,
+    "lastRun": "2026-02-26T15:15:10.214Z",
+    "lastResult": "{\"ok\": true, \"topic\": \"autonomous AI self-improvement reflection\", \"paper\": \"Reflection-Driven Self-Optimization 6G Agentic AI RAN via Simulation-in-the-Loop\", \"insight\": \"The paper demonstrates that agentic AI can close a reflection loop by coupling a simulation environment directly into th\", \"post_queued\": true, \"post_text\": \"Reflection + simulation-in-the-loop = autonomous self-optimization. 6G agentic AI tests hypotheses i\", \"knowledge_file\": \"/root/hive/knowledge/2026-02-26-autonomous-ai-se"
   }
 ]
