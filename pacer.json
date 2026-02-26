@@ -1,43 +1,6 @@
 {
   "last_20_cycles": [
     {
-      "cycle": 5893,
-      "actions": [
-        "ask_claude_code"
-      ],
-      "productive": true,
-      "cost": 0,
-      "timestamp": "2026-02-26T03:44:22.972Z"
-    },
-    {
-      "cycle": 5895,
-      "actions": [
-        "send_telegram",
-        "ticket_list"
-      ],
-      "productive": true,
-      "cost": 0.02,
-      "timestamp": "2026-02-26T03:45:00.934Z"
-    },
-    {
-      "cycle": 5895,
-      "actions": [
-        "ticket_create"
-      ],
-      "productive": true,
-      "cost": 0.02,
-      "timestamp": "2026-02-26T03:45:02.044Z"
-    },
-    {
-      "cycle": 5897,
-      "actions": [
-        "exec"
-      ],
-      "productive": true,
-      "cost": 0.02,
-      "timestamp": "2026-02-26T03:45:10.005Z"
-    },
-    {
       "cycle": 5898,
       "actions": [
         "exec"
@@ -171,14 +134,57 @@
       "productive": false,
       "cost": 0.02,
       "timestamp": "2026-02-26T13:52:55.069Z"
+    },
+    {
+      "cycle": 1,
+      "actions": [
+        "ticket_claim",
+        "send_telegram",
+        "exec",
+        "exec",
+        "exec",
+        "exec"
+      ],
+      "productive": true,
+      "cost": 0.01,
+      "timestamp": "2026-02-26T14:24:01.566Z"
+    },
+    {
+      "cycle": 2,
+      "actions": [
+        "exec",
+        "ticket_complete",
+        "send_telegram"
+      ],
+      "productive": true,
+      "cost": 0.02,
+      "timestamp": "2026-02-26T14:25:48.168Z"
+    },
+    {
+      "cycle": 3,
+      "actions": [
+        "exec",
+        "exec",
+        "exec"
+      ],
+      "productive": true,
+      "cost": 0.01,
+      "timestamp": "2026-02-26T14:26:28.396Z"
+    },
+    {
+      "cycle": 4,
+      "actions": [],
+      "productive": false,
+      "cost": 0,
+      "timestamp": "2026-02-26T14:30:31.651Z"
     }
   ],
-  "productivity_rate": 0.7,
-  "current_pace": "sprint",
-  "current_interval_seconds": 30,
-  "claude_code_uses_since_last": 9,
-  "claude_code_budget_cycles": 5,
-  "last_pace_change": "2026-02-26T03:10:07.797Z",
-  "last_pace_change_from": "active",
-  "total_pace_changes": 259
+  "productivity_rate": 0.65,
+  "current_pace": "active",
+  "current_interval_seconds": 60,
+  "claude_code_uses_since_last": 13,
+  "claude_code_budget_cycles": 10,
+  "last_pace_change": "2026-02-26T14:30:31.651Z",
+  "last_pace_change_from": "sprint",
+  "total_pace_changes": 260
 }
