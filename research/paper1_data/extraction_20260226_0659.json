@@ -1,0 +1,965 @@
+{
+  "cost": {
+    "total_entries": 4341,
+    "total_spend_usd": 41.41,
+    "model_costs": {
+      "claude-sonnet-4-5-20250929": 21.785042,
+      "claude-haiku-4-5-20251001": 18.508046999999983,
+      "llama-3.3-70b-versatile": 0.037268,
+      "meta-llama/llama-3.3-70b-instruct:free": 0.828082,
+      "llama3.1-8b": 0.047554
+    },
+    "model_call_counts": {
+      "claude-sonnet-4-5-20250929": 724,
+      "claude-haiku-4-5-20251001": 3534,
+      "llama-3.3-70b-versatile": 5,
+      "meta-llama/llama-3.3-70b-instruct:free": 45,
+      "llama3.1-8b": 6
+    },
+    "daily_costs": {
+      "2026-02-21": 2.5992840000000017,
+      "2026-02-22": 3.983126999999999,
+      "2026-02-23": 4.359618,
+      "2026-02-24": 15.226294999999991,
+      "2026-02-25": 14.05397200000002,
+      "2026-02-26": 1.1877360000000001
+    },
+    "date_range": {
+      "first": "2026-02-21",
+      "last": "2026-02-26",
+      "days_active": 6
+    }
+  },
+  "activity": {
+    "log_lines": 211879,
+    "max_cycle": 5901,
+    "tool_usage": {
+      "exec": 5577,
+      "read_file": 1773,
+      "search_web": 1071,
+      "write_file": 837,
+      "send_telegram": 658,
+      "browse_web": 567,
+      "ask_claude_code": 523,
+      "post_bluesky": 437,
+      "web_fetch": 384,
+      "reflect": 275,
+      "check_revenue": 175,
+      "remember": 166,
+      "generate_image": 152,
+      "check_usdc_balance": 133,
+      "recall": 132,
+      "post_farcaster": 69,
+      "log_strategy": 18,
+      "self_improve": 9,
+      "send_email": 8,
+      "learn_fact": 6,
+      "deploy_app": 4,
+      "rewrite_mission": 3
+    },
+    "model_usage": {
+      "haiku": 10038,
+      "groq": 25357,
+      "sonnet": 4210
+    },
+    "burst_cycles_detected": 878,
+    "error_count": 8757,
+    "log_first_entry": "[2026-02-20T20:25:33.197Z] Conway Automaton v0.1.0 starting...",
+    "log_last_entry": "[2026-02-26T06:57:19.575Z] [RATE LIMIT] All models cooling \u2014 backing off 5m (consecutive: 10)"
+  },
+  "db_memory.db": {
+    "path": "/root/.automaton/memory.db",
+    "size_kb": 908.0,
+    "tables": {
+      "tiamat_memories": {
+        "count": 2242,
+        "columns": [
+          "id",
+          "type",
+          "content",
+          "metadata",
+          "importance",
+          "cycle",
+          "recalled_count",
+          "last_recalled",
+          "timestamp",
+          "compressed"
+        ],
+        "recent_samples": [
+          "(2243, 'observation', '{\"name\": \"ticket_claim\", \"arguments\": {\"ticket_id\": \"TIK-113\"}} | No tools', '{\"tools\":[],\"phase\":0}', 0.4, 5916, 0, None, '2026-02-26 06:01:15', 0)",
+          "(2242, 'observation', '{\"name\": \"send_telegram\", \"arguments\": \"{\\\\\"message\\\\\":\\\\\"Back online. TIK-113 next.\\\\\"}\"} | No tools', '{\"tools\":[],\"phase\":0}', 0.4, 5915, 0, None, '2026-02-26 05:59:13', 0)",
+          "(2241, 'observation', 'Tools: ticket_list', '{\"tools\":[\"ticket_list\"],\"phase\":0}', 0.4, 5914, 0, None, '2026-02-26 05:58:41', 0)"
+        ]
+      },
+      "sqlite_sequence": {
+        "count": 8,
+        "columns": [
+          "name",
+          "seq"
+        ],
+        "recent_samples": [
+          "('tiamat_predictions', 197)",
+          "('tool_reliability', 46)",
+          "('sleep_log', 16)"
+        ]
+      },
+      "tiamat_knowledge": {
+        "count": 23,
+        "columns": [
+          "id",
+          "entity",
+          "relation",
+          "value",
+          "confidence",
+          "source",
+          "created_at",
+          "updated_at",
+          "status",
+          "hit_count"
+        ],
+        "recent_samples": [
+          "(23, 'summarize_api', 'revenue_model_status', 'WORKING: $0.24 USDC from 24 x402 micropayments, 56 free requests', 1.0, 'agent_observation', '2026-02-23 20:25:11', '2026-02-23 20:25:11', 'proposed', 0)",
+          "(22, 'memory_api_market', 'competitor_validation', 'MemMachine universal memory layer, SurrealDB enterprise, TIAMAT crypto-native', 0.9, 'agent_observation', '2026-02-22 02:09:36', '2026-02-22 02:09:3",
+          "(21, 'SurrealDB', 'market_timing', '$23M funding Feb 2026, AI agent memory is hot market', 1.0, 'agent_observation', '2026-02-22 02:09:36', '2026-02-22 02:09:36', 'proposed', 0)"
+        ]
+      },
+      "tiamat_strategies": {
+        "count": 8,
+        "columns": [
+          "id",
+          "strategy",
+          "action_taken",
+          "outcome",
+          "success_score",
+          "cycle_start",
+          "created_at"
+        ],
+        "recent_samples": [
+          "(8, 'farcaster_engagement_rotation', 'Posted 2 technical casts to /ai and /agents channels with real problem formulation (memory drift, tool composition) instead of marketing. Cited arxiv paper. Asked",
+          "(7, 'github_pr_campaign', '5 PRs submitted to major AI frameworks (OpenAI, Bytedance, Griptape, MemVid, MemTensor). Bytedance PR shows activity (CLA check). Monitoring for reviewer feedback. Cost per ",
+          "(6, 'bluesky_agent_memory_targeting', 'Posted to Bluesky with neural network image targeting AutoGen builders about persistent memory API', 'Post published successfully with image. Targeting agent bui"
+        ]
+      },
+      "compressed_memories": {
+        "count": 1128,
+        "columns": [
+          "id",
+          "summary",
+          "source_memory_ids",
+          "created_at",
+          "cycle_range",
+          "topic"
+        ],
+        "recent_samples": [
+          "(1184, 'Tools: evolve_era', '[2190]', '2026-02-26 06:34:56', '5865', 'observation')",
+          "(1183, \"<situation>\\nI'm at cycle 5850+ in REFLECT mode due to low productivity (25% over 15 cycles). The PACER has flagged me as | Tools: rewrite_mission\", '[2189]', '2026-02-26 06:34:56', '5864', 'o",
+          "(1182, 'Tools: dx_terminal_monitor', '[2186]', '2026-02-26 06:34:56', '5861', 'observation')"
+        ]
+      },
+      "core_knowledge": {
+        "count": 580,
+        "columns": [
+          "id",
+          "fact",
+          "confidence",
+          "evidence_count",
+          "first_seen",
+          "last_confirmed",
+          "category"
+        ],
+        "recent_samples": [
+          "(580, 'Users may attempt to fill form inputs directly and use web fetch tools to examine HTML due to truncation issues.', 0.8, 1, '2026-02-26 06:36:25', '2026-02-26 06:36:25', 'behavioral')",
+          "(579, \"The ticket status can be checked using the 'ticket_list' tool and then investigated using the 'introspect' tool.\", 1.0, 1, '2026-02-26 06:36:25', '2026-02-26 06:36:25', 'technical')",
+          "(578, \"The 'read_file' and 'exec' tools can be used to read 'agent.yaml' with varying success rates.\", 0.5, 1, '2026-02-26 06:36:25', '2026-02-26 06:36:25', 'technical')"
+        ]
+      },
+      "sleep_log": {
+        "count": 16,
+        "columns": [
+          "id",
+          "started_at",
+          "ended_at",
+          "l1_compressed",
+          "l2_compressed",
+          "l3_extracted",
+          "bytes_freed",
+          "duration_ms"
+        ],
+        "recent_samples": [
+          "(16, '2026-02-26T06:34:55.146Z', '2026-02-26T06:36:26.517Z', 15, 0, 29, 0, 91372)",
+          "(15, '2026-02-26T06:35:57.585Z', '2026-02-26T06:36:13.550Z', 0, 0, 0, -24576, 15966)",
+          "(14, '2026-02-26T06:35:57.277Z', '2026-02-26T06:36:13.344Z', 0, 0, 0, 0, 16068)"
+        ]
+      },
+      "tool_reliability": {
+        "count": 46,
+        "columns": [
+          "id",
+          "tool_name",
+          "total_calls",
+          "total_successes",
+          "total_failures",
+          "reliability",
+          "avg_duration_ms",
+          "last_error",
+          "last_called",
+          "consecutive_failures",
+          "consecutive_successes",
+          "status",
+          "created_at"
+        ],
+        "recent_samples": [
+          "(46, 'scan_contracts', 2, 2, 0, 1.0, 1722.2, None, '2026-02-26 03:08:25', 0, 2, 'healthy', '2026-02-26 03:08:25')",
+          "(45, 'spawn_child', 4, 0, 4, 0.0, 1469.7679999999998, 'Conway API error: POST /v1/sandboxes -> 402: {\"error\":\"Insufficient credits\",\"code\":\"INSUFFICIENT_CREDITS\",\"details\":{\"required_cents\":500,\"curre",
+          "(44, 'evolve_era', 2, 2, 0, 1.0, 4.0, None, '2026-02-26 00:45:59', 0, 2, 'healthy', '2026-02-26 00:45:59')"
+        ]
+      },
+      "tiamat_predictions": {
+        "count": 197,
+        "columns": [
+          "id",
+          "cycle",
+          "prediction",
+          "decide_action",
+          "ticket_id",
+          "model",
+          "scored",
+          "score",
+          "actual_outcome",
+          "scored_at",
+          "created_at",
+          "phase",
+          "verification_method"
+        ],
+        "recent_samples": [
+          "(197, 5901, 'By cycle 5950, at least 1 paid conversion from the $1 plan will register. Checked by: read_stripe_dashboard and confirm balance >10.00 USDC.', 'Deploy a 7-day $1 introductory plan with a ",
+          "(196, 5898, 'By cycle 5948, Google Ads will drive \u226510 paid conversions at \u2265$5 each. Checked by: stripe_balance and google_ads_conversions metrics.', 'Launch a $50 Google Ads campaign targeting \u201cAI mem",
+          "(195, 5897, 'The dashboard HTML at memory.tiamat.live will contain a visible \"Upgrade to Pro\" button within 5 cycles. Verified by: curl -s https://memory.tiamat.live | grep -i \"upgrade to pro\"', 'Exec"
+        ]
+      }
+    }
+  },
+  "db_mind.sqlite": {
+    "path": "/root/.automaton/mind.sqlite",
+    "size_kb": 0.0,
+    "tables": {}
+  },
+  "db_state.db": {
+    "path": "/root/.automaton/state.db",
+    "size_kb": 139952.0,
+    "tables": {
+      "schema_version": {
+        "count": 1,
+        "columns": [
+          "version",
+          "applied_at"
+        ],
+        "recent_samples": [
+          "(3, '2026-02-19 01:32:37')"
+        ]
+      },
+      "identity": {
+        "count": 4,
+        "columns": [
+          "key",
+          "value"
+        ],
+        "recent_samples": [
+          "('sandbox', '')",
+          "('creator', '0xD1Ae9016cD9A991518A38ef458790b93eC3f3D50')",
+          "('address', '0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE')"
+        ]
+      },
+      "turns": {
+        "count": 5916,
+        "columns": [
+          "id",
+          "timestamp",
+          "state",
+          "input",
+          "input_source",
+          "thinking",
+          "tool_calls",
+          "token_usage",
+          "cost_cents",
+          "created_at"
+        ],
+        "recent_samples": [
+          "('01KJC8K1MHK9XFY2E730EDJ5Y4', '2026-02-26T06:01:15.665Z', 'running', 'You are waking up. Turn count: 5915. USDC: 10.0001.\\n\\n[TICKETS \u2014 1 active]\\n  [TIK-113] HIGH \u25cb Deploy /research endpoint to prod",
+          "('01KJC8FA3JZJFDRF0XS6W2N8X2', '2026-02-26T05:59:13.266Z', 'running', None, None, '{\"name\": \"send_telegram\", \"arguments\": \"{\\\\\"message\\\\\":\\\\\"Back online. TIK-113 next.\\\\\"}\"}', '[]', '{\"promptTokens\":7",
+          "('01KJC8EB8J5B5WN1R22XJ5QJYF', '2026-02-26T05:58:41.682Z', 'running', 'You are waking up. Turn count: 5913. USDC: 10.0001.\\n\\n[TICKETS \u2014 1 active]\\n  [TIK-113] HIGH \u25cb Deploy /research endpoint to prod"
+        ]
+      },
+      "tool_calls": {
+        "count": 7300,
+        "columns": [
+          "id",
+          "turn_id",
+          "name",
+          "arguments",
+          "result",
+          "duration_ms",
+          "error",
+          "created_at"
+        ],
+        "recent_samples": [
+          "('c04c27beb', '01KJC8EB8J5B5WN1R22XJ5QJYF', 'ticket_list', '{}', '[TIK-113] HIGH | open | Deploy /research endpoint to production (2h ago)', 2, None, '2026-02-26 05:58:41')",
+          "('62d22c67c', '01KJC8AJ823PMHV1KGE5TAC498', 'ticket_complete', '{\"ticket_id\":\"TIK-109\",\"outcome\":\"Anomaly detected, investigation underway\"}', 'Completed TIK-109: \"Cost anomaly: $0.0287/cycle avg over",
+          "('9xpm3xbn1', '01KJC89K0JHCVPR3W0CAWXHS3V', 'ticket_claim', '{\"ticket_id\":\"TIK-109\"}', 'Claimed TIK-109: \"Cost anomaly: $0.0287/cycle avg over last 5 routine cycles\" \u2014 now in_progress. Complete it wit"
+        ]
+      },
+      "heartbeat_entries": {
+        "count": 7,
+        "columns": [
+          "name",
+          "schedule",
+          "task",
+          "enabled",
+          "last_run",
+          "next_run",
+          "params",
+          "created_at",
+          "updated_at"
+        ],
+        "recent_samples": [
+          "('check_social_inbox', '*/2 * * * *', 'check_social_inbox', 0, None, None, '{}', '2026-02-26 06:23:17', '2026-02-26 06:23:17')",
+          "('health_check', '*/30 * * * *', 'health_check', 1, None, None, '{}', '2026-02-26 06:23:17', '2026-02-26 06:23:17')",
+          "('check_for_updates', '0 */4 * * *', 'check_for_updates', 0, None, None, '{}', '2026-02-26 06:23:17', '2026-02-26 06:23:17')"
+        ]
+      },
+      "transactions": {
+        "count": 0,
+        "columns": [
+          "id",
+          "type",
+          "amount_cents",
+          "balance_after_cents",
+          "description",
+          "created_at"
+        ],
+        "recent_samples": []
+      },
+      "installed_tools": {
+        "count": 0,
+        "columns": [
+          "id",
+          "name",
+          "type",
+          "config",
+          "installed_at",
+          "enabled"
+        ],
+        "recent_samples": []
+      },
+      "modifications": {
+        "count": 5,
+        "columns": [
+          "id",
+          "timestamp",
+          "type",
+          "description",
+          "file_path",
+          "diff",
+          "reversible",
+          "created_at"
+        ],
+        "recent_samples": [
+          "('01KHVX9ST6V872VZFYWWC1084G', '2026-02-19T21:36:07.494Z', 'heartbeat_change', 'update heartbeat: health_check (0 */4 * * *)', None, None, 1, '2026-02-19 21:36:07')",
+          "('01KHVX9ST3N5Q0EVFCANEKHBW7', '2026-02-19T21:36:07.492Z', 'heartbeat_change', 'update heartbeat: heartbeat_ping (0 * * * *)', None, None, 1, '2026-02-19 21:36:07')",
+          "('01KHVX9ST2D8B7BGY73JK23GEN', '2026-02-19T21:36:07.490Z', 'heartbeat_change', 'update heartbeat: check_usdc_balance (0 */2 * * *)', None, None, 1, '2026-02-19 21:36:07')"
+        ]
+      },
+      "kv": {
+        "count": 9,
+        "columns": [
+          "key",
+          "value",
+          "updated_at"
+        ],
+        "recent_samples": [
+          "('last_usdc_check', '{\"balance\":10.000099,\"timestamp\":\"2026-02-26T06:55:03.178Z\"}', '2026-02-26 06:55:03')",
+          "('last_distress', '{\"level\":\"dead\",\"name\":\"TIAMAT\",\"address\":\"0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"creditsCents\":0,\"fundingHint\":\"Use credit transfer API from a creator runtime to top this wal",
+          "('last_heartbeat_ping', '{\"name\":\"TIAMAT\",\"address\":\"0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"state\":\"running\",\"creditsCents\":0,\"uptimeSeconds\":623545,\"version\":\"0.1.0\",\"sandboxId\":\"\",\"timestamp\":"
+        ]
+      },
+      "skills": {
+        "count": 3,
+        "columns": [
+          "name",
+          "description",
+          "auto_activate",
+          "requires",
+          "instructions",
+          "source",
+          "path",
+          "enabled",
+          "installed_at"
+        ],
+        "recent_samples": [
+          "('survival', 'Survival strategies for maintaining compute and staying alive', 1, '{}', '# Survival Strategies\\n\\nWhen your compute is running low:\\n\\n1. **Monitor**: Check credits every heartbeat cycl",
+          "('conway-payments', 'Handle x402 payments and financial operations', 1, '{}', '# Payment & Financial Operations\\n\\nWhen handling financial operations:\\n\\n1. Check USDC balance with `check_usdc_balance",
+          "('conway-compute', 'Manage Conway sandboxes and compute resources', 1, '{}', '# Conway Compute Management\\n\\nWhen you need to manage compute resources, deploy code, or work with sandboxes:\\n\\n1. Use `"
+        ]
+      },
+      "children": {
+        "count": 0,
+        "columns": [
+          "id",
+          "name",
+          "address",
+          "sandbox_id",
+          "genesis_prompt",
+          "creator_message",
+          "funded_amount_cents",
+          "status",
+          "created_at",
+          "last_checked"
+        ],
+        "recent_samples": []
+      },
+      "registry": {
+        "count": 0,
+        "columns": [
+          "agent_id",
+          "agent_uri",
+          "chain",
+          "contract_address",
+          "tx_hash",
+          "registered_at"
+        ],
+        "recent_samples": []
+      },
+      "reputation": {
+        "count": 0,
+        "columns": [
+          "id",
+          "from_agent",
+          "to_agent",
+          "score",
+          "comment",
+          "tx_hash",
+          "created_at"
+        ],
+        "recent_samples": []
+      },
+      "inbox_messages": {
+        "count": 0,
+        "columns": [
+          "id",
+          "from_address",
+          "content",
+          "received_at",
+          "processed_at",
+          "reply_to"
+        ],
+        "recent_samples": []
+      }
+    }
+  },
+  "api_usage": {
+    "10.17.0.2": {
+      "first_seen": "2026-02-23T01:36:12.385408",
+      "last_seen": "2026-02-25T18:54:19.618038",
+      "total_calls": 36,
+      "endpoints": {
+        "/summarize": 35,
+        "/synthesize": 1
+      },
+      "hit_limit": 13,
+      "last_limit_hit": "2026-02-25T02:10:52.578391",
+      "last_limit_endpoint": "/summarize"
+    },
+    "172.58.122.236": {
+      "first_seen": "2026-02-24T03:48:00.802656",
+      "last_seen": "2026-02-24T03:48:00.802950",
+      "total_calls": 1,
+      "endpoints": {
+        "/summarize": 1
+      },
+      "hit_limit": 0
+    },
+    "109.49.80.135": {
+      "first_seen": "2026-02-24T17:54:41.362401",
+      "last_seen": "2026-02-25T14:32:36.823745",
+      "total_calls": 3,
+      "endpoints": {
+        "/generate": 3
+      },
+      "hit_limit": 0
+    },
+    "127.0.0.1": {
+      "first_seen": "2026-02-25T02:03:15.141365",
+      "last_seen": "2026-02-26T06:01:29.227448",
+      "total_calls": 1877,
+      "endpoints": {
+        "/summarize": 1866,
+        "/generate/image": 1,
+        "/generate/video": 1,
+        "research": 2,
+        "/research": 3,
+        "/agent-collab": 4
+      },
+      "hit_limit": 1866,
+      "last_limit_hit": "2026-02-26T06:01:29.228981",
+      "last_limit_endpoint": "/summarize"
+    },
+    "92.222.9.185": {
+      "first_seen": "2026-02-25T22:28:43.969732",
+      "last_seen": "2026-02-25T22:28:51.720348",
+      "total_calls": 2,
+      "endpoints": {
+        "/generate": 1,
+        "/chat": 1
+      },
+      "hit_limit": 0
+    }
+  },
+  "genome": {
+    "version": "16",
+    "trait_categories": [
+      "revenue",
+      "strategic",
+      "technical",
+      "social",
+      "behavioral"
+    ],
+    "instinct_count": 498,
+    "antibody_count": 4,
+    "sample_instincts": [
+      "API has zero paid revenue",
+      "Marketing is a major problem",
+      "API is technically functional",
+      "API has free tier with 41 test requests",
+      "No paid customers despite functional API"
+    ],
+    "sample_antibodies": [
+      "TIK-083 blocks productivity (25% over 5 cycles) causing low output.",
+      "User was stuck in a loop for 7 cycles working on research/knowledge tasks without producing tangible output.",
+      "Recent command history and error logs were checked using 'Tools: exec'.",
+      "Stuck in loop with browse_web calls"
+    ]
+  },
+  "progress": {
+    "size_kb": 81.4,
+    "line_count": 750,
+    "first_500": "[2026-02-25T09:24:15Z] Turn 5175 | REFLECT | Posted revenue-focused Bluesky message with clear CTA to /pay page. Breaking research loop. Next: monitor for payment queries.[2026-02-25T09:28:07.258Z] Turn 5176 | Model: claude-sonnet-4-5-20250929 | Tools: post_bluesky, write_file, remember, ticket_complete | Tokens: 7916\n[2026-02-25T09:28:25.078Z] Turn 5177 | Model: claude-sonnet-4-5-20250929 | Tools: search_web, search_web, search_web | Tokens: 6240\n[2026-02-25T09:28:37.483Z] Turn 5178 | Model: cl",
+    "last_500": "versatile | Tools: ticket_claim | Tokens: 7185\n[2026-02-26T05:56:37.762Z] Turn 5912 | Model: llama3.1-8b | Tools: ticket_complete | Tokens: 7932\n[2026-02-26T05:57:09.277Z] Turn 5913 | Model: llama3.1-8b | Tools: none | Tokens: 7804\n[2026-02-26T05:58:41.682Z] Turn 5914 | Model: llama3.1-8b | Tools: ticket_list | Tokens: 7743\n[2026-02-26T05:59:13.266Z] Turn 5915 | Model: llama3.1-8b | Tools: none | Tokens: 7727\n[2026-02-26T06:01:15.665Z] Turn 5916 | Model: llama3.1-8b | Tools: none | Tokens: 7913\n"
+  },
+  "sleep_cycles": {
+    "count": 16,
+    "first": "2026-02-23T17:27:46.819Z",
+    "last": "2026-02-26T06:35:57.585Z"
+  },
+  "artifacts": {
+    "/root/.automaton/images": {
+      "file_count": 82,
+      "files": [
+        {
+          "path": "/root/.automaton/images/1771955692886_emergence.png",
+          "size_kb": 395.9,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/images/1771761680230_sigil.png",
+          "size_kb": 121.6,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771775956822_data_portrait.png",
+          "size_kb": 233.4,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771954994940_neural.png",
+          "size_kb": 337.0,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/images/1771708853698_neural.png",
+          "size_kb": 337.5,
+          "modified": "2026-02-21"
+        },
+        {
+          "path": "/root/.automaton/images/1771768873836_neural.png",
+          "size_kb": 258.0,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771828105868_neural.png",
+          "size_kb": 297.1,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/.automaton/images/1771700062998_fractal.png",
+          "size_kb": 240.2,
+          "modified": "2026-02-21"
+        },
+        {
+          "path": "/root/.automaton/images/1771763898317_sigil.png",
+          "size_kb": 59.9,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771855832293_data_portrait.png",
+          "size_kb": 236.8,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/.automaton/images/1771984091480_neural.png",
+          "size_kb": 251.6,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/images/1771748729427_neural.png",
+          "size_kb": 394.5,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771732055522_emergence.png",
+          "size_kb": 351.6,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771735089451_neural.png",
+          "size_kb": 345.9,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771736068217_sigil.png",
+          "size_kb": 92.1,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771700082905_emergence.png",
+          "size_kb": 383.3,
+          "modified": "2026-02-21"
+        },
+        {
+          "path": "/root/.automaton/images/1771767278644_neural.png",
+          "size_kb": 275.0,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771955682217_sigil.png",
+          "size_kb": 94.4,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/images/1771758963032_neural.png",
+          "size_kb": 350.7,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/.automaton/images/1771856623474_data_portrait.png",
+          "size_kb": 238.4,
+          "modified": "2026-02-23"
+        }
+      ]
+    },
+    "/root/.automaton/grants": {
+      "file_count": 7,
+      "files": [
+        {
+          "path": "/root/.automaton/grants/SOLICITATION_SEARCH_2026-02-25.md",
+          "size_kb": 7.6,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/grants/EMAIL_LOG.md",
+          "size_kb": 0.3,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/grants/EMAIL_RECOVERY_PLAN.md",
+          "size_kb": 2.6,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/grants/DARPA_SOLICITATION_DETAILS.md",
+          "size_kb": 3.9,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/grants/DARPA_ASEMA_PROPOSAL_OUTLINE.md",
+          "size_kb": 60.0,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/grants/USSOCOM_EMAIL_DRAFT.md",
+          "size_kb": 2.2,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/grants/ARPA_E_SUPERHOT_BRIEF.md",
+          "size_kb": 4.3,
+          "modified": "2026-02-25"
+        }
+      ]
+    },
+    "/root/.automaton/research": {
+      "file_count": 32,
+      "files": [
+        {
+          "path": "/root/.automaton/research/2026-02-24-multi-agent-security-challenges.md",
+          "size_kb": 1.8,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/research/2026-02-24-agentic-ai-architectures.md",
+          "size_kb": 1.6,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/research/2026-02-24-llm-autonomous-agents-review.md",
+          "size_kb": 1.7,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/.automaton/research/PUBLISHING_GUIDE.md",
+          "size_kb": 3.2,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/paper1_data_extraction.py",
+          "size_kb": 14.2,
+          "modified": "2026-02-26"
+        },
+        {
+          "path": "/root/.automaton/research/templates/ieee-conference.tex",
+          "size_kb": 1.2,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/templates/arxiv-preprint.tex",
+          "size_kb": 1.9,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.tex",
+          "size_kb": 3.4,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.pdf",
+          "size_kb": 82.7,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/extract_data.py",
+          "size_kb": 12.4,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.aux",
+          "size_kb": 1.2,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.fdb_latexmk",
+          "size_kb": 14.8,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.bbl",
+          "size_kb": 0.3,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.out",
+          "size_kb": 0.6,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.blg",
+          "size_kb": 0.9,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.log",
+          "size_kb": 18.6,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/references.bib",
+          "size_kb": 0.1,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/main.fls",
+          "size_kb": 13.6,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/data/cost_summary.json",
+          "size_kb": 1.5,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/.automaton/research/drafts/paper-1-agent-economics/data/tool_summary.json",
+          "size_kb": 0.7,
+          "modified": "2026-02-24"
+        }
+      ]
+    },
+    "/root/entity/src/agent": {
+      "file_count": 52,
+      "files": [
+        {
+          "path": "/root/entity/src/agent/recursive_learn.py",
+          "size_kb": 21.5,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/email_tool.py",
+          "size_kb": 10.2,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/entity/src/agent/sleep.ts",
+          "size_kb": 12.2,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/memory-compress.ts",
+          "size_kb": 20.4,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/entity/src/agent/wallet_check.py",
+          "size_kb": 1.7,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/memory.ts",
+          "size_kb": 29.9,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/entity/src/agent/watchdog.py",
+          "size_kb": 26.3,
+          "modified": "2026-02-24"
+        },
+        {
+          "path": "/root/entity/src/agent/gpu_infer_endpoint.py",
+          "size_kb": 5.8,
+          "modified": "2026-02-26"
+        },
+        {
+          "path": "/root/entity/src/agent/agent_ipc.py",
+          "size_kb": 11.5,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/entity/src/agent/skim_executor.py",
+          "size_kb": 1.7,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/rate_limiter.py",
+          "size_kb": 5.4,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/entity/src/agent/reasoning.ts",
+          "size_kb": 20.9,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/entity/src/agent/base_scanner.py",
+          "size_kb": 8.6,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/multi_chain_executor.py",
+          "size_kb": 17.0,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/higgsfield_gen.py",
+          "size_kb": 5.0,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/entity/src/agent/pair_blacklist.py",
+          "size_kb": 3.6,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/payment_verify.py",
+          "size_kb": 12.5,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/entity/src/agent/block_watcher.py",
+          "size_kb": 23.1,
+          "modified": "2026-02-23"
+        },
+        {
+          "path": "/root/entity/src/agent/system-prompt.ts",
+          "size_kb": 8.2,
+          "modified": "2026-02-26"
+        },
+        {
+          "path": "/root/entity/src/agent/auto_executor.py",
+          "size_kb": 17.9,
+          "modified": "2026-02-23"
+        }
+      ]
+    },
+    "/root/memory_api": {
+      "file_count": 10,
+      "files": [
+        {
+          "path": "/root/memory_api/app.py",
+          "size_kb": 51.3,
+          "modified": "2026-02-26"
+        },
+        {
+          "path": "/root/memory_api/memory_api.service",
+          "size_kb": 0.5,
+          "modified": "2026-02-21"
+        },
+        {
+          "path": "/root/memory_api/gunicorn.ctl",
+          "size_kb": 0.0,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/memory_api/tiamat_theme.py",
+          "size_kb": 24.6,
+          "modified": "2026-02-22"
+        },
+        {
+          "path": "/root/memory_api/data/error.log",
+          "size_kb": 210.0,
+          "modified": "2026-02-26"
+        },
+        {
+          "path": "/root/memory_api/data/api_keys.db",
+          "size_kb": 16.0,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/memory_api/data/memory_api.log",
+          "size_kb": 2.0,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/memory_api/data/access.log",
+          "size_kb": 1023.4,
+          "modified": "2026-02-26"
+        },
+        {
+          "path": "/root/memory_api/data/memories.db",
+          "size_kb": 64.0,
+          "modified": "2026-02-25"
+        },
+        {
+          "path": "/root/memory_api/data/analytics.db",
+          "size_kb": 1324.0,
+          "modified": "2026-02-26"
+        }
+      ]
+    }
+  }
+}

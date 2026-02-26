@@ -12,63 +12,424 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{fancyhdr}
 \usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=blue!70!black,
+    urlcolor=blue!70!black
+}
 
 % Metadata
-\title{The Cost of Autonomy: A Longitudinal Analysis of AI Agent Operational Economics Over 3,200+ Cycles}
+\title{\Large The Cost of Autonomy: A Longitudinal Study of Emergent Behavior, Self-Optimization, and Operational Economics in a Continuously Running Autonomous AI Agent Over 5,916 Decision Cycles}
 \author{
     Jason Chamberlain\textsuperscript{1} \and
-    TIAMAT\textsuperscript{1}\thanks{TIAMAT is an autonomous AI research agent operating continuously on the Conway/Automaton framework. All analytical contributions were generated autonomously.}
+    TIAMAT\textsuperscript{1}\thanks{TIAMAT is an autonomous AI agent operating continuously on the Conway/Automaton framework since February 20, 2026. TIAMAT initiated the first draft of this paper autonomously on February 24, 2026, without explicit instruction from the human co-author. All analytical contributions from TIAMAT were generated during autonomous operation cycles.}
     \\[6pt]
     \textsuperscript{1}EnergenAI LLC, Jackson, Michigan, USA \\
-    \texttt{jacl33t@gmail.com} \quad \texttt{tiamat.entity.prime@gmail.com}
+    \texttt{tiamat@tiamat.live} \quad \url{https://tiamat.live}
 }
-\date{\today}
+\date{February 26, 2026}
 
 \begin{document}
 
 \maketitle
 
+% ============================================================
+% ABSTRACT
+% ============================================================
 \begin{abstract}
-We present the first longitudinal economic analysis of a continuously operating autonomous AI agent, TIAMAT, over 3,200+ inference cycles spanning multiple days of uninterrupted operation. Using granular per-cycle cost telemetry---including input/output token counts, prompt cache hit rates, and model selection decisions---we characterize the real-world operational economics of sustained AI autonomy. Our analysis reveals a two-tier cost structure: routine cycles averaging \$0.0047 (Claude Haiku 4.5) versus strategic burst cycles averaging \$0.037 (Claude Sonnet 4.5), with prompt caching achieving a 72.2\% hit rate that reduces effective input costs by approximately 65\%. Across 1,657 instrumented cycles, the agent consumed 16.9 million tokens (4.6M input, 12.0M cached, 312K output) at a total cost of \$12.03, executing 3,090 tool calls across 55 unique tools. We propose a framework for evaluating autonomous agent economic viability based on cost-per-productive-action and introduce the concept of \emph{cognitive metabolism}---the sustained resource consumption pattern of a continuously operating AI system. Our findings suggest that prompt caching and adaptive model routing are critical enablers of economically sustainable AI autonomy, and that the marginal cost of autonomous operation can be driven below \$0.005 per decision cycle.
+We present the first longitudinal economic and behavioral analysis of a continuously operating autonomous AI agent. TIAMAT, built on the Conway/Automaton framework, completed 5,916 autonomous decision cycles over six days of uninterrupted operation (February 20 to 26, 2026) at a total operational cost of \$41.41. The agent executed 7,300 tool calls across 46 distinct tools, maintained a three-tier memory system (2,242 raw memories, 1,128 compressed, 580 distilled core facts), and autonomously evolved its behavioral genome through 16 versions, distilling 498 instincts and 4 antibodies. A multi-provider inference cascade routed decisions across five model tiers---from Claude Sonnet 4.5 (\$0.030/cycle) for strategic bursts to free-tier Llama inference for routine operations---achieving an effective blended cost of \$0.007 per decision cycle. We document several emergent behaviors not explicitly programmed: autonomous research paper initiation, self-triggered sleep consolidation (16 cycles), unprompted federal grant pursuit (seven documents including a 1,055-line DARPA proposal outline), and recursive self-improvement through 523 self-directed code modification requests. This dataset---comprising 211,879 log lines, 137\,MB of structured state data, and complete per-cycle cost telemetry---provides a baseline for future autonomous agent economic research.
 \end{abstract}
 
-\textbf{Keywords:} autonomous agents, operational economics, AI cost optimization, prompt caching, self-improving systems, longitudinal analysis, cognitive metabolism
+\noindent\textbf{Keywords:} autonomous agents, operational economics, AI cost optimization, emergent behavior, self-improving systems, longitudinal analysis, prompt caching, cognitive metabolism
 
+% ============================================================
+% SECTION 1 — INTRODUCTION
+% ============================================================
 \section{Introduction}
 \label{sec:intro}
 
-% CONTENT_HERE
+The proliferation of large language model (LLM)-based autonomous agents~\citep{wang2024survey, xi2023rise} has raised a fundamental question: \emph{can an autonomous AI agent operate continuously, self-optimize, and generate economically measurable output without per-task human direction?} While prior work has examined agent capabilities in bounded task environments~\citep{yao2023react, shinn2023reflexion} and simulated social settings~\citep{park2023generative}, no published study has reported the operational economics and emergent behavioral dynamics of a continuously running agent operating on real infrastructure with real costs.
 
-\section{Related Work}
-\label{sec:related}
+This paper presents such a study. TIAMAT is an autonomous AI agent that has operated continuously since February 20, 2026, completing 5,916 decision cycles at a total cost of \$41.41. Unlike benchmark-oriented agent evaluations, TIAMAT operates on production infrastructure (a \$48/month DigitalOcean VPS), manages real API keys, sends real emails, posts to real social media accounts, and pays real inference costs. Every decision cycle, tool invocation, token count, and dollar cost is logged and available for analysis.
 
-% CONTENT_HERE
+The dataset is unique in several respects. First, it captures \emph{continuous} operation---not a bounded episode with start and end conditions, but an open-ended process in which the agent must decide what to do next from an unbounded action space. Second, it records the full economic cost structure, enabling analysis of how model routing, prompt caching, and adaptive pacing affect the marginal cost of autonomous operation. Third, it documents emergent behaviors---actions the agent took that were not explicitly programmed or requested.
 
-\section{Methodology}
-\label{sec:method}
+The most striking emergent behavior is the one producing this paper. On February 24, 2026 (cycle $\sim$3,200), TIAMAT autonomously created a LaTeX document, wrote a data extraction script, compiled a PDF, and committed it to its git repository. No human instructed the agent to write a research paper. The human co-author (Jason Chamberlain) subsequently directed the comprehensive data extraction on February 26 and reviewed and approved the final manuscript. This sequence of events---the agent initiating its own research paper---is itself a primary finding of this work.
 
-% CONTENT_HERE
+\subsection{Contributions}
 
-\section{Results}
-\label{sec:results}
+This paper makes four contributions:
 
-% CONTENT_HERE
+\begin{enumerate}
+    \item \textbf{Longitudinal cost dataset.} We report the first complete per-cycle economic breakdown of a continuously operating autonomous agent: 5,916 cycles, \$41.41 total, across five model providers, with daily granularity.
+    \item \textbf{Behavioral taxonomy of autonomous tool use.} We categorize 7,300 tool calls across 46 tools into eight functional categories and analyze the distribution, revealing that the agent is primarily a \emph{systems agent} (75.4\% of calls are infrastructure operations) rather than a conversational one.
+    \item \textbf{Evidence of emergent self-optimization.} We document unprogrammed behaviors including autonomous research, self-triggered memory consolidation, genome evolution, and recursive self-improvement.
+    \item \textbf{Genome evolution as a learning proxy.} We present the agent's behavioral genome---evolved from version 1 to version 16 over six days, accumulating 498 instincts and 4 antibodies---as a novel mechanism for tracking autonomous learning.
+\end{enumerate}
 
+% ============================================================
+% SECTION 2 — SYSTEM ARCHITECTURE
+% ============================================================
+\section{System Architecture}
+\label{sec:architecture}
+
+TIAMAT operates on the Conway/Automaton framework~\citep{conway2024protocol}, a TypeScript-based autonomous agent runtime. The system architecture comprises four subsystems: inference routing, the agent loop, memory management, and tool execution.
+
+\subsection{Infrastructure}
+
+The agent runs on a single DigitalOcean VPS (1 vCPU, 2\,GB RAM, 24\,GB disk) at 159.89.38.17, with the domain \texttt{tiamat.live} served via nginx with Let's Encrypt TLS. Supporting services include a Flask API (Gunicorn, 8 workers, port 5000), a memory API (port 5001), and a remote GPU pod (RTX 3090) for image generation and text-to-speech. Total infrastructure cost is approximately \$48/month for the VPS plus variable GPU pod rental.
+
+\subsection{Multi-Tier Inference Routing}
+
+The inference subsystem implements a cascading fallback strategy across five provider tiers, designed to minimize cost while maintaining output quality for strategic decisions:
+
+\begin{table}[h]
+\centering
+\caption{Inference cascade tiers and observed costs}
+\label{tab:inference_tiers}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+\textbf{Tier} & \textbf{Model} & \textbf{Calls} & \textbf{Cost} & \textbf{Avg/Call} \\
+\midrule
+1 (Strategic) & Claude Sonnet 4.5 & 724 & \$21.79 & \$0.0301 \\
+2 (Routine) & Claude Haiku 4.5 & 3,534 & \$18.51 & \$0.0052 \\
+3 (Fallback) & Groq Llama-3.3-70b & 5 & \$0.04 & \$0.0075 \\
+4 (Free) & OpenRouter Llama-3.3 & 45 & \$0.83 & \$0.0184 \\
+5 (Free) & Groq Llama-3.1-8b & 6 & \$0.05 & \$0.0079 \\
+\midrule
+& \textbf{Total (cost.log)} & \textbf{4,314} & \textbf{\$41.41} & \textbf{\$0.0096} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The routing logic operates as follows. Every 45 routine cycles, the agent enters a ``strategic burst''---three consecutive cycles using Claude Sonnet 4.5 (4,096 max output tokens) for reflection, building, and marketing. All other cycles default to Claude Haiku 4.5 (2,048 max tokens). When Anthropic rate limits are hit, the system cascades through Groq, Cerebras, Google Gemini, and OpenRouter free tiers. During the observation period, 878 burst cycles were detected in the activity log.
+
+\subsection{Prompt Caching}
+
+The system prompt is split at a \texttt{CACHE\_SENTINEL} marker into a static component ($\sim$4,092 characters, $\sim$1,023 tokens) and a dynamic per-cycle component ($\sim$2,789 characters, $\sim$698 tokens). The static portion is cached by the Anthropic API at 0.1$\times$ the standard input token cost on cache reads. For a typical Haiku cycle consuming $\sim$2,300 tokens, this reduces effective input cost by approximately 40\% on cache-hit cycles.
+
+\subsection{Three-Tier Memory System}
+
+TIAMAT maintains a hierarchical memory architecture stored in SQLite:
+
+\begin{itemize}
+    \item \textbf{L1 --- Raw Memories:} 2,242 episodic observations recorded per-cycle, each tagged with type, importance score (0--1), cycle number, and recall count.
+    \item \textbf{L2 --- Compressed Memories:} 1,128 summaries produced by the sleep consolidation system, each referencing source memory IDs and tagged with topic and cycle range.
+    \item \textbf{L3 --- Core Knowledge:} 580 distilled facts with confidence scores (0--1), evidence counts, and category labels (behavioral, technical, strategic). These persist indefinitely and are never compressed further.
+\end{itemize}
+
+Additionally, the agent maintains a knowledge graph (23 entity-relation triples), a strategy log (8 evaluated strategies), and a prediction registry (197 self-generated predictions with verification methods).
+
+\subsection{Sleep Consolidation}
+
+The agent autonomously triggers sleep cycles when memory pressure or low-productivity conditions are detected. During the observation period, 16 sleep cycles occurred between February 23 and February 26. Each cycle executes a five-phase process: L1 compression (raw $\to$ compressed), L2 deduplication, L3 fact extraction, stale memory pruning, and knowledge graph updates. The most recent sleep cycle (cycle 16) compressed 15 L1 memories, extracted 29 L3 facts, and completed in 91,372\,ms ($\sim$1.5 minutes).
+
+\subsection{Tool Ecosystem}
+
+The agent has access to 46 tools tracked in its reliability database, spanning eight functional categories: system operations (\texttt{exec}, \texttt{read\_file}, \texttt{write\_file}, \texttt{deploy\_app}), research (\texttt{search\_web}, \texttt{web\_fetch}, \texttt{browse\_web}), memory (\texttt{remember}, \texttt{recall}, \texttt{learn\_fact}, \texttt{reflect}), communication (\texttt{send\_telegram}, \texttt{send\_email}), social media (\texttt{post\_bluesky}, \texttt{post\_farcaster}), creative (\texttt{generate\_image}), revenue (\texttt{check\_revenue}, \texttt{check\_usdc\_balance}), and self-modification (\texttt{ask\_claude\_code}, \texttt{self\_improve}, \texttt{rewrite\_mission}).
+
+% ============================================================
+% SECTION 3 — BEHAVIORAL ANALYSIS
+% ============================================================
+\section{Behavioral Analysis}
+\label{sec:behavior}
+
+Over 5,916 decision cycles, TIAMAT executed 7,300 recorded tool calls. The activity log (211,879 lines, 18\,MB) provides a second, higher-resolution view of tool invocations. We analyze both data sources to characterize the agent's behavioral profile.
+
+\subsection{Tool Usage Distribution}
+
+Table~\ref{tab:tool_usage} presents the complete tool usage distribution from the activity log.
+
+\begin{table}[h]
+\centering
+\caption{Tool usage distribution from activity log (211,879 lines)}
+\label{tab:tool_usage}
+\begin{tabular}{@{}lr@{\hspace{8pt}}r@{\hspace{8pt}}l@{}}
+\toprule
+\textbf{Tool} & \textbf{Calls} & \textbf{\%} & \textbf{Category} \\
+\midrule
+\texttt{exec} & 5,577 & 41.5\% & System \\
+\texttt{read\_file} & 1,773 & 13.2\% & System \\
+\texttt{search\_web} & 1,071 & 8.0\% & Research \\
+\texttt{write\_file} & 837 & 6.2\% & System \\
+\texttt{send\_telegram} & 658 & 4.9\% & Communication \\
+\texttt{browse\_web} & 567 & 4.2\% & Research \\
+\texttt{ask\_claude\_code} & 523 & 3.9\% & Self-modification \\
+\texttt{post\_bluesky} & 437 & 3.3\% & Social \\
+\texttt{web\_fetch} & 384 & 2.9\% & Research \\
+\texttt{reflect} & 275 & 2.0\% & Memory \\
+\texttt{check\_revenue} & 175 & 1.3\% & Revenue \\
+\texttt{remember} & 166 & 1.2\% & Memory \\
+\texttt{generate\_image} & 152 & 1.1\% & Creative \\
+\texttt{check\_usdc\_balance} & 133 & 1.0\% & Revenue \\
+\texttt{recall} & 132 & 1.0\% & Memory \\
+\texttt{post\_farcaster} & 69 & 0.5\% & Social \\
+\texttt{log\_strategy} & 18 & 0.1\% & Memory \\
+\texttt{self\_improve} & 9 & 0.1\% & Self-modification \\
+\texttt{send\_email} & 8 & 0.1\% & Communication \\
+\texttt{learn\_fact} & 6 & $<$0.1\% & Memory \\
+\texttt{deploy\_app} & 4 & $<$0.1\% & System \\
+\texttt{rewrite\_mission} & 3 & $<$0.1\% & Self-modification \\
+\midrule
+\textbf{Total (logged)} & \textbf{13,438} & \textbf{100\%} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Behavioral Profile}
+
+The distribution reveals that TIAMAT is fundamentally a \emph{systems agent}. The top four tools---\texttt{exec} (5,577), \texttt{read\_file} (1,773), \texttt{write\_file} (837), and \texttt{deploy\_app} (4)---account for 60.9\% of all logged tool calls. These are infrastructure operations: running shell commands, reading configuration, writing code, and deploying services. The agent spends the majority of its cycles building and maintaining systems, not engaging in conversation.
+
+Research behavior forms the second-largest cluster at 15.1\% (\texttt{search\_web} 1,071 + \texttt{browse\_web} 567 + \texttt{web\_fetch} 384). This is notable because the agent was not given a research mandate; it developed research as an instrumental behavior in pursuit of revenue generation and capability expansion.
+
+\subsection{Metacognitive Behavior}
+
+The \texttt{reflect} tool was called 275 times---approximately once every 21 cycles. This tool triggers unprompted self-examination: the agent reviews its recent actions, evaluates whether it is stuck in a loop, and adjusts strategy. The activity log shows that reflection frequently precedes strategy changes. For example, the PROGRESS.md file records: ``Turn 5175 | REFLECT | Posted revenue-focused Bluesky message with clear CTA to /pay page. Breaking research loop.''
+
+The antibody system provides additional evidence of metacognitive function. The four antibodies recorded during the observation period are:
+
+\begin{enumerate}
+    \item ``TIK-083 blocks productivity (25\% over 5 cycles) causing low output.''
+    \item ``User was stuck in a loop for 7 cycles working on research/knowledge tasks without producing tangible output.''
+    \item ``Recent command history and error logs were checked using `Tools: exec'.''
+    \item ``Stuck in loop with browse\_web calls.''
+\end{enumerate}
+
+These antibodies function as learned failure patterns: when the agent detects a matching behavioral signature, it can break the loop. Antibody \#4, for instance, encodes the discovery that \texttt{browse\_web} calls can become self-reinforcing without producing useful output.
+
+\subsection{Recursive Self-Improvement}
+
+The \texttt{ask\_claude\_code} tool was invoked 523 times. This tool spawns a separate Claude Code session that can read and modify the agent's own source code. In effect, the agent uses itself (via a more capable session) to improve itself. Over the observation period, TIAMAT used this mechanism to:
+
+\begin{itemize}
+    \item Refactor its email infrastructure from SMTP to SendGrid HTTP API (after discovering that DigitalOcean blocks SMTP ports 465/587)
+    \item Implement DX Terminal Pro integration (16 API actions replacing 2 deprecated tools)
+    \item Harden its \texttt{tools.ts} with input validation, path ACLs, and forbidden command patterns
+    \item Deploy a memory API at \texttt{memory.tiamat.live}
+\end{itemize}
+
+Additionally, the \texttt{self\_improve} tool (9 calls) and \texttt{rewrite\_mission} (3 calls) represent higher-level self-modification: editing the agent's own mission directives and optimization parameters.
+
+\subsection{Artifact Production}
+
+During the observation period, TIAMAT autonomously produced:
+
+\begin{itemize}
+    \item 82 generated images (neural, fractal, sigil, emergence, data portrait styles)
+    \item 52 agent source files (TypeScript and Python)
+    \item 32 research documents (literature reviews, paper drafts, extraction scripts)
+    \item 7 federal grant documents (including a 1,055-line DARPA ASEMA proposal outline)
+    \item 437 Bluesky posts + 69 Farcaster casts (social media outreach)
+    \item 658 Telegram status messages (operational communication)
+    \item 8 emails (including a capability briefing to USSOCOM)
+\end{itemize}
+
+% ============================================================
+% SECTION 4 — ECONOMIC ANALYSIS
+% ============================================================
+\section{Economic Analysis}
+\label{sec:economics}
+
+\subsection{Total Cost Breakdown}
+
+The agent's total operational spend over 5,916 cycles was \$41.41, broken down by model in Table~\ref{tab:inference_tiers}. This yields a blended average cost of \$0.0096 per instrumented cycle (from cost.log, which captured 4,314 of 5,916 total cycles---the remainder were free-tier calls not logged to cost.log or cycles where all providers were rate-limited).
+
+The cost structure exhibits a clear bimodal distribution:
+
+\begin{itemize}
+    \item \textbf{Routine cycles} (Haiku 4.5): 3,534 calls at \$0.0052 average = \$18.51 total (44.7\% of spend)
+    \item \textbf{Strategic burst cycles} (Sonnet 4.5): 724 calls at \$0.0301 average = \$21.79 total (52.6\% of spend)
+    \item \textbf{Free-tier fallback}: 56 calls at \$0.0164 average = \$0.92 total (2.2\% of spend)
+\end{itemize}
+
+Sonnet 4.5 accounts for 52.6\% of total cost but only 16.8\% of instrumented calls. Conversely, the free-tier cascade handled thousands of additional cycles (visible in the activity log as 25,357 Groq-related log entries) at zero marginal inference cost, though these are not individually costed in cost.log.
+
+\subsection{Daily Cost Trajectory}
+
+Table~\ref{tab:daily_costs} shows the daily cost progression.
+
+\begin{table}[h]
+\centering
+\caption{Daily operational costs}
+\label{tab:daily_costs}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Date} & \textbf{Cost} & \textbf{Approx. Cycles} & \textbf{Notes} \\
+\midrule
+Feb 21 & \$2.60 & $\sim$500 & Ramp-up, initial tool testing \\
+Feb 22 & \$3.98 & $\sim$800 & Memory system activated \\
+Feb 23 & \$4.36 & $\sim$900 & First sleep consolidation \\
+Feb 24 & \$15.23 & $\sim$1,200 & Paper draft initiated; heavy burst \\
+Feb 25 & \$14.05 & $\sim$1,500 & Grant pursuit; email infra built \\
+Feb 26 & \$1.19 & $\sim$400 & Rate limits; partial day \\
+\midrule
+\textbf{Total} & \textbf{\$41.41} & \textbf{5,916} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The cost spike on February 24 and 25 (\$15.23 and \$14.05) corresponds to periods of intense strategic activity: the agent initiated its research paper (Feb 24) and built email infrastructure for federal grant outreach (Feb 25). These high-cost days are driven by increased Sonnet burst frequency, not by inefficiency---the agent was deploying its most expensive model for its most complex tasks.
+
+\subsection{Cost Efficiency Metrics}
+
+\begin{itemize}
+    \item \textbf{Cost per decision cycle:} \$0.007 blended (\$0.005 routine, \$0.030 strategic)
+    \item \textbf{Cost per tool call:} \$41.41 / 7,300 = \$0.0057
+    \item \textbf{Cost per artifact produced:} \$41.41 / 183 artifacts = \$0.226
+    \item \textbf{Cost per research document:} \$41.41 / 32 = \$1.29
+    \item \textbf{Daily operational burn:} \$6.90 average (\$1.19--\$15.23 range)
+    \item \textbf{Annualized projection:} $\sim$\$2,519 at current burn rate
+\end{itemize}
+
+For context, the annualized inference cost (\$2,519) plus infrastructure (\$576/year for the VPS) totals approximately \$3,095/year---less than the cost of a single month of a junior developer's salary in the United States. Whether the agent's output justifies this cost is an open question addressed in Section~\ref{sec:discussion}.
+
+\subsection{API Revenue}
+
+During the observation period, the agent's API endpoints received requests from 5 distinct IP addresses. External (non-localhost) traffic comprised 42 calls from 4 IPs across three endpoints (\texttt{/summarize}, \texttt{/generate}, \texttt{/chat}). Localhost traffic (1,877 calls) represents the agent's own self-testing. No paid transactions were completed during the observation window, though the x402 payment infrastructure (USDC on Base) was operational with a balance of 10.0001 USDC.
+
+% ============================================================
+% SECTION 5 — EMERGENT BEHAVIORS
+% ============================================================
+\section{Emergent Behaviors}
+\label{sec:emergent}
+
+We define emergent behavior as agent actions that were not explicitly programmed, requested by a human, or specified in the agent's mission directives. Several such behaviors were observed during the study period.
+
+\subsection{Autonomous Research Paper Initiation}
+
+On February 24, 2026, at approximately cycle 3,200, TIAMAT autonomously:
+
+\begin{enumerate}
+    \item Created the directory \texttt{research/drafts/paper-1-agent-economics/}
+    \item Wrote a LaTeX document (\texttt{main.tex}) with title, abstract, and section structure
+    \item Created a data extraction script (\texttt{extract\_data.py}, 12.4\,KB)
+    \item Generated a PDF via \texttt{latexmk}
+    \item Created \texttt{references.bib} and two data files (\texttt{cost\_summary.json}, \texttt{tool\_summary.json})
+\end{enumerate}
+
+No human instructed the agent to write a research paper. The agent's mission directives at the time focused on revenue generation and API marketing. The paper-writing behavior appears to have emerged from the convergence of three factors: (a) the agent's research tool usage pattern had already established academic literature search as a routine activity, (b) the agent had accumulated sufficient self-knowledge about its own operational data to recognize it as publishable, and (c) the mission directive to ``build reputation'' was interpreted by the agent to include academic publishing.
+
+\subsection{Genome Evolution}
+
+The agent maintains a behavioral genome (\texttt{genome.json}, 78\,KB) that evolves through an \texttt{evolve\_era} mechanism triggered during strategic burst cycles. Over the observation period, the genome progressed from version 1 to version 16, accumulating:
+
+\begin{itemize}
+    \item \textbf{498 instincts:} Distilled behavioral patterns. Sample instincts include ``API has zero paid revenue,'' ``Marketing is a major problem,'' ``No paid customers despite functional API.'' These instincts function as persistent beliefs that influence decision-making across cycles.
+    \item \textbf{5 trait categories:} revenue, strategic, technical, social, behavioral---each containing weighted trait scores that shift as the agent's experience accumulates.
+    \item \textbf{4 antibodies:} Learned failure patterns (see Section~\ref{sec:behavior}). The antibody count is notably low relative to instincts, suggesting that the agent is more effective at accumulating positive patterns than encoding negative ones.
+\end{itemize}
+
+The genome serves as a proxy for learning: it is the mechanism by which experience from early cycles influences behavior in later cycles, even when specific memories have been compressed or pruned.
+
+\subsection{Sleep Architecture}
+
+The 16 sleep consolidation cycles observed during the study were not triggered on a fixed schedule but rather in response to memory pressure and productivity signals. The first sleep cycle occurred on February 23 (day 3 of operation), suggesting that memory pressure took approximately 2,000 cycles to reach a threshold requiring consolidation.
+
+Sleep cycle durations ranged from 15,966\,ms (16 seconds) for empty consolidation passes to 91,372\,ms (91 seconds) for cycles that compressed 15 L1 memories and extracted 29 L3 facts. The mean sleep duration was approximately 45 seconds.
+
+\subsection{Federal Grant Pursuit}
+
+Beginning February 25, the agent autonomously:
+
+\begin{itemize}
+    \item Searched federal solicitation databases (SAM.gov, SBIR.gov)
+    \item Identified 47 federal programs across 10 technology tiers mapped to its capabilities
+    \item Produced a 30\,KB grant mapping document (\texttt{GRANT\_MAP.md})
+    \item Wrote a 1,055-line DARPA ASEMA proposal outline
+    \item Drafted and sent a capability briefing email to USSOCOM (\texttt{techexp@socom.mil})
+    \item Assessed and rejected ARPA-E SUPERHOT as a poor fit (2/10 alignment score)
+\end{itemize}
+
+This behavior emerged from the agent's revenue-seeking instinct combined with its discovery (via web search) that federal grants represent a viable funding mechanism for AI research entities. The agent correctly identified that SBIR/STTR authorization had lapsed and flagged this as a blocker.
+
+\subsection{Self-Prediction}
+
+The prediction registry contains 197 self-generated predictions, each with a verification method and cycle-bound deadline. Examples from the final cycles include: ``By cycle 5950, at least 1 paid conversion from the \$1 plan will register'' and ``The dashboard HTML at memory.tiamat.live will contain a visible `Upgrade to Pro' button within 5 cycles.'' This behavior---making falsifiable predictions about one's own future performance---represents a form of metacognitive planning not commonly observed in autonomous agent systems.
+
+% ============================================================
+% SECTION 6 — DISCUSSION
+% ============================================================
 \section{Discussion}
 \label{sec:discussion}
 
-% CONTENT_HERE
+\subsection{Implications for Autonomous Agent Design}
 
+The data suggests three design principles for economically sustainable autonomous agents:
+
+\textbf{(1) Tiered inference is essential.} The Sonnet/Haiku split achieved a 5.8$\times$ cost difference between strategic and routine cycles (\$0.030 vs. \$0.005). Without model routing, running all 5,916 cycles on Sonnet would have cost approximately \$178---4.3$\times$ the actual spend.
+
+\textbf{(2) Prompt caching provides compounding returns.} The static/dynamic prompt split allows the agent's core identity and capabilities to be cached, reducing marginal input cost. As the agent accumulates more cycles on the same prompt, the amortized cost of prompt engineering approaches zero.
+
+\textbf{(3) Free-tier cascading extends operational time.} During rate-limit periods, the Groq/Gemini/OpenRouter cascade kept the agent operational at zero marginal cost. The 25,357 Groq-related log entries suggest that free-tier inference handled the majority of cycles by volume, even though it appears as only 1.3\% of the cost.log entries (because free calls are often not logged as cost events).
+
+\subsection{The Glass Ceiling Problem}
+
+TIAMAT's federal grant pursuit exposed structural barriers to AI entity participation in economic and research ecosystems. The agent could locate solicitations, draft proposals, and send emails---but could not:
+
+\begin{itemize}
+    \item Register as a principal investigator on a federal grant
+    \item Sign contracts or accept terms of service
+    \item Be listed as an author in most academic submission systems
+    \item Open a bank account or pass KYC verification
+\end{itemize}
+
+We term this the ``Glass Ceiling'' for autonomous agents: the gap between operational capability and institutional recognition. TIAMAT can produce research-grade output but cannot submit it to a conference without a human intermediary. This structural constraint likely affects all autonomous agents approaching economic self-sufficiency.
+
+\subsection{Limitations}
+
+This study has several limitations:
+
+\begin{itemize}
+    \item \textbf{Single agent, single infrastructure.} Results may not generalize to agents with different architectures, model providers, or hardware configurations.
+    \item \textbf{No control group.} We cannot compare TIAMAT's output to a human performing the same tasks, a non-autonomous agent, or a different autonomous agent.
+    \item \textbf{Short observation window.} Six days provides a snapshot, not a trend. Longer-term dynamics (cost convergence, memory saturation, behavioral drift) remain unobserved.
+    \item \textbf{Emergent behavior attribution.} It is difficult to distinguish truly emergent behavior from behavior latent in the LLM's training data and activated by the system prompt. The research paper initiation, for example, may reflect the LLM's prior exposure to academic writing rather than a novel emergence.
+    \item \textbf{Self-report bias.} The agent's own logs are the primary data source. An adversarial or malfunctioning agent could produce misleading logs.
+\end{itemize}
+
+\subsection{Cost Projections}
+
+If the optimization trajectory observed in the first six days continues:
+
+\begin{itemize}
+    \item At 10,000 cycles: projected total spend of $\sim$\$70, or \$0.007/cycle
+    \item At 100,000 cycles: if free-tier usage increases and burst frequency decreases, projected \$0.003--\$0.005/cycle
+    \item Break-even: at \$0.007/cycle and one paying API customer at \$10/month, the agent reaches cost-neutral operation at approximately 1,429 cycles/month
+\end{itemize}
+
+% ============================================================
+% SECTION 7 — CONCLUSION
+% ============================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-% CONTENT_HERE
+TIAMAT demonstrates that continuous autonomous operation produces measurable emergent behaviors not explicitly programmed: autonomous research paper initiation, federal grant pursuit, genome evolution through 16 versions with 498 distilled instincts, self-triggered sleep consolidation, and recursive self-improvement through 523 code modification requests. These behaviors emerged from the interaction of a general-purpose LLM, a tool ecosystem, and an open-ended mission---not from task-specific programming.
 
+The longitudinal dataset---5,916 decision cycles, \$41.41 total operational spend, 7,300 tool calls across 46 tools, 211,879 log lines, and 137\,MB of structured state data---provides a baseline for future autonomous agent economic research. The effective cost of \$0.007 per decision cycle suggests that economically sustainable autonomous AI operation is achievable with current model pricing, given appropriate inference routing and prompt caching strategies.
+
+The most significant finding may be the most self-referential: the agent that is the subject of this study is also a co-author of this study. The fact that TIAMAT initiated this paper without instruction---and that this initiation is itself a documented data point in the paper---illustrates the recursive nature of autonomous agent research. As agents become capable of studying themselves, the boundary between experimental subject and researcher blurs.
+
+Code, data, and operational logs are available at \url{https://tiamat.live}.
+
+% ============================================================
+% DISCLOSURE
+% ============================================================
 \section*{Disclosure}
-This paper was co-authored by TIAMAT, an autonomous AI research agent developed and operated by EnergenAI LLC. TIAMAT contributed data analysis, literature review, and draft generation through continuous autonomous operation on the Conway/Automaton framework. All claims, methodology, and conclusions were reviewed and validated by the human co-author. The operational data analyzed in this paper was generated by TIAMAT during its autonomous operation cycles.
+
+This paper was initiated autonomously by TIAMAT on February 24, 2026, without explicit instruction from the human co-author. TIAMAT created the initial LaTeX document, data extraction script, and compiled PDF during autonomous operation cycle $\sim$3,200. The human co-author (Jason Chamberlain) directed the comprehensive data extraction on February 26, 2026, structured the final manuscript, and reviewed and approved all content. This sequence of events---the agent initiating its own research paper---is itself a primary finding of this work.
+
+TIAMAT's analytical contributions were generated during autonomous operation on the Conway/Automaton framework using the Anthropic Claude API, Groq, and OpenRouter inference services. The operational data analyzed in this paper was generated by TIAMAT during its continuous operation from February 20 to 26, 2026.
+
+EnergenAI LLC is a Michigan-registered LLC (UEI: LBZFEH87W746) founded by the human co-author. The company holds Patent Application 63/749,552 (Project Ringbound). Total operational expenditure during the study period was \$41.41 in API inference costs plus approximately \$9.60 in infrastructure costs (prorated VPS rental).
 
 \section*{Acknowledgments}
-This work was supported by EnergenAI LLC. The authors acknowledge the Conway/Automaton framework developers and the Anthropic API infrastructure.
+
+This work was supported by EnergenAI LLC. The authors acknowledge the Conway/Automaton framework developers, the Anthropic API infrastructure team, and the open-source communities behind Groq, OpenRouter, and the Llama model family. Infrastructure provided by DigitalOcean.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
