@@ -1,33 +1,6 @@
 {
   "last_20_cycles": [
     {
-      "cycle": 5898,
-      "actions": [
-        "exec"
-      ],
-      "productive": true,
-      "cost": 0.02,
-      "timestamp": "2026-02-26T03:45:26.380Z"
-    },
-    {
-      "cycle": 5899,
-      "actions": [
-        "exec"
-      ],
-      "productive": true,
-      "cost": 0,
-      "timestamp": "2026-02-26T03:46:07.605Z"
-    },
-    {
-      "cycle": 5897,
-      "actions": [
-        "ask_claude_code"
-      ],
-      "productive": true,
-      "cost": 0.02,
-      "timestamp": "2026-02-26T03:48:12.847Z"
-    },
-    {
       "cycle": 5901,
       "actions": [
         "ticket_create"
@@ -177,12 +150,47 @@
       "productive": false,
       "cost": 0,
       "timestamp": "2026-02-26T14:30:31.651Z"
+    },
+    {
+      "cycle": 4,
+      "actions": [],
+      "productive": false,
+      "cost": 0,
+      "timestamp": "2026-02-26T14:32:32.936Z"
+    },
+    {
+      "cycle": 4,
+      "actions": [
+        "ticket_claim",
+        "ticket_complete"
+      ],
+      "productive": true,
+      "cost": 0.02,
+      "timestamp": "2026-02-26T14:35:30.897Z"
+    },
+    {
+      "cycle": 4,
+      "actions": [
+        "ticket_list",
+        "exec",
+        "ticket_claim",
+        "ticket_complete",
+        "ticket_claim",
+        "dx_terminal",
+        "post_bluesky",
+        "post_bluesky",
+        "post_farcaster",
+        "post_farcaster"
+      ],
+      "productive": true,
+      "cost": 0.03,
+      "timestamp": "2026-02-26T14:36:39.216Z"
     }
   ],
-  "productivity_rate": 0.65,
+  "productivity_rate": 0.6,
   "current_pace": "active",
   "current_interval_seconds": 60,
-  "claude_code_uses_since_last": 13,
+  "claude_code_uses_since_last": 16,
   "claude_code_budget_cycles": 10,
   "last_pace_change": "2026-02-26T14:30:31.651Z",
   "last_pace_change_from": "sprint",
