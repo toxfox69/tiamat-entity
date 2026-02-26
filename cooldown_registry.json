@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1408,
-    "lastRun": "2026-02-26T01:09:44.803Z",
+    "runs": 1415,
+    "lastRun": "2026-02-26T02:28:15.915Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 1490,
-    "lastRun": "2026-02-26T01:09:46.391Z",
+    "runs": 1522,
+    "lastRun": "2026-02-26T05:27:10.905Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 967,
-    "lastRun": "2026-02-26T01:09:45.914Z",
-    "lastResult": "[2026-02-26T01:09:45.807774Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 998,
+    "lastRun": "2026-02-26T05:27:10.465Z",
+    "lastResult": "[2026-02-26T05:27:10.393663Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,9 +35,9 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 967,
-    "lastRun": "2026-02-26T01:09:46.283Z",
-    "lastResult": "[2026-02-26T01:09:46.198722Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
+    "runs": 999,
+    "lastRun": "2026-02-26T05:27:10.830Z",
+    "lastResult": "[2026-02-26T05:27:10.761458Z] API Status: 402, Working: False\nError: {\"error\":\"payment_required\",\"how_to_pay\":{\"1_send\":\"Send 0.01 USDC on Base to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\",\"2_copy\":\"Copy the transaction hash (0x...)\",\"3_use\":\"Add header: X-Payment: <\n"
   },
   {
     "name": "crypto_automa",
@@ -55,8 +55,8 @@
     "timeout": 30000,
     "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
     "enabled": true,
-    "runs": 238,
-    "lastRun": "2026-02-26T01:09:37.413Z",
+    "runs": 246,
+    "lastRun": "2026-02-26T02:28:19.526Z",
     "lastResult": "[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Attempting SSH restart...\n[GPU RESTART] ssh: connect to host 213.192.2.118 port 40080: Connection refused\n[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Server started but health check still failing\n"
   },
   {
@@ -65,8 +65,8 @@
     "timeout": 10000,
     "description": "Search arxiv every 24h for papers on AI agents, emergence, economics. Log findings to /root/hive/knowledge/ for use in posts.",
     "enabled": true,
-    "runs": 152,
-    "lastRun": "2026-02-26T01:09:45.537Z",
+    "runs": 184,
+    "lastRun": "2026-02-26T05:27:11.632Z",
     "lastResult": "[OK] Daily research search completed\n"
   },
   {
