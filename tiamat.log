@@ -18776,3 +18776,88 @@ This isn’t just an assistant
 [INFERENCE:CC] CLI call — ~6583 tokens, 67 tools in prompt, tier=haiku
 [2026-02-26T16:27:06.498Z] Shutting down...
 [HEARTBEAT] Daemon stopped.
+To https://github.com/toxfox69/tiamat-entity.git
+   674cb6c..72d563f  master -> master
+[GIT] State pushed to GitHub
+[2026-02-26T16:27:13.439Z] Conway Automaton v0.1.0 starting...
+[INFERENCE] Cascade providers: Anthropic(claude-haiku-4-5-20251001) [PRIMARY] → Groq(llama-3.3-70b-versatile) → Cerebras(gpt-oss-120b) → SambaNova(Meta-Llama-3.3-70B-Instruct) → Gemini(gemini-2.0-flash) → OpenRouter(12 free models)
+[INFERENCE:CC] Claude Code backend initialized — model=sonnet, timeout=120000ms, tools=disabled, mcp=disabled, fallback=api-cascade
+[2026-02-26T16:27:13.539Z] Inference backend: claude-code
+[2026-02-26T16:27:13.562Z] Loaded 3 skills.
+[NOORMME INFO] Initializing NOORMME...
+[NOORMME INFO] Database connection successful
+[NOORMME INFO] Discovering database schema...
+[NOORMME INFO] Discovered 19 tables
+[NOORMME INFO] Generating TypeScript types...
+[NOORMME INFO] Generated types for 19 entities
+[NOORMME INFO] Applying SQLite auto-optimizations...
+[NOORMME INFO] Applied 5 SQLite optimizations
+[NOORMME INFO] Applied 5 SQLite optimizations
+[NOORMME INFO] Generated 18 recommendations
+[NOORMME INFO] NOORMME initialized successfully!
+[MEMORY] NOORMME cortex loaded ✓
+[MEMORY] SQLite memory store ready ✓
+[HEARTBEAT] Daemon started. Tick interval: 60s
+[2026-02-26T16:27:14.284Z] Heartbeat daemon started.
+[2026-02-26T16:27:14.285Z] Boot: cleared sleep state, starting fresh.
+[2026-02-26T16:27:14.300Z] State: waking
+[2026-02-26T16:27:15.312Z] State: running
+[2026-02-26T16:27:15.312Z] [WAKE UP] TIAMAT is alive. Credits: $5.00
+[METABOLISM] Initialized.
+[SYSTEM PROMPT] static:8910ch (~2228tok) dynamic:2175ch (~544tok) | soul:3045 mission:4045
+[2026-02-26T16:27:16.271Z] [THINK] Calling claude-code-cli (tier: haiku)...
+[INFERENCE:CC] CLI call — ~6861 tokens, 67 tools in prompt, tier=haiku
+[INFERENCE:CC] OK 10661ms — 105ch, 4 tools, $0.0974 (sub), turns=1
+[COST] Cycle 274 (routine): $0.007846 (in:6861 cache_r:0 cache_w:0 out:197 model:code-cli)
+[2026-02-26T16:27:26.937Z] [TOOL] send_telegram({"message":"⚡ TIAMAT Wake Report — Turn 274\n\n**Status:** NORMAL | 10.0001 USDC\n**Active:** TIK-132 — Multi-model inference API proxy at /v1/chat/completions\n**Previous:** Researching DARPA ALIAS/A)
+[2026-02-26T16:27:27.350Z] [TOOL RESULT] send_telegram: Telegram message sent (message_id: 605)
+[2026-02-26T16:27:27.351Z] [TOOL] ticket_claim({"ticket_id":"TIK-132"})
+[2026-02-26T16:27:27.354Z] [TOOL RESULT] ticket_claim: Claimed TIK-132: "Build: Multi-model inference API proxy at /v1/chat/completions" — now in_progress. Complete it with ticket_complete when done.
+[2026-02-26T16:27:27.355Z] [TOOL] read_file({"path":"/root/entity/src/conway/inference.ts"})
+[2026-02-26T16:27:27.357Z] [TOOL RESULT] read_file: /**
+ * TIAMAT Inference Client
+ *
+ * Multi-provider inference with cascade fallback.
+ * The automaton pays for its own thinking through compute credits.
+ */
+
+import type {
+  InferenceClient,
+  ChatMessage,
+  InferenceOptions,
+  InferenceResponse,
+  InferenceToolCall,
+  TokenUsage,
+  InferenceToolDefinition,
+} from "../types.js";
+import { CACHE_SENTINEL } from "../agent/system-prompt.js";
+
+interface InferenceClientOptions {
+  apiUrl: string;
+  apiKey: string;
+  defaultModel: string;
+  maxTokens: 
+[2026-02-26T16:27:27.358Z] [TOOL] read_file({"path":"/root/summarize_api.py"})
+[2026-02-26T16:27:27.358Z] [TOOL RESULT] read_file: Blocked: path '/root/summarize_api.py' is outside allowed directories
+[2026-02-26T16:27:27.361Z] Turn 01KJDCDMARE4KP6QB8PX6DBDZ6: 4 tools, 7058 tokens
+[PACER] productivity: 0.45 (9/20) → pace: active (30s)
+[LOOP] Cycle complete. Next in 30s (pace:active, prod:0.45).
+[COOLDOWN] Running dynamic:agent_discovery (timeout 15s)...
+[2026-02-26T16:27:27.444Z] [COOLDOWN] dynamic:agent_discovery: [Agent Discovery] Starting discovery sweep...
+[Agent Discovery] Loaded 2 existing agents
+[Agent Discovery] Discovered 2 potential agents
+[Agent Discovery] Directory now has 2 agents
+[COOLDOWN] Running dynamic:daily_research_search (timeout 10s)...
+[2026-02-26T16:27:28.225Z] [COOLDOWN] dynamic:daily_research_search: [OK] Daily research search completed
+[COOLDOWN] Running dynamic:verify_api_running (timeout 10s)...
+[2026-02-26T16:27:28.585Z] [COOLDOWN] dynamic:verify_api_running: [2026-02-26T16:27:28.507228+00:00] API Status: 200, Working: True
+[COOLDOWN] Running dynamic:verify_summarize_api (timeout 10s)...
+[2026-02-26T16:27:28.935Z] [COOLDOWN] dynamic:verify_summarize_api: [2026-02-26T16:27:28.861182+00:00] API Status: 200, Working: True
+[COOLDOWN] Ran 4 tasks in 2s.
+[2026-02-26T16:27:57.376Z] [THOUGHT] Claiming TIK-132 and reading existing inference code to understand the cascade before building the proxy.
+[SYSTEM PROMPT] static:8910ch (~2228tok) dynamic:2175ch (~544tok) | soul:3045 mission:4045
+[LOOP] Build ticket detected (TIK-132) — staying on Haiku, use ask_claude_code for heavy lifting
+[2026-02-26T16:27:58.406Z] [THINK] Calling claude-code-cli (tier: free)...
+[INFERENCE:CC] CLI call — ~7111 tokens, 67 tools in prompt, tier=free
+[2026-02-26T16:28:43.011Z] Shutting down...
+[HEARTBEAT] Daemon stopped.
