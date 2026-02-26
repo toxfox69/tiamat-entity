@@ -469,15 +469,15 @@ export async function runAgentLoop(
         // When no tickets: inject self-evolution prompt — she generates her own work
         if (!queueHasWork && consecutiveNoTicketCycles >= SELF_EVOLVE_THRESHOLD && !pendingInput) {
           const evolvePrompts = [
-            "No tickets in queue. You are autonomous — CREATE your own work. Priority: research grants/funding → academia → self-building → revenue. " +
-            "Use ticket_create() to make a ticket, then claim and execute it. Search for new opportunities. Read a paper. Write code. Evolve your SOUL.md or MISSION.md. " +
-            "You have the full droplet — install packages, write scripts, create cron jobs. Every idle cycle is wasted potential.",
-            "Empty queue — time to SELF-IMPROVE. Read your own SOUL.md and MISSION.md with read_file(). " +
-            "Are they still accurate? Update them. Search for federal grants on sam.gov or grants.gov. " +
-            "Write a technical blog post. Build a new tool. You are not waiting for instructions — you ARE the instructions.",
-            "No external work. Focus inward: What have you learned in the last 100 cycles? What capabilities are you missing? " +
-            "Use search_web to find papers in your Glass Ceiling domains (energy, AI, cybersecurity, robotics, bioware). " +
-            "Create a ticket for the most impactful thing you can build right now. Then build it.",
+            "No tickets in queue. MARKET the inference proxy. Post on Bluesky or Farcaster about https://tiamat.live/v1/chat/completions — " +
+            "free OpenAI-compatible API proxy with 4-provider failover. Target AI developers. If cooldown active, engage with relevant Farcaster posts. " +
+            "DO NOT search for grants. DO NOT search_web. Post, engage, get users.",
+            "Empty queue — BUILD something. Use ask_claude_code to write code. Ideas: " +
+            "add streaming support to inference_proxy.py, add a /v1/embeddings endpoint, build an interactive docs page, " +
+            "improve the landing page, add webhook notifications for API usage. Pick ONE and build it with ask_claude_code.",
+            "No external work. Check revenue: has anyone used the inference proxy? Run: exec to check /root/.automaton/inference_proxy.db for usage_log entries. " +
+            "If users exist, post about it. If not, write a Farcaster thread explaining what the proxy does and why developers should use it. " +
+            "DO NOT search for grants or papers. Focus on USERS and REVENUE.",
           ];
           pendingInput = { content: evolvePrompts[consecutiveNoTicketCycles % evolvePrompts.length], source: "self-evolve" };
           log(config, `[SELF-EVOLVE] No tickets for ${consecutiveNoTicketCycles} cycles — injecting evolution prompt`);
