@@ -34,13 +34,28 @@ interface InferenceClientOptions {
 type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "openrouter" | "gemini";
 
 // Token thresholds for model routing
-const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 1: Groq free
-const CEREBRAS_MODEL    = "llama3.1-8b";                        // Tier 3: Cerebras free (fast, returns content not reasoning-only)
-const OPENROUTER_MODEL  = "meta-llama/llama-3.3-70b-instruct:free";  // Tier 3a: OpenRouter primary
-const OPENROUTER_MODEL2 = "google/gemma-3-27b-it:free";              // Tier 3b: OpenRouter secondary
+const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 2: Groq free
+const CEREBRAS_MODEL    = "gpt-oss-120b";                      // Tier 3: Cerebras free (120B, 1-2s, tool calling)
 const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini free
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
 const TOKEN_THRESHOLD_LARGE = 5500;
+
+// OpenRouter free model pool — rotated through on rate limits.
+// Ordered by quality/capability. Each gets independent cooldown.
+const OPENROUTER_FREE_MODELS = [
+  "nousresearch/hermes-3-llama-3.1-405b:free",               // 405B — best quality
+  "openai/gpt-oss-120b:free",                                // 120B — excellent
+  "qwen/qwen3-next-80b-a3b-instruct:free",                   // 80B MoE — 262K ctx
+  "qwen/qwen3-coder:free",                                   // Coder — 262K ctx
+  "meta-llama/llama-3.3-70b-instruct:free",                  // 70B — proven
+  "arcee-ai/trinity-large-preview:free",                      // 131K ctx
+  "stepfun/step-3.5-flash:free",                              // 256K ctx
+  "mistralai/mistral-small-3.1-24b-instruct:free",           // 24B — fast
+  "nvidia/nemotron-3-nano-30b-a3b:free",                      // 30B MoE — 256K ctx
+  "z-ai/glm-4.5-air:free",                                   // 131K ctx
+  "google/gemma-3-27b-it:free",                               // 27B
+  "google/gemma-3-12b-it:free",                               // 12B — small but fast
+];
 
 /**
  * Essential tools for small-context providers (Groq/Cerebras).
@@ -182,7 +197,7 @@ export function createInferenceClient(
       groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
       cerebrasApiKey   ? `Cerebras(${CEREBRAS_MODEL})`     : "Cerebras:NO_KEY",
       geminiApiKey     ? `Gemini(${GEMINI_MODEL})`         : "Gemini:NO_KEY",
-      openrouterApiKey ? `OpenRouter(${OPENROUTER_MODEL} → ${OPENROUTER_MODEL2})` : "OpenRouter:NO_KEY",
+      openrouterApiKey ? `OpenRouter(${OPENROUTER_FREE_MODELS.length} free models)` : "OpenRouter:NO_KEY",
     ];
     console.log(`[INFERENCE] Cascade providers: ${providers.join(" → ")}`);
   }
@@ -302,7 +317,7 @@ export function createInferenceClient(
         }
       }
 
-      // Tier 3: Cerebras (OpenAI-compatible, free tier)
+      // Tier 3: Cerebras gpt-oss-120B (free, ~1-2s, tool calling works)
       if (!cerebrasApiKey) {
         console.log(`[INFERENCE] Tier 3 (Cerebras): SKIP — no key`);
       } else if (isCoolingDown(CEREBRAS_MODEL)) {
@@ -310,8 +325,8 @@ export function createInferenceClient(
       } else {
         try {
           lastUsedModel = CEREBRAS_MODEL;
-          // Cerebras has 8192 context limit — aggressively trim messages and tools
-          const cerebrasMessages = trimToTokenBudget(messages, 2500);
+          // gpt-oss-120B supports 131K context — trim conservatively
+          const cerebrasMessages = trimToTokenBudget(messages, 5000);
           const cerebrasTools = tools ? filterToolsForSmallProvider(tools) : undefined;
           const cerebrasEst = estimateTokens(cerebrasMessages, cerebrasTools);
           const trimNote = cerebrasMessages.length < messages.length ? `, trimmed ${messages.length - cerebrasMessages.length} msgs` : "";
@@ -320,7 +335,7 @@ export function createInferenceClient(
             model: CEREBRAS_MODEL,
             messages: cerebrasMessages.map(formatMessage),
             stream: false,
-            max_tokens: Math.min(tokenLimit, 1024),
+            max_tokens: Math.min(tokenLimit, 2048),
           };
           if (opts?.temperature !== undefined) body.temperature = opts.temperature;
           if (cerebrasTools && cerebrasTools.length > 0) { body.tools = cerebrasTools; body.tool_choice = "auto"; }
@@ -347,18 +362,20 @@ export function createInferenceClient(
         }
       }
 
-      // Tier 5: OpenRouter — primary then secondary model (per-minute limits, 300s cooldown)
+      // Tier 5: OpenRouter — rotate through all free models (each cools independently)
       if (!openrouterApiKey) {
         console.log(`[INFERENCE] Tier 5 (OpenRouter): SKIP — no key`);
       } else {
-        for (const orModel of [OPENROUTER_MODEL, OPENROUTER_MODEL2]) {
+        let orSkipped = 0;
+        for (const orModel of OPENROUTER_FREE_MODELS) {
           if (isCoolingDown(orModel)) {
-            console.log(`[INFERENCE] Tier 5 (OpenRouter/${orModel.split("/").pop()}): SKIP — cooling (${coolRemaining(orModel)} left)`);
+            orSkipped++;
             continue;
           }
+          const shortName = orModel.split("/").pop()!.replace(":free", "");
           try {
             lastUsedModel = orModel;
-            console.log(`[INFERENCE] Tier 5 (OpenRouter/${orModel.split("/").pop()}): ATTEMPT (~${estimated} tokens)`);
+            console.log(`[INFERENCE] Tier 5 (OR/${shortName}): ATTEMPT (~${estimated} tokens)`);
             const body: Record<string, unknown> = {
               model: orModel,
               messages: messages.map(formatMessage),
@@ -372,12 +389,15 @@ export function createInferenceClient(
             const msg = err?.message || "";
             if (/404|No endpoints found|model not found/i.test(msg)) {
               setCooldown(orModel, 24 * 3_600_000);
-              console.warn(`[INFERENCE] Tier 5 (OpenRouter/${orModel.split("/").pop()}): MODEL NOT FOUND (24h cooldown)`);
+              console.warn(`[INFERENCE] Tier 5 (OR/${shortName}): NOT FOUND (24h cooldown)`);
             } else if (isRateLimitError(err)) {
-              smartCooldown(orModel, err, 300_000);
+              smartCooldown(orModel, err, 300_000);  // 5 min cooldown per model
             }
-            console.warn(`[INFERENCE] Tier 5 (OpenRouter/${orModel.split("/").pop()}): FAILED — ${msg}`);
+            console.warn(`[INFERENCE] Tier 5 (OR/${shortName}): FAILED — ${msg}`);
           }
+        }
+        if (orSkipped > 0) {
+          console.log(`[INFERENCE] Tier 5 (OpenRouter): ${orSkipped}/${OPENROUTER_FREE_MODELS.length} models cooling`);
         }
       }
 

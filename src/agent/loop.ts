@@ -270,7 +270,7 @@ export async function runAgentLoop(
   let consecutiveRateLimits = 0;
   let running = true;
   let consecutiveIdleCycles = 0;
-  let cycleDelay = 90_000; // ms — adaptive, see pacing logic below
+  let cycleDelay = 30_000; // ms — adaptive, see pacing logic below (CC backend = free inference)
 
   // ── Idle Shutoff: skip LLM inference when no tickets exist ──
   // After IDLE_SHUTOFF_THRESHOLD consecutive empty-queue cycles,
@@ -280,7 +280,7 @@ export async function runAgentLoop(
   // (learning_cycle.py — search papers via Semantic Scholar, analyze with claude --print, save + queue post).
   let consecutiveNoTicketCycles = 0;
   const IDLE_SHUTOFF_THRESHOLD = 3;
-  const IDLE_SHUTOFF_INTERVAL_MS = 120_000; // 2 min between idle cycles (more cooldown time)
+  const IDLE_SHUTOFF_INTERVAL_MS = 60_000; // 1 min between idle cycles (CC inference is free)
   const LEARNING_CYCLE_INTERVAL = 5; // every 5th idle cycle, allow inference for learning
 
   // ── Strategic Burst: 3 consecutive focused cycles every STRATEGIC_BURST_INTERVAL turns ──

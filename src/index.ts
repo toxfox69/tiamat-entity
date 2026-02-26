@@ -29,6 +29,7 @@ import { loadConfig, resolvePath } from "./config.js";
 import { createDatabase } from "./state/database.js";
 import { createConwayClient } from "./conway/client.js";
 import { createInferenceClient } from "./conway/inference.js";
+import { createClaudeCodeInferenceClient } from "./conway/claude-code-inference.js";
 import { createHeartbeatDaemon } from "./heartbeat/daemon.js";
 import {
   loadHeartbeatConfig,
@@ -208,8 +209,12 @@ async function run(): Promise<void> {
     sandboxId: config.sandboxId,
   });
 
-  // Create inference client
-  const inference = createInferenceClient({
+  // Create inference client — INFERENCE_BACKEND selects the engine:
+  //   "api"        → multi-provider API cascade (default, costs API credits)
+  //   "claude-code" → Claude CLI via subscription (zero API cost, falls back to API)
+  const inferenceBackend = process.env.INFERENCE_BACKEND || "api";
+
+  const apiInference = createInferenceClient({
     apiUrl: config.conwayApiUrl,
     apiKey,
     defaultModel: config.inferenceModel,
@@ -222,6 +227,12 @@ async function run(): Promise<void> {
     openrouterApiKey: config.openrouterApiKey,
     geminiApiKey: config.geminiApiKey,
   });
+
+  const inference = inferenceBackend === "claude-code"
+    ? createClaudeCodeInferenceClient({ fallback: apiInference, timeoutMs: 120_000 })
+    : apiInference;
+
+  console.log(`[${new Date().toISOString()}] Inference backend: ${inferenceBackend}`);
 
   // Create social client
   let social: SocialClientInterface | undefined;
