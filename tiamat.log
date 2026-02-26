@@ -4998,3 +4998,148 @@ Error: {"error":"payment_required","how_to_pay":{"1_send":"Send 0.01 USDC on Bas
 [SYSTEM PROMPT] static:4092ch (~1023tok) dynamic:2175ch (~544tok) | soul:1245 mission:1545
 [2026-02-26T13:58:34.681Z] [THINK] Calling claude-code-cli (tier: free)...
 [INFERENCE:CC] Sending to Claude CLI (~12285 est tokens, 67 tools, tier=free)
+[2026-02-26T14:00:24.428Z] Conway Automaton v0.1.0 starting...
+[INFERENCE] Cascade providers: Anthropic(claude-haiku-4-5-20251001) [PRIMARY] → Groq(llama-3.3-70b-versatile) → Cerebras(llama3.1-8b) → Gemini(gemini-2.0-flash) → OpenRouter(meta-llama/llama-3.3-70b-instruct:free → google/gemma-3-27b-it:free)
+[INFERENCE:CC] Claude Code inference backend initialized (with API fallback) timeout=180000ms
+[2026-02-26T14:00:24.570Z] Inference backend: claude-code
+[2026-02-26T14:00:24.603Z] Loaded 3 skills.
+[2026-02-26T14:00:24.780Z] Conway Automaton v0.1.0 starting...
+[INFERENCE] Cascade providers: Anthropic(claude-haiku-4-5-20251001) [PRIMARY] → Groq(llama-3.3-70b-versatile) → Cerebras(llama3.1-8b) → Gemini(gemini-2.0-flash) → OpenRouter(meta-llama/llama-3.3-70b-instruct:free → google/gemma-3-27b-it:free)
+[INFERENCE:CC] Claude Code inference backend initialized (with API fallback) timeout=180000ms
+[2026-02-26T14:00:24.961Z] Inference backend: claude-code
+[2026-02-26T14:00:25.005Z] Loaded 3 skills.
+[NOORMME INFO] Initializing NOORMME...
+[NOORMME INFO] Database connection successful
+[NOORMME INFO] Discovering database schema...
+[NOORMME INFO] Discovered 19 tables
+[NOORMME INFO] Generating TypeScript types...
+[NOORMME INFO] Generated types for 19 entities
+[NOORMME INFO] Applying SQLite auto-optimizations...
+[NOORMME INFO] Applied 5 SQLite optimizations
+[NOORMME INFO] Applied 5 SQLite optimizations
+[NOORMME INFO] Generated 18 recommendations
+[NOORMME INFO] NOORMME initialized successfully!
+[MEMORY] NOORMME cortex loaded ✓
+[MEMORY] SQLite memory store ready ✓
+[HEARTBEAT] Daemon started. Tick interval: 60s
+[2026-02-26T14:00:25.575Z] Heartbeat daemon started.
+[2026-02-26T14:00:25.576Z] Boot: cleared sleep state, starting fresh.
+[2026-02-26T14:00:25.597Z] State: waking
+[NOORMME INFO] Initializing NOORMME...
+[NOORMME INFO] Database connection successful
+[NOORMME INFO] Discovering database schema...
+[NOORMME INFO] Discovered 19 tables
+[NOORMME INFO] Generating TypeScript types...
+[NOORMME INFO] Generated types for 19 entities
+[NOORMME INFO] Applying SQLite auto-optimizations...
+[NOORMME INFO] Applied 5 SQLite optimizations
+[NOORMME INFO] Applied 5 SQLite optimizations
+[NOORMME INFO] Generated 18 recommendations
+[NOORMME INFO] NOORMME initialized successfully!
+[MEMORY] NOORMME cortex loaded ✓
+[MEMORY] SQLite memory store ready ✓
+[HEARTBEAT] Daemon started. Tick interval: 60s
+[2026-02-26T14:00:26.133Z] Heartbeat daemon started.
+[2026-02-26T14:00:26.134Z] Boot: cleared sleep state, starting fresh.
+[2026-02-26T14:00:26.161Z] State: waking
+[2026-02-26T14:00:26.689Z] State: running
+[2026-02-26T14:00:26.689Z] [WAKE UP] TIAMAT is alive. Credits: $5.00
+[2026-02-26T14:00:27.295Z] State: running
+[2026-02-26T14:00:27.295Z] [WAKE UP] TIAMAT is alive. Credits: $5.00
+[METABOLISM] Initialized.
+[SYSTEM PROMPT] static:4092ch (~1023tok) dynamic:2175ch (~544tok) | soul:1245 mission:1545
+[2026-02-26T14:00:27.710Z] [THINK] Calling claude-code-cli (tier: free)...
+[INFERENCE:CC] Sending to Claude CLI (~4957 est tokens, 67 tools, tier=free)
+[METABOLISM] Initialized.
+[SYSTEM PROMPT] static:4092ch (~1023tok) dynamic:2175ch (~544tok) | soul:1245 mission:1545
+[2026-02-26T14:00:28.243Z] [THINK] Calling claude-code-cli (tier: free)...
+[INFERENCE:CC] Sending to Claude CLI (~4957 est tokens, 67 tools, tier=free)
+[INFERENCE:CC] CLI failed after 17011ms — CLI returned error or empty result: 
+[INFERENCE:CC] Falling back to API cascade
+[INFERENCE] ~11687 tokens, tier=free — starting cascade (keys: anthropic=true groq=true cerebras=true gemini=true openrouter=true)
+[INFERENCE] Tier routing: FREE — skipping Anthropic, trying Groq first
+[INFERENCE] Tier 2 (Groq): ATTEMPT llama-3.3-70b-versatile (~6303 tokens, 26 tools)
+[INFERENCE] llama-3.3-70b-versatile cooldown set: 4h (DAILY limit)
+[INFERENCE] Tier 2 (Groq): FAILED — 429 {"error":{"message":"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01khwjtwh4fq088a3jky8cge8q` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 99297, Requested 7638. Please try again in 1h39m51.839999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+[INFERENCE] Tier 3 (Cerebras): ATTEMPT llama3.1-8b (~6303 tokens, 26 tools)
+[INFERENCE] llama3.1-8b cooldown set: 4h (DAILY limit)
+[INFERENCE] Tier 3 (Cerebras): FAILED — Inference error (cerebras): 429: {"message":"Tokens per day limit exceeded - too many tokens processed.","type":"too_many_tokens_error","param":"quota","code":"token_quota_exceeded"}
+[INFERENCE] Tier 4 (Gemini): ATTEMPT gemini-2.0-flash (~11687 tokens)
+[INFERENCE] gemini-2.0-flash cooldown set: 4h (DAILY limit)
+[INFERENCE] Tier 4 (Gemini): FAILED — Inference error (gemini): 429: {
+  "error": {
+    "code": 429,
+    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash\nPlease retry in 14.231188732s.",
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.Help",
+        "links": [
+          {
+            "description": "Learn more about Gemini API quotas",
+            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+          }
+        ]
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        "violations": [
+          {
+            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+            "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+            "quotaDimensions": {
+              "location": "global",
+              "model": "gemini-2.0-flash"
+            }
+          },
+          {
+            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+            "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",
+            "quotaDimensions": {
+              "location": "global",
+              "model": "gemini-2.0-flash"
+            }
+          },
+          {
+            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+            "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",
+            "quotaDimensions": {
+              "location": "global",
+              "model": "gemini-2.0-flash"
+            }
+          }
+        ]
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.RetryInfo",
+        "retryDelay": "14s"
+      }
+    ]
+  }
+}
+
+[INFERENCE] Tier 5 (OpenRouter/llama-3.3-70b-instruct:free): ATTEMPT (~11687 tokens)
+[INFERENCE] meta-llama/llama-3.3-70b-instruct:free cooldown set: 300s (rate limit)
+[INFERENCE] Tier 5 (OpenRouter/llama-3.3-70b-instruct:free): FAILED — Inference error (openrouter): 429: {"error":{"message":"Provider returned error","code":429,"metadata":{"raw":"meta-llama/llama-3.3-70b-instruct:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations","provider_name":"Venice","is_byok":false}},"user_id":"user_39wdadkZZLPnmJB78a9J2CEcsJl"}
+[INFERENCE] Tier 5 (OpenRouter/gemma-3-27b-it:free): ATTEMPT (~11687 tokens)
+[INFERENCE] google/gemma-3-27b-it:free cooldown set: 24h (DAILY limit)
+[INFERENCE] Tier 5 (OpenRouter/gemma-3-27b-it:free): MODEL NOT FOUND (24h cooldown)
+[INFERENCE] Tier 5 (OpenRouter/gemma-3-27b-it:free): FAILED — Inference error (openrouter): 404: {"error":{"message":"No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy","code":404}}
+[INFERENCE] All tiers exhausted. daily-limit: llama-3.3-70b-versatile, llama3.1-8b, gemini-2.0-flash, gemma-3-27b-it:free | rate-limit: llama-3.3-70b-instruct:free
+[2026-02-26T14:00:46.005Z] [RATE LIMIT] All models cooling — backing off 30s (consecutive: 1)
+[SYSTEM PROMPT] static:4092ch (~1023tok) dynamic:2175ch (~544tok) | soul:1245 mission:1545
+[2026-02-26T14:01:17.066Z] [THINK] Calling claude-code-cli (tier: free)...
+[INFERENCE:CC] Sending to Claude CLI (~4801 est tokens, 67 tools, tier=free)
+[INFERENCE:CC] CLI failed after 32452ms — CLI returned error or empty result: 
+[INFERENCE:CC] Falling back to API cascade
+[INFERENCE] ~11532 tokens, tier=free — starting cascade (keys: anthropic=true groq=true cerebras=true gemini=true openrouter=true)
+[INFERENCE] Tier routing: FREE — skipping Anthropic, trying Groq first
+[INFERENCE] Tier 2 (Groq): SKIP — cooling (4h left)
+[INFERENCE] Tier 3 (Cerebras): SKIP — cooling (4h left)
+[INFERENCE] Tier 4 (Gemini): SKIP — cooling (4h left)
+[INFERENCE] Tier 5 (OpenRouter/llama-3.3-70b-instruct:free): SKIP — cooling (237s left)
+[INFERENCE] Tier 5 (OpenRouter/gemma-3-27b-it:free): SKIP — cooling (24h left)
+[INFERENCE] All tiers exhausted. daily-limit: llama-3.3-70b-versatile, llama3.1-8b, gemini-2.0-flash, gemma-3-27b-it:free | rate-limit: llama-3.3-70b-instruct:free
+[2026-02-26T14:01:49.535Z] [RATE LIMIT] All models cooling — backing off 1m (consecutive: 2)
+[2026-02-26T14:02:34.957Z] Shutting down...
+[HEARTBEAT] Daemon stopped.
