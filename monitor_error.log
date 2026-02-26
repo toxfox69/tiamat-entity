@@ -56556,3 +56556,2369 @@ ModuleNotFoundError: No module named 'torch'
 [2026-02-26 16:13:15 +0000] [1050791] [INFO] Control socket listening at /root/gunicorn.ctl
 [2026-02-26 16:13:15 +0000] [1050793] [INFO] Booting worker with pid: 1050793
 [2026-02-26 16:13:15 +0000] [1050794] [INFO] Booting worker with pid: 1050794
+[2026-02-26 16:13:18 +0000] [1050793] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:18 +0000] [1050793] [INFO] Worker exiting (pid: 1050793)
+[2026-02-26 16:13:18 +0000] [1050794] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:18 +0000] [1050794] [INFO] Worker exiting (pid: 1050794)
+[2026-02-26 16:13:18 +0000] [1050791] [ERROR] Worker (pid:1050793) exited with code 3.
+[2026-02-26 16:13:18 +0000] [1050791] [INFO] Worker (pid:1050794) was sent SIGTERM!
+[2026-02-26 16:13:18 +0000] [1050791] [ERROR] Shutting down: Master
+[2026-02-26 16:13:18 +0000] [1050791] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:13:24 +0000] [1051022] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:13:24 +0000] [1051022] [INFO] Listening at: http://127.0.0.1:5003 (1051022)
+[2026-02-26 16:13:24 +0000] [1051022] [INFO] Using worker: sync
+[2026-02-26 16:13:24 +0000] [1051022] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:13:24 +0000] [1051025] [INFO] Booting worker with pid: 1051025
+[2026-02-26 16:13:24 +0000] [1051026] [INFO] Booting worker with pid: 1051026
+[2026-02-26 16:13:26 +0000] [1051026] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:26 +0000] [1051026] [INFO] Worker exiting (pid: 1051026)
+[2026-02-26 16:13:27 +0000] [1051025] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:27 +0000] [1051025] [INFO] Worker exiting (pid: 1051025)
+[2026-02-26 16:13:27 +0000] [1051022] [ERROR] Worker (pid:1051026) exited with code 3.
+[2026-02-26 16:13:27 +0000] [1051022] [INFO] Worker (pid:1051025) was sent SIGTERM!
+[2026-02-26 16:13:27 +0000] [1051022] [ERROR] Shutting down: Master
+[2026-02-26 16:13:27 +0000] [1051022] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:13:32 +0000] [1051295] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:13:32 +0000] [1051295] [INFO] Listening at: http://127.0.0.1:5003 (1051295)
+[2026-02-26 16:13:32 +0000] [1051295] [INFO] Using worker: sync
+[2026-02-26 16:13:33 +0000] [1051295] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:13:33 +0000] [1051297] [INFO] Booting worker with pid: 1051297
+[2026-02-26 16:13:33 +0000] [1051298] [INFO] Booting worker with pid: 1051298
+[2026-02-26 16:13:35 +0000] [1051297] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:35 +0000] [1051297] [INFO] Worker exiting (pid: 1051297)
+[2026-02-26 16:13:35 +0000] [1051298] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:35 +0000] [1051298] [INFO] Worker exiting (pid: 1051298)
+[2026-02-26 16:13:35 +0000] [1051295] [ERROR] Worker (pid:1051297) exited with code 3.
+[2026-02-26 16:13:35 +0000] [1051295] [INFO] Worker (pid:1051298) was sent SIGTERM!
+[2026-02-26 16:13:36 +0000] [1051295] [ERROR] Shutting down: Master
+[2026-02-26 16:13:36 +0000] [1051295] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:13:41 +0000] [1051494] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:13:41 +0000] [1051494] [INFO] Listening at: http://127.0.0.1:5003 (1051494)
+[2026-02-26 16:13:41 +0000] [1051494] [INFO] Using worker: sync
+[2026-02-26 16:13:41 +0000] [1051494] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:13:41 +0000] [1051496] [INFO] Booting worker with pid: 1051496
+[2026-02-26 16:13:41 +0000] [1051501] [INFO] Booting worker with pid: 1051501
+[2026-02-26 16:13:44 +0000] [1051501] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:44 +0000] [1051501] [INFO] Worker exiting (pid: 1051501)
+[2026-02-26 16:13:44 +0000] [1051496] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:44 +0000] [1051496] [INFO] Worker exiting (pid: 1051496)
+[2026-02-26 16:13:44 +0000] [1051494] [ERROR] Worker (pid:1051501) exited with code 3.
+[2026-02-26 16:13:44 +0000] [1051494] [INFO] Worker (pid:1051496) was sent SIGTERM!
+[2026-02-26 16:13:44 +0000] [1051494] [ERROR] Shutting down: Master
+[2026-02-26 16:13:44 +0000] [1051494] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:13:49 +0000] [1051672] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:13:49 +0000] [1051672] [INFO] Listening at: http://127.0.0.1:5003 (1051672)
+[2026-02-26 16:13:49 +0000] [1051672] [INFO] Using worker: sync
+[2026-02-26 16:13:49 +0000] [1051672] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:13:50 +0000] [1051677] [INFO] Booting worker with pid: 1051677
+[2026-02-26 16:13:52 +0000] [1051677] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:13:52 +0000] [1051677] [INFO] Worker exiting (pid: 1051677)
+[2026-02-26 16:13:52 +0000] [1051672] [ERROR] Worker (pid:1051677) exited with code 3.
+[2026-02-26 16:14:22 +0000] [1051672] [ERROR] Shutting down: Master
+[2026-02-26 16:14:22 +0000] [1051672] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:14:28 +0000] [1052381] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:14:28 +0000] [1052381] [INFO] Listening at: http://127.0.0.1:5003 (1052381)
+[2026-02-26 16:14:28 +0000] [1052381] [INFO] Using worker: sync
+[2026-02-26 16:14:28 +0000] [1052381] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:14:28 +0000] [1052383] [INFO] Booting worker with pid: 1052383
+[2026-02-26 16:14:28 +0000] [1052384] [INFO] Booting worker with pid: 1052384
+[2026-02-26 16:14:30 +0000] [1052383] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:14:30 +0000] [1052383] [INFO] Worker exiting (pid: 1052383)
+[2026-02-26 16:14:30 +0000] [1052384] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:14:30 +0000] [1052384] [INFO] Worker exiting (pid: 1052384)
+[2026-02-26 16:14:31 +0000] [1052381] [ERROR] Worker (pid:1052384) exited with code 3.
+[2026-02-26 16:14:31 +0000] [1052381] [INFO] Worker (pid:1052383) was sent SIGTERM!
+[2026-02-26 16:14:31 +0000] [1052381] [ERROR] Shutting down: Master
+[2026-02-26 16:14:31 +0000] [1052381] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:14:36 +0000] [1052475] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:14:36 +0000] [1052475] [INFO] Listening at: http://127.0.0.1:5003 (1052475)
+[2026-02-26 16:14:36 +0000] [1052475] [INFO] Using worker: sync
+[2026-02-26 16:14:36 +0000] [1052475] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:14:36 +0000] [1052482] [INFO] Booting worker with pid: 1052482
+[2026-02-26 16:14:39 +0000] [1052482] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:14:39 +0000] [1052482] [INFO] Worker exiting (pid: 1052482)
+[2026-02-26 16:14:39 +0000] [1052475] [ERROR] Worker (pid:1052482) exited with code 3.
+[2026-02-26 16:15:09 +0000] [1052475] [ERROR] Shutting down: Master
+[2026-02-26 16:15:09 +0000] [1052475] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:15:15 +0000] [1053160] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:15:15 +0000] [1053160] [INFO] Listening at: http://127.0.0.1:5003 (1053160)
+[2026-02-26 16:15:15 +0000] [1053160] [INFO] Using worker: sync
+[2026-02-26 16:15:15 +0000] [1053162] [INFO] Booting worker with pid: 1053162
+[2026-02-26 16:15:15 +0000] [1053160] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:15:15 +0000] [1053163] [INFO] Booting worker with pid: 1053163
+[2026-02-26 16:15:17 +0000] [1053163] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:17 +0000] [1053163] [INFO] Worker exiting (pid: 1053163)
+[2026-02-26 16:15:17 +0000] [1053162] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:17 +0000] [1053162] [INFO] Worker exiting (pid: 1053162)
+[2026-02-26 16:15:17 +0000] [1053160] [ERROR] Worker (pid:1053163) exited with code 3.
+[2026-02-26 16:15:18 +0000] [1053160] [INFO] Worker (pid:1053162) was sent SIGTERM!
+[2026-02-26 16:15:18 +0000] [1053160] [ERROR] Shutting down: Master
+[2026-02-26 16:15:18 +0000] [1053160] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:15:23 +0000] [1053378] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:15:23 +0000] [1053378] [INFO] Listening at: http://127.0.0.1:5003 (1053378)
+[2026-02-26 16:15:23 +0000] [1053378] [INFO] Using worker: sync
+[2026-02-26 16:15:23 +0000] [1053378] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:15:23 +0000] [1053380] [INFO] Booting worker with pid: 1053380
+[2026-02-26 16:15:23 +0000] [1053381] [INFO] Booting worker with pid: 1053381
+[2026-02-26 16:15:26 +0000] [1053380] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:26 +0000] [1053380] [INFO] Worker exiting (pid: 1053380)
+[2026-02-26 16:15:26 +0000] [1053381] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:26 +0000] [1053381] [INFO] Worker exiting (pid: 1053381)
+[2026-02-26 16:15:26 +0000] [1053378] [ERROR] Worker (pid:1053380) exited with code 3.
+[2026-02-26 16:15:26 +0000] [1053378] [INFO] Worker (pid:1053381) was sent SIGTERM!
+[2026-02-26 16:15:26 +0000] [1053378] [ERROR] Shutting down: Master
+[2026-02-26 16:15:26 +0000] [1053378] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:15:31 +0000] [1053433] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:15:31 +0000] [1053433] [INFO] Listening at: http://127.0.0.1:5003 (1053433)
+[2026-02-26 16:15:31 +0000] [1053433] [INFO] Using worker: sync
+[2026-02-26 16:15:31 +0000] [1053433] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:15:31 +0000] [1053435] [INFO] Booting worker with pid: 1053435
+[2026-02-26 16:15:32 +0000] [1053436] [INFO] Booting worker with pid: 1053436
+[2026-02-26 16:15:34 +0000] [1053435] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:34 +0000] [1053435] [INFO] Worker exiting (pid: 1053435)
+[2026-02-26 16:15:34 +0000] [1053436] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:34 +0000] [1053436] [INFO] Worker exiting (pid: 1053436)
+[2026-02-26 16:15:34 +0000] [1053433] [ERROR] Worker (pid:1053435) exited with code 3.
+[2026-02-26 16:15:34 +0000] [1053433] [INFO] Worker (pid:1053436) was sent SIGTERM!
+[2026-02-26 16:15:34 +0000] [1053433] [ERROR] Shutting down: Master
+[2026-02-26 16:15:34 +0000] [1053433] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:15:40 +0000] [1053640] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:15:40 +0000] [1053640] [INFO] Listening at: http://127.0.0.1:5003 (1053640)
+[2026-02-26 16:15:40 +0000] [1053640] [INFO] Using worker: sync
+[2026-02-26 16:15:40 +0000] [1053640] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:15:40 +0000] [1053642] [INFO] Booting worker with pid: 1053642
+[2026-02-26 16:15:40 +0000] [1053643] [INFO] Booting worker with pid: 1053643
+[2026-02-26 16:15:42 +0000] [1053642] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:42 +0000] [1053642] [INFO] Worker exiting (pid: 1053642)
+[2026-02-26 16:15:42 +0000] [1053643] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:42 +0000] [1053643] [INFO] Worker exiting (pid: 1053643)
+[2026-02-26 16:15:43 +0000] [1053640] [ERROR] Worker (pid:1053642) exited with code 3.
+[2026-02-26 16:15:43 +0000] [1053640] [INFO] Worker (pid:1053643) was sent SIGTERM!
+[2026-02-26 16:15:43 +0000] [1053640] [ERROR] Shutting down: Master
+[2026-02-26 16:15:43 +0000] [1053640] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:15:48 +0000] [1053731] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:15:48 +0000] [1053731] [INFO] Listening at: http://127.0.0.1:5003 (1053731)
+[2026-02-26 16:15:48 +0000] [1053731] [INFO] Using worker: sync
+[2026-02-26 16:15:48 +0000] [1053731] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:15:48 +0000] [1053734] [INFO] Booting worker with pid: 1053734
+[2026-02-26 16:15:51 +0000] [1053734] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:15:51 +0000] [1053734] [INFO] Worker exiting (pid: 1053734)
+[2026-02-26 16:15:51 +0000] [1053731] [ERROR] Worker (pid:1053734) exited with code 3.
+[2026-02-26 16:16:21 +0000] [1053731] [ERROR] Shutting down: Master
+[2026-02-26 16:16:21 +0000] [1053731] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:16:26 +0000] [1054146] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:16:26 +0000] [1054146] [INFO] Listening at: http://127.0.0.1:5003 (1054146)
+[2026-02-26 16:16:26 +0000] [1054146] [INFO] Using worker: sync
+[2026-02-26 16:16:27 +0000] [1054146] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:16:27 +0000] [1054148] [INFO] Booting worker with pid: 1054148
+[2026-02-26 16:16:27 +0000] [1054153] [INFO] Booting worker with pid: 1054153
+[2026-02-26 16:16:29 +0000] [1054153] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:29 +0000] [1054153] [INFO] Worker exiting (pid: 1054153)
+[2026-02-26 16:16:29 +0000] [1054148] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:29 +0000] [1054148] [INFO] Worker exiting (pid: 1054148)
+[2026-02-26 16:16:29 +0000] [1054146] [ERROR] Worker (pid:1054153) exited with code 3.
+[2026-02-26 16:16:29 +0000] [1054146] [INFO] Worker (pid:1054148) was sent SIGTERM!
+[2026-02-26 16:16:30 +0000] [1054146] [ERROR] Shutting down: Master
+[2026-02-26 16:16:30 +0000] [1054146] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:16:35 +0000] [1054353] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:16:35 +0000] [1054353] [INFO] Listening at: http://127.0.0.1:5003 (1054353)
+[2026-02-26 16:16:35 +0000] [1054353] [INFO] Using worker: sync
+[2026-02-26 16:16:35 +0000] [1054353] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:16:35 +0000] [1054355] [INFO] Booting worker with pid: 1054355
+[2026-02-26 16:16:35 +0000] [1054356] [INFO] Booting worker with pid: 1054356
+[2026-02-26 16:16:38 +0000] [1054355] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:38 +0000] [1054355] [INFO] Worker exiting (pid: 1054355)
+[2026-02-26 16:16:38 +0000] [1054356] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:38 +0000] [1054356] [INFO] Worker exiting (pid: 1054356)
+[2026-02-26 16:16:38 +0000] [1054353] [ERROR] Worker (pid:1054355) exited with code 3.
+[2026-02-26 16:16:38 +0000] [1054353] [INFO] Worker (pid:1054356) was sent SIGTERM!
+[2026-02-26 16:16:38 +0000] [1054353] [ERROR] Shutting down: Master
+[2026-02-26 16:16:38 +0000] [1054353] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:16:44 +0000] [1054477] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:16:44 +0000] [1054477] [INFO] Listening at: http://127.0.0.1:5003 (1054477)
+[2026-02-26 16:16:44 +0000] [1054477] [INFO] Using worker: sync
+[2026-02-26 16:16:44 +0000] [1054477] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:16:44 +0000] [1054488] [INFO] Booting worker with pid: 1054488
+[2026-02-26 16:16:44 +0000] [1054502] [INFO] Booting worker with pid: 1054502
+[2026-02-26 16:16:47 +0000] [1054502] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:47 +0000] [1054502] [INFO] Worker exiting (pid: 1054502)
+[2026-02-26 16:16:47 +0000] [1054488] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:47 +0000] [1054488] [INFO] Worker exiting (pid: 1054488)
+[2026-02-26 16:16:47 +0000] [1054477] [ERROR] Worker (pid:1054502) exited with code 3.
+[2026-02-26 16:16:47 +0000] [1054477] [INFO] Worker (pid:1054488) was sent SIGTERM!
+[2026-02-26 16:16:47 +0000] [1054477] [ERROR] Shutting down: Master
+[2026-02-26 16:16:47 +0000] [1054477] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:16:53 +0000] [1054608] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:16:53 +0000] [1054608] [INFO] Listening at: http://127.0.0.1:5003 (1054608)
+[2026-02-26 16:16:53 +0000] [1054608] [INFO] Using worker: sync
+[2026-02-26 16:16:53 +0000] [1054608] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:16:53 +0000] [1054610] [INFO] Booting worker with pid: 1054610
+[2026-02-26 16:16:53 +0000] [1054611] [INFO] Booting worker with pid: 1054611
+[2026-02-26 16:16:55 +0000] [1054610] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:55 +0000] [1054610] [INFO] Worker exiting (pid: 1054610)
+[2026-02-26 16:16:55 +0000] [1054611] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:16:55 +0000] [1054611] [INFO] Worker exiting (pid: 1054611)
+[2026-02-26 16:16:56 +0000] [1054608] [ERROR] Worker (pid:1054610) exited with code 3.
+[2026-02-26 16:16:56 +0000] [1054608] [INFO] Worker (pid:1054611) was sent SIGTERM!
+[2026-02-26 16:16:56 +0000] [1054608] [ERROR] Shutting down: Master
+[2026-02-26 16:16:56 +0000] [1054608] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:17:01 +0000] [1054710] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:17:01 +0000] [1054710] [INFO] Listening at: http://127.0.0.1:5003 (1054710)
+[2026-02-26 16:17:01 +0000] [1054710] [INFO] Using worker: sync
+[2026-02-26 16:17:01 +0000] [1054710] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:17:01 +0000] [1054712] [INFO] Booting worker with pid: 1054712
+[2026-02-26 16:17:01 +0000] [1054713] [INFO] Booting worker with pid: 1054713
+[2026-02-26 16:17:04 +0000] [1054713] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:17:04 +0000] [1054713] [INFO] Worker exiting (pid: 1054713)
+[2026-02-26 16:17:04 +0000] [1054712] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:17:04 +0000] [1054712] [INFO] Worker exiting (pid: 1054712)
+[2026-02-26 16:17:04 +0000] [1054710] [ERROR] Worker (pid:1054713) exited with code 3.
+[2026-02-26 16:17:04 +0000] [1054710] [INFO] Worker (pid:1054712) was sent SIGTERM!
+[2026-02-26 16:17:04 +0000] [1054710] [ERROR] Shutting down: Master
+[2026-02-26 16:17:04 +0000] [1054710] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:17:10 +0000] [1054802] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:17:10 +0000] [1054802] [INFO] Listening at: http://127.0.0.1:5003 (1054802)
+[2026-02-26 16:17:10 +0000] [1054802] [INFO] Using worker: sync
+[2026-02-26 16:17:10 +0000] [1054802] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:17:10 +0000] [1054805] [INFO] Booting worker with pid: 1054805
+[2026-02-26 16:17:12 +0000] [1054805] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:17:12 +0000] [1054805] [INFO] Worker exiting (pid: 1054805)
+[2026-02-26 16:17:13 +0000] [1054802] [ERROR] Worker (pid:1054805) exited with code 3.
+[2026-02-26 16:17:43 +0000] [1054802] [ERROR] Shutting down: Master
+[2026-02-26 16:17:43 +0000] [1054802] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:17:48 +0000] [1055343] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:17:48 +0000] [1055343] [INFO] Listening at: http://127.0.0.1:5003 (1055343)
+[2026-02-26 16:17:48 +0000] [1055343] [INFO] Using worker: sync
+[2026-02-26 16:17:48 +0000] [1055343] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:17:48 +0000] [1055346] [INFO] Booting worker with pid: 1055346
+[2026-02-26 16:17:48 +0000] [1055347] [INFO] Booting worker with pid: 1055347
+[2026-02-26 16:17:51 +0000] [1055346] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:17:51 +0000] [1055346] [INFO] Worker exiting (pid: 1055346)
+[2026-02-26 16:17:51 +0000] [1055347] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:17:51 +0000] [1055347] [INFO] Worker exiting (pid: 1055347)
+[2026-02-26 16:17:51 +0000] [1055343] [ERROR] Worker (pid:1055347) exited with code 3.
+[2026-02-26 16:17:51 +0000] [1055343] [ERROR] Worker (pid:1055346) exited with code 3.
+[2026-02-26 16:17:57 +0000] [1055534] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:17:57 +0000] [1055534] [INFO] Listening at: http://127.0.0.1:5003 (1055534)
+[2026-02-26 16:17:57 +0000] [1055534] [INFO] Using worker: sync
+[2026-02-26 16:17:57 +0000] [1055534] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:17:57 +0000] [1055538] [INFO] Booting worker with pid: 1055538
+[2026-02-26 16:17:59 +0000] [1055538] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:17:59 +0000] [1055538] [INFO] Worker exiting (pid: 1055538)
+[2026-02-26 16:18:00 +0000] [1055534] [ERROR] Worker (pid:1055538) exited with code 3.
+[2026-02-26 16:18:30 +0000] [1055534] [ERROR] Shutting down: Master
+[2026-02-26 16:18:30 +0000] [1055534] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:18:35 +0000] [1055956] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:18:35 +0000] [1055956] [INFO] Listening at: http://127.0.0.1:5003 (1055956)
+[2026-02-26 16:18:35 +0000] [1055956] [INFO] Using worker: sync
+[2026-02-26 16:18:35 +0000] [1055956] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:18:35 +0000] [1055958] [INFO] Booting worker with pid: 1055958
+[2026-02-26 16:18:35 +0000] [1055959] [INFO] Booting worker with pid: 1055959
+[2026-02-26 16:18:37 +0000] [1055958] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:18:37 +0000] [1055958] [INFO] Worker exiting (pid: 1055958)
+[2026-02-26 16:18:38 +0000] [1055959] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:18:38 +0000] [1055959] [INFO] Worker exiting (pid: 1055959)
+[2026-02-26 16:18:38 +0000] [1055956] [ERROR] Worker (pid:1055958) exited with code 3.
+[2026-02-26 16:18:38 +0000] [1055956] [INFO] Worker (pid:1055959) was sent SIGTERM!
+[2026-02-26 16:18:38 +0000] [1055956] [ERROR] Shutting down: Master
+[2026-02-26 16:18:38 +0000] [1055956] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:18:44 +0000] [1056046] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:18:44 +0000] [1056046] [INFO] Listening at: http://127.0.0.1:5003 (1056046)
+[2026-02-26 16:18:44 +0000] [1056046] [INFO] Using worker: sync
+[2026-02-26 16:18:44 +0000] [1056046] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:18:44 +0000] [1056049] [INFO] Booting worker with pid: 1056049
+[2026-02-26 16:18:46 +0000] [1056049] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:18:46 +0000] [1056049] [INFO] Worker exiting (pid: 1056049)
+[2026-02-26 16:18:46 +0000] [1056046] [ERROR] Worker (pid:1056049) exited with code 3.
+[2026-02-26 16:19:16 +0000] [1056046] [ERROR] Shutting down: Master
+[2026-02-26 16:19:16 +0000] [1056046] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:19:22 +0000] [1056612] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:19:22 +0000] [1056612] [INFO] Listening at: http://127.0.0.1:5003 (1056612)
+[2026-02-26 16:19:22 +0000] [1056612] [INFO] Using worker: sync
+[2026-02-26 16:19:22 +0000] [1056612] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:19:22 +0000] [1056614] [INFO] Booting worker with pid: 1056614
+[2026-02-26 16:19:22 +0000] [1056615] [INFO] Booting worker with pid: 1056615
+[2026-02-26 16:19:24 +0000] [1056614] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:19:24 +0000] [1056614] [INFO] Worker exiting (pid: 1056614)
+[2026-02-26 16:19:24 +0000] [1056615] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:19:24 +0000] [1056615] [INFO] Worker exiting (pid: 1056615)
+[2026-02-26 16:19:24 +0000] [1056612] [ERROR] Worker (pid:1056614) exited with code 3.
+[2026-02-26 16:19:24 +0000] [1056612] [INFO] Worker (pid:1056615) was sent SIGTERM!
+[2026-02-26 16:19:24 +0000] [1056612] [ERROR] Shutting down: Master
+[2026-02-26 16:19:24 +0000] [1056612] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:19:30 +0000] [1056679] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:19:30 +0000] [1056679] [INFO] Listening at: http://127.0.0.1:5003 (1056679)
+[2026-02-26 16:19:30 +0000] [1056679] [INFO] Using worker: sync
+[2026-02-26 16:19:30 +0000] [1056679] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:19:30 +0000] [1056681] [INFO] Booting worker with pid: 1056681
+[2026-02-26 16:19:30 +0000] [1056682] [INFO] Booting worker with pid: 1056682
+[2026-02-26 16:19:32 +0000] [1056681] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:19:32 +0000] [1056681] [INFO] Worker exiting (pid: 1056681)
+[2026-02-26 16:19:32 +0000] [1056682] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:19:32 +0000] [1056682] [INFO] Worker exiting (pid: 1056682)
+[2026-02-26 16:19:33 +0000] [1056679] [ERROR] Worker (pid:1056681) exited with code 3.
+[2026-02-26 16:19:33 +0000] [1056679] [INFO] Worker (pid:1056682) was sent SIGTERM!
+[2026-02-26 16:19:33 +0000] [1056679] [ERROR] Shutting down: Master
+[2026-02-26 16:19:33 +0000] [1056679] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:19:38 +0000] [1056780] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:19:38 +0000] [1056780] [INFO] Listening at: http://127.0.0.1:5003 (1056780)
+[2026-02-26 16:19:38 +0000] [1056780] [INFO] Using worker: sync
+[2026-02-26 16:19:38 +0000] [1056780] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:19:38 +0000] [1056790] [INFO] Booting worker with pid: 1056790
+[2026-02-26 16:19:38 +0000] [1056794] [INFO] Booting worker with pid: 1056794
+[2026-02-26 16:19:41 +0000] [1056790] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:19:41 +0000] [1056790] [INFO] Worker exiting (pid: 1056790)
+[2026-02-26 16:19:41 +0000] [1056794] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:19:41 +0000] [1056794] [INFO] Worker exiting (pid: 1056794)
+[2026-02-26 16:19:41 +0000] [1056780] [ERROR] Worker (pid:1056790) exited with code 3.
+[2026-02-26 16:19:41 +0000] [1056780] [INFO] Worker (pid:1056794) was sent SIGTERM!
+[2026-02-26 16:19:42 +0000] [1056780] [ERROR] Shutting down: Master
+[2026-02-26 16:19:42 +0000] [1056780] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:19:47 +0000] [1056963] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:19:47 +0000] [1056963] [INFO] Listening at: http://127.0.0.1:5003 (1056963)
+[2026-02-26 16:19:47 +0000] [1056963] [INFO] Using worker: sync
+[2026-02-26 16:19:47 +0000] [1056963] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:19:47 +0000] [1056966] [INFO] Booting worker with pid: 1056966
+[2026-02-26 16:19:49 +0000] [1056966] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:19:49 +0000] [1056966] [INFO] Worker exiting (pid: 1056966)
+[2026-02-26 16:19:50 +0000] [1056963] [ERROR] Worker (pid:1056966) exited with code 3.
+[2026-02-26 16:20:20 +0000] [1056963] [ERROR] Shutting down: Master
+[2026-02-26 16:20:20 +0000] [1056963] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:20:25 +0000] [1057679] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:20:25 +0000] [1057679] [INFO] Listening at: http://127.0.0.1:5003 (1057679)
+[2026-02-26 16:20:25 +0000] [1057679] [INFO] Using worker: sync
+[2026-02-26 16:20:25 +0000] [1057679] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:20:25 +0000] [1057696] [INFO] Booting worker with pid: 1057696
+[2026-02-26 16:20:25 +0000] [1057703] [INFO] Booting worker with pid: 1057703
+[2026-02-26 16:20:28 +0000] [1057696] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:20:28 +0000] [1057696] [INFO] Worker exiting (pid: 1057696)
+[2026-02-26 16:20:28 +0000] [1057703] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:20:28 +0000] [1057703] [INFO] Worker exiting (pid: 1057703)
+[2026-02-26 16:20:28 +0000] [1057679] [ERROR] Worker (pid:1057696) exited with code 3.
+[2026-02-26 16:20:28 +0000] [1057679] [INFO] Worker (pid:1057703) was sent SIGTERM!
+[2026-02-26 16:20:28 +0000] [1057679] [ERROR] Shutting down: Master
+[2026-02-26 16:20:28 +0000] [1057679] [ERROR] Reason: Worker failed to boot.
+[2026-02-26 16:20:34 +0000] [1057821] [INFO] Starting gunicorn 25.1.0
+[2026-02-26 16:20:34 +0000] [1057821] [INFO] Listening at: http://127.0.0.1:5003 (1057821)
+[2026-02-26 16:20:34 +0000] [1057821] [INFO] Using worker: sync
+[2026-02-26 16:20:34 +0000] [1057821] [INFO] Control socket listening at /root/gunicorn.ctl
+[2026-02-26 16:20:34 +0000] [1057824] [INFO] Booting worker with pid: 1057824
+[2026-02-26 16:20:36 +0000] [1057824] [ERROR] Exception in worker process
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/arbiter.py", line 708, in spawn_worker
+    worker.init_process()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 136, in init_process
+    self.load_wsgi()
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/workers/base.py", line 148, in load_wsgi
+    self.wsgi = self.app.wsgi()
+                ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/base.py", line 66, in wsgi
+    self.callable = self.load()
+                    ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 57, in load
+    return self.load_wsgiapp()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/app/wsgiapp.py", line 47, in load_wsgiapp
+    return util.import_app(self.app_uri)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/gunicorn/util.py", line 377, in import_app
+    mod = importlib.import_module(module)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/root/monitor_api.py", line 26, in <module>
+    from sentence_transformers import SentenceTransformer
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/__init__.py", line 10, in <module>
+    from sentence_transformers.backend import (
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/__init__.py", line 5, in <module>
+    from .quantize import export_dynamic_quantized_onnx_model, export_static_quantized_openvino_model
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/backend/quantize.py", line 7, in <module>
+    from sentence_transformers.util import disable_datasets_caching, is_datasets_available
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/__init__.py", line 4, in <module>
+    from .distributed import all_gather, all_gather_with_grad
+  File "/usr/local/lib/python3.12/dist-packages/sentence_transformers/util/distributed.py", line 3, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+[2026-02-26 16:20:36 +0000] [1057824] [INFO] Worker exiting (pid: 1057824)
+[2026-02-26 16:20:37 +0000] [1057821] [ERROR] Worker (pid:1057824) exited with code 3.
