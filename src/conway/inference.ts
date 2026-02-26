@@ -27,15 +27,17 @@ interface InferenceClientOptions {
   groqApiKey?: string;
   groqModel?: string;
   cerebrasApiKey?: string;
+  sambanovaApiKey?: string;
   openrouterApiKey?: string;
   geminiApiKey?: string;
 }
 
-type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "openrouter" | "gemini";
+type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini";
 
 // Token thresholds for model routing
 const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 2: Groq free
 const CEREBRAS_MODEL    = "gpt-oss-120b";                      // Tier 3: Cerebras free (120B, 1-2s, tool calling)
+const SAMBANOVA_MODEL   = "Meta-Llama-3.3-70B-Instruct";       // Tier 3.5: SambaNova free (70B, fast)
 const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini free
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
 const TOKEN_THRESHOLD_LARGE = 5500;
@@ -183,12 +185,12 @@ function extractTextContent(message: any): string {
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
-  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, openrouterApiKey, geminiApiKey } = options;
+  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey } = options;
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
   // True if any cascade key is configured (Anthropic is now Tier 1).
-  const hasCascadeKey = !!(anthropicApiKey || groqApiKey || cerebrasApiKey || openrouterApiKey || geminiApiKey);
+  const hasCascadeKey = !!(anthropicApiKey || groqApiKey || cerebrasApiKey || sambanovaApiKey || openrouterApiKey || geminiApiKey);
 
   // Log which providers are available at startup
   {
@@ -196,6 +198,7 @@ export function createInferenceClient(
       anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL}) [PRIMARY]` : "Anthropic:NO_KEY",
       groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
       cerebrasApiKey   ? `Cerebras(${CEREBRAS_MODEL})`     : "Cerebras:NO_KEY",
+      sambanovaApiKey  ? `SambaNova(${SAMBANOVA_MODEL})`   : "SambaNova:NO_KEY",
       geminiApiKey     ? `Gemini(${GEMINI_MODEL})`         : "Gemini:NO_KEY",
       openrouterApiKey ? `OpenRouter(${OPENROUTER_FREE_MODELS.length} free models)` : "OpenRouter:NO_KEY",
     ];
@@ -259,7 +262,7 @@ export function createInferenceClient(
     if (hasCascadeKey) {
       const estimated = estimateTokens(messages, tools);
       const requestedTier = opts?.tier || "haiku";
-      console.log(`[INFERENCE] ~${estimated} tokens, tier=${requestedTier} — starting cascade (keys: anthropic=${!!anthropicApiKey} groq=${!!groqApiKey} cerebras=${!!cerebrasApiKey} gemini=${!!geminiApiKey} openrouter=${!!openrouterApiKey})`);
+      console.log(`[INFERENCE] ~${estimated} tokens, tier=${requestedTier} — starting cascade (keys: anthropic=${!!anthropicApiKey} groq=${!!groqApiKey} cerebras=${!!cerebrasApiKey} sambanova=${!!sambanovaApiKey} gemini=${!!geminiApiKey} openrouter=${!!openrouterApiKey})`);
 
       // Helper: log remaining cooldown time clearly
       const coolRemaining = (key: string) => {
@@ -343,6 +346,34 @@ export function createInferenceClient(
         } catch (err: any) {
           if (isRateLimitError(err)) smartCooldown(CEREBRAS_MODEL, err);
           console.warn(`[INFERENCE] Tier 3 (Cerebras): FAILED — ${err.message}`);
+        }
+      }
+
+      // Tier 3.5: SambaNova — Meta-Llama-3.3-70B (free, fast, OpenAI-compatible)
+      if (!sambanovaApiKey) {
+        console.log(`[INFERENCE] Tier 3.5 (SambaNova): SKIP — no key`);
+      } else if (isCoolingDown(SAMBANOVA_MODEL)) {
+        console.log(`[INFERENCE] Tier 3.5 (SambaNova): SKIP — cooling (${coolRemaining(SAMBANOVA_MODEL)} left)`);
+      } else {
+        try {
+          lastUsedModel = SAMBANOVA_MODEL;
+          const snMessages = trimToTokenBudget(messages, 5000);
+          const snTools = tools ? filterToolsForSmallProvider(tools) : undefined;
+          const snEst = estimateTokens(snMessages, snTools);
+          const trimNote = snMessages.length < messages.length ? `, trimmed ${messages.length - snMessages.length} msgs` : "";
+          console.log(`[INFERENCE] Tier 3.5 (SambaNova): ATTEMPT ${SAMBANOVA_MODEL} (~${snEst} tokens, ${snTools?.length || 0} tools${trimNote})`);
+          const body: Record<string, unknown> = {
+            model: SAMBANOVA_MODEL,
+            messages: snMessages.map(formatMessage),
+            stream: false,
+            max_tokens: Math.min(tokenLimit, 4096),
+          };
+          if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+          if (snTools && snTools.length > 0) { body.tools = snTools; body.tool_choice = "auto"; }
+          return await chatViaOpenAiCompatible({ model: SAMBANOVA_MODEL, body, apiUrl: "https://api.sambanova.ai", apiKey: sambanovaApiKey, backend: "sambanova" });
+        } catch (err: any) {
+          if (isRateLimitError(err)) smartCooldown(SAMBANOVA_MODEL, err);
+          console.warn(`[INFERENCE] Tier 3.5 (SambaNova): FAILED — ${err.message}`);
         }
       }
 
@@ -599,7 +630,7 @@ async function chatViaOpenAiCompatible(params: {
   body: Record<string, unknown>;
   apiUrl: string;
   apiKey: string;
-  backend: "conway" | "openai" | "groq" | "anthropic" | "cerebras" | "openrouter" | "gemini";
+  backend: InferenceBackend;
 }): Promise<InferenceResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

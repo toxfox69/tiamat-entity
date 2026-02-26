@@ -47,6 +47,7 @@ export interface AutomatonConfig {
   cerebrasApiKey?: string;
   openrouterApiKey?: string;
   geminiApiKey?: string;
+  sambanovaApiKey?: string;
   togetherApiKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;

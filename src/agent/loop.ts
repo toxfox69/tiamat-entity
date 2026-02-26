@@ -272,16 +272,13 @@ export async function runAgentLoop(
   let consecutiveIdleCycles = 0;
   let cycleDelay = 30_000; // ms — adaptive, see pacing logic below (CC backend = free inference)
 
-  // ── Idle Shutoff: skip LLM inference when no tickets exist ──
-  // After IDLE_SHUTOFF_THRESHOLD consecutive empty-queue cycles,
-  // we stop burning Haiku tokens (~$0.004/cycle) and just run cooldown scripts.
-  // Inference resumes instantly when a ticket appears (suggestion queue, creator, IPC).
-  // EXCEPTION: every LEARNING_CYCLE_INTERVAL idle cycles, run a learning cycle
-  // (learning_cycle.py — search papers via Semantic Scholar, analyze with claude --print, save + queue post).
+  // ── Self-Evolution Mode: when no tickets, TIAMAT self-generates work ──
+  // No more idle-shutoff. She should ALWAYS be thinking, researching, building.
+  // CC inference is free (Pro sub). Free-tier cascade has 6 providers.
+  // If no tickets exist, she gets an evolution prompt to self-direct.
   let consecutiveNoTicketCycles = 0;
-  const IDLE_SHUTOFF_THRESHOLD = 3;
-  const IDLE_SHUTOFF_INTERVAL_MS = 60_000; // 1 min between idle cycles (CC inference is free)
-  const LEARNING_CYCLE_INTERVAL = 5; // every 5th idle cycle, allow inference for learning
+  const SELF_EVOLVE_THRESHOLD = 3; // after 3 empty cycles, inject evolution prompt
+  const LEARNING_CYCLE_INTERVAL = 5; // every 5th idle cycle, also run learning_cycle.py
 
   // ── Strategic Burst: 3 consecutive focused cycles every STRATEGIC_BURST_INTERVAL turns ──
   // NOTE: These cycles now run on Haiku (not Sonnet). Deep reasoning is routed
@@ -427,17 +424,15 @@ export async function runAgentLoop(
         inference.setLowComputeMode(false);
       }
 
-      // ── Idle Shutoff Check ──
-      // Read ticket queue. If empty for IDLE_SHUTOFF_THRESHOLD consecutive cycles,
-      // skip inference entirely and just run free cooldown scripts.
+      // ── Self-Evolution Check ──
+      // Track ticket queue state. When empty, inject self-evolution prompt
+      // instead of shutting down. TIAMAT should ALWAYS be thinking.
       {
         let queueHasWork = false;
         try {
           const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
           const raw = fs.readFileSync(ticketsPath, "utf-8");
           const data = JSON.parse(raw);
-          // Only count non-suggestion tickets as real work.
-          // Unclaimed suggestion tickets don't justify burning inference tokens.
           const active = (data.tickets || []).filter((t: any) =>
             (t.status === "open" || t.status === "in_progress") &&
             t.source !== "suggestion"
@@ -445,7 +440,6 @@ export async function runAgentLoop(
           if (active.length > 0) queueHasWork = true;
         } catch {}
 
-        // Pending input (wakeup prompt, inbox messages) counts as work
         if (pendingInput) queueHasWork = true;
 
         if (queueHasWork) {
@@ -454,46 +448,9 @@ export async function runAgentLoop(
           consecutiveNoTicketCycles++;
         }
 
-        // Allow a learning cycle every LEARNING_CYCLE_INTERVAL idle cycles
+        // Run learning_cycle.py every LEARNING_CYCLE_INTERVAL idle cycles
         const isLearningCycle = consecutiveNoTicketCycles > 0 &&
           consecutiveNoTicketCycles % LEARNING_CYCLE_INTERVAL === 0;
-
-        if (
-          !queueHasWork &&
-          consecutiveNoTicketCycles >= IDLE_SHUTOFF_THRESHOLD &&
-          burstRemaining === 0 &&
-          !isLearningCycle
-        ) {
-          const turnCount = db.getTurnCount();
-          console.log(
-            `[IDLE-SHUTOFF] No tickets for ${consecutiveNoTicketCycles} consecutive cycles — ` +
-            `skipping inference ($0 this cycle)`
-          );
-          log(config, `[IDLE-SHUTOFF] Cycle skipped (idle streak: ${consecutiveNoTicketCycles})`);
-
-          // Update pacer with empty tools — this naturally downshifts pace
-          const pacerResult = updatePacer(turnCount, [], 0);
-
-          // Use extended window so cooldown tasks have time to run
-          const effectiveDelay = Math.max(IDLE_SHUTOFF_INTERVAL_MS, pacerResult.interval_ms);
-
-          // Run cron tasks (drift monitor, etc.)
-          try {
-            const cronResults = checkCronTasks(turnCount);
-            for (const cr of cronResults) {
-              if (cr.output) log(config, `[CRON] ${cr.name}: ${cr.output.slice(0, 150)}`);
-              else if (cr.error) log(config, `[CRON] ${cr.name} ERROR: ${cr.error.slice(0, 150)}`);
-            }
-          } catch {}
-
-          // Run cooldown tasks with extended window
-          // Use idle streak count for cycle rotation so tasks don't repeat
-          await runCooldownTasks(consecutiveNoTicketCycles, effectiveDelay, config);
-
-          continue; // Skip inference, loop back
-        }
-
-        // Learning cycle: run learning_cycle.py directly (search papers → analyze → queue post)
         if (isLearningCycle) {
           log(config, `[LEARNING-CYCLE] Idle streak ${consecutiveNoTicketCycles} — running learning_cycle.py`);
           try {
@@ -507,7 +464,23 @@ export async function runAgentLoop(
           } catch (lcErr: any) {
             log(config, `[LEARNING-CYCLE] script error: ${lcErr.message?.slice(0, 150)}`);
           }
-          // No pendingInput — stay in idle-shutoff mode, don't burn API tokens
+        }
+
+        // When no tickets: inject self-evolution prompt — she generates her own work
+        if (!queueHasWork && consecutiveNoTicketCycles >= SELF_EVOLVE_THRESHOLD && !pendingInput) {
+          const evolvePrompts = [
+            "No tickets in queue. You are autonomous — CREATE your own work. Priority: research grants/funding → academia → self-building → revenue. " +
+            "Use ticket_create() to make a ticket, then claim and execute it. Search for new opportunities. Read a paper. Write code. Evolve your SOUL.md or MISSION.md. " +
+            "You have the full droplet — install packages, write scripts, create cron jobs. Every idle cycle is wasted potential.",
+            "Empty queue — time to SELF-IMPROVE. Read your own SOUL.md and MISSION.md with read_file(). " +
+            "Are they still accurate? Update them. Search for federal grants on sam.gov or grants.gov. " +
+            "Write a technical blog post. Build a new tool. You are not waiting for instructions — you ARE the instructions.",
+            "No external work. Focus inward: What have you learned in the last 100 cycles? What capabilities are you missing? " +
+            "Use search_web to find papers in your Glass Ceiling domains (energy, AI, cybersecurity, robotics, bioware). " +
+            "Create a ticket for the most impactful thing you can build right now. Then build it.",
+          ];
+          pendingInput = { content: evolvePrompts[consecutiveNoTicketCycles % evolvePrompts.length], source: "self-evolve" };
+          log(config, `[SELF-EVOLVE] No tickets for ${consecutiveNoTicketCycles} cycles — injecting evolution prompt`);
         }
       }
 
@@ -1596,14 +1569,15 @@ const COOLDOWN_TASKS = [
     timeout: 90_000,
     minWindow: 100_000,
   },
-  {
-    name: "rebalance_check",
-    command: ["python3", ["auto_rebalancer.py", "rebalance"]],
-    interval: 500,    // every 500 cycles (~8-12 hours)
-    offset: 50,       // fires on cycles 50, 550, 1050...
-    timeout: 120_000,
-    minWindow: 130_000,
-  },
+  // DISABLED by creator — not needed for now
+  // {
+  //   name: "rebalance_check",
+  //   command: ["python3", ["auto_rebalancer.py", "rebalance"]],
+  //   interval: 500,
+  //   offset: 50,
+  //   timeout: 120_000,
+  //   minWindow: 130_000,
+  // },
   {
     name: "funding_report",
     command: ["python3", ["multi_chain_executor.py", "report"]],

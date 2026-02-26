@@ -77,6 +77,12 @@ def send_email(to, subject, body, from_addr=None, from_name="TIAMAT | ENERGENAI 
     if reply_to:
         payload["reply_to"] = {"email": reply_to}
 
+    # Disable SendGrid click/open tracking — prevents ugly rewritten URLs
+    payload["tracking_settings"] = {
+        "click_tracking": {"enable": False},
+        "open_tracking": {"enable": False},
+    }
+
     req = urllib.request.Request(
         "https://api.sendgrid.com/v3/mail/send",
         data=json.dumps(payload).encode(),

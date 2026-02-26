@@ -224,6 +224,7 @@ async function run(): Promise<void> {
     groqApiKey: config.groqApiKey,
     groqModel: config.groqModel,
     cerebrasApiKey: config.cerebrasApiKey,
+    sambanovaApiKey: config.sambanovaApiKey,
     openrouterApiKey: config.openrouterApiKey,
     geminiApiKey: config.geminiApiKey,
   });

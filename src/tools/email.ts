@@ -41,6 +41,10 @@ export async function sendEmail(config: any, params: {
     from: { email: fromAddr, name: fromName },
     subject: params.subject,
     content: [{ type: 'text/plain', value: fullBody }],
+    tracking_settings: {
+      click_tracking: { enable: false },
+      open_tracking: { enable: false },
+    },
   };
 
   if (params.reply_to) {
