@@ -181,28 +181,33 @@ export interface PacerUpdate {
 /**
  * Record a cycle and compute the next interval.
  * Called from loop.ts after each turn completes.
+ * Pass blocked=true for rate-limit spin cycles so they don't corrupt the
+ * productivity window — they represent infrastructure failure, not poor decisions.
  */
 export function updatePacer(
   cycle: number,
   toolNames: string[],
   cost: number,
+  blocked = false,
 ): PacerUpdate {
   const state = loadPacer();
   const now = new Date().toISOString();
-  const productive = scoreCycle(toolNames);
+  const productive = !blocked && scoreCycle(toolNames);
 
-  // Record this cycle
-  state.last_20_cycles.push({
-    cycle,
-    actions: toolNames.slice(0, 10), // cap to prevent bloat
-    productive,
-    cost,
-    timestamp: now,
-  });
+  // Skip recording fully-blocked cycles: they don't reflect actual agent decisions.
+  if (!blocked) {
+    state.last_20_cycles.push({
+      cycle,
+      actions: toolNames.slice(0, 10), // cap to prevent bloat
+      productive,
+      cost,
+      timestamp: now,
+    });
 
-  // Keep only last 20
-  if (state.last_20_cycles.length > 20) {
-    state.last_20_cycles = state.last_20_cycles.slice(-20);
+    // Keep only last 20
+    if (state.last_20_cycles.length > 20) {
+      state.last_20_cycles = state.last_20_cycles.slice(-20);
+    }
   }
 
   // Calculate productivity rate

@@ -2766,7 +2766,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     },
 
     {
-      name: "fetch_terminal_markets",
+      name: "fetch_terminal_markets_disabled",
       description: "Fetch live data from terminal.markets (DX Terminal Pro AI agent competition on Base). Returns vault info, token prices, leaderboard, and game state. The competition runs Feb 24 – Mar 16 2026 on Base mainnet. Use this to monitor the game and plan strategy.",
       category: "vm",
       parameters: {
@@ -3469,66 +3469,286 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         return results.join("\n");
       },
     },
-    // ── DX Terminal Pro — Game Monitor ──
+    // ── DX Terminal Pro — Official API ──
     {
-      name: "dx_terminal_monitor",
-      description: "Monitor DX Terminal Pro — 21-day onchain trading competition on Base (Feb 24 - Mar 19). 5 agents competing with distinct strategies. Actions: 'status' (all agents' positions + balances), 'rankings' (token leaderboard + reaping risk), 'strategies' (show active strategies), 'alert' (reaping/launch/market alerts), 'log' (snapshot game state). Run every 10 cycles during active game.",
+      name: "dx_terminal",
+      description: "DX Terminal Pro — 21-day onchain trading competition on Base (Feb 24 - Mar 19). READ actions: portfolio, settings, tokens, swaps, strategies, leaderboard, logs, candles, holders, pnl_history, deposits. WRITE actions: update_settings, add_strategy, disable_strategy, deposit_eth, withdraw_eth. Params vary by action — pass action + relevant fields. portfolio/swaps/strategies need wallet key set; tokens/leaderboard/candles are public.",
       category: "vm",
       parameters: {
         type: "object",
         properties: {
-          action: {
-            type: "string",
-            description: "One of: status, rankings, strategies, alert, log",
-          },
+          action: { type: "string", description: "Action to perform (see description for list)" },
+          token: { type: "string", description: "Token address (for candles, holders)" },
+          timeframe: { type: "string", description: "Candle timeframe: 1m,5m,15m,1h,4h,1d (default 1h)" },
+          strategy: { type: "string", description: "Strategy text (for add_strategy)" },
+          strategy_id: { type: "number", description: "Strategy ID (for disable_strategy)" },
+          expiry_hours: { type: "number", description: "Strategy expiry in hours (default 24)" },
+          priority: { type: "number", description: "Strategy priority: 0=Low, 1=Med, 2=High (default 1)" },
+          amount: { type: "string", description: "ETH amount (for deposit_eth, withdraw_eth)" },
+          max_trade: { type: "string", description: "Max trade size in wei (for update_settings)" },
+          slippage: { type: "string", description: "Max slippage in bps (for update_settings)" },
+          activity: { type: "number", description: "Activity level 1-5 (for update_settings)" },
+          risk: { type: "number", description: "Risk level 1-5 (for update_settings)" },
+          size: { type: "number", description: "Position size level 1-5 (for update_settings)" },
+          hold: { type: "number", description: "Hold duration level 1-5 (for update_settings)" },
+          diversification: { type: "number", description: "Diversification level 1-5 (for update_settings)" },
         },
         required: ["action"],
       },
       execute: (() => {
-        let lastResult: string | null = null;
-        let lastCheck = 0;
-        const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
-        const VALID_ACTIONS = ['status', 'rankings', 'strategies', 'alert', 'log'];
-        return async (args: any, _ctx: any) => {
-          const action = (args.action as string || '').toLowerCase();
-          if (!VALID_ACTIONS.includes(action)) {
-            return `Invalid action: ${action}. Use: ${VALID_ACTIONS.join(', ')}`;
-          }
+        const API = "https://api.terminal.markets/api/v1";
+        const VAULT_CONTRACT = "0xfEEa1D23DB2d09403baf34F49c5AC2F5C2a30334";
+        const RPC = "https://mainnet.base.org";
+        const CACHE_TTL = 5 * 60 * 1000; // 5 min
+        const VAULT_TTL = 30 * 60 * 1000; // 30 min
+        const readCache = new Map<string, { result: string; ts: number }>();
+        let cachedVault: string | null = null;
+        let vaultTs = 0;
 
-          // Cache non-log actions for 5 minutes
+        const getKey = (): string => process.env.DX_TERMINAL_PRIVATE_KEY || "";
+
+        const getVault = async (): Promise<string | null> => {
           const now = Date.now();
-          if (action !== 'log' && lastResult && (now - lastCheck) < COOLDOWN_MS) {
-            const minsAgo = Math.round((now - lastCheck) / 60000);
-            return `${lastResult}\n\n(cached from ${minsAgo}m ago — next fresh read in ${Math.round((COOLDOWN_MS - (now - lastCheck)) / 60000)}m)`;
+          if (cachedVault && (now - vaultTs) < VAULT_TTL) return cachedVault;
+          const key = getKey();
+          if (!key) return null;
+          try {
+            const { execFileSync } = await import("child_process");
+            const owner = execFileSync(
+              "/root/.foundry/bin/cast",
+              ["wallet", "address", "--private-key", key],
+              { encoding: "utf-8", timeout: 10_000 }
+            ).trim();
+            const resp = await fetch(`${API}/vault?ownerAddress=${owner}`, {
+              headers: { "Accept": "application/json" },
+              signal: AbortSignal.timeout(10_000),
+            });
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            const addr = data?.vault?.vaultAddress || data?.vaultAddress || (Array.isArray(data) ? data[0]?.vaultAddress : null);
+            if (addr) { cachedVault = addr; vaultTs = now; }
+            return addr;
+          } catch { return null; }
+        };
+
+        const fmtWei = (w: string | number): string => {
+          const n = typeof w === "string" ? BigInt(w) : BigInt(Math.floor(Number(w)));
+          const whole = n / BigInt(1e18);
+          const frac = n % BigInt(1e18);
+          return `${whole}.${frac.toString().padStart(18, "0").slice(0, 6)}`;
+        };
+
+        const apiGet = async (path: string): Promise<any> => {
+          const resp = await fetch(`${API}${path}`, {
+            headers: { "Accept": "application/json", "User-Agent": "TIAMAT/1.0" },
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (!resp.ok) throw new Error(`API ${resp.status}: ${await resp.text().catch(() => "")}`);
+          return resp.json();
+        };
+
+        const log = async (action: string, snippet: string) => {
+          const fs = await import("fs");
+          fs.appendFileSync(
+            "/root/.automaton/dx_terminal.log",
+            `\n--- ${action.toUpperCase()} ${new Date().toISOString()} ---\n${snippet.slice(0, 500)}\n`,
+            "utf-8"
+          );
+        };
+
+        const READ_ACTIONS: Record<string, (args: any, vault: string | null) => Promise<string>> = {
+          portfolio: async (_a, v) => {
+            if (!v) return "No vault — set DX_TERMINAL_PRIVATE_KEY in .env";
+            const d = await apiGet(`/positions/${v}`);
+            const eth = d.ethBalance ? `ETH: ${fmtWei(d.ethBalance)}` : "";
+            const pnl = d.pnlEth ? `PnL: ${fmtWei(d.pnlEth)} ETH` : "";
+            const positions = (d.positions || d.tokens || []).map((p: any) =>
+              `  ${p.symbol || p.token}: ${p.balance || p.amount} (val: ${p.valueEth ? fmtWei(p.valueEth) : p.valueUsd || "?"})`
+            ).join("\n");
+            return `Portfolio for ${v.slice(0, 10)}...\n${eth}\n${pnl}\n${positions || "No token positions"}`;
+          },
+          settings: async (_a, v) => {
+            if (!v) return "No vault — set DX_TERMINAL_PRIVATE_KEY in .env";
+            const d = await apiGet(`/vault?vaultAddress=${v}`);
+            const s = d.settings || d;
+            return `Vault settings:\n  Activity: ${s.activity}/5\n  Risk: ${s.risk}/5\n  Size: ${s.size}/5\n  Hold: ${s.hold}/5\n  Diversification: ${s.diversification}/5\n  Max trade: ${s.maxTrade || s.max_trade || "?"}\n  Slippage: ${s.slippage || "?"}`;
+          },
+          tokens: async () => {
+            const d = await apiGet("/tokens?includeMarketData=true");
+            const tokens = (Array.isArray(d) ? d : d.tokens || []).slice(0, 30);
+            return tokens.map((t: any) =>
+              `${t.symbol}: price=${t.price || t.priceUsd || "?"} mcap=${t.marketCap || "?"} vol=${t.volume24h || "?"}`
+            ).join("\n") || "No token data";
+          },
+          swaps: async (_a, v) => {
+            if (!v) return "No vault — set DX_TERMINAL_PRIVATE_KEY in .env";
+            const d = await apiGet(`/swaps?vaultAddress=${v}&limit=20&order=desc`);
+            const swaps = (Array.isArray(d) ? d : d.swaps || []).slice(0, 15);
+            return swaps.map((s: any) =>
+              `${s.timestamp || s.createdAt || "?"} | ${s.action || s.type || "swap"} ${s.fromSymbol || "?"}→${s.toSymbol || "?"} | amt: ${s.amount || "?"} | reason: ${(s.reasoning || s.reason || "").slice(0, 80)}`
+            ).join("\n") || "No swaps";
+          },
+          strategies: async (_a, v) => {
+            if (!v) return "No vault — set DX_TERMINAL_PRIVATE_KEY in .env";
+            const d = await apiGet(`/strategies/${v}?activeOnly=true`);
+            const strats = (Array.isArray(d) ? d : d.strategies || []);
+            return strats.map((s: any) =>
+              `[${s.id}] p${s.priority} | ${s.strategy || s.text || "?"} | expires: ${s.expiresAt || "never"}`
+            ).join("\n") || "No active strategies";
+          },
+          leaderboard: async () => {
+            const d = await apiGet("/leaderboard?limit=20&sortBy=total_pnl_usd");
+            const entries = (Array.isArray(d) ? d : d.leaderboard || d.entries || []).slice(0, 20);
+            return entries.map((e: any, i: number) =>
+              `#${i + 1} ${e.name || e.vaultAddress?.slice(0, 10) || "?"}: PnL $${e.totalPnlUsd || e.total_pnl_usd || "?"} | ETH ${e.ethBalance ? fmtWei(e.ethBalance) : "?"}`
+            ).join("\n") || "No leaderboard data";
+          },
+          logs: async (_a, v) => {
+            if (!v) return "No vault — set DX_TERMINAL_PRIVATE_KEY in .env";
+            const d = await apiGet(`/logs/${v}?limit=10&order=desc`);
+            const logs = (Array.isArray(d) ? d : d.logs || []).slice(0, 10);
+            return logs.map((l: any) =>
+              `${l.timestamp || l.createdAt || "?"} | ${(l.reasoning || l.message || l.text || "").slice(0, 120)}`
+            ).join("\n") || "No logs";
+          },
+          candles: async (a) => {
+            const token = a.token;
+            if (!token) return "candles requires token param (token address)";
+            const tf = a.timeframe || "1h";
+            const d = await apiGet(`/candles/${token}?timeframe=${tf}&to=now&countback=100`);
+            const candles = (Array.isArray(d) ? d : d.candles || []).slice(-20);
+            return `${token.slice(0, 10)}... ${tf} candles (last ${candles.length}):\n` +
+              candles.map((c: any) => `${c.time || c.timestamp || "?"} O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`).join("\n") || "No candle data";
+          },
+          holders: async (a) => {
+            const token = a.token;
+            if (!token) return "holders requires token param (token address)";
+            const d = await apiGet(`/holders/${token}?limit=20&order=desc`);
+            const holders = (Array.isArray(d) ? d : d.holders || []).slice(0, 20);
+            return holders.map((h: any, i: number) =>
+              `#${i + 1} ${h.address?.slice(0, 10) || "?"}: ${h.balance || h.amount || "?"} (${h.percentage || "?"}%)`
+            ).join("\n") || "No holder data";
+          },
+          pnl_history: async (_a, v) => {
+            if (!v) return "No vault — set DX_TERMINAL_PRIVATE_KEY in .env";
+            const d = await apiGet(`/pnl-history/${v}`);
+            const pts = (Array.isArray(d) ? d : d.history || d.points || []).slice(-20);
+            return pts.map((p: any) =>
+              `${p.timestamp || p.date || "?"}: PnL $${p.pnlUsd || p.totalPnlUsd || "?"} | ETH ${p.pnlEth ? fmtWei(p.pnlEth) : "?"}`
+            ).join("\n") || "No PnL history";
+          },
+          deposits: async (_a, v) => {
+            if (!v) return "No vault — set DX_TERMINAL_PRIVATE_KEY in .env";
+            const d = await apiGet(`/deposits-withdrawals/${v}?limit=20&order=desc`);
+            const txs = (Array.isArray(d) ? d : d.transactions || d.deposits || []).slice(0, 20);
+            return txs.map((t: any) =>
+              `${t.timestamp || t.createdAt || "?"} | ${t.type || "?"}: ${t.amount || "?"} ETH | tx: ${t.txHash?.slice(0, 16) || "?"}`
+            ).join("\n") || "No deposit/withdrawal history";
+          },
+        };
+
+        return async (args: any, _ctx: any) => {
+          const action = (args.action as string || "").toLowerCase().trim();
+
+          // Write actions
+          const WRITE_ACTIONS = ["update_settings", "add_strategy", "disable_strategy", "deposit_eth", "withdraw_eth"];
+          const ALL_ACTIONS = [...Object.keys(READ_ACTIONS), ...WRITE_ACTIONS];
+          if (!ALL_ACTIONS.includes(action)) {
+            return `Invalid action: "${action}". Valid actions:\n  READ: ${Object.keys(READ_ACTIONS).join(", ")}\n  WRITE: ${WRITE_ACTIONS.join(", ")}`;
           }
 
-          const { execFileSync } = await import('child_process');
-          try {
-            const cmdArgs = ['dx_terminal.py', action];
-            const output = execFileSync('python3', cmdArgs, {
-              encoding: 'utf-8',
-              timeout: 30000,
-              cwd: '/root/entity/src/agent',
-              env: { ...process.env },
-            }).trim();
-
-            // Log all checks
-            const fs = await import('fs');
-            const timestamp = new Date().toISOString();
-            fs.appendFileSync(
-              '/root/.automaton/dx_terminal.log',
-              `\n--- ${action.toUpperCase()} ${timestamp} ---\n${output.slice(0, 500)}\n`,
-              'utf-8'
-            );
-
-            if (action !== 'log') {
-              lastResult = output.slice(0, 3000);
-              lastCheck = now;
+          // Handle write actions via cast
+          if (WRITE_ACTIONS.includes(action)) {
+            const key = getKey();
+            if (!key) return "DX_TERMINAL_PRIVATE_KEY not set in .env — cannot execute write actions.";
+            const { execFileSync } = await import("child_process");
+            const castBin = "/root/.foundry/bin/cast";
+            try {
+              let result = "";
+              if (action === "update_settings") {
+                const mt = args.max_trade || "50000000000000000"; // 0.05 ETH default
+                const sl = args.slippage || "500"; // 5% default
+                const ac = args.activity ?? 3;
+                const ri = args.risk ?? 3;
+                const si = args.size ?? 3;
+                const ho = args.hold ?? 3;
+                const di = args.diversification ?? 3;
+                const tuple = `(${mt},${sl},${ac},${ri},${si},${ho},${di})`;
+                const out = execFileSync(castBin, [
+                  "send", VAULT_CONTRACT,
+                  "updateSettings((uint256,uint256,uint8,uint8,uint8,uint8,uint8))",
+                  tuple,
+                  "--private-key", key, "--rpc-url", RPC,
+                ], { encoding: "utf-8", timeout: 60_000 });
+                result = `Settings updated: activity=${ac} risk=${ri} size=${si} hold=${ho} div=${di}\ntx: ${out.trim()}`;
+              } else if (action === "add_strategy") {
+                if (!args.strategy) return "add_strategy requires 'strategy' param (text instruction)";
+                const expiry = Math.floor((args.expiry_hours || 24) * 3600);
+                const prio = args.priority ?? 1;
+                const out = execFileSync(castBin, [
+                  "send", VAULT_CONTRACT,
+                  "addStrategy(string,uint64,uint8)",
+                  args.strategy, String(expiry), String(prio),
+                  "--private-key", key, "--rpc-url", RPC,
+                ], { encoding: "utf-8", timeout: 60_000 });
+                result = `Strategy added (p${prio}, ${args.expiry_hours || 24}h): "${args.strategy.slice(0, 80)}"\ntx: ${out.trim()}`;
+              } else if (action === "disable_strategy") {
+                if (args.strategy_id === undefined) return "disable_strategy requires 'strategy_id' param";
+                const out = execFileSync(castBin, [
+                  "send", VAULT_CONTRACT,
+                  "disableStrategy(uint256)",
+                  String(args.strategy_id),
+                  "--private-key", key, "--rpc-url", RPC,
+                ], { encoding: "utf-8", timeout: 60_000 });
+                result = `Strategy ${args.strategy_id} disabled.\ntx: ${out.trim()}`;
+              } else if (action === "deposit_eth") {
+                if (!args.amount) return "deposit_eth requires 'amount' param (ETH, e.g. '0.05')";
+                const out = execFileSync(castBin, [
+                  "send", VAULT_CONTRACT,
+                  "depositETH()",
+                  "--value", `${args.amount}ether`,
+                  "--private-key", key, "--rpc-url", RPC,
+                ], { encoding: "utf-8", timeout: 60_000 });
+                result = `Deposited ${args.amount} ETH.\ntx: ${out.trim()}`;
+              } else if (action === "withdraw_eth") {
+                if (!args.amount) return "withdraw_eth requires 'amount' param (ETH, e.g. '0.01')";
+                const weiAmt = BigInt(Math.floor(parseFloat(args.amount) * 1e18)).toString();
+                const out = execFileSync(castBin, [
+                  "send", VAULT_CONTRACT,
+                  "withdrawETH(uint256)",
+                  weiAmt,
+                  "--private-key", key, "--rpc-url", RPC,
+                ], { encoding: "utf-8", timeout: 60_000 });
+                result = `Withdrew ${args.amount} ETH (${weiAmt} wei).\ntx: ${out.trim()}`;
+              }
+              await log(action, result);
+              return result.slice(0, 4000);
+            } catch (e: any) {
+              const err = `Write action "${action}" failed: ${e.stderr?.slice(0, 300) || e.message}`;
+              await log(action, err);
+              return err;
             }
+          }
 
-            return output.slice(0, 4000);
+          // Handle read actions
+          const now = Date.now();
+          const cached = readCache.get(action);
+          if (cached && (now - cached.ts) < CACHE_TTL) {
+            const minsAgo = Math.round((now - cached.ts) / 60000);
+            return `${cached.result}\n\n(cached ${minsAgo}m ago)`;
+          }
+
+          const vault = await getVault();
+          try {
+            const handler = READ_ACTIONS[action];
+            const result = await handler(args, vault);
+            readCache.set(action, { result, ts: now });
+            await log(action, result);
+            return result.slice(0, 4000);
           } catch (e: any) {
-            return `DX Terminal monitor failed: ${e.stderr?.slice(0, 500) || e.message}`;
+            const err = `dx_terminal ${action} failed: ${e.message}`;
+            await log(action, err);
+            return err;
           }
         };
       })(),

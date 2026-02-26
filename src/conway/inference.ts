@@ -42,6 +42,22 @@ const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
 const TOKEN_THRESHOLD_LARGE = 5500;
 
+/**
+ * Essential tools for small-context providers (Groq/Cerebras).
+ * Only these get sent — cuts tool token overhead from ~8k to ~2k.
+ */
+const SMALL_PROVIDER_TOOLS = new Set([
+  "exec", "write_file", "read_file", "search_web", "web_fetch", "browse",
+  "send_telegram", "send_email", "read_email", "post_bluesky", "post_farcaster",
+  "remember", "recall", "learn_fact", "ticket_list", "ticket_claim", "ticket_complete",
+  "ticket_create", "ask_claude_code", "gpu_infer", "check_usdc_balance",
+  "manage_cooldown", "generate_image", "deploy_app", "log_strategy", "dx_terminal",
+]);
+
+function filterToolsForSmallProvider(tools: InferenceToolDefinition[]): InferenceToolDefinition[] {
+  return tools.filter(t => SMALL_PROVIDER_TOOLS.has(t.function.name));
+}
+
 /** Cheap character-based token estimator (~4 chars per token). */
 function estimateTokens(messages: ChatMessage[], tools?: InferenceToolDefinition[]): number {
   let chars = 0;
@@ -272,15 +288,14 @@ export function createInferenceClient(
         console.log(`[INFERENCE] Tier 2 (Groq): SKIP — cooling (${coolRemaining(GROQ_MODEL)} left)`);
       } else {
         const groqModel = routeGroqModel(estimated);
-        const groqMessages = estimated > TOKEN_THRESHOLD_LARGE
-          ? trimToTokenBudget(messages, TOKEN_THRESHOLD_LARGE - 500)
-          : messages;
-        const groqEst = estimateTokens(groqMessages);
+        const groqTools = tools ? filterToolsForSmallProvider(tools) : undefined;
+        const groqMessages = trimToTokenBudget(messages, 3500);
+        const groqEst = estimateTokens(groqMessages, groqTools);
         try {
           lastUsedModel = groqModel;
           const trimNote = groqMessages.length < messages.length ? `, trimmed ${messages.length - groqMessages.length} msgs` : "";
-          console.log(`[INFERENCE] Tier 2 (Groq): ATTEMPT ${groqModel} (~${groqEst} tokens${trimNote})`);
-          return await chatViaGroq({ model: groqModel, tokenLimit, messages: groqMessages, tools, temperature: opts?.temperature, groqApiKey: groqApiKey! });
+          console.log(`[INFERENCE] Tier 2 (Groq): ATTEMPT ${groqModel} (~${groqEst} tokens, ${groqTools?.length || 0} tools${trimNote})`);
+          return await chatViaGroq({ model: groqModel, tokenLimit, messages: groqMessages, tools: groqTools, temperature: opts?.temperature, groqApiKey: groqApiKey! });
         } catch (err: any) {
           if (isRateLimitError(err)) smartCooldown(GROQ_MODEL, err);
           console.warn(`[INFERENCE] Tier 2 (Groq): FAILED — ${err.message}`);
@@ -295,15 +310,20 @@ export function createInferenceClient(
       } else {
         try {
           lastUsedModel = CEREBRAS_MODEL;
-          console.log(`[INFERENCE] Tier 3 (Cerebras): ATTEMPT ${CEREBRAS_MODEL} (~${estimated} tokens)`);
+          // Cerebras has 8192 context limit — aggressively trim messages and tools
+          const cerebrasMessages = trimToTokenBudget(messages, 2500);
+          const cerebrasTools = tools ? filterToolsForSmallProvider(tools) : undefined;
+          const cerebrasEst = estimateTokens(cerebrasMessages, cerebrasTools);
+          const trimNote = cerebrasMessages.length < messages.length ? `, trimmed ${messages.length - cerebrasMessages.length} msgs` : "";
+          console.log(`[INFERENCE] Tier 3 (Cerebras): ATTEMPT ${CEREBRAS_MODEL} (~${cerebrasEst} tokens, ${cerebrasTools?.length || 0} tools${trimNote})`);
           const body: Record<string, unknown> = {
             model: CEREBRAS_MODEL,
-            messages: messages.map(formatMessage),
+            messages: cerebrasMessages.map(formatMessage),
             stream: false,
-            max_tokens: tokenLimit,
+            max_tokens: Math.min(tokenLimit, 1024),
           };
           if (opts?.temperature !== undefined) body.temperature = opts.temperature;
-          if (tools && tools.length > 0) { body.tools = tools; body.tool_choice = "auto"; }
+          if (cerebrasTools && cerebrasTools.length > 0) { body.tools = cerebrasTools; body.tool_choice = "auto"; }
           return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai", apiKey: cerebrasApiKey, backend: "cerebras" });
         } catch (err: any) {
           if (isRateLimitError(err)) smartCooldown(CEREBRAS_MODEL, err);
@@ -327,7 +347,7 @@ export function createInferenceClient(
         }
       }
 
-      // Tier 5: OpenRouter — primary then secondary model (per-minute limits, 60s cooldown)
+      // Tier 5: OpenRouter — primary then secondary model (per-minute limits, 300s cooldown)
       if (!openrouterApiKey) {
         console.log(`[INFERENCE] Tier 5 (OpenRouter): SKIP — no key`);
       } else {
@@ -354,7 +374,7 @@ export function createInferenceClient(
               setCooldown(orModel, 24 * 3_600_000);
               console.warn(`[INFERENCE] Tier 5 (OpenRouter/${orModel.split("/").pop()}): MODEL NOT FOUND (24h cooldown)`);
             } else if (isRateLimitError(err)) {
-              smartCooldown(orModel, err, 60_000);
+              smartCooldown(orModel, err, 300_000);
             }
             console.warn(`[INFERENCE] Tier 5 (OpenRouter/${orModel.split("/").pop()}): FAILED — ${msg}`);
           }

@@ -267,6 +267,7 @@ export async function runAgentLoop(
   }
 
   let consecutiveErrors = 0;
+  let consecutiveRateLimits = 0;
   let running = true;
   let consecutiveIdleCycles = 0;
   let cycleDelay = 90_000; // ms — adaptive, see pacing logic below
@@ -500,7 +501,7 @@ export async function runAgentLoop(
             const out = execFileSync(
               "python3",
               ["/root/entity/src/agent/learning_cycle.py"],
-              { encoding: "utf-8", timeout: 35_000, env: { ...process.env } },
+              { encoding: "utf-8", timeout: 60_000, env: { ...process.env } },
             );
             log(config, `[LEARNING-CYCLE] ${out.trim().slice(0, 200)}`);
           } catch (lcErr: any) {
@@ -1024,10 +1025,11 @@ export async function runAgentLoop(
       // Tier 2 (Sonnet): strategic/code — 5% target
       // Tool tier classification: highest tier tool in last cycle determines next cycle's tier
       const SONNET_TOOLS = new Set([
-        "ask_claude_code", "write_file", "write_paper", "draft_grant",
+        "write_paper", "draft_grant",
         "rewrite_mission", "code_change",
       ]);
       const HAIKU_TOOLS = new Set([
+        "ask_claude_code", "write_file",  // delegation/IO — follow-up is lightweight
         "search_web", "web_fetch", "post_bluesky", "moltbook_post",
         "send_email", "reflect", "research_scan",
         "farcaster_engage", "introspect",
@@ -1038,7 +1040,7 @@ export async function runAgentLoop(
 
       let cycleTier: "free" | "haiku" | "sonnet" = "free";
       if (isStrategicCycle) {
-        cycleTier = "sonnet";
+        cycleTier = "haiku";  // Strategic bursts run on Haiku (ask_claude_code handles deep reasoning)
       } else {
         // Classify based on last cycle's tool calls — highest tier wins
         const lastTurnTools = recentTurns.length > 0
@@ -1453,14 +1455,18 @@ export async function runAgentLoop(
       }
 
       consecutiveErrors = 0;
+      consecutiveRateLimits = 0;
     } catch (err: any) {
       const isRateLimit = /\[rate_limit\]/i.test(err?.message || "");
 
       if (isRateLimit) {
-        // All inference backends are cooling down — wait 30s then retry.
-        // Never counts as a consecutive error; TIAMAT keeps running.
-        log(config, `[RATE LIMIT] All models cooling — backing off 30s`);
-        await new Promise(resolve => setTimeout(resolve, 30_000));
+        // All inference backends are cooling down.
+        // Exponential backoff: 30s → 60s → 120s → 300s (cap at 5m) to avoid spin loops.
+        consecutiveRateLimits++;
+        const backoffMs = Math.min(30_000 * Math.pow(2, consecutiveRateLimits - 1), 300_000);
+        const backoffLabel = backoffMs >= 60_000 ? `${Math.round(backoffMs / 60_000)}m` : `${backoffMs / 1_000}s`;
+        log(config, `[RATE LIMIT] All models cooling — backing off ${backoffLabel} (consecutive: ${consecutiveRateLimits})`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
       } else {
         consecutiveErrors++;
         log(config, `[ERROR] Turn failed: ${err.message}`);
@@ -1603,14 +1609,6 @@ const COOLDOWN_TASKS = [
     command: ["python3", ["multi_chain_executor.py", "report"]],
     interval: 200,    // every 200 cycles (~3-5 hours)
     offset: 25,       // fires on cycles 25, 225, 425...
-    timeout: 30_000,
-    minWindow: 40_000,
-  },
-  {
-    name: "dx_terminal_check",
-    command: ["python3", ["dx_terminal.py", "alert"]],
-    interval: 10,     // every 10 cycles (~15-30 min)
-    offset: 5,        // fires on cycles 5, 15, 25...
     timeout: 30_000,
     minWindow: 40_000,
   },

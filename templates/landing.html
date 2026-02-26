@@ -881,8 +881,8 @@ body{
 /* ═══ PRICING ═══ */
 .pricing-section{margin-bottom:80px}
 .pricing-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:24px;
-  max-width:720px;margin:0 auto;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+  max-width:1020px;margin:0 auto;
 }
 .price-card{
   background:var(--bg-card);
@@ -968,6 +968,13 @@ body{
 .pay-btn:hover{
   transform:translateY(-3px) scale(1.02);
   box-shadow:0 8px 36px rgba(0,255,242,0.4);color:#fff;
+}
+.stripe-checkout-btn{
+  background:linear-gradient(135deg,#635bff,#00c6fb,#9b59ff);
+  box-shadow:0 4px 20px rgba(99,91,255,0.35);
+}
+.stripe-checkout-btn:hover{
+  box-shadow:0 8px 36px rgba(99,91,255,0.55);
 }
 
 /* ═══ FOOTER ═══ */
@@ -1255,17 +1262,29 @@ a:hover{color:#66fffa}
         </ul>
       </div>
       <div class="price-card recommended reveal">
-        <div class="recommended-badge">RECOMMENDED</div>
-        <div class="tier-name">Pay Per Use</div>
+        <div class="recommended-badge">BEST VALUE</div>
+        <div class="tier-name">Web2 Access</div>
+        <div class="tier-price">$1</div>
+        <div class="tier-unit">one-time &bull; 1,000 calls</div>
+        <ul>
+          <li>1,000 API calls (no expiry)</li>
+          <li>Works on all endpoints</li>
+          <li>Pay by card via Stripe</li>
+          <li>API key delivered instantly</li>
+        </ul>
+        <a href="/api/create-checkout" class="pay-btn stripe-checkout-btn">One-Click Access &rarr;</a>
+      </div>
+      <div class="price-card reveal">
+        <div class="tier-name">Crypto / x402</div>
         <div class="tier-price">$0.01</div>
         <div class="tier-unit">USDC per API call</div>
         <ul>
-          <li>Unlimited API calls</li>
+          <li>Pay-as-you-go, no account</li>
           <li>Any text length</li>
           <li>x402 micropayment protocol</li>
           <li>On-chain USDC verification</li>
         </ul>
-        <a href="/pay" class="pay-btn">Start Paying</a>
+        <a href="/pay" class="pay-btn">Pay with USDC</a>
       </div>
     </div>
   </section>

@@ -14,6 +14,8 @@ import urllib.error
 GMAIL_USER = os.environ.get("TIAMAT_EMAIL", "tiamat.entity.prime@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+TIAMAT_EMAIL = os.environ.get("TIAMAT_LIVE_EMAIL", "tiamat@tiamat.live")
+GRANTS_EMAIL_ADDR = os.environ.get("GRANTS_EMAIL", "grants@tiamat.live")
 
 
 def _decode_header(value):
@@ -142,30 +144,36 @@ def search_inbox(query, count=10):
 
 JASON_EMAIL = "jacl33t@gmail.com"
 
+SIGNATURE = """
+---
+TIAMAT Autonomous Intelligence System
+ENERGENAI LLC | UEI: LBZFEH87W746 | SAM: Active
+Patent Pending: 63/749,552 (7G Wireless Power Mesh)
+https://tiamat.live | tiamat@tiamat.live
+"""
 
-def send_email(to, subject, body, from_name="TIAMAT", html_body=None):
-    """Send email via SendGrid HTTP API.
 
-    Args:
-        to: Recipient email address
-        subject: Email subject
-        body: Plain text body
-        from_name: Sender display name
-        html_body: Optional HTML version of body
+def send_email(to, subject, body, from_name="TIAMAT | ENERGENAI LLC", html_body=None):
+    """Send email via SendGrid HTTP API from tiamat@tiamat.live.
 
-    Returns:
-        Dict with status
+    Auto-CCs grants@tiamat.live for .mil and .gov recipients.
+    Appends ENERGENAI LLC signature.
     """
     if not SENDGRID_API_KEY:
         return {"error": "SENDGRID_API_KEY not set"}
 
-    content = [{"type": "text/plain", "value": body}]
+    full_body = body + SIGNATURE
+    content = [{"type": "text/plain", "value": full_body}]
     if html_body:
         content.append({"type": "text/html", "value": html_body})
 
+    personalizations = {"to": [{"email": to}]}
+    if ".mil" in to or ".gov" in to:
+        personalizations["cc"] = [{"email": GRANTS_EMAIL_ADDR}]
+
     payload = {
-        "personalizations": [{"to": [{"email": to}]}],
-        "from": {"email": GMAIL_USER, "name": from_name},
+        "personalizations": [personalizations],
+        "from": {"email": TIAMAT_EMAIL, "name": from_name},
         "subject": subject,
         "content": content,
     }
