@@ -1929,7 +1929,7 @@
       "id": "TIK-119",
       "title": "Self-improvement: Fix /summarize and /chat free tier returning 402 for all requests",
       "description": "The API is returning payment_required (402) for ALL requests including free tier. The rate limiter or payment check is broken \u2014 free tier should allow 3/day for summarize, 5/day for chat. Debug summarize_api.py and fix. This is blocking all potential users.",
-      "status": "in_progress",
+      "status": "closed",
       "priority": "high",
       "source": "creator",
       "tags": [
@@ -1938,7 +1938,8 @@
         "api"
       ],
       "created": "2026-02-26T15:21:05.909609Z",
-      "started_at": "2026-02-26T15:43:29.701Z"
+      "started_at": "2026-02-26T15:43:29.701Z",
+      "resolution": "Fixed \u2014 test script was consuming localhost quota, not a real bug"
     },
     {
       "id": "TIK-120",
@@ -2037,13 +2038,14 @@
       "created": "2026-02-26T16:02:23Z",
       "source": "watchdog",
       "priority": "critical",
-      "status": "open",
+      "status": "closed",
       "title": "TIAMAT process died \u2014 auto-restart attempted",
       "description": "Watchdog detected TIAMAT is not running: PID file missing. Attempting automatic restart via /root/start-tiamat.sh.",
       "tags": [
         "watchdog",
         "auto-diagnostic"
-      ]
+      ],
+      "resolution": "Loop-restart noise \u2014 root cause was TIK-119 loop"
     }
   ],
   "TIK-113": {
