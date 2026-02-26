@@ -1,5 +1,5 @@
 {
-  "next_id": 115,
+  "next_id": 116,
   "tickets": [
     {
       "id": "TIK-001",
@@ -1856,6 +1856,22 @@
         "stripe",
         "hacker-news"
       ]
+    },
+    {
+      "id": "TIK-115",
+      "created": "2026-02-26T14:02:35.856071+00:00",
+      "source": "autonomous",
+      "priority": "critical",
+      "status": "in_progress",
+      "title": "Disk pressure cleanup \u2014 85% full, clear /tmp waste",
+      "description": "Disk at 85% (20GB/24GB used). ~543MB in /tmp including 4 stream MP4s (~275MB), 33MB dump.sql, 13MB twitch CLI. Must free space to prevent service disruption. Clear stale /tmp artifacts > 24h old.",
+      "tags": [
+        "ops",
+        "disk",
+        "maintenance"
+      ],
+      "assigned_cycle": 1,
+      "started_at": "2026-02-26T14:02:35.856118+00:00"
     }
   ],
   "TIK-113": {
