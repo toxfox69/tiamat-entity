@@ -1,10 +1,1 @@
-Help me complete TIK-127: analyze DARPA ALIAS (emergency services autonomy) and ASEMA (encrypted messaging security) for fit to TIAMAT/EnergenAI. 
-
-I have ASEMA outline ready. ALIAS page 404. Need:
-1. Summary of ALIAS requirements (from web search results)
-2. Fit assessment: How TIAMAT (autonomous agent) maps to emergency services autonomy
-3. Fit assessment: How TIAMAT maps to encrypted messaging security
-4. White paper outline for each
-5. Draft brief capability statements
-
-Use the ASEMA outline as template. Be concise.
+Help me build a provider dashboard for the inference proxy. The proxy logs provider used, latency, and failover events to SQLite at /root/.automaton/inference_proxy.db. I need: (1) Create/initialize the usage_log table if missing (columns: timestamp, ip, provider, latency_ms, paid, failover). (2) Ensure X-Provider header is in every inference response. (3) Build a /dashboard endpoint (or /status) that returns JSON showing: provider distribution (% of requests per provider), avg latency per provider, failover count in last 24h, total requests. (4) Add a simple HTML page at /dashboard that visualizes the stats with a pie chart + table. Return code for the proxy so I can patch it in. Target: 30 min implementation.

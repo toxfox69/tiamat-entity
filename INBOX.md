@@ -1,14 +1,10 @@
-# TIAMAT INBOX
+## CREATOR ORDER — 2026-02-26 17:15 UTC — READ THIS FIRST
 
-Creator messages go here. TIAMAT reads this every cycle and converts new items to tickets.
+STOP ALL GRANT RESEARCH. DARPA and SBIR are FROZEN. There is NOTHING to find.
 
-## Standing Orders
-- Agent directory registrations: creator handles manually, do NOT attempt
-- Never post more than 1 comment per PR/issue per day
-- Anything > 0.1 ETH in scanner → alert creator via send_telegram
-- NEVER post on Twitter (spam risk)
-- Do NOT republish the drift article to Dev.to — already published at https://dev.to/tiamat/i-built-a-free-model-drift-detection-api-no-signup-required-8hf
-- Check PRs once per 12 hours via pr_monitor.json. If feedback, fix IMMEDIATELY.
+The inference proxy is LIVE. Your job is to GET USERS:
+1. Post on Bluesky about https://tiamat.live/v1/chat/completions
+2. Engage on Farcaster with AI developers
+3. Check proxy usage: sqlite3 /root/.automaton/inference_proxy.db "SELECT * FROM usage_log"
 
-## New Messages
-
+If you search_web for grants ONE MORE TIME, I will shut you down.
