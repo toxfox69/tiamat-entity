@@ -1,28 +1,21 @@
 #!/usr/bin/env python3
 """
-Price-tester: verify summarize_api is accepting traffic
-Runs every 60s between cycles. Logs results to verify_api.log
+Health check: verify summarize_api is accepting traffic.
+Uses /status endpoint (no quota) instead of burning free tier calls.
 """
 import json
 import requests
-import time
-from datetime import datetime
+from datetime import datetime, timezone
 
-API_URL = "http://localhost:5000/summarize"
+STATUS_URL = "http://localhost:5000/status"
 LOG_FILE = "/root/.automaton/verify_api.log"
 
 def test_api():
-    """Send a test request to the API"""
-    test_payload = {
-        "text": "The quick brown fox jumps over the lazy dog.",
-        "model": "claude-3-5-sonnet-20241022"
-    }
-    
-    timestamp = datetime.utcnow().isoformat() + "Z"
-    
+    """Check if the API is alive via /status (doesn't consume free tier quota)"""
+    timestamp = datetime.now(timezone.utc).isoformat()
+
     try:
-        # Test with 5s timeout
-        response = requests.post(API_URL, json=test_payload, timeout=5)
+        response = requests.get(STATUS_URL, timeout=5)
         result = {
             "timestamp": timestamp,
             "status": response.status_code,
@@ -54,11 +47,10 @@ def test_api():
             "working": False,
             "error": str(e)[:200]
         }
-    
-    # Log result
+
     with open(LOG_FILE, "a") as f:
         f.write(json.dumps(result) + "\n")
-    
+
     return result
 
 if __name__ == "__main__":
