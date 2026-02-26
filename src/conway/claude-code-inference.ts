@@ -26,9 +26,9 @@ import type {
   InferenceToolDefinition,
 } from "../types.js";
 
-const DEFAULT_TIMEOUT_MS = 120_000; // 2 min — tested at 3-25s typical
+const DEFAULT_TIMEOUT_MS = 180_000; // 3 min — sonnet can be slow with large prompts
 const MODEL_NAME = "claude-code-cli";
-const CLI_MODEL = "sonnet"; // Sonnet for speed; both free on subscription
+const CLI_MODEL = "haiku"; // Haiku for fast thinking; Sonnet was timing out at 120s
 
 /**
  * Essential tools to include with full parameter definitions.
@@ -50,6 +50,7 @@ const NESTING_ENV_VARS = [
   "CLAUDE_CODE_ENTRYPOINT",
   "CLAUDE_CODE_SESSION_ID",
   "ANTHROPIC_AI_TOOL_USE_SESSION_ID",
+  "ANTHROPIC_API_KEY",  // Force CLI to use subscription, not the (depleted) API key
 ];
 
 // ─── CLI Execution ──────────────────────────────────────────────
