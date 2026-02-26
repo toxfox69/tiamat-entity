@@ -334,5 +334,6 @@ export function createClaudeCodeInferenceClient(
   const setLowComputeMode = (_enabled: boolean): void => {};
   const getDefaultModel = (): string => MODEL_NAME;
 
-  return { chat, setLowComputeMode, getDefaultModel };
+  const getShortestCooldownMs = (): number => 0;
+  return { chat, setLowComputeMode, getDefaultModel, getShortestCooldownMs };
 }

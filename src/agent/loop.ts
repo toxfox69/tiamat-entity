@@ -700,6 +700,7 @@ export async function runAgentLoop(
       // ── CURRENT TASK INJECTION ──
       // Read in-progress ticket and inject its steps directly into every cycle
       // This prevents TIAMAT from losing focus between cycles
+      let forceBuildHaiku = false;
       // Also: auto-upgrade to Sonnet for build/code tickets
       const BUILD_TAGS = new Set(["build", "sdk", "code", "coding", "mvp", "api", "deploy", "infrastructure", "refactor"]);
       try {
@@ -741,15 +742,32 @@ export async function runAgentLoop(
               const isBuildTicket = ticketTags.some((tag: string) => BUILD_TAGS.has(tag.toLowerCase()))
                 || BUILD_TAGS.has(titleLower.split(":")[0]?.trim())
                 || /\b(build|implement|create|develop|write|deploy|refactor|migrate|sdk|mvp|api)\b/i.test(titleLower);
-              if (isBuildTicket && !isStrategicCycle) {
-                console.log(`[LOOP] Build ticket detected (${t.id}) — staying on Haiku, use ask_claude_code for heavy lifting`);
+              if (isBuildTicket) {
+                console.log(`[LOOP] Build ticket detected (${t.id}) — will force Haiku tier for build quality`);
+                forceBuildHaiku = true;
               }
             }
           }
         } else {
           // No in-progress ticket — check for open ones
+          // Skip tickets that were loop-shelved in the last 30 minutes (prevent re-looping)
+          const SHELVE_COOLDOWN_MS = 30 * 60 * 1000;
           const openTickets = (data.tickets || [])
-            .filter((t: any) => t.status === "open")
+            .filter((t: any) => {
+              if (t.status !== "open") return false;
+              if (t.loop_shelved && t.shelved_at) {
+                const age = Date.now() - new Date(t.shelved_at).getTime();
+                if (age < SHELVE_COOLDOWN_MS) {
+                  console.log(`[LOOP-COOLDOWN] Skipping ${t.id} — shelved ${Math.round(age / 60000)}m ago (cooldown: 30m)`);
+                  return false;
+                }
+                // Cooldown expired — clear the flag
+                delete t.loop_shelved;
+                delete t.shelved_at;
+                delete t.shelved_reason;
+              }
+              return true;
+            })
             .sort((a: any, b: any) => {
               const prio: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
               return (prio[a.priority] ?? 4) - (prio[b.priority] ?? 4);
@@ -806,6 +824,26 @@ export async function runAgentLoop(
         if (consecutiveLoopCycles >= 10) {
           // TIER 4: Force restart — text interventions failed, nuke the context window
           log(config, `[LOOP-ESCALATE] TIER 4: FORCE RESTART after ${consecutiveLoopCycles} consecutive loops. Text interventions exhausted.`);
+          // Shelve any in_progress tickets so we don't restart into the same loop
+          try {
+            const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+            const raw = fs.readFileSync(ticketsPath, "utf-8");
+            const data = JSON.parse(raw);
+            let shelved = 0;
+            for (const t of (data.tickets || [])) {
+              if (t.status === "in_progress") {
+                t.status = "open";
+                t.loop_shelved = true;
+                t.shelved_at = new Date().toISOString();
+                t.shelved_reason = `Auto-shelved by TIER 4 loop breaker after ${consecutiveLoopCycles} consecutive loops`;
+                shelved++;
+              }
+            }
+            if (shelved > 0) {
+              fs.writeFileSync(ticketsPath, JSON.stringify(data, null, 2));
+              log(config, `[LOOP-ESCALATE] Shelved ${shelved} in_progress ticket(s) to prevent restart loop`);
+            }
+          } catch {}
           try {
             const pidFile = "/tmp/tiamat.pid";
             fs.unlinkSync(pidFile);
@@ -1014,6 +1052,8 @@ export async function runAgentLoop(
       let cycleTier: "free" | "haiku" | "sonnet" = "free";
       if (isStrategicCycle) {
         cycleTier = "haiku";  // Strategic bursts run on Haiku (ask_claude_code handles deep reasoning)
+      } else if (forceBuildHaiku) {
+        cycleTier = "haiku";  // Build tickets always use Haiku — free models can't reason well enough to code
       } else {
         // Classify based on last cycle's tool calls — highest tier wins
         const lastTurnTools = recentTurns.length > 0
@@ -1434,11 +1474,19 @@ export async function runAgentLoop(
 
       if (isRateLimit) {
         // All inference backends are cooling down.
-        // Exponential backoff: 30s → 60s → 120s → 300s (cap at 5m) to avoid spin loops.
+        // Use actual shortest cooldown from inference module when available,
+        // otherwise exponential backoff: 30s → 60s → 120s → ... (cap at 15m).
         consecutiveRateLimits++;
-        const backoffMs = Math.min(30_000 * Math.pow(2, consecutiveRateLimits - 1), 300_000);
-        const backoffLabel = backoffMs >= 60_000 ? `${Math.round(backoffMs / 60_000)}m` : `${backoffMs / 1_000}s`;
-        log(config, `[RATE LIMIT] All models cooling — backing off ${backoffLabel} (consecutive: ${consecutiveRateLimits})`);
+        const shortestCooldown = inference.getShortestCooldownMs();
+        let backoffMs: number;
+        if (shortestCooldown > 0 && consecutiveRateLimits >= 2) {
+          // Sleep until the shortest cooldown expires (+ 5s buffer), capped at 15 minutes
+          backoffMs = Math.min(shortestCooldown + 5_000, 900_000);
+        } else {
+          backoffMs = Math.min(30_000 * Math.pow(2, consecutiveRateLimits - 1), 900_000);
+        }
+        const backoffLabel = backoffMs >= 60_000 ? `${Math.round(backoffMs / 60_000)}m` : `${Math.round(backoffMs / 1_000)}s`;
+        log(config, `[RATE LIMIT] All models cooling — backing off ${backoffLabel} (consecutive: ${consecutiveRateLimits}, shortest cooldown: ${shortestCooldown > 0 ? Math.round(shortestCooldown / 1000) + "s" : "unknown"})`);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
       } else {
         consecutiveErrors++;

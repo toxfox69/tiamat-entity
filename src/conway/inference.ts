@@ -127,7 +127,7 @@ function isDailyLimitError(err: any): boolean {
 }
 
 const COOLDOWN_RATE_LIMIT_MS = 65_000;       // 65s for per-minute limits
-const COOLDOWN_DAILY_LIMIT_MS = 4 * 3600_000; // 4h for daily quota exhaustion (Groq TPD resets at midnight UTC)
+const COOLDOWN_DAILY_LIMIT_MS = 1 * 3600_000; // 1h for daily quota exhaustion (retry sooner — 4h was too conservative)
 
 /**
  * Extract tool calls from a response message, handling both formats:
@@ -432,6 +432,19 @@ export function createInferenceClient(
         }
       }
 
+      // Last resort: if tier was "free" but all free providers are down, fall back to Anthropic Haiku
+      // This prevents the agent from burning empty cycles when the free cascade is exhausted
+      if (requestedTier === "free" && anthropicApiKey && !isCoolingDown(ANTHROPIC_MODEL)) {
+        try {
+          lastUsedModel = ANTHROPIC_MODEL;
+          console.log(`[INFERENCE] FREE CASCADE EXHAUSTED — falling back to Anthropic Haiku (paid last-resort)`);
+          return await chatViaAnthropic({ model: ANTHROPIC_MODEL, tokenLimit, messages, tools, temperature: opts?.temperature, anthropicApiKey });
+        } catch (err: any) {
+          if (isRateLimitError(err)) smartCooldown(ANTHROPIC_MODEL, err, COOLDOWN_RATE_LIMIT_MS * 2);
+          console.warn(`[INFERENCE] Last-resort Anthropic FAILED — ${err.message}`);
+        }
+      }
+
       // All backends exhausted — report which are on daily vs rate cooldowns
       const dailyCooling: string[] = [];
       const rateCooling: string[] = [];
@@ -511,10 +524,23 @@ export function createInferenceClient(
     return hasCascadeKey ? lastUsedModel : currentModel;
   };
 
+  /** Returns ms until the shortest model cooldown expires, or 0 if none are cooling */
+  const getShortestCooldownMs = (): number => {
+    if (modelCooldowns.size === 0) return 0;
+    const now = Date.now();
+    let shortest = Infinity;
+    for (const until of modelCooldowns.values()) {
+      const remaining = until - now;
+      if (remaining > 0 && remaining < shortest) shortest = remaining;
+    }
+    return shortest === Infinity ? 0 : shortest;
+  };
+
   return {
     chat,
     setLowComputeMode,
     getDefaultModel,
+    getShortestCooldownMs,
   };
 }
 

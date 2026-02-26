@@ -538,6 +538,7 @@ export interface InferenceClient {
   ): Promise<InferenceResponse>;
   setLowComputeMode(enabled: boolean): void;
   getDefaultModel(): string;
+  getShortestCooldownMs(): number;
 }
 
 // ─── Skills ─────────────────────────────────────────────────────

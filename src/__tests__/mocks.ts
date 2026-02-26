@@ -61,6 +61,7 @@ export class MockInferenceClient implements InferenceClient {
     this.lowComputeMode = enabled;
   }
 
+  getShortestCooldownMs(): number { return 0; }
   getDefaultModel(): string {
     return "mock-model";
   }
