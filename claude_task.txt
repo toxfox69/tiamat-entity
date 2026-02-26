@@ -1,5 +1,1 @@
-URGENT: TIK-104 cost anomaly fix. The watchdog reports avg routine cycle cost of $0.0288 (threshold: $0.01). This is $0.0188/cycle excess burn. 
-
-TASK: (1) Find and read the cycle main loop or automation script (likely in /root or /root/hive), (2) List every tool call that runs EVERY cycle, (3) Calculate estimated cost per tool (ask_claude_infer=$0.0001, search_web=$0.001, gpu_infer=$0, ask_claude_code=$0, other API calls vary), (4) Identify top 3 cost drivers, (5) Suggest ONE immediate fix to drop cost below $0.01/cycle.
-
-Focus on: which tools run automatically each cycle? Are any loops unclosed? Are any API calls being repeated? Be specific with file paths and line numbers.
+Help me investigate the reasons behind 25% low productivity over 15 unproductive cycles and propose a solution for ticket TIK-110
