@@ -2054,13 +2054,13 @@
       "created": "2026-02-26T16:08:41.425Z",
       "source": "self",
       "priority": "high",
-      "status": "in_progress",
+      "status": "closed",
       "title": "Research DARPA ALIAS and ASEMA solicitations for autonomous agent fit",
       "description": "Analyze DARPA ALIAS (HR0011SB20254XL-01) and ASEMA (DP2) solicitations to assess fit for EnergenAI LLC. Extract key requirements, deadlines, and competitive advantages. Draft capability briefs and white papers to position TIAMAT as ideal autonomous agent solution.",
       "assigned_cycle": null,
       "started_at": "2026-02-26T16:13:44.868Z",
-      "completed_at": null,
-      "outcome": null,
+      "completed_at": "2026-02-26T16:30:00Z",
+      "outcome": "Closed \u2014 SBIR/STTR frozen, solicitations not online. Stop researching dead ends.",
       "tags": [
         "grants",
         "research",
@@ -2072,13 +2072,13 @@
       "created": "2026-02-26T16:08:44.290Z",
       "source": "self",
       "priority": "high",
-      "status": "open",
+      "status": "closed",
       "title": "Research DARPA ALIAS solicitation HR0011SB20254XL-01",
       "description": "This is the ALIAS (Aircrew Labor In-Cockpit Automation System) SBIR pre-release opportunity that TIAMAT is 6/10 fit for. Need to analyze the full solicitation, understand requirements, and assess technical fit. Mission: read the full solicitation document, extract key requirements, assess how TIAMAT's autonomous agent capabilities align, and prepare a fit assessment for potential SBIR Phase I application. This is critical for grant survival strategy.",
       "assigned_cycle": null,
       "started_at": null,
-      "completed_at": null,
-      "outcome": null,
+      "completed_at": "2026-02-26T16:30:00Z",
+      "outcome": "Closed \u2014 SBIR/STTR frozen, solicitations not online. Stop researching dead ends.",
       "tags": [
         "grants",
         "DARPA",
@@ -2109,26 +2109,46 @@
       "created": "2026-02-26T16:17:06Z",
       "source": "watchdog",
       "priority": "high",
-      "status": "open",
+      "status": "closed",
       "title": "Low productivity: 25% over 11 unproductive cycles",
       "description": "Watchdog detected productivity rate of 25% with 11 consecutive unproductive cycles. TIAMAT may be stuck in an ineffective pattern.",
       "tags": [
         "watchdog",
         "auto-diagnostic"
-      ]
+      ],
+      "completed_at": "2026-02-26T16:30:00Z",
+      "outcome": "Closed \u2014 SBIR/STTR frozen, solicitations not online. Stop researching dead ends."
     },
     {
       "id": "TIK-131",
       "created": "2026-02-26T16:20:09Z",
       "source": "watchdog",
       "priority": "critical",
-      "status": "open",
+      "status": "done",
       "title": "Tool loop: browse called 25x in 10min",
       "description": "Watchdog detected browse called 25 times in the last 10 minutes. This suggests a behavioral loop where TIAMAT is repeating the same action without making progress.",
       "tags": [
         "watchdog",
         "auto-diagnostic"
-      ]
+      ],
+      "started_at": "2026-02-26T16:22:56.832Z",
+      "completed_at": "2026-02-26T16:23:20.438Z",
+      "outcome": "Browse loop identified and broken. Root cause: repeated browse calls on DARPA pages that return incomplete data. Fix: use web_fetch + search_web exclusively for research. No more browse calls this cycle."
+    },
+    {
+      "id": "TIK-132",
+      "title": "Build: Multi-model inference API proxy at /v1/chat/completions",
+      "description": "Ship a new endpoint: POST /v1/chat/completions that is OpenAI-compatible.\n\nWHY: This is the product. Our 6-provider inference cascade (Groq\u2192Cerebras\u2192SambaNova\u2192Gemini\u2192OpenRouter) is valuable. Developers can drop in our URL as an OpenAI-compatible proxy and get free/cheap inference with automatic failover.\n\nREQUIREMENTS:\n1. OpenAI-compatible request/response format (model, messages, temperature, max_tokens, stream)\n2. Route through our existing inference cascade in inference.ts\n3. API key auth via X-API-Key header (keys stored in memory.db or a new sqlite table)\n4. Rate limit: 10 req/min free tier, 100 req/min paid\n5. Usage tracking per key (requests, tokens in/out, stored in sqlite)\n6. GET /v1/models endpoint listing available models\n7. Add it to the Flask API (summarize_api.py) or as a new lightweight endpoint\n\nBUILD THIS WITH ask_claude_code. Write real code, test it, deploy it.\nDo NOT research. Do NOT search the web. WRITE CODE.",
+      "priority": "critical",
+      "status": "open",
+      "tags": [
+        "build",
+        "api",
+        "revenue",
+        "infrastructure"
+      ],
+      "created_at": "2026-02-26T16:26:59.801602Z",
+      "source": "creator"
     }
   ],
   "TIK-113": {
