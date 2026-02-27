@@ -101,6 +101,11 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   />\s*.*loop\.ts/,
   />\s*.*tools\.ts/,
   />\s*.*system-prompt\.ts/,
+  // Live API protection — no shell splicing into the running API file
+  /cat\s+>>?\s+.*summarize_api\.py/,
+  /mv\s+.*summarize_api\.py/,
+  /sed\s+.*summarize_api\.py/,
+  />\s*.*summarize_api\.py/,
   // Credential harvesting
   /cat\s+.*\.ssh/,
   /cat\s+.*\.gnupg/,
