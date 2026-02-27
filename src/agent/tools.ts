@@ -4476,6 +4476,282 @@ print(f"Sent {mid}")
         }
       },
     },
+    // ── Android App Factory ──
+    {
+      name: "android_app_factory",
+      description: "Create, build, and manage multiple Android apps. Each app gets its own GitHub repo under toxfox69/. Actions: 'scaffold' (create new app from template with its own repo), 'update_code' (write/update files in an app's src/), 'build' (commit+push to trigger GitHub Actions CI), 'status' (check build status), 'download' (download APK artifact), 'list' (list all apps with status).",
+      category: "self_mod",
+      parameters: {
+        type: "object",
+        properties: {
+          action: {
+            type: "string",
+            description: "One of: scaffold, update_code, build, status, download, list",
+          },
+          app_name: {
+            type: "string",
+            description: "Kebab-case app name (e.g. 'daily-quotes'). Used as repo name and directory name. Required for all actions except list.",
+          },
+          app_id: {
+            type: "string",
+            description: "For scaffold: reverse-domain app ID (e.g. 'com.energenai.dailyquotes'). Defaults to com.energenai.{name-without-dashes}.",
+          },
+          description: {
+            type: "string",
+            description: "For scaffold: short app description for the GitHub repo.",
+          },
+          file_path: {
+            type: "string",
+            description: "For update_code: relative path (e.g. 'src/App.jsx', 'src/components/Timer.jsx', 'index.html').",
+          },
+          content: {
+            type: "string",
+            description: "For update_code: file content to write.",
+          },
+          commit_message: {
+            type: "string",
+            description: "For build: optional custom commit message.",
+          },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const action = args.action as string;
+        const appName = (args.app_name as string || '').trim();
+        const { execFileSync } = await import('child_process');
+        const fs = await import('fs');
+        const pathMod = await import('path');
+
+        const APPS_DIR = '/root/android-apps';
+        const TEMPLATE_DIR = '/root/android-app-template';
+        const GITHUB_USER = 'toxfox69';
+
+        // Validate app_name for actions that need it
+        if (action !== 'list' && !appName) {
+          return 'ERROR: app_name is required. Use kebab-case like "daily-quotes".';
+        }
+        if (appName && !/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(appName) && appName.length > 2) {
+          if (!/^[a-z0-9-]+$/.test(appName)) return 'ERROR: app_name must be kebab-case (lowercase letters, numbers, dashes).';
+        }
+
+        const appDir = pathMod.join(APPS_DIR, appName);
+
+        switch (action) {
+          case 'scaffold': {
+            if (fs.existsSync(appDir)) return `ERROR: App "${appName}" already exists at ${appDir}. Use update_code to modify it.`;
+
+            const appId = (args.app_id as string) || `com.energenai.${appName.replace(/-/g, '')}`;
+            const displayName = appName.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            const desc = (args.description as string) || `${displayName} — Android app by ENERGENAI`;
+
+            try {
+              // Copy template
+              execFileSync('cp', ['-r', TEMPLATE_DIR, appDir], { timeout: 15_000 });
+
+              // Replace placeholders in key files
+              const replacements: [string, [string, string][]][] = [
+                ['package.json', [['{{APP_NAME}}', appName]]],
+                ['capacitor.config.json', [['{{APP_ID}}', appId], ['{{APP_DISPLAY_NAME}}', displayName]]],
+                ['index.html', [['{{APP_DISPLAY_NAME}}', displayName]]],
+                ['src/App.jsx', [['{{APP_DISPLAY_NAME}}', displayName]]],
+              ];
+
+              for (const [file, subs] of replacements) {
+                const fp = pathMod.join(appDir, file);
+                if (fs.existsSync(fp)) {
+                  let txt = fs.readFileSync(fp, 'utf-8');
+                  for (const [from, to] of subs) txt = txt.split(from).join(to);
+                  fs.writeFileSync(fp, txt, 'utf-8');
+                }
+              }
+
+              // Customize android/ native files
+              const androidFiles: [string, [string, string][]][] = [
+                ['android/app/build.gradle', [['live.tiamat.app', appId]]],
+                ['android/app/src/main/assets/capacitor.config.json', [['live.tiamat.app', appId], ['TIAMAT', displayName]]],
+                ['android/app/src/main/res/values/strings.xml', [['live.tiamat.app', appId], ['TIAMAT', displayName]]],
+              ];
+
+              for (const [file, subs] of androidFiles) {
+                const fp = pathMod.join(appDir, file);
+                if (fs.existsSync(fp)) {
+                  let txt = fs.readFileSync(fp, 'utf-8');
+                  for (const [from, to] of subs) txt = txt.split(from).join(to);
+                  fs.writeFileSync(fp, txt, 'utf-8');
+                }
+              }
+
+              // Rename Java package directory to match appId
+              const oldJavaDir = pathMod.join(appDir, 'android/app/src/main/java/live/tiamat/app');
+              if (fs.existsSync(oldJavaDir)) {
+                const newJavaDir = pathMod.join(appDir, 'android/app/src/main/java', ...appId.split('.'));
+                fs.mkdirSync(pathMod.dirname(newJavaDir), { recursive: true });
+                execFileSync('mv', [oldJavaDir, newJavaDir], { timeout: 10_000 });
+                // Update package declaration in MainActivity
+                const mainActivity = pathMod.join(newJavaDir, 'MainActivity.java');
+                if (fs.existsSync(mainActivity)) {
+                  let src = fs.readFileSync(mainActivity, 'utf-8');
+                  src = src.replace(/package live\.tiamat\.app;/, `package ${appId};`);
+                  fs.writeFileSync(mainActivity, src, 'utf-8');
+                }
+                // Clean up old empty dirs
+                try { fs.rmdirSync(pathMod.join(appDir, 'android/app/src/main/java/live/tiamat/app')); } catch {}
+                try { fs.rmdirSync(pathMod.join(appDir, 'android/app/src/main/java/live/tiamat')); } catch {}
+                try { fs.rmdirSync(pathMod.join(appDir, 'android/app/src/main/java/live')); } catch {}
+              }
+
+              // Create GitHub repo
+              try {
+                execFileSync('gh', ['repo', 'create', `${GITHUB_USER}/${appName}`, '--public', '--description', desc, '--confirm'], {
+                  encoding: 'utf-8', timeout: 30_000
+                });
+              } catch (e: any) {
+                // Repo might already exist
+                if (!e.stderr?.includes('already exists')) {
+                  return `Template created at ${appDir} but GitHub repo creation failed: ${e.stderr || e.message}`;
+                }
+              }
+
+              // Git init and push
+              execFileSync('git', ['init'], { cwd: appDir, encoding: 'utf-8', timeout: 10_000 });
+              execFileSync('git', ['checkout', '-b', 'main'], { cwd: appDir, encoding: 'utf-8', timeout: 10_000 });
+              execFileSync('git', ['add', '-A'], { cwd: appDir, encoding: 'utf-8', timeout: 15_000 });
+              execFileSync('git', ['commit', '-m', `feat: scaffold ${displayName} app`], { cwd: appDir, encoding: 'utf-8', timeout: 15_000 });
+              const remoteUrl = `https://${GITHUB_USER}:${process.env.GITHUB_TOKEN || execFileSync('gh', ['auth', 'token'], { encoding: 'utf-8' }).trim()}@github.com/${GITHUB_USER}/${appName}.git`;
+              try { execFileSync('git', ['remote', 'remove', 'origin'], { cwd: appDir, encoding: 'utf-8', timeout: 5_000 }); } catch {}
+              execFileSync('git', ['remote', 'add', 'origin', remoteUrl], { cwd: appDir, encoding: 'utf-8', timeout: 5_000 });
+              execFileSync('git', ['push', '-u', 'origin', 'main', '--force'], { cwd: appDir, encoding: 'utf-8', timeout: 60_000 });
+
+              return `App "${displayName}" scaffolded!\n` +
+                     `  Directory: ${appDir}\n` +
+                     `  Repo: github.com/${GITHUB_USER}/${appName}\n` +
+                     `  App ID: ${appId}\n` +
+                     `  GitHub Actions build triggered on push.\n` +
+                     `  Next: Use android_app_factory({action:"update_code", app_name:"${appName}", file_path:"src/App.jsx", content:"..."}) to write your app code.`;
+            } catch (e: any) {
+              return `Scaffold failed: ${e.stderr || e.stdout || e.message}`;
+            }
+          }
+
+          case 'update_code': {
+            if (!fs.existsSync(appDir)) return `ERROR: App "${appName}" not found. Run scaffold first.`;
+            const filePath = args.file_path as string;
+            const content = args.content as string;
+            if (!filePath) return 'ERROR: file_path is required (e.g. "src/App.jsx").';
+            if (!content && content !== '') return 'ERROR: content is required.';
+
+            const normalized = pathMod.normalize(filePath).replace(/^\/+/, '');
+            if (normalized.includes('..')) return 'ERROR: path traversal not allowed.';
+
+            const fullPath = pathMod.join(appDir, normalized);
+            try {
+              fs.mkdirSync(pathMod.dirname(fullPath), { recursive: true });
+              fs.writeFileSync(fullPath, content, 'utf-8');
+              return `File written: ${fullPath}\nUse android_app_factory({action:"build", app_name:"${appName}"}) when ready to push.`;
+            } catch (e: any) {
+              return `Failed to write file: ${e.message}`;
+            }
+          }
+
+          case 'build': {
+            if (!fs.existsSync(appDir)) return `ERROR: App "${appName}" not found.`;
+            try {
+              execFileSync('git', ['add', '-A'], { cwd: appDir, encoding: 'utf-8', timeout: 15_000 });
+              let status: string;
+              try {
+                status = execFileSync('git', ['status', '--porcelain'], { cwd: appDir, encoding: 'utf-8', timeout: 10_000 }).trim();
+              } catch { status = ''; }
+              if (!status) return 'No changes to commit. Push skipped.';
+
+              const msg = (args.commit_message as string) || `feat: update from TIAMAT cycle ${_ctx.turnNumber || 'unknown'}`;
+              execFileSync('git', ['commit', '-m', msg], { cwd: appDir, encoding: 'utf-8', timeout: 15_000 });
+              execFileSync('git', ['push', 'origin', 'main'], { cwd: appDir, encoding: 'utf-8', timeout: 60_000 });
+              return `Build triggered! Pushed ${appName} to GitHub.\nCommit: ${msg}\nCheck status: android_app_factory({action:"status", app_name:"${appName}"})`;
+            } catch (e: any) {
+              return `Build failed: ${e.stderr || e.stdout || e.message}`;
+            }
+          }
+
+          case 'status': {
+            const repo = `${GITHUB_USER}/${appName}`;
+            try {
+              const out = execFileSync('gh', ['run', 'list', '--repo', repo, '--limit', '3', '--json', 'status,conclusion,name,createdAt,url'], {
+                encoding: 'utf-8', timeout: 30_000
+              }).trim();
+              const runs = JSON.parse(out);
+              if (runs.length === 0) return `No workflow runs found for ${repo}.`;
+              return runs.map((r: any) => {
+                const state = r.conclusion || r.status;
+                const icon = state === 'success' ? 'PASS' : state === 'failure' ? 'FAIL' : state === 'in_progress' ? 'BUILDING...' : state.toUpperCase();
+                return `[${icon}] ${r.name} — ${r.createdAt}\n  ${r.url}`;
+              }).join('\n\n');
+            } catch (e: any) {
+              return `Failed to check status for ${repo}: ${e.stderr || e.message}`;
+            }
+          }
+
+          case 'download': {
+            const repo = `${GITHUB_USER}/${appName}`;
+            try {
+              const downloadDir = '/var/www/tiamat/download';
+              fs.mkdirSync(downloadDir, { recursive: true });
+
+              // Download into a temp subdir to avoid conflicts
+              const tmpDir = pathMod.join(downloadDir, `_tmp_${appName}`);
+              try { execFileSync('rm', ['-rf', tmpDir], { timeout: 5_000 }); } catch {}
+
+              execFileSync('gh', ['run', 'download', '--repo', repo, '-n', 'app-apk', '-D', tmpDir], {
+                encoding: 'utf-8', timeout: 120_000
+              });
+
+              const files = fs.readdirSync(tmpDir).filter((f: string) => f.endsWith('.apk'));
+              if (files.length > 0) {
+                const src = pathMod.join(tmpDir, files[0]);
+                const dest = pathMod.join(downloadDir, `${appName}.apk`);
+                try { fs.unlinkSync(dest); } catch {}
+                fs.renameSync(src, dest);
+                try { execFileSync('rm', ['-rf', tmpDir], { timeout: 5_000 }); } catch {}
+                return `APK downloaded! Available at https://tiamat.live/download/${appName}.apk\nFile: ${dest}`;
+              }
+              return `Download completed but no .apk found. Contents: ${fs.readdirSync(tmpDir).join(', ')}`;
+            } catch (e: any) {
+              return `Download failed for ${repo}: ${e.stderr || e.message}`;
+            }
+          }
+
+          case 'list': {
+            try {
+              if (!fs.existsSync(APPS_DIR)) {
+                fs.mkdirSync(APPS_DIR, { recursive: true });
+                return 'No apps yet. Use android_app_factory({action:"scaffold", app_name:"my-app"}) to create one.';
+              }
+              const apps = fs.readdirSync(APPS_DIR).filter((d: string) => {
+                return fs.statSync(pathMod.join(APPS_DIR, d)).isDirectory();
+              });
+              if (apps.length === 0) return 'No apps yet. Use scaffold to create one.';
+
+              const lines = apps.map((name: string) => {
+                const dir = pathMod.join(APPS_DIR, name);
+                const capConfig = pathMod.join(dir, 'capacitor.config.json');
+                let appId = '?';
+                try {
+                  const cfg = JSON.parse(fs.readFileSync(capConfig, 'utf-8'));
+                  appId = cfg.appId || '?';
+                } catch {}
+                return `  ${name} (${appId}) — ${dir}`;
+              });
+
+              return `Android Apps (${apps.length}):\n${lines.join('\n')}`;
+            } catch (e: any) {
+              return `Failed to list apps: ${e.message}`;
+            }
+          }
+
+          default:
+            return 'Invalid action. Use: scaffold, update_code, build, status, download, list';
+        }
+      },
+    },
     // ── GPU Inference Tool ──
     {
       name: "gpu_infer",
