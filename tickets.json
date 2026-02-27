@@ -1,5 +1,5 @@
 {
-  "next_id": 240,
+  "next_id": 242,
   "tickets": [
     {
       "id": "TIK-001",
@@ -3990,6 +3990,34 @@
         "auto-diagnostic"
       ],
       "started_at": "2026-02-27T09:55:26.853Z"
+    },
+    {
+      "id": "TIK-240",
+      "created": "2026-02-27T10:05:46Z",
+      "source": "watchdog",
+      "priority": "critical",
+      "status": "in_progress",
+      "title": "Tool loop: exec called 31x in 10min",
+      "description": "Watchdog detected exec called 31 times in the last 10 minutes. This suggests a behavioral loop where TIAMAT is repeating the same action without making progress.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ],
+      "started_at": "2026-02-27T10:26:25.676Z"
+    },
+    {
+      "id": "TIK-241",
+      "created": "2026-02-27T10:18:29Z",
+      "source": "watchdog",
+      "priority": "critical",
+      "status": "in_progress",
+      "title": "TIAMAT process died — auto-restart attempted",
+      "description": "Watchdog detected TIAMAT is not running: PID 1674143 not running. Attempting automatic restart via /root/start-tiamat.sh.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ],
+      "started_at": "2026-02-27T10:40:30.186Z"
     }
   ],
   "TIK-113": {
