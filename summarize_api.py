@@ -1359,10 +1359,11 @@ def _thought_stats():
         for row in rows:
             parts = row.split(",")
             if len(parts) < 8: continue
-            ts, cyc, _m, inp, cache_r, _cw, _o, cost = parts[:8]
+            ts, cyc, mdl, inp, cache_r, _cw, _o, cost = parts[:8]
             try:
                 cycle = cyc
-                if ts.startswith(today): daily_total += float(cost)
+                actual = 0.0 if "claude-code" in mdl else float(cost)
+                if ts.startswith(today): daily_total += actual
                 total_input += int(inp); total_cache_read += int(cache_r)
             except Exception: pass
         daily_cost = f"${daily_total:.3f}"
@@ -1414,7 +1415,7 @@ def api_body():
                         cycle_count = int(cyc)
                         last_model = mdl
                         last_label = label
-                        c = float(cost)
+                        c = 0.0 if "claude-code" in mdl else float(cost)
                         total_cost += c
                         if ts.startswith(today):
                             daily_cost += c
