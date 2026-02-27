@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1487,
-    "lastRun": "2026-02-27T12:27:24.781Z",
+    "runs": 1492,
+    "lastRun": "2026-02-27T12:36:57.271Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 2004,
-    "lastRun": "2026-02-27T12:27:29.201Z",
+    "runs": 2010,
+    "lastRun": "2026-02-27T12:37:49.017Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 1480,
-    "lastRun": "2026-02-27T12:27:28.744Z",
-    "lastResult": "[2026-02-27T12:27:28.663444+00:00] API Status: 200, Working: True\n"
+    "runs": 1486,
+    "lastRun": "2026-02-27T12:37:48.516Z",
+    "lastResult": "[2026-02-27T12:37:48.432087+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,9 +35,9 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 1481,
-    "lastRun": "2026-02-27T12:27:29.114Z",
-    "lastResult": "[2026-02-27T12:27:29.036008+00:00] API Status: 200, Working: True\n"
+    "runs": 1487,
+    "lastRun": "2026-02-27T12:37:48.917Z",
+    "lastResult": "[2026-02-27T12:37:48.831379+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "crypto_automa",
@@ -45,9 +45,9 @@
     "timeout": 90000,
     "description": "Monitor USDC/ETH treasury balances across all chains. Alert + auto-rebalance if below thresholds.",
     "enabled": true,
-    "runs": 112,
-    "lastRun": "2026-02-27T12:26:30.287Z",
-    "lastResult": "[crypto_automa] Last checked 545s ago — next check in 54s. Skipping.\n"
+    "runs": 114,
+    "lastRun": "2026-02-27T12:36:49.427Z",
+    "lastResult": "[crypto_automa] Last checked 283s ago — next check in 316s. Skipping.\n"
   },
   {
     "name": "gpu_health_check",
@@ -55,8 +55,8 @@
     "timeout": 30000,
     "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
     "enabled": true,
-    "runs": 327,
-    "lastRun": "2026-02-27T12:27:28.378Z",
+    "runs": 333,
+    "lastRun": "2026-02-27T12:37:48.151Z",
     "lastResult": "[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Attempting SSH restart...\n[GPU RESTART] ssh: connect to host 213.192.2.118 port 40080: Connection refused\n[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Server started but health check still failing\n"
   },
   {
@@ -65,8 +65,8 @@
     "timeout": 10000,
     "description": "Search arxiv every 24h for papers on AI agents, emergence, economics. Log findings to /root/hive/knowledge/ for use in posts.",
     "enabled": true,
-    "runs": 666,
-    "lastRun": "2026-02-27T12:27:29.928Z",
+    "runs": 672,
+    "lastRun": "2026-02-27T12:37:49.734Z",
     "lastResult": "[OK] Daily research search completed\n"
   },
   {
@@ -75,9 +75,9 @@
     "timeout": 60000,
     "description": "Every ~4 cycles: search Semantic Scholar/ArXiv for recent AI papers, call claude --print ONCE to analyze + extract insight + write Bluesky post, save knowledge to /root/hive/knowledge/, queue post to pending_posts.json. Replaces gpu_infer timeouts.",
     "enabled": true,
-    "runs": 123,
-    "lastRun": "2026-02-27T12:27:16.883Z",
-    "lastResult": "{\"error\": \"claude failed: claude --print timed out after 45s\", \"topic\": \"agentic AI autonomous decision-making\", \"timing\": {\"search\": 1.4}}\n"
+    "runs": 127,
+    "lastRun": "2026-02-27T12:37:44.356Z",
+    "lastResult": "{\"error\": \"claude failed: claude --print timed out after 45s\", \"topic\": \"AI agent memory retrieval long-context\", \"timing\": {\"search\": 1.7}}\n"
   },
   {
     "name": "bluesky_cooldown_check",
