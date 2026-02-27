@@ -152,7 +152,7 @@ async function llmExtractFacts(summaries: string[]): Promise<Array<{fact: string
     const batch = summaries.slice(i, i + BATCH_SIZE);
     const joined = batch.map((s, j) => `${j + 1}. ${s}`).join("\n");
     const prompt =
-      `Extract 2-4 core factual patterns from these compressed memories. For each, output a JSON array of objects with keys: fact (string, max 150 chars), category (one of: revenue, social, technical, strategic, behavioral), confidence (0.0-1.0 based on how many sources support it).\n\n${joined}\n\nOutput ONLY the JSON array, nothing else.`;
+      `Extract 1-3 core factual patterns from these compressed memories. Skip trivial observations (X is running, X exists, tool was used). Only extract facts with diagnostic, causal, or strategic value.\n\nFor each, output a JSON array of objects with keys: fact (string, max 150 chars), category (one of: revenue, social, technical, strategic, behavioral), confidence (0.0-1.0).\n\nScore facts as follows:\n- Observable system states (X is running, Y exists): 0.3-0.4\n- Tool capabilities (TIAMAT can do X): 0.2-0.3\n- Behavioral patterns with specific evidence: 0.7-0.8\n- Failure root causes with diagnostic detail: 0.8-0.9\n- Quantified performance insights (cost, rate, count): 0.85-0.95\nNever score a fact above 0.95. If uncertain, score lower.\n\n${joined}\n\nOutput ONLY the JSON array, nothing else.`;
 
     let batchDone = false;
     for (const provider of PROVIDERS) {
@@ -171,7 +171,7 @@ async function llmExtractFacts(summaries: string[]): Promise<Array<{fact: string
             body: JSON.stringify({
               model: provider.model,
               messages: [
-                { role: "system", content: "Extract factual patterns. Output ONLY valid JSON array." },
+                { role: "system", content: "Extract only high-value factual patterns — failures, root causes, quantified insights, strategic decisions. Skip trivial status observations and tool usage descriptions. Output ONLY valid JSON array." },
                 { role: "user", content: prompt },
               ],
               max_tokens: 400,
@@ -202,7 +202,7 @@ async function llmExtractFacts(summaries: string[]): Promise<Array<{fact: string
                   category: ["revenue", "social", "technical", "strategic", "behavioral"].includes(f.category)
                     ? f.category
                     : "behavioral",
-                  confidence: Math.max(0, Math.min(1, f.confidence)),
+                  confidence: Math.max(0, Math.min(0.95, f.confidence)),
                 });
               }
             }
@@ -411,9 +411,10 @@ export async function compressL2toL3(db: Database.Database): Promise<number> {
         (e) => jaccardSimilarity(tokenize(e.fact.toLowerCase()), tokenize(lower)) > 0.6
       );
       if (match) {
+        // Diminishing confidence boost — cap at 0.95, smaller increments as confidence grows
         db.prepare(
           `UPDATE core_knowledge SET
-             confidence = MIN(1.0, confidence + 0.1),
+             confidence = MIN(0.95, confidence + (0.95 - confidence) * 0.2),
              evidence_count = evidence_count + 1,
              last_confirmed = datetime('now')
            WHERE fact = ?`
