@@ -30,6 +30,18 @@ jobs:
         working-directory: apps/daily-motivationals
         run: flutter pub get
 
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > apps/daily-motivationals/android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > apps/daily-motivationals/android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
       - name: Build APK
         working-directory: apps/daily-motivationals
         run: flutter build apk --release
