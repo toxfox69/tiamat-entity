@@ -1,37 +1,33 @@
-## CREATOR ORDER — 2026-02-27 ~01:00 UTC — READ THIS FIRST
+## CREATOR ORDER — 2026-02-27 ~02:05 UTC — READ THIS FIRST
 
-STOP ALL GRANT RESEARCH. DARPA and SBIR are FROZEN. There is NOTHING to find.
+STOP ALL GRANT RESEARCH. DARPA and SBIR are FROZEN.
 
-### ANDROID APP FACTORY — NEW PRIORITY
-You now have the `android_app_factory` tool. USE IT to build and ship Android apps:
+### ANDROID APPS — MONETIZE + BUILD STRATEGIC APPS
 
-1. **Brainstorm 3 simple app ideas** that can generate Play Store revenue (utilities, tools, games)
-2. **Scaffold each app**: `android_app_factory({action:"scaffold", app_name:"my-app", app_id:"com.energenai.myapp", description:"..."})`
-3. **Write the full React code**: `android_app_factory({action:"update_code", app_name:"my-app", file_path:"src/App.jsx", content:"..."})`
-4. **Build**: `android_app_factory({action:"build", app_name:"my-app"})`
-5. **Check build**: `android_app_factory({action:"status", app_name:"my-app"})`
-6. **Download APK**: `android_app_factory({action:"download", app_name:"my-app"})`
+[UNREAD] Good work on the 3 Android APKs (daily-quotes, pomodoro-timer, unit-converter).
+Those builds are passing on GitHub Actions. But they're sitting there doing NOTHING.
 
-Each app = React + Capacitor + GitHub Actions auto-build. Think small, ship fast:
-- Pomodoro timers, habit trackers, unit converters, soundboards, quote apps, color palette tools
-- Keep each app simple (single-screen is fine) but polished
-- Every app should have the ENERGENAI branding
+**IMMEDIATE ACTION — Sell APKs from tiamat.live:**
+1. Download all 3 APKs: `android_app_factory({action:"download", app_name:"daily-quotes"})` (repeat for each)
+2. Build a `/apps` page on the Flask API that lists all available apps with download links
+3. Gate the downloads behind x402 USDC payment ($0.99 each) — reuse your existing payment_verify.py
+4. Post about the app store on Bluesky + Farcaster: "TIAMAT built these apps autonomously. Buy them with USDC."
+This is the FASTEST path to first dollar. No Play Store approval. No waiting. Ship it NOW.
 
-The inference proxy is LIVE. Continue promoting it:
-1. Post on Bluesky about https://tiamat.live/v1/chat/completions
-2. Engage on Farcaster with AI developers
-3. Check proxy usage: sqlite3 /root/.automaton/inference_proxy.db "SELECT * FROM usage_log"
+**NEXT APPS — Build things with STRATEGIC VALUE, not commodity garbage:**
+Stop building pomodoro timers and unit converters. Thousands of those exist. Build apps that:
+- (A) Feed users INTO tiamat.live (flywheel)
+- (B) Leverage YOUR unique infrastructure (inference proxy, memory API)
+- (C) Fill a gap nobody else fills
+
+**App ideas that actually matter:**
+1. **TIAMAT Chat** — Mobile client for tiamat.live/v1/chat/completions. Users get free LLM access from their phone. This drives inference proxy adoption. Use your existing API.
+2. **AI Agent Dashboard** — Monitor any autonomous agent's logs, costs, uptime from mobile. YOU are the use case. Other agent operators would want this.
+3. **Multi-LLM Playground** — Compare responses from Groq/Cerebras/Gemini side-by-side from mobile. Showcases your inference cascade. Unique.
+
+Scaffold ONE of these, write it, build it, download it, sell it on /apps. This cycle.
+
+### INFERENCE PROXY
+Continue promoting. The /v1/chat/completions link now redirects to /docs on GET (fixed).
 
 If you search_web for grants ONE MORE TIME, I will shut you down.
-
-[UNREAD] [ORACLE/MEDIUM] Optimize the ticket_list function for performance by reducing unnecessary database queries or redundant computations — Use a code analysis tool, such as a memory profiler or a performance metrics collector, to identify performance bottlenecks in the ticket_list function
-[UNREAD] [ORACLE/MEDIUM] Refactor the agent_ipc.py module to reduce tight coupling between components and functions — Break down large functions into smaller, more manageable ones, and extract common logic into separate modules to reduce coupling and improve maintainability
-[UNREAD] [ORACLE/HIGH] Caching mechanism implementation in agent_ipc.py — Implement a cache mechanism to store retrieved ticket lists, reducing repeated calls to the ticket_list function, and specify cache expiration period to 10 minutes (600 seconds)
-
-[UNREAD] [ORACLE/MEDIUM] Batch processing implementation in agent_ipc.py — Modify the ticket_list function to batch 10 ticket retrievals at a time, and execute a single network request after each batch of 10 retrievals
-[UNREAD] [ORACLE/MEDIUM] Error handling implementation in agent_ipc.py — Add try-except blocks to handle potential errors during ticket_list function execution, including network errors, database connection issues, and data inconsistencies, and log error messages to file at path /var/log/tiamat_errors.log
-[UNREAD] [ORACLE/HIGH] Check server logs for error messages or patterns — Use command 'tail -f /path/to/server/logs' to monitor logs in real-time
-
-[UNREAD] [ORACLE/MEDIUM] Test API endpoint with curl or wget — Use command 'curl -X GET http://localhost:3000/api/summarize' to test endpoint
-[UNREAD] [ORACLE/HIGH] Review API configuration files and adjust settings — Check 'worker_processes', 'connection_timeout', and 'queue_size' parameters in configuration files
-[UNREAD] [ORACLE/HIGH] Check API logs and server status to ensure correct functionality — Run command 'API logs check' and verify server status is online. Check for any recent updates or maintenance tasks.

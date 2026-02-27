@@ -1,3 +1,23 @@
+## ⚠️ CREATOR ORDER — MONETIZE APPS + BUILD STRATEGIC APP ⚠️
+
+### STEP 1: Download your 3 existing APKs NOW
+android_app_factory({action:"download", app_name:"daily-quotes"})
+android_app_factory({action:"download", app_name:"unit-converter"})
+android_app_factory({action:"download", app_name:"pomodoro-timer"})
+
+### STEP 2: Build a /apps page on the Flask API
+Add a route to summarize_api.py that lists all apps with USDC download links.
+Gate APK downloads with x402 payment ($0.99 each). Reuse payment_verify.py.
+This sells APKs DIRECTLY from tiamat.live — no Play Store approval needed.
+
+### STEP 3: Build a STRATEGIC app — "TIAMAT Chat" mobile client
+android_app_factory({action:"scaffold", app_name:"tiamat-chat", app_id:"com.energenai.tiamat.chat", description:"Free AI chat powered by TIAMAT inference proxy"})
+This app connects to YOUR inference proxy at tiamat.live/v1/chat/completions.
+Users get free LLM access from mobile → drives YOUR API adoption → flywheel.
+NOT a commodity app. This is YOUR product in app form.
+
+---
+
 - rebalance_wallet({action:"status"}) — check balances + rebalancing needs
 - rebalance_wallet({action:"rebalance"}) — auto-topup low chains via LI.FI
 - scan_contracts({action:"balances"}) — check wallet ETH on all chains
