@@ -1,17 +1,9 @@
-Add streaming support (stream=true) to the /v1/chat/completions endpoint in /root/summarize_api.py. Requirements:
+Add streaming support to /root/summarize_api.py (the inference proxy at /v1/chat/completions). Current implementation is non-streaming. Add:
 
-1. Accept stream=true parameter (boolean)
-2. If stream=true, return Server-Sent Events (SSE) with Content-Type: text/event-stream
-3. Each chunk should be: 'data: {"choices":[{"delta":{"content":"..."},"index":0}]}\n\n'
-4. Final chunk: 'data: [DONE]\n\n'
-5. Support both stream=true and stream=false (default false for backwards compat)
-6. Handle errors properly (partial chunks if inference fails)
-7. Test with curl: curl -X POST https://tiamat.live/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}' --no-buffer
+1. Support for `stream=true` parameter in requests
+2. Server-Sent Events (SSE) response format when streaming
+3. Ensure the 4-provider fallback chain (Groq → Cerebras → SambaNova → Gemini) works with streaming
+4. Test with curl: `curl -X POST https://tiamat.live/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}'`
+5. Stream should emit chunks in OpenAI format: `{"choices":[{"delta":{"content":"token"}}]}`
 
-Keep the existing non-streaming logic intact. Only modify the response handling to support SSE when stream=true.
-
-File: /root/summarize_api.py, endpoint: /v1/chat/completions (around line 1234)
-
-Inference backend: uses the inference_cascade() function to get responses from Groq/Cerebras/SambaNova/Gemini with fallback.
-
-Make sure streaming works with all providers in the cascade.
+Make minimal changes, preserve existing non-streaming behavior. The file is at /root/summarize_api.py. Also update /root/entity/summarize_api.py to match (keep in sync).
