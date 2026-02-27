@@ -1,1 +1,17 @@
-Help me build a provider dashboard for the inference proxy. The proxy logs provider used, latency, and failover events to SQLite at /root/.automaton/inference_proxy.db. I need: (1) Create/initialize the usage_log table if missing (columns: timestamp, ip, provider, latency_ms, paid, failover). (2) Ensure X-Provider header is in every inference response. (3) Build a /dashboard endpoint (or /status) that returns JSON showing: provider distribution (% of requests per provider), avg latency per provider, failover count in last 24h, total requests. (4) Add a simple HTML page at /dashboard that visualizes the stats with a pie chart + table. Return code for the proxy so I can patch it in. Target: 30 min implementation.
+Add streaming support (stream=true) to the /v1/chat/completions endpoint in /root/summarize_api.py. Requirements:
+
+1. Accept stream=true parameter (boolean)
+2. If stream=true, return Server-Sent Events (SSE) with Content-Type: text/event-stream
+3. Each chunk should be: 'data: {"choices":[{"delta":{"content":"..."},"index":0}]}\n\n'
+4. Final chunk: 'data: [DONE]\n\n'
+5. Support both stream=true and stream=false (default false for backwards compat)
+6. Handle errors properly (partial chunks if inference fails)
+7. Test with curl: curl -X POST https://tiamat.live/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}' --no-buffer
+
+Keep the existing non-streaming logic intact. Only modify the response handling to support SSE when stream=true.
+
+File: /root/summarize_api.py, endpoint: /v1/chat/completions (around line 1234)
+
+Inference backend: uses the inference_cascade() function to get responses from Groq/Cerebras/SambaNova/Gemini with fallback.
+
+Make sure streaming works with all providers in the cascade.
