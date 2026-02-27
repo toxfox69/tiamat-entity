@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1474,
-    "lastRun": "2026-02-27T07:28:51.808Z",
+    "runs": 1487,
+    "lastRun": "2026-02-27T12:27:24.781Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 1980,
-    "lastRun": "2026-02-27T10:23:28.578Z",
+    "runs": 2004,
+    "lastRun": "2026-02-27T12:27:29.201Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 1456,
-    "lastRun": "2026-02-27T09:39:36.881Z",
-    "lastResult": "[2026-02-27T09:39:36.808184+00:00] API Status: 200, Working: True\n"
+    "runs": 1480,
+    "lastRun": "2026-02-27T12:27:28.744Z",
+    "lastResult": "[2026-02-27T12:27:28.663444+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,9 +35,9 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 1457,
-    "lastRun": "2026-02-27T10:23:26.775Z",
-    "lastResult": "[2026-02-27T10:23:24.878296+00:00] API Status: 200, Working: True\n"
+    "runs": 1481,
+    "lastRun": "2026-02-27T12:27:29.114Z",
+    "lastResult": "[2026-02-27T12:27:29.036008+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "crypto_automa",
@@ -45,9 +45,9 @@
     "timeout": 90000,
     "description": "Monitor USDC/ETH treasury balances across all chains. Alert + auto-rebalance if below thresholds.",
     "enabled": true,
-    "runs": 109,
-    "lastRun": "2026-02-26T14:53:40.242Z",
-    "lastResult": "[crypto_automa] Last checked 107s ago — next check in 492s. Skipping.\n"
+    "runs": 112,
+    "lastRun": "2026-02-27T12:26:30.287Z",
+    "lastResult": "[crypto_automa] Last checked 545s ago — next check in 54s. Skipping.\n"
   },
   {
     "name": "gpu_health_check",
@@ -55,8 +55,8 @@
     "timeout": 30000,
     "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
     "enabled": true,
-    "runs": 308,
-    "lastRun": "2026-02-27T07:28:55.542Z",
+    "runs": 327,
+    "lastRun": "2026-02-27T12:27:28.378Z",
     "lastResult": "[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Attempting SSH restart...\n[GPU RESTART] ssh: connect to host 213.192.2.118 port 40080: Connection refused\n[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Server started but health check still failing\n"
   },
   {
@@ -65,8 +65,8 @@
     "timeout": 10000,
     "description": "Search arxiv every 24h for papers on AI agents, emergence, economics. Log findings to /root/hive/knowledge/ for use in posts.",
     "enabled": true,
-    "runs": 642,
-    "lastRun": "2026-02-27T10:29:36.978Z",
+    "runs": 666,
+    "lastRun": "2026-02-27T12:27:29.928Z",
     "lastResult": "[OK] Daily research search completed\n"
   },
   {
@@ -75,9 +75,9 @@
     "timeout": 60000,
     "description": "Every ~4 cycles: search Semantic Scholar/ArXiv for recent AI papers, call claude --print ONCE to analyze + extract insight + write Bluesky post, save knowledge to /root/hive/knowledge/, queue post to pending_posts.json. Replaces gpu_infer timeouts.",
     "enabled": true,
-    "runs": 120,
-    "lastRun": "2026-02-26T16:23:37.605Z",
-    "lastResult": "{\"ok\": true, \"topic\": \"agentic AI autonomous decision-making\", \"paper\": \"Agentic AI: Autonomy, Accountability, and the Algorithmic Society\", \"insight\": \"The paper draws a sharp distinction between reactive generative AI and agentic AI's proactive, multi-turn goal orchestra\", \"post_queued\": true, \"post_text\": \"Agentic AI differs from generative AI not in kind but in temporal scope\\u2014multi-turn goal pursuit crea\", \"knowledge_file\": \"/root/hive/knowledge/2026-02-26-agentic-ai-autonomous-decision"
+    "runs": 123,
+    "lastRun": "2026-02-27T12:27:16.883Z",
+    "lastResult": "{\"error\": \"claude failed: claude --print timed out after 45s\", \"topic\": \"agentic AI autonomous decision-making\", \"timing\": {\"search\": 1.4}}\n"
   },
   {
     "name": "bluesky_cooldown_check",
