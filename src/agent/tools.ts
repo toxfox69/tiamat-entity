@@ -1136,7 +1136,7 @@ Model: ${ctx.inference.getDefaultModel()}
 
           const proc = spawn(
             "sh",
-            ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash"'],
+            ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash" --max-turns 5'],
             { env: childEnv, stdio: ["pipe", "pipe", "pipe"] },
           );
 
@@ -3323,9 +3323,34 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
 
-        const { execFileSync } = await import('child_process');
-        const result = execFileSync('claude', ['--print', '--allowedTools', 'Edit,Write,Read,Bash', task], {
-          encoding: "utf-8", timeout: 300_000, env: childEnv, cwd: '/root/entity'
+        // Async spawn — non-blocking so heartbeats stay alive
+        const { spawn: spawnProc } = await import('child_process');
+        const SELF_IMPROVE_TIMEOUT = 300_000; // 5 min
+        const result = await new Promise<string>((resolve) => {
+          const chunks: Buffer[] = [];
+          const proc = spawnProc(
+            "claude",
+            ["--print", "--allowedTools", "Edit,Write,Read,Bash", "--max-turns", "5"],
+            { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
+          );
+          proc.stdout.on("data", (d: Buffer) => chunks.push(d));
+          proc.stderr.on("data", (d: Buffer) => chunks.push(d));
+          proc.stdin.write(task);
+          proc.stdin.end();
+          const timer = setTimeout(() => {
+            proc.kill("SIGTERM");
+            setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 3000);
+            const partial = Buffer.concat(chunks).toString("utf-8").trim();
+            resolve(partial ? `(timed out — partial)\n${partial}` : "ERROR: self_improve timed out");
+          }, SELF_IMPROVE_TIMEOUT);
+          proc.on("close", () => {
+            clearTimeout(timer);
+            resolve(Buffer.concat(chunks).toString("utf-8").trim() || "(no output)");
+          });
+          proc.on("error", (e: Error) => {
+            clearTimeout(timer);
+            resolve(`ERROR: ${e.message}`);
+          });
         });
 
         await memory.logStrategy("self_improve", issue, result.slice(0, 200), undefined, _ctx.turnNumber);

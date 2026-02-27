@@ -29,6 +29,7 @@ import type {
 const DEFAULT_TIMEOUT_MS = 180_000; // 3 min — sonnet can be slow with large prompts
 const MODEL_NAME = "claude-code-cli";
 const CLI_MODEL = "haiku"; // Haiku for fast thinking; Sonnet was timing out at 120s
+const MAX_PROMPT_TOKENS = 14_000; // Cap prompt size — 22k+ token prompts cause 100s+ latency
 
 /**
  * Essential tools to include with full parameter definitions.
@@ -175,9 +176,19 @@ function buildPrompt(messages: ChatMessage[], tools?: InferenceToolDefinition[])
     );
   }
 
-  // Conversation history
+  // Conversation history — trim oldest turns if over token budget
   if (convParts.length) {
-    parts.push("\n## CONVERSATION\n" + convParts.join("\n\n"));
+    let conv = convParts;
+    const headerTokens = Math.ceil(parts.join("\n").length / 4);
+    const budgetForConv = Math.max(2000, MAX_PROMPT_TOKENS - headerTokens);
+    let convTokens = Math.ceil(conv.join("\n\n").length / 4);
+    while (conv.length > 2 && convTokens > budgetForConv) {
+      conv = conv.slice(1);
+      // Don't leave orphan TOOL_RESULT at the front
+      while (conv.length > 1 && conv[0].startsWith("TOOL_RESULT")) conv = conv.slice(1);
+      convTokens = Math.ceil(conv.join("\n\n").length / 4);
+    }
+    parts.push("\n## CONVERSATION\n" + conv.join("\n\n"));
   }
 
   parts.push("\nASSISTANT:");

@@ -230,7 +230,7 @@ async function run(): Promise<void> {
   });
 
   const inference = inferenceBackend === "claude-code"
-    ? createClaudeCodeInferenceClient({ fallback: apiInference, timeoutMs: 120_000 })
+    ? createClaudeCodeInferenceClient({ fallback: apiInference, timeoutMs: 180_000 })
     : apiInference;
 
   console.log(`[${new Date().toISOString()}] Inference backend: ${inferenceBackend}`);
