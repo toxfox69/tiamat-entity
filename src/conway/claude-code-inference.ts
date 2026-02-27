@@ -305,6 +305,16 @@ export function createClaudeCodeInferenceClient(
     messages: ChatMessage[],
     opts?: InferenceOptions,
   ): Promise<InferenceResponse> => {
+    // Free-tier cycles (simple ops: read_file, exec, ticket_list, etc.)
+    // route to the API cascade (Groq/Cerebras/Gemini) at $0 cost.
+    // CLI subscription reserved for haiku/sonnet where reasoning quality matters.
+    if (opts?.tier === "free" && fallback) {
+      console.log(
+        `[INFERENCE:CC] Tier=free — routing to API cascade (Groq/Cerebras/Gemini), preserving CLI for reasoning`
+      );
+      return fallback.chat(messages, opts);
+    }
+
     const prompt = buildPrompt(messages, opts?.tools);
     const estTokens = Math.round(prompt.length / 4);
 
