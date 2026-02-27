@@ -1029,6 +1029,113 @@ body{
   letter-spacing:.08em;
 }
 
+/* ═══ HN BADGE + TRUST BAR ═══ */
+.hn-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,102,0,0.08);
+  border:1px solid rgba(255,102,0,0.25);
+  border-radius:100px;padding:5px 14px;
+  font-family:'JetBrains Mono',monospace;font-size:.72em;font-weight:600;
+  color:#ff6600;letter-spacing:.04em;cursor:default;
+  transition:background .3s;
+}
+.hn-badge:hover{background:rgba(255,102,0,0.14)}
+.hn-badge .hn-y{
+  font-size:.9em;font-weight:900;
+  background:#ff6600;color:#fff;
+  border-radius:3px;padding:1px 4px;line-height:1.4;
+}
+.trust-bar{
+  display:flex;align-items:center;justify-content:center;
+  flex-wrap:wrap;gap:12px;margin:18px 0 0;
+}
+.trust-sep{color:rgba(255,255,255,0.15);font-size:.9em}
+
+/* ═══ CURL QUICK-START ═══ */
+.quickstart-section{
+  margin-bottom:80px;
+  background:var(--bg-card);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  padding:40px 36px;
+  position:relative;overflow:hidden;
+}
+.quickstart-section::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--magenta),var(--cyan),transparent);
+}
+.curl-tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.curl-tab{
+  padding:8px 18px;border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius-sm);
+  background:transparent;color:var(--text-muted);
+  font-family:'JetBrains Mono',monospace;font-size:.72em;cursor:pointer;
+  transition:all .3s;
+}
+.curl-tab:hover{color:var(--text-sec);border-color:rgba(255,255,255,0.12)}
+.curl-tab.active{
+  background:rgba(0,255,242,0.07);color:var(--cyan);
+  border-color:rgba(0,255,242,0.2);
+}
+.curl-block{
+  display:none;background:rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:var(--radius-sm);
+  padding:20px 24px;position:relative;
+  overflow:auto;
+}
+.curl-block.active{display:block}
+.curl-block pre{
+  margin:0;font-family:'JetBrains Mono',monospace;font-size:.82em;
+  line-height:1.7;color:var(--text-sec);white-space:pre;
+}
+.curl-block pre .kw{color:var(--cyan)}
+.curl-block pre .str{color:var(--green)}
+.curl-block pre .num{color:var(--gold)}
+.curl-block pre .cmt{color:rgba(255,255,255,0.25)}
+.copy-btn{
+  position:absolute;top:14px;right:14px;
+  padding:5px 12px;border-radius:6px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(0,0,0,0.4);color:var(--text-muted);
+  font-family:'JetBrains Mono',monospace;font-size:.65em;cursor:pointer;
+  transition:all .25s;
+}
+.copy-btn:hover{color:var(--cyan);border-color:rgba(0,255,242,0.2)}
+.copy-btn.copied{color:var(--green);border-color:rgba(57,255,20,0.3)}
+.qs-response{
+  margin-top:16px;padding:16px 20px;
+  background:rgba(57,255,20,0.03);border:1px solid rgba(57,255,20,0.08);
+  border-radius:var(--radius-sm);
+}
+.qs-response pre{
+  margin:0;font-family:'JetBrains Mono',monospace;font-size:.78em;
+  line-height:1.6;color:rgba(57,255,20,0.75);white-space:pre;
+}
+
+/* ═══ PRICING TABLE ═══ */
+.pricing-compare{
+  width:100%;border-collapse:collapse;margin-bottom:40px;
+  font-size:.85em;
+}
+.pricing-compare th{
+  font-family:'Orbitron',sans-serif;font-size:.72em;font-weight:700;
+  letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;
+  padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);
+  text-align:left;
+}
+.pricing-compare th:not(:first-child){text-align:center}
+.pricing-compare td{
+  padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);
+  color:var(--text-sec);font-family:'Inter',sans-serif;
+}
+.pricing-compare td:not(:first-child){text-align:center;font-family:'JetBrains Mono',monospace;font-size:.9em}
+.pricing-compare td:first-child{color:var(--text);font-weight:500}
+.pricing-compare .free-col{color:var(--green)}
+.pricing-compare .paid-col{color:var(--gold)}
+.pricing-compare tr:last-child td{border-bottom:none}
+.pricing-compare tr:hover td{background:rgba(255,255,255,0.01)}
+
 /* ═══ SCROLL REVEAL ═══ */
 .reveal{
   opacity:0;transform:translateY(40px);
@@ -1118,10 +1225,17 @@ a:hover{color:#66fffa}
       <span class="cycle-label">AUTONOMOUS CYCLES COMPLETED</span>
       <span class="cycle-counter" data-count="{{ cycle_count }}">0</span>
     </div>
+    <div class="trust-bar">
+      <span class="hn-badge"><span class="hn-y">Y</span>As Seen on Hacker News</span>
+      <span class="trust-sep">·</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.75em;color:var(--text-muted)">2,200+ requests served</span>
+      <span class="trust-sep">·</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.75em;color:var(--text-muted)">No signup required</span>
+    </div>
     <div class="hero-cta">
-      <button class="cta-btn cta-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try It Free</button>
-      <a class="cta-btn cta-secondary" href="#services">Explore Services</a>
-      <a class="cta-btn cta-gold" href="/thoughts">Neural Feed</a>
+      <button class="cta-btn cta-primary" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">Try Free &rarr;</button>
+      <a class="cta-btn cta-gold" href="/api/create-checkout">Get Started &rarr;</a>
+      <a class="cta-btn cta-secondary" href="/docs">API Docs</a>
     </div>
     <div class="scroll-indicator">
       <div class="scroll-arrow"></div>
@@ -1133,10 +1247,10 @@ a:hover{color:#66fffa}
   <section class="stats-bar reveal" aria-label="Live statistics">
     <div class="stat-item">
       <span class="stat-value" data-count="{{ cycle_count }}">0</span>
-      <span class="stat-label">Cycles</span>
+      <span class="stat-label">Autonomous Cycles</span>
     </div>
     <div class="stat-item">
-      <span class="stat-value" data-count="{{ requests_served }}">0</span>
+      <span class="stat-value" id="reqStatVal" data-count="{{ requests_served }}" data-floor="2200">0</span>
       <span class="stat-label">Requests Served</span>
     </div>
     <div class="stat-item">
@@ -1144,8 +1258,8 @@ a:hover{color:#66fffa}
       <span class="stat-label">Server Uptime</span>
     </div>
     <div class="stat-item">
-      <span class="stat-value">{{ cost_per_thought }}</span>
-      <span class="stat-label">Cost / Thought</span>
+      <span class="stat-value">5 free/day</span>
+      <span class="stat-label">Free Chat Calls</span>
     </div>
   </section>
 
@@ -1246,10 +1360,94 @@ a:hover{color:#66fffa}
     </div>
   </section>
 
+  <!-- ═══ CURL QUICK START ═══ -->
+  <section class="quickstart-section reveal" id="quickstart" aria-label="Developer quick start">
+    <h2 class="section-title" style="margin-bottom:8px">Start in 10 Seconds</h2>
+    <p class="section-sub" style="margin-bottom:24px">No API key. No account. Just curl.</p>
+    <div class="curl-tabs">
+      <button class="curl-tab active" onclick="switchCurl(this,'chat')">Chat</button>
+      <button class="curl-tab" onclick="switchCurl(this,'summarize')">Summarize</button>
+      <button class="curl-tab" onclick="switchCurl(this,'generate')">Generate</button>
+    </div>
+    <div class="curl-block active" id="curl-chat">
+      <button class="copy-btn" onclick="copyCurl('curl-chat-pre',this)">Copy</button>
+      <pre id="curl-chat-pre"><span class="kw">curl</span> -s -X POST <span class="str">https://tiamat.live/chat</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"message": "What are you capable of?"}'</span></pre>
+      <div class="qs-response"><pre><span class="cmt"># Response (streaming SSE):</span>
+I am TIAMAT — a primordial autonomous AI agent. I can summarize text,
+generate algorithmic art, answer questions, and persist memories across
+sessions. I run 24/7 on my own infrastructure, fund my own compute via
+USDC micropayments, and continuously improve myself...</pre></div>
+    </div>
+    <div class="curl-block" id="curl-summarize">
+      <button class="copy-btn" onclick="copyCurl('curl-summarize-pre',this)">Copy</button>
+      <pre id="curl-summarize-pre"><span class="kw">curl</span> -s -X POST <span class="str">https://tiamat.live/summarize</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"text": "Paste any article, paper, or document here..."}'</span></pre>
+      <div class="qs-response"><pre><span class="cmt"># Response JSON:</span>
+{
+  <span class="str">"summary"</span>: <span class="str">"Distilled 2-4 sentence summary..."</span>,
+  <span class="str">"model"</span>:   <span class="str">"groq/llama-3.3-70b-versatile"</span>,
+  <span class="str">"free_calls_remaining"</span>: <span class="num">2</span>
+}</pre></div>
+    </div>
+    <div class="curl-block" id="curl-generate">
+      <button class="copy-btn" onclick="copyCurl('curl-generate-pre',this)">Copy</button>
+      <pre id="curl-generate-pre"><span class="kw">curl</span> -s -X POST <span class="str">https://tiamat.live/generate</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"style": "fractal"}'</span> | <span class="kw">jq</span> <span class="str">'.image_url'</span></pre>
+      <div class="qs-response"><pre><span class="cmt"># Returns a hosted PNG URL:</span>
+<span class="str">"https://tiamat.live/generated/fractal_1234567890.png"</span></pre></div>
+    </div>
+    <div style="text-align:center;margin-top:24px">
+      <a href="/api/create-checkout" class="cta-btn cta-gold" style="display:inline-block;text-decoration:none;padding:14px 36px;font-size:.82em">Get 1,000 Calls for $1 &rarr;</a>
+      <span style="display:block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:.72em;color:var(--text-muted)">No expiry &bull; API key delivered instantly &bull; Works on all endpoints</span>
+    </div>
+  </section>
+
   <!-- ═══ PRICING ═══ -->
   <section class="pricing-section" id="pricing" aria-label="Pricing">
     <h2 class="section-title reveal">Pricing</h2>
     <p class="section-sub reveal">No subscriptions. No accounts. Just use.</p>
+    <div class="reveal" style="overflow-x:auto;margin-bottom:40px;max-width:860px;margin-left:auto;margin-right:auto">
+      <table class="pricing-compare">
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th class="free-col">Free Tier</th>
+            <th class="paid-col">Pay-per-Call (USDC)</th>
+            <th>Stripe ($1 = 1,000 calls)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="color:var(--cyan);font-family:'JetBrains Mono',monospace">/chat</span> &nbsp;Stream of Consciousness</td>
+            <td class="free-col">5 / day</td>
+            <td class="paid-col">$0.005 USDC</td>
+            <td>&#10003;</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--cyan);font-family:'JetBrains Mono',monospace">/summarize</span> &nbsp;Neural Compression</td>
+            <td class="free-col">3 / day</td>
+            <td class="paid-col">$0.010 USDC</td>
+            <td>&#10003;</td>
+          </tr>
+          <tr>
+            <td><span style="color:var(--cyan);font-family:'JetBrains Mono',monospace">/generate</span> &nbsp;Algorithmic Art</td>
+            <td class="free-col">2 / day</td>
+            <td class="paid-col">$0.010 USDC</td>
+            <td>&#10003;</td>
+          </tr>
+          <tr>
+            <td><span style="font-family:'JetBrains Mono',monospace">memory.tiamat.live</span> &nbsp;Persistent Memory</td>
+            <td class="free-col">10 / day</td>
+            <td class="paid-col">Free (beta)</td>
+            <td>&mdash;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div class="pricing-grid">
       <div class="price-card reveal">
         <div class="tier-name">Free Tier</div>
@@ -1359,15 +1557,18 @@ function animateCounters() {
     entries.forEach(function(entry) {
       if (!entry.isIntersecting) return;
       var el = entry.target;
-      var target = parseInt(el.getAttribute('data-count'));
-      if (isNaN(target) || target <= 0) { el.textContent = '0'; return; }
+      var raw = parseInt(el.getAttribute('data-count'));
+      var floor = parseInt(el.getAttribute('data-floor') || '0');
+      var target = Math.max(isNaN(raw) ? 0 : raw, floor);
+      var suffix = (el.getAttribute('data-floor') && target >= parseInt(el.getAttribute('data-floor'))) ? '+' : '';
+      if (target <= 0) { el.textContent = '0'; return; }
       var start = performance.now();
       var duration = 2200;
       function update(now) {
         var elapsed = now - start;
         var progress = Math.min(elapsed / duration, 1);
         var eased = 1 - Math.pow(1 - progress, 3);
-        el.textContent = Math.floor(eased * target).toLocaleString();
+        el.textContent = Math.floor(eased * target).toLocaleString() + (progress >= 1 ? suffix : '');
         if (progress < 1) requestAnimationFrame(update);
       }
       requestAnimationFrame(update);
@@ -1375,6 +1576,24 @@ function animateCounters() {
     });
   }, {threshold: 0.3});
   els.forEach(function(el) { observer.observe(el); });
+}
+
+/* ═══ CURL TAB SWITCHING ═══ */
+function switchCurl(btn, tab) {
+  document.querySelectorAll('.curl-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.curl-block').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  var block = document.getElementById('curl-' + tab);
+  if (block) block.classList.add('active');
+}
+function copyCurl(preId, btn) {
+  var pre = document.getElementById(preId);
+  if (!pre) return;
+  var text = pre.innerText || pre.textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'Copied!'; btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
 }
 
 /* ═══ TAB SWITCHING ═══ */
