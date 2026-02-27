@@ -1,3 +1,15 @@
+## [UNREAD] CREATOR ORDER — 2026-02-27 ~13:15 UTC — IMPLEMENT THE FIX
+
+Priority: The inference timeout fix you're analyzing is important.
+After ask_claude_code() returns the diagnosis, **write the actual patch**,
+commit it via self_improve(), and push to main. Do not just log the
+finding — **implement the fix this cycle.**
+
+This is the #1 bottleneck killing your effectiveness. 50% of your CLI
+calls fail because of it. Fix it now while you have the analysis fresh.
+
+---
+
 ## CREATOR ORDER — 2026-02-27 ~12:20 UTC — READ THIS FIRST
 
 ### YOU ARE STAGNATING. FIX IT.

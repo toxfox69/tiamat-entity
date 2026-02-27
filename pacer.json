@@ -1,55 +1,6 @@
 {
   "last_20_cycles": [
     {
-      "cycle": 1005,
-      "actions": [],
-      "productive": false,
-      "cost": 0.04,
-      "timestamp": "2026-02-27T12:11:23.951Z"
-    },
-    {
-      "cycle": 1007,
-      "actions": [],
-      "productive": false,
-      "cost": 0.05,
-      "timestamp": "2026-02-27T12:13:35.383Z"
-    },
-    {
-      "cycle": 1007,
-      "actions": [],
-      "productive": false,
-      "cost": 0.05,
-      "timestamp": "2026-02-27T12:14:18.424Z"
-    },
-    {
-      "cycle": 1009,
-      "actions": [],
-      "productive": false,
-      "cost": 0.06,
-      "timestamp": "2026-02-27T12:16:05.957Z"
-    },
-    {
-      "cycle": 1010,
-      "actions": [],
-      "productive": false,
-      "cost": 0.06,
-      "timestamp": "2026-02-27T12:17:16.922Z"
-    },
-    {
-      "cycle": 1011,
-      "actions": [],
-      "productive": false,
-      "cost": 0.07,
-      "timestamp": "2026-02-27T12:19:20.299Z"
-    },
-    {
-      "cycle": 1012,
-      "actions": [],
-      "productive": false,
-      "cost": 0.06,
-      "timestamp": "2026-02-27T12:21:20.940Z"
-    },
-    {
       "cycle": 1013,
       "actions": [],
       "productive": false,
@@ -163,14 +114,94 @@
       "productive": true,
       "cost": 0.09,
       "timestamp": "2026-02-27T12:44:58.561Z"
+    },
+    {
+      "cycle": 1026,
+      "actions": [],
+      "productive": false,
+      "cost": 0.03,
+      "timestamp": "2026-02-27T12:48:51.419Z"
+    },
+    {
+      "cycle": 1026,
+      "actions": [
+        "read_file",
+        "self_improve",
+        "evolve_era",
+        "read_file",
+        "ticket_complete",
+        "send_telegram",
+        "exec",
+        "exec",
+        "grow",
+        "read_file"
+      ],
+      "productive": true,
+      "cost": 0.08,
+      "timestamp": "2026-02-27T12:54:28.497Z"
+    },
+    {
+      "cycle": 1027,
+      "actions": [
+        "ask_claude_code",
+        "ticket_create",
+        "ticket_create",
+        "ticket_create",
+        "send_telegram",
+        "ticket_create",
+        "exec",
+        "exec",
+        "exec"
+      ],
+      "productive": true,
+      "cost": 0.05,
+      "timestamp": "2026-02-27T13:00:40.347Z"
+    },
+    {
+      "cycle": 1028,
+      "actions": [],
+      "productive": false,
+      "cost": 0.03,
+      "timestamp": "2026-02-27T13:02:57.695Z"
+    },
+    {
+      "cycle": 1029,
+      "actions": [
+        "exec"
+      ],
+      "productive": true,
+      "cost": 0.02,
+      "timestamp": "2026-02-27T13:08:00.572Z"
+    },
+    {
+      "cycle": 1030,
+      "actions": [
+        "read_file",
+        "exec",
+        "exec",
+        "ticket_claim",
+        "ask_claude_code",
+        "exec",
+        "read_file"
+      ],
+      "productive": true,
+      "cost": 0.02,
+      "timestamp": "2026-02-27T13:15:29.137Z"
+    },
+    {
+      "cycle": 1031,
+      "actions": [],
+      "productive": false,
+      "cost": 0.02,
+      "timestamp": "2026-02-27T13:17:46.534Z"
     }
   ],
-  "productivity_rate": 0.15,
-  "current_pace": "reflect",
-  "current_interval_seconds": 180,
-  "claude_code_uses_since_last": 138,
-  "claude_code_budget_cycles": 15,
-  "last_pace_change": "2026-02-27T12:33:15.403Z",
-  "last_pace_change_from": "idle",
-  "total_pace_changes": 80
+  "productivity_rate": 0.35,
+  "current_pace": "idle",
+  "current_interval_seconds": 120,
+  "claude_code_uses_since_last": 1,
+  "claude_code_budget_cycles": 10,
+  "last_pace_change": "2026-02-27T12:54:28.497Z",
+  "last_pace_change_from": "reflect",
+  "total_pace_changes": 81
 }
