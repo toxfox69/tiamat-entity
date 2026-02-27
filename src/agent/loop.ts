@@ -1120,8 +1120,8 @@ export async function runAgentLoop(
 
       // ── Inference Routing Log ──
       try {
-        const modelUsedForLog = inference.getDefaultModel();
-        const provider = modelUsedForLog.includes("claude") ? "anthropic"
+        const modelUsedForLog = response.model || inference.getDefaultModel();
+        const provider = modelUsedForLog.includes("claude") || modelUsedForLog.includes("code-cli") ? "anthropic"
           : modelUsedForLog.includes("llama") || modelUsedForLog.includes("groq") ? "groq"
           : modelUsedForLog.includes("gemini") ? "gemini"
           : modelUsedForLog.includes("cerebras") || modelUsedForLog.includes("gpt-oss") ? "cerebras"
