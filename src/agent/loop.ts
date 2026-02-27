@@ -534,6 +534,40 @@ export async function runAgentLoop(
         let memoryReflection = "";
         try { memoryReflection = await memory.reflect(); } catch {}
 
+        // System health check at the start of every REFLECT phase
+        if (burstPhase === 1) {
+          try {
+            const { execFileSync } = await import("child_process");
+            const healthReport = execFileSync("python3", ["/root/entity/src/agent/system_check.py"], {
+              encoding: "utf-8",
+              timeout: 30_000,
+            });
+            const parsed = JSON.parse(healthReport);
+            strategicSystemPrompt += `\n\n[SYSTEM HEALTH — ${parsed.overall?.toUpperCase() || "UNKNOWN"}]\n`;
+            if (parsed.warnings?.length) strategicSystemPrompt += `Warnings: ${parsed.warnings.join(", ")}\n`;
+            if (parsed.errors?.length) strategicSystemPrompt += `Errors: ${parsed.errors.join(", ")}\n`;
+            const routing = parsed.checks?.inference_routing;
+            if (routing) {
+              strategicSystemPrompt += `Routing: ${JSON.stringify(routing.last_100_cycles)} (free-tier: ${routing.free_tier_percentage}%)\n`;
+            }
+            const costs = parsed.checks?.costs;
+            if (costs) {
+              strategicSystemPrompt += `Costs: $${costs.last_50_cycles_cost_usd} last 50 cycles (avg $${costs.avg_cost_per_cycle}/cycle)\n`;
+            }
+            const mem = parsed.checks?.memory;
+            if (mem?.counts) {
+              strategicSystemPrompt += `Memory: ${JSON.stringify(mem.counts)}\n`;
+            }
+            const disk = parsed.checks?.disk;
+            if (disk) {
+              strategicSystemPrompt += `Disk: ${disk.use_pct} used (${disk.available} free)\n`;
+            }
+            console.log(`[SYSTEM CHECK] ${parsed.overall} — ${parsed.warnings?.length || 0} warnings, ${parsed.errors?.length || 0} errors`);
+          } catch (e: any) {
+            console.log(`[SYSTEM CHECK] Failed: ${e.message?.slice(0, 100)}`);
+          }
+        }
+
         // Auto-compress + prune during REFLECT phase
         if (burstPhase === 1) {
           try {

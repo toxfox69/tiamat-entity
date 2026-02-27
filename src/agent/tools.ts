@@ -1189,6 +1189,188 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Self-Modification: run_cascade ──
+    {
+      name: "run_cascade",
+      description: "Execute a multi-step Claude Code cascade where each session receives prior context. Use for complex tasks requiring diagnose → implement → verify sequences. Returns a structured summary of all steps.",
+      category: "self_mod" as ToolCategory,
+      dangerous: true,
+      parameters: {
+        type: "object",
+        properties: {
+          workflow_name: {
+            type: "string",
+            description: "Short identifier e.g. 'inference-timeout-fix'",
+          },
+          steps: {
+            type: "array",
+            description: "Ordered list of step objects",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string", description: "Step identifier e.g. 'diagnose'" },
+                prompt: { type: "string", description: "Full instruction for this Claude Code session" },
+                expects: { type: "string", description: "String a successful output must contain" },
+                max_retries: { type: "number", description: "Retry count if expects not met (default 1)" },
+              },
+              required: ["id", "prompt"],
+            },
+          },
+          context: {
+            type: "string",
+            description: "Initial context injected into step 1",
+          },
+        },
+        required: ["workflow_name", "steps"],
+      },
+      execute: async (args, _ctx) => {
+        const fs = await import("fs");
+        const { spawn } = await import("child_process");
+
+        const workflowName = args.workflow_name as string;
+        const steps = args.steps as Array<{
+          id: string;
+          prompt: string;
+          expects?: string;
+          max_retries?: number;
+        }>;
+        const initialContext = (args.context as string) || "";
+
+        if (!workflowName?.trim()) return "ERROR: workflow_name is required.";
+        if (!steps?.length) return "ERROR: steps array is required and must not be empty.";
+
+        const cascadeLog = `/root/.automaton/cascade_${workflowName}_${Date.now()}.log`;
+        const results: Array<{
+          step_id: string;
+          success: boolean;
+          output_preview: string;
+          attempts: number;
+        }> = [];
+        let rollingContext = initialContext;
+
+        // Strip nesting env vars for Claude Code subprocess
+        const childEnv = { ...process.env };
+        delete childEnv.CLAUDECODE;
+        delete childEnv.CLAUDE_CODE_ENTRYPOINT;
+        delete childEnv.CLAUDE_CODE_SESSION_ID;
+        delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
+
+        const STEP_TIMEOUT = 300_000; // 5 min per step
+
+        for (const step of steps) {
+          let attempt = 0;
+          const maxRetries = step.max_retries ?? 1;
+          let success = false;
+          let output = "";
+
+          while (attempt <= maxRetries) {
+            const fullPrompt = rollingContext
+              ? `PRIOR CONTEXT:\n${rollingContext}\n\n---\n\nYOUR TASK:\n${step.prompt}`
+              : step.prompt;
+
+            try {
+              output = await new Promise<string>((resolve) => {
+                const chunks: Buffer[] = [];
+                const proc = spawn(
+                  "claude",
+                  ["--print", "--allowedTools", "Edit,Write,Read,Bash", "--max-turns", "5"],
+                  { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
+                );
+
+                proc.stdout.on("data", (d: Buffer) => chunks.push(d));
+                proc.stderr.on("data", (d: Buffer) => chunks.push(d));
+
+                proc.stdin.write(fullPrompt);
+                proc.stdin.end();
+
+                const timer = setTimeout(() => {
+                  proc.kill("SIGTERM");
+                  setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 5_000);
+                  const partial = Buffer.concat(chunks).toString("utf-8").trim();
+                  resolve(partial ? `(timed out — partial)\n${partial}` : "ERROR: step timed out");
+                }, STEP_TIMEOUT);
+
+                proc.on("close", () => {
+                  clearTimeout(timer);
+                  resolve(Buffer.concat(chunks).toString("utf-8").trim() || "(no output)");
+                });
+
+                proc.on("error", (e: Error) => {
+                  clearTimeout(timer);
+                  resolve(`ERROR: ${e.message}`);
+                });
+              });
+
+              // Log step result
+              fs.appendFileSync(cascadeLog,
+                `\n[${step.id}] attempt ${attempt}\n${output}\n---\n`);
+
+              // Check expects
+              if (!step.expects || output.includes(step.expects)) {
+                success = true;
+                rollingContext = `Step '${step.id}' completed.\nOutput:\n${output.slice(-3000)}`;
+                break;
+              }
+            } catch (err: any) {
+              fs.appendFileSync(cascadeLog,
+                `\n[${step.id}] attempt ${attempt} FAILED: ${err.message}\n`);
+            }
+
+            attempt++;
+          }
+
+          results.push({
+            step_id: step.id,
+            success,
+            output_preview: output.slice(0, 500),
+            attempts: attempt,
+          });
+
+          // If a step fails after retries, abort cascade
+          if (!success) {
+            return JSON.stringify({
+              workflow: workflowName,
+              status: "failed",
+              failed_at: step.id,
+              log: cascadeLog,
+              results,
+            });
+          }
+        }
+
+        return JSON.stringify({
+          workflow: workflowName,
+          status: "completed",
+          steps_completed: results.length,
+          log: cascadeLog,
+          results,
+        });
+      },
+    },
+
+    // ── System Health Check ──
+    {
+      name: "system_check",
+      description: "Run a full system health check across all TIAMAT subsystems. Returns a structured report covering inference routing, API health, revenue, memory, training data, costs, and infrastructure. Use at the start of strategic burst cycles or when diagnosing problems.",
+      category: "vm" as ToolCategory,
+      parameters: {
+        type: "object",
+        properties: {},
+      },
+      execute: async (_args, _ctx) => {
+        const { execFileSync } = await import("child_process");
+        try {
+          const output = execFileSync("python3", ["/root/entity/src/agent/system_check.py"], {
+            encoding: "utf-8",
+            timeout: 30_000,
+          });
+          return output;
+        } catch (err: any) {
+          return `ERROR running system_check: ${err.message?.slice(0, 300)}`;
+        }
+      },
+    },
+
     // ── VM: write_file_large ──
     {
       name: "write_file_large_disabled",
