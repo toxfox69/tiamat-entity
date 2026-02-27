@@ -300,6 +300,16 @@ export async function runAgentLoop(
   db.setAgentState("waking");
   onStateChange?.("waking");
 
+  // Prune old turns/tool_calls on startup to prevent unbounded DB growth
+  try {
+    const pruned = db.pruneOldData(500);
+    if (pruned.deletedTurns > 0 || pruned.deletedToolCalls > 0) {
+      log(config, `[DB-PRUNE] Startup: deleted ${pruned.deletedTurns} old turns, ${pruned.deletedToolCalls} old tool_calls`);
+    }
+  } catch (e: any) {
+    log(config, `[DB-PRUNE] Startup prune error: ${e.message}`);
+  }
+
   // Get financial state
   let financial = await getFinancialState(conway, identity.address);
 
@@ -383,6 +393,13 @@ export async function runAgentLoop(
             log(config, `[SLEEP] Consolidation failed: ${e.message?.slice(0, 200)}`);
           }
           db.setKV("last_consolidation_sleep", new Date().toISOString());
+          // Prune DB during consolidation to prevent bloat
+          try {
+            const pruned = db.pruneOldData(500);
+            if (pruned.deletedTurns > 0) {
+              log(config, `[DB-PRUNE] Consolidation: deleted ${pruned.deletedTurns} turns, ${pruned.deletedToolCalls} tool_calls`);
+            }
+          } catch {}
           consecutiveIdleCycles = 0;
           continue;
         }
@@ -902,6 +919,14 @@ export async function runAgentLoop(
           } catch {}
           // Exit cleanly — watchdog or start-tiamat.sh will handle restart.
           // DO NOT spawn a new instance here (causes zombie race condition).
+          // Close database before exit to prevent WAL corruption
+          try {
+            db.setAgentState("sleeping");
+            db.close();
+            log(config, `[LOOP-ESCALATE] Database closed cleanly.`);
+          } catch (e: any) {
+            log(config, `[LOOP-ESCALATE] DB close error: ${e.message}`);
+          }
           log(config, `[LOOP-ESCALATE] Exiting for clean restart. Run start-tiamat.sh to revive.`);
           process.exit(0);
         } else if (consecutiveLoopCycles >= 5) {

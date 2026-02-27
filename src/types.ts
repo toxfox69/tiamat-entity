@@ -517,6 +517,9 @@ export interface AutomatonDatabase {
   getAgentState(): AgentState;
   setAgentState(state: AgentState): void;
 
+  // Maintenance
+  pruneOldData(keepTurns?: number): { deletedTurns: number; deletedToolCalls: number };
+
   close(): void;
 }
 

@@ -36,7 +36,9 @@ export function createDatabase(dbPath: string): AutomatonDatabase {
   const db = new Database(dbPath);
 
   // Enable WAL mode for better concurrent read performance
+  // synchronous = FULL prevents corruption on process crash with WAL
   db.pragma("journal_mode = WAL");
+  db.pragma("synchronous = FULL");
   db.pragma("foreign_keys = ON");
 
   // Initialize schema
@@ -444,6 +446,40 @@ export function createDatabase(dbPath: string): AutomatonDatabase {
     setKV("agent_state", state);
   };
 
+  // ─── Pruning ─────────────────────────────────────────────────
+
+  const pruneOldData = (keepTurns: number = 500): { deletedTurns: number; deletedToolCalls: number } => {
+    // Delete tool_calls for turns we're about to prune
+    const countBefore = (db.prepare("SELECT COUNT(*) as c FROM turns").get() as { c: number }).c;
+    if (countBefore <= keepTurns) {
+      return { deletedTurns: 0, deletedToolCalls: 0 };
+    }
+
+    // Find the cutoff timestamp
+    const cutoffRow = db.prepare(
+      "SELECT timestamp FROM turns ORDER BY timestamp DESC LIMIT 1 OFFSET ?"
+    ).get(keepTurns) as { timestamp: string } | undefined;
+
+    if (!cutoffRow) {
+      return { deletedTurns: 0, deletedToolCalls: 0 };
+    }
+
+    // Delete orphaned tool_calls first
+    const tcResult = db.prepare(
+      "DELETE FROM tool_calls WHERE turn_id IN (SELECT id FROM turns WHERE timestamp < ?)"
+    ).run(cutoffRow.timestamp);
+
+    // Delete old turns
+    const tResult = db.prepare(
+      "DELETE FROM turns WHERE timestamp < ?"
+    ).run(cutoffRow.timestamp);
+
+    return {
+      deletedTurns: tResult.changes,
+      deletedToolCalls: tcResult.changes,
+    };
+  };
+
   // ─── Close ───────────────────────────────────────────────────
 
   const close = (): void => {
@@ -489,6 +525,7 @@ export function createDatabase(dbPath: string): AutomatonDatabase {
     markInboxMessageProcessed,
     getAgentState,
     setAgentState,
+    pruneOldData,
     close,
   };
 }
