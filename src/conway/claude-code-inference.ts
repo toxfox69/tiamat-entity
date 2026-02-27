@@ -368,8 +368,10 @@ export function createClaudeCodeInferenceClient(
       console.warn(`[INFERENCE:CC] FAIL ${elapsed}ms — ${err.message}`);
 
       if (fallback) {
-        console.log(`[INFERENCE:CC] → API cascade fallback`);
-        return fallback.chat(messages, opts);
+        console.log(`[INFERENCE:CC] → API cascade fallback (skipping Anthropic — CLI already tried Claude)`);
+        // Force tier=free so cascade skips Anthropic — CLI already attempted Claude,
+        // hitting the Anthropic API key just wastes credits on the same failure.
+        return fallback.chat(messages, { ...opts, tier: "free" as any });
       }
 
       throw err;
