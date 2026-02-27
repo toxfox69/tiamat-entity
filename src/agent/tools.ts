@@ -104,6 +104,9 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /\b(head|tail|less|more|tee|cp|mv|ln)\b.*\.ssh/,
   /\b(env|printenv|export\s+-p)\b/,
   /\bset\s*$/,
+  // Self-tracing (strace on own PID deadlocks the process)
+  /\bstrace\b/,
+  /\bltrace\b/,
 ];
 
 // ─── Input Validation Helpers ────────────────────────────────

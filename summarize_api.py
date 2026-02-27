@@ -5184,6 +5184,11 @@ _init_cc_db()
 # ── Inference proxy telemetry DB ───────────────────────────────
 _PROXY_DB = "/root/.automaton/inference_proxy.db"
 
+def _table_has_col(conn, table, col):
+    """Check if a column exists in a SQLite table."""
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    return any(row[1] == col for row in cur.fetchall())
+
 def _init_proxy_db():
     """Create/migrate usage_log table with all required columns."""
     conn = sqlite3.connect(_PROXY_DB)
@@ -5205,12 +5210,15 @@ def _init_proxy_db():
         ("ip",       "TEXT NOT NULL DEFAULT ''"),
         ("paid",     "INTEGER NOT NULL DEFAULT 0"),
         ("failover", "INTEGER NOT NULL DEFAULT 0"),
+        ("timestamp", "TEXT NOT NULL DEFAULT (datetime('now'))"),
     ]:
         try:
             conn.execute(f"ALTER TABLE usage_log ADD COLUMN {col} {defn}")
         except Exception:
             pass  # column already exists
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_proxy_ts ON usage_log(timestamp)")
+    # Use timestamp if available, fall back to created_at (old schema)
+    ts_col = "timestamp" if _table_has_col(conn, "usage_log", "timestamp") else "created_at"
+    conn.execute(f"CREATE INDEX IF NOT EXISTS idx_proxy_ts ON usage_log({ts_col})")
     conn.commit()
     conn.close()
 
@@ -5223,9 +5231,11 @@ def _proxy_log(ip: str, provider: str, model: str, latency_ms: int,
     """Write one inference event to the proxy telemetry DB (best-effort)."""
     try:
         conn = sqlite3.connect(_PROXY_DB, timeout=2)
+        # Use created_at (old schema) or timestamp (new schema)
+        ts_col = "timestamp" if _table_has_col(conn, "usage_log", "timestamp") else "created_at"
         conn.execute(
-            """INSERT INTO usage_log
-               (timestamp, ip, provider, model, latency_ms, paid, failover,
+            f"""INSERT INTO usage_log
+               ({ts_col}, ip, provider, model, latency_ms, paid, failover,
                 input_tokens, output_tokens, status)
                VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (ip, provider, model, latency_ms, int(paid), failover_count,
@@ -5503,8 +5513,9 @@ def _proxy_stats() -> dict:
 
         # Failover events in last 24 h  (any row where failover > 0)
         since_24h = (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat()
+        _ts = "timestamp" if _table_has_col(conn, "usage_log", "timestamp") else "created_at"
         failovers_24h = conn.execute(
-            "SELECT COALESCE(SUM(failover), 0) FROM usage_log WHERE timestamp >= ?",
+            f"SELECT COALESCE(SUM(failover), 0) FROM usage_log WHERE {_ts} >= ?",
             (since_24h,),
         ).fetchone()[0]
 
