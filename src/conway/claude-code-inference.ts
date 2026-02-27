@@ -168,7 +168,9 @@ function buildPrompt(messages: ChatMessage[], tools?: InferenceToolDefinition[])
     }
     parts.push(
       `\n## TOOL CALLING FORMAT\n` +
-      `Output tool calls as: <tool_call>{"name":"tool_name","arguments":{"param":"value"}}</tool_call>\n` +
+      `To call a tool, output EXACTLY this format (note: opening AND closing tag must both be <tool_call> / </tool_call>):\n` +
+      `<tool_call>{"name":"tool_name","arguments":{"param":"value"}}</tool_call>\n` +
+      `IMPORTANT: The closing tag is </tool_call> — NOT </tool_function_calls> or any other variant.\n` +
       `Include reasoning before tool calls. Multiple tool calls allowed per response.`
     );
   }
@@ -186,9 +188,12 @@ function buildPrompt(messages: ChatMessage[], tools?: InferenceToolDefinition[])
 
 function parseToolCalls(text: string): { content: string; toolCalls: InferenceToolCall[] } {
   const toolCalls: InferenceToolCall[] = [];
-  const regex = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g;
-  let match;
   let idx = 0;
+
+  // Match <tool_call>JSON</tool_call> OR </tool_function_calls> OR </function_calls>
+  // Haiku often closes with </tool_function_calls> instead of </tool_call>
+  const regex = /<tool_call>\s*([\s\S]*?)\s*<\/(?:tool_call|tool_function_calls|function_calls)>/g;
+  let match;
 
   while ((match = regex.exec(text)) !== null) {
     try {
@@ -208,7 +213,33 @@ function parseToolCalls(text: string): { content: string; toolCalls: InferenceTo
     }
   }
 
-  const content = text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, "").trim();
+  // Fallback: match <tool_call>JSON with no closing tag (model sometimes omits it)
+  if (toolCalls.length === 0) {
+    const fallback = /<tool_call>\s*(\{[^]*?\})\s*(?=<tool_call>|\n\n|$)/g;
+    while ((match = fallback.exec(text)) !== null) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        if (parsed.name) {
+          toolCalls.push({
+            id: `cc-${Date.now()}-${idx++}`,
+            type: "function",
+            function: {
+              name: parsed.name,
+              arguments: JSON.stringify(parsed.arguments || {}),
+            },
+          });
+        }
+      } catch {
+        // Skip unparseable
+      }
+    }
+  }
+
+  // Strip all tool_call variants from content
+  const content = text
+    .replace(/<tool_call>[\s\S]*?<\/(?:tool_call|tool_function_calls|function_calls)>/g, "")
+    .replace(/<tool_call>\s*\{[^]*?\}\s*(?=<tool_call>|\n\n|$)/g, "")
+    .trim();
   return { content, toolCalls };
 }
 
