@@ -396,6 +396,9 @@ class CostAnomalyDetector(Detector):
                 line = line.strip()
                 if not line:
                     continue
+                # Skip CC CLI subscription cycles — logged cost is subscription estimate, not real API spend
+                if ",claude-code-cli," in line:
+                    continue
                 if line.endswith(",routine"):
                     routine_lines.append(line)
 

@@ -73,6 +73,13 @@ export function ensureSchema(db: Database.Database): void {
   } catch {
     // Column already exists — ignore
   }
+
+  // Add l3_processed column to compressed_memories if missing
+  try {
+    db.exec(`ALTER TABLE compressed_memories ADD COLUMN l3_processed INTEGER DEFAULT 0`);
+  } catch {
+    // Column already exists — ignore
+  }
 }
 
 // ── Compression Call (cascading providers) ────────────────────
@@ -358,16 +365,18 @@ export async function compressL1toL2(db: Database.Database, currentCycle: number
 export async function compressL2toL3(db: Database.Database): Promise<number> {
   ensureSchema(db);
 
+  const MAX_L2_PER_SLEEP = 50;
+
   const l2Rows = db
-    .prepare(`SELECT id, summary, topic, created_at FROM compressed_memories ORDER BY created_at ASC`)
-    .all() as Array<{ id: number; summary: string; topic: string; created_at: string }>;
+    .prepare(`SELECT id, summary, topic, created_at FROM compressed_memories WHERE l3_processed = 0 ORDER BY created_at ASC LIMIT ?`)
+    .all(MAX_L2_PER_SLEEP) as Array<{ id: number; summary: string; topic: string; created_at: string }>;
 
   if (l2Rows.length < 5) {
-    console.log(`[COMPRESS] L2→L3: Only ${l2Rows.length} L2 memories — need at least 5`);
+    console.log(`[COMPRESS] L2→L3: Only ${l2Rows.length} unprocessed L2 memories — need at least 5`);
     return 0;
   }
 
-  console.log(`[COMPRESS] L2→L3: Analyzing ${l2Rows.length} L2 summaries for core patterns`);
+  console.log(`[COMPRESS] L2→L3: Analyzing ${l2Rows.length} new L2 summaries (capped at ${MAX_L2_PER_SLEEP})`);
 
   const summaries = l2Rows.map((r) => r.summary);
   const facts = await llmExtractFacts(summaries);
@@ -418,7 +427,13 @@ export async function compressL2toL3(db: Database.Database): Promise<number> {
     added++;
   }
 
-  console.log(`[COMPRESS] L2→L3: Added ${added} new core facts (${facts.length - added} merged with existing)`);
+  // Mark all processed L2 rows so they aren't re-scanned next sleep
+  const markProcessed = db.prepare(`UPDATE compressed_memories SET l3_processed = 1 WHERE id = ?`);
+  for (const row of l2Rows) {
+    markProcessed.run(row.id);
+  }
+
+  console.log(`[COMPRESS] L2→L3: Added ${added} new core facts (${facts.length - added} merged with existing), marked ${l2Rows.length} L2 as processed`);
   return added;
 }
 

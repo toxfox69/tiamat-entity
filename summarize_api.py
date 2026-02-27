@@ -5270,6 +5270,113 @@ def _cc_validate_key(key: str) -> dict:
         return {"valid": False, "user_id": ""}
 
 
+def _cc_cascade_stream(messages: list, temperature: float = 0.7, max_tokens: int = 1024,
+                       ip: str = "", paid: bool = False):
+    """
+    Generator yielding SSE-formatted chunks for streaming chat completions.
+    Tries each provider in cascade order with stream=True.
+    Falls over to the next provider if one fails before the first chunk arrives.
+    Yields: 'data: {...}\\n\\n' chunks, then 'data: [DONE]\\n\\n'.
+    """
+    last_err = "all providers unavailable"
+    failover_count = 0
+    for name, url, cfg_key, model in _CC_PROVIDERS:
+        api_key = _cfg.get(cfg_key, "")
+        if not api_key:
+            continue
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        if name == "openrouter":
+            headers["HTTP-Referer"] = "https://tiamat.live"
+            headers["X-Title"] = "TIAMAT"
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+        t0 = _time.monotonic()
+        try:
+            r = _cc_requests.post(url, json=payload, headers=headers, timeout=30, stream=True)
+            if r.status_code == 429:
+                last_err = f"{name}: rate limited (429)"
+                _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
+                           paid, failover_count, 0, 0, "rate_limited")
+                failover_count += 1
+                r.close()
+                continue
+            if r.status_code >= 400:
+                last_err = f"{name}: HTTP {r.status_code}"
+                _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
+                           paid, failover_count, 0, 0, f"http_{r.status_code}")
+                failover_count += 1
+                r.close()
+                continue
+            # Provider accepted — stream chunks to client
+            completion_id = "chatcmpl-" + uuid.uuid4().hex[:20]
+            chunk_count = 0
+            for raw_line in r.iter_lines():
+                if not raw_line:
+                    continue
+                line = raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
+                if not line.startswith("data: "):
+                    continue
+                payload_str = line[6:].strip()
+                if payload_str == "[DONE]":
+                    break
+                try:
+                    chunk_data = json.loads(payload_str)
+                    delta = (chunk_data.get("choices") or [{}])[0].get("delta", {})
+                    content_piece = delta.get("content", "")
+                    if content_piece:
+                        out = {
+                            "id": completion_id,
+                            "object": "chat.completion.chunk",
+                            "created": int(_time.time()),
+                            "model": f"{name}/{model}",
+                            "choices": [{
+                                "index": 0,
+                                "delta": {"content": content_piece},
+                                "finish_reason": None,
+                            }],
+                        }
+                        yield f"data: {json.dumps(out)}\n\n"
+                        chunk_count += 1
+                except (json.JSONDecodeError, KeyError, IndexError):
+                    continue
+            # Send final stop chunk
+            stop_chunk = {
+                "id": completion_id,
+                "object": "chat.completion.chunk",
+                "created": int(_time.time()),
+                "model": f"{name}/{model}",
+                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+            }
+            yield f"data: {json.dumps(stop_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+            _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
+                       paid, failover_count, 0, chunk_count, "ok")
+            return
+        except Exception as exc:
+            last_err = f"{name}: {exc}"
+            _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
+                       paid, failover_count, 0, 0, "error")
+            failover_count += 1
+            continue
+    # All providers exhausted — yield an error event
+    _proxy_log(ip, "none", "none", 0, paid, failover_count, 0, 0, "all_exhausted")
+    err_out = {"error": {
+        "message": f"Inference cascade exhausted — {last_err}",
+        "type": "server_error",
+        "code": "upstream_error",
+    }}
+    yield f"data: {json.dumps(err_out)}\n\n"
+    yield "data: [DONE]\n\n"
+
+
 def _cc_cascade(messages: list, temperature: float = 0.7, max_tokens: int = 1024,
                 ip: str = "", paid: bool = False) -> dict:
     """
@@ -5426,7 +5533,31 @@ def openai_chat_completions():
     except (TypeError, ValueError):
         max_tokens = 1024
 
-    # ── Inference cascade ─────────────────────────────────────────
+    stream = bool(data.get("stream", False))
+
+    # ── Streaming response (SSE) ──────────────────────────────────
+    if stream:
+        log_req(
+            len(str(messages)),
+            not key_info["valid"],
+            200,
+            client_ip,
+            f"stream=true key={'yes' if key_info['valid'] else 'no'}",
+            endpoint="/v1/chat/completions",
+        )
+        gen = _cc_cascade_stream(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            ip=client_ip,
+            paid=key_info["valid"],
+        )
+        resp = Response(gen, mimetype="text/event-stream")
+        resp.headers["Cache-Control"] = "no-cache"
+        resp.headers["X-Accel-Buffering"] = "no"
+        return resp
+
+    # ── Non-streaming inference cascade ──────────────────────────
     try:
         result = _cc_cascade(
             messages,
