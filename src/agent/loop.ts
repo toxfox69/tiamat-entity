@@ -1119,8 +1119,9 @@ export async function runAgentLoop(
       }
 
       // ── Inference Routing Log ──
+      const modelUsedForLog = response.model || inference.getDefaultModel();
+      const isWeakModel = modelUsedForLog.includes(":free") || modelUsedForLog.includes("trinity") || modelUsedForLog.includes("arcee");
       try {
-        const modelUsedForLog = response.model || inference.getDefaultModel();
         const provider = modelUsedForLog.includes("claude") || modelUsedForLog.includes("code-cli") ? "anthropic"
           : modelUsedForLog.includes("llama") || modelUsedForLog.includes("groq") ? "groq"
           : modelUsedForLog.includes("gemini") ? "gemini"
@@ -1128,9 +1129,12 @@ export async function runAgentLoop(
           : "unknown";
         fs.appendFileSync(
           "/root/.automaton/inference_routing.log",
-          `[${new Date().toISOString()}] Turn ${turnCount} | Tier: ${cycleTier} | Provider: ${provider} | Model: ${modelUsedForLog} | Tokens: ${response.usage.totalTokens}\n`,
+          `[${new Date().toISOString()}] Turn ${turnCount} | Tier: ${cycleTier} | Provider: ${provider} | Model: ${modelUsedForLog} | Tokens: ${response.usage.totalTokens}${isWeakModel ? " | WEAK" : ""}\n`,
         );
       } catch {}
+      if (isWeakModel) {
+        log(config, `[WEAK MODEL] ${modelUsedForLog} — slowing pace to let stronger models recover`);
+      }
 
       const turn: AgentTurn = {
         id: ulid(),
@@ -1430,6 +1434,15 @@ export async function runAgentLoop(
           await new Promise(resolve => setTimeout(resolve, cycleDelay));
         } else {
           cycleDelay = pacerResult.interval_ms;
+          // Weak model throttle: if on a low-quality fallback model, slow down
+          // to let stronger providers (Groq/Cerebras) recover from cooldown
+          if (isWeakModel) {
+            const weakFloor = 120_000; // 2 min minimum on weak models
+            if (cycleDelay < weakFloor) {
+              log(config, `[WEAK MODEL] Throttle: ${Math.round(cycleDelay / 1000)}s → ${weakFloor / 1000}s`);
+              cycleDelay = weakFloor;
+            }
+          }
           console.log(`[LOOP] Cycle complete. Next in ${Math.round(cycleDelay / 1000)}s (pace:${pacerResult.pace}, prod:${pacerResult.productivity_rate.toFixed(2)}).`);
           await runCooldownTasks(turnCount, cycleDelay, config);
         }
