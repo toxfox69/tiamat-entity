@@ -39,6 +39,8 @@ class NotificationService {
       'Your daily wisdom from TIAMAT is ready.',
       _nextInstanceOf8AM(),
       details,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );

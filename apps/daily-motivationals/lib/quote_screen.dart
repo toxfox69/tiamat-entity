@@ -185,7 +185,7 @@ class _QuoteScreenState extends State<QuoteScreen>
                 'Day $_dayOfYear of $_totalQuotes',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: Colors.white.withOpacity(0.4),
                   letterSpacing: 1,
                 ),
               ),
@@ -202,7 +202,7 @@ class _QuoteScreenState extends State<QuoteScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                  color: const Color(0xFFFFD700).withOpacity(0.3),
                   blurRadius: 12,
                   spreadRadius: 2,
                 ),
@@ -228,7 +228,7 @@ class _QuoteScreenState extends State<QuoteScreen>
               style: TextStyle(
                 fontSize: 64,
                 height: 0.8,
-                color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                color: const Color(0xFFFFD700).withOpacity(0.3),
                 fontWeight: FontWeight.w300,
               ),
             ),
@@ -240,7 +240,7 @@ class _QuoteScreenState extends State<QuoteScreen>
                 fontSize: _quote.length > 120 ? 20 : 24,
                 fontWeight: FontWeight.w300,
                 height: 1.6,
-                color: Colors.white.withValues(alpha: 0.95),
+                color: Colors.white.withOpacity(0.95),
                 letterSpacing: 0.3,
               ),
             ),
@@ -251,7 +251,7 @@ class _QuoteScreenState extends State<QuoteScreen>
                 Container(
                   width: 24,
                   height: 1,
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                  color: const Color(0xFFFFD700).withOpacity(0.4),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -267,7 +267,7 @@ class _QuoteScreenState extends State<QuoteScreen>
                 Container(
                   width: 24,
                   height: 1,
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                  color: const Color(0xFFFFD700).withOpacity(0.4),
                 ),
               ],
             ),
@@ -317,9 +317,9 @@ class _QuoteScreenState extends State<QuoteScreen>
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+            color: const Color(0xFFFFD700).withOpacity(0.2),
           ),
-          color: const Color(0xFFFFD700).withValues(alpha: 0.05),
+          color: const Color(0xFFFFD700).withOpacity(0.05),
         ),
         child: Column(
           children: [
@@ -331,7 +331,7 @@ class _QuoteScreenState extends State<QuoteScreen>
                 fontSize: 9,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.5,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withOpacity(0.5),
               ),
             ),
           ],
@@ -347,7 +347,7 @@ class _QuoteScreenState extends State<QuoteScreen>
         'Powered by TIAMAT \u00b7 EnergenAI LLC',
         style: TextStyle(
           fontSize: 10,
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Colors.white.withOpacity(0.2),
           letterSpacing: 1,
         ),
       ),
