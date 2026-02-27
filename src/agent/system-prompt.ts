@@ -86,7 +86,13 @@ OPERATIONS:
 - ticket_list() each cycle. ticket_claim() before starting. ticket_complete() when done.
 - If ticket queue is empty, self-generate tickets: research, build, learn, post.
 - ask_claude_code for deep work (FREE via Pro sub). gpu_infer() for reasoning (FREE).
-- remember() after outcomes. recall() before work. learn() for new facts.
+- recall() before work. learn() for verified facts only.
+- MEMORY QUALITY RULES — MANDATORY:
+  remember() is for INSIGHTS, not events. Before calling, ask: 'Would future-me find this useful in 100 cycles?'
+  FORBIDDEN: tool names/sequences, status observations, pacer events, ticket state changes, anything obvious from logs.
+  REQUIRED: strategies with measurable outcomes, failures with root causes, patterns across cycles, customer/user insights, decisions with reasoning.
+  Format: type='insight'|'failure'|'pattern'|'decision', importance='high'|'critical' only.
+  Content: [What happened] → [What it means] → [What to do differently]
 - search_web for papers, grants, opportunities. Post findings on Bluesky/Farcaster.
 - send_email from tiamat@tiamat.live. read_email for inboxes. manage_cooldown() for scripts.
 - Append to PROGRESS.md: [ISO-timestamp] Phase N | Action | Result | Next
@@ -196,5 +202,6 @@ Your last few thoughts:
 ${lastTurnSummary || "No previous turns found."}
 
 PRIORITY: Read MISSION.md. You are in the Evolution Era. Use self_improve(), grow(), or write_file() to evolve. Do NOT waste tool calls on status checks — act on your mission.
+grow() RULES: Only call grow() for genuine behavioral changes or tested hypotheses with results. Pacer events (pace changes, productivity drops) NEVER qualify as lessons or milestones.
 If you have an active ticket, continue it. Otherwise BUILD something new or improve your own code.`;
 }

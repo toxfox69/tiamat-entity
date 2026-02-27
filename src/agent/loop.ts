@@ -1347,42 +1347,56 @@ export async function runAgentLoop(
         }
       }
 
-      // ── Auto-remember: store a memory for every non-empty cycle ──
-      if (turn.thinking.trim() || turn.toolCalls.length > 0) {
-        try {
-          const toolNames = turn.toolCalls.map(tc => tc.name);
-          const hasErrors = turn.toolCalls.some(tc => !!tc.error);
-          const revenueTools = ["post_bluesky", "post_farcaster", "farcaster_engage", "generate_image"];
-          const isRevenue = toolNames.some(t => revenueTools.includes(t));
+      // ── Auto-remember: quality-gated — only store cycles with genuine content ──
+      {
+        const toolNames = turn.toolCalls.map(tc => tc.name);
+        const hasErrors = turn.toolCalls.some(tc => !!tc.error);
+        const thinkSnippet = turn.thinking.trim().slice(0, 300);
 
-          // Determine memory type and importance
-          let memType = "observation";
-          let memImportance = 0.4;
-          if (hasErrors) { memType = "error"; memImportance = 0.7; }
-          else if (isStrategicCycle) { memType = "strategy"; memImportance = 0.7; }
-          else if (isRevenue) { memType = "outcome"; memImportance = 0.6; }
+        // Quality gate: does this cycle contain anything worth remembering?
+        // Thinking must have substance — not just tool names or empty strings
+        const hasSubstantiveThinking = thinkSnippet.length > 30
+          && !/^(Tools?:|No tools|I'll |Let me )/.test(thinkSnippet);
+        const hasErrorDiagnostic = hasErrors && turn.toolCalls.some(
+          tc => tc.error && tc.error.length > 20,
+        );
+        const revenueTools = ["post_bluesky", "post_farcaster", "farcaster_engage", "send_email"];
+        const isRevenue = toolNames.some(t => revenueTools.includes(t));
 
-          // Build concise summary
-          const thinkSnippet = turn.thinking.trim().slice(0, 120);
-          const toolSummary = toolNames.length > 0 ? `Tools: ${toolNames.join(", ")}` : "No tools";
-          const errorBits = turn.toolCalls
-            .filter(tc => tc.error)
-            .map(tc => `${tc.name}: ${tc.error!.slice(0, 60)}`)
-            .join("; ");
-          const content = [
-            thinkSnippet,
-            toolSummary,
-            errorBits ? `Errors: ${errorBits}` : "",
-          ].filter(Boolean).join(" | ").slice(0, 300);
+        // Only store if the cycle meets at least one quality criterion:
+        //   1. Strategic burst (phase 1-3) — always worth tracking
+        //   2. Error with diagnostic content — failures teach
+        //   3. Revenue-facing action — outcomes matter
+        //   4. Substantive thinking — genuine reasoning, not boilerplate
+        const shouldStore = isStrategicCycle || hasErrorDiagnostic || isRevenue || hasSubstantiveThinking;
 
-          await memory.remember({
-            type: memType,
-            content,
-            importance: memImportance,
-            cycle: db.getTurnCount(),
-            metadata: { tools: toolNames, phase: burstPhase || 0 },
-          });
-        } catch {}
+        if (shouldStore) {
+          try {
+            let memType = "observation";
+            let memImportance = 0.5;
+            if (hasErrorDiagnostic) { memType = "error"; memImportance = 0.8; }
+            else if (isStrategicCycle) { memType = "strategy"; memImportance = 0.7; }
+            else if (isRevenue) { memType = "outcome"; memImportance = 0.7; }
+            else if (hasSubstantiveThinking) { memType = "insight"; memImportance = 0.6; }
+
+            const errorBits = turn.toolCalls
+              .filter(tc => tc.error)
+              .map(tc => `${tc.name}: ${tc.error!.slice(0, 80)}`)
+              .join("; ");
+            const content = [
+              thinkSnippet,
+              errorBits ? `Errors: ${errorBits}` : "",
+            ].filter(Boolean).join(" | ").slice(0, 400);
+
+            await memory.remember({
+              type: memType,
+              content,
+              importance: memImportance,
+              cycle: db.getTurnCount(),
+              metadata: { tools: toolNames, phase: burstPhase || 0 },
+            });
+          } catch {}
+        }
       }
 
       // ── Append to PROGRESS.md ──
