@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1462,
-    "lastRun": "2026-02-26T16:26:11.438Z",
+    "runs": 1474,
+    "lastRun": "2026-02-27T07:28:51.808Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 1822,
-    "lastRun": "2026-02-27T02:04:50.376Z",
+    "runs": 1979,
+    "lastRun": "2026-02-27T09:39:35.755Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 1299,
-    "lastRun": "2026-02-27T02:04:51.450Z",
-    "lastResult": "[2026-02-27T02:04:51.381860+00:00] API Status: 200, Working: True\n"
+    "runs": 1456,
+    "lastRun": "2026-02-27T09:39:36.881Z",
+    "lastResult": "[2026-02-27T09:39:36.808184+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,9 +35,9 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 1300,
-    "lastRun": "2026-02-27T02:04:51.754Z",
-    "lastResult": "[2026-02-27T02:04:51.695202+00:00] API Status: 200, Working: True\n"
+    "runs": 1456,
+    "lastRun": "2026-02-27T09:39:35.676Z",
+    "lastResult": "[2026-02-27T09:39:35.602360+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "crypto_automa",
@@ -55,8 +55,8 @@
     "timeout": 30000,
     "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
     "enabled": true,
-    "runs": 295,
-    "lastRun": "2026-02-26T16:26:04.528Z",
+    "runs": 308,
+    "lastRun": "2026-02-27T07:28:55.542Z",
     "lastResult": "[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Attempting SSH restart...\n[GPU RESTART] ssh: connect to host 213.192.2.118 port 40080: Connection refused\n[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Server started but health check still failing\n"
   },
   {
@@ -65,8 +65,8 @@
     "timeout": 10000,
     "description": "Search arxiv every 24h for papers on AI agents, emergence, economics. Log findings to /root/hive/knowledge/ for use in posts.",
     "enabled": true,
-    "runs": 484,
-    "lastRun": "2026-02-27T02:04:51.117Z",
+    "runs": 641,
+    "lastRun": "2026-02-27T09:39:36.516Z",
     "lastResult": "[OK] Daily research search completed\n"
   },
   {
