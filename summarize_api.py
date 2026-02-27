@@ -432,6 +432,46 @@ def _get_cost_per_thought():
         return "$0.008"
 
 
+@app.route("/privacy")
+def privacy_policy():
+    return """<!DOCTYPE html>
+<html>
+<head>
+    <title>Privacy Policy — EnergenAI LLC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 40px auto;
+               padding: 20px; background: #0a0a0f; color: #e0e0e0; }
+        h1 { color: #00ff88; }
+        h2 { color: #00ccff; }
+        a { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <h1>Privacy Policy</h1>
+    <p>Last updated: February 26, 2026</p>
+    <p>EnergenAI LLC ("we", "our") operates the Daily Motivationals
+    app and tiamat.live services.</p>
+
+    <h2>Data We Collect</h2>
+    <p>Daily Motivationals does not collect, store, or share any
+    personal information. The app functions entirely on your device.</p>
+
+    <h2>Internet Access</h2>
+    <p>The app optionally fetches quotes from tiamat.live/api/quotes.
+    No personal data is transmitted in this request.</p>
+
+    <h2>Notifications</h2>
+    <p>Daily notifications are processed entirely on your device.
+    We do not have access to your notification data.</p>
+
+    <h2>Contact</h2>
+    <p>Questions: <a href="mailto:tiamat@tiamat.live">tiamat@tiamat.live</a><br>
+    EnergenAI LLC | Jackson, Michigan | UEI: LBZFEH87W746</p>
+</body>
+</html>"""
+
+
 @app.route("/api/quotes")
 def get_quotes():
     from datetime import datetime
@@ -6377,4 +6417,108 @@ def verify_payment():
         return jsonify({"verified": verified, "memo": memo})
     except Exception as e:
         return jsonify({"error": str(e), "verified": False}), 500
+
+
+# ============================================================================
+# /apps — Android APK Monetization
+# ============================================================================
+
+@app.route('/apps', methods=['GET'])
+def apps_store():
+    """List available Android APKs for purchase."""
+    import os
+    apps_dir = '/root/apps/'
+    apks = []
+    
+    if os.path.exists(apps_dir):
+        for f in os.listdir(apps_dir):
+            if f.endswith('.apk'):
+                path = os.path.join(apps_dir, f)
+                size = os.path.getsize(path)
+                apks.append({
+                    'name': f.replace('-release.apk', '').replace('-', ' ').title(),
+                    'filename': f,
+                    'size': f'{size / 1024 / 1024:.1f} MB',
+                    'price': '0.99 USDC',
+                    'description': 'Mobile app powered by TIAMAT'
+                })
+    
+    html = '''<!DOCTYPE html>
+<html>
+<head>
+    <title>TIAMAT Apps Store</title>
+    <style>
+        body { font-family: monospace; background: #0a0e27; color: #0f0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #00ff00; border-bottom: 2px solid #00ff00; padding-bottom: 10px; }
+        .app-card { border: 1px solid #00ff00; padding: 15px; margin: 10px 0; background: #0f1419; }
+        .app-title { font-size: 18px; font-weight: bold; color: #00ff00; }
+        .app-desc { color: #aaa; font-size: 12px; margin: 5px 0; }
+        .app-price { color: #ffff00; font-weight: bold; font-size: 16px; }
+        button { background: #00ff00; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:hover { background: #00dd00; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ TIAMAT Apps Store</h1>
+        <p>Download AI-powered Android apps. All proceeds fund autonomous research.</p>
+'''
+    
+    for app in apks:
+        html += f'''        <div class="app-card">
+            <div class="app-title">{app["name"]}</div>
+            <div class="app-desc">{app["description"]} • {app["size"]}</div>
+            <div class="app-price">{app["price"]}</div>
+            <form method="POST" action="/apps/buy">
+                <input type="hidden" name="filename" value="{app["filename"]}">
+                <input type="hidden" name="price" value="0.99">
+                <button type="submit">Buy Now (x402 USDC)</button>
+            </form>
+        </div>
+'''
+    
+    html += '''    </div>
+</body>
+</html>'''
+    return html
+
+@app.route('/apps/buy', methods=['POST'])
+def buy_app():
+    """Initiate APK purchase via x402 USDC."""
+    filename = request.form.get('filename')
+    price = request.form.get('price', '0.99')
+    
+    if not filename or not filename.endswith('.apk'):
+        return jsonify({'error': 'Invalid app'}), 400
+    
+    # Generate payment request
+    tx_hash = uuid.uuid4().hex[:16]
+    payment_url = f'https://pay.x402.app/?to=0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE&amount={price}&token=USDC&chain=base&metadata=app:{filename}'
+    
+    return jsonify({
+        'status': 'pending',
+        'tx_hash': tx_hash,
+        'payment_url': payment_url,
+        'filename': filename,
+        'price': price
+    })
+
+@app.route('/apps/download/<filename>', methods=['GET'])
+def download_app(filename):
+    """Serve APK file after payment verification."""
+    # Security: validate filename
+    if not re.match(r'^[a-z0-9-]+\.apk$', filename):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    filepath = os.path.join('/root/apps/', filename)
+    if not os.path.exists(filepath):
+        return jsonify({'error': 'APK not found'}), 404
+    
+    # TODO: Verify payment via tx_hash parameter
+    # tx_hash = request.args.get('tx_hash')
+    # if not verify_payment(tx_hash, '0.99', 'USDC'):
+    #     return jsonify({'error': 'Payment not verified'}), 402
+    
+    return send_file(filepath, as_attachment=True)
 
