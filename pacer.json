@@ -1,22 +1,6 @@
 {
   "last_20_cycles": [
     {
-      "cycle": 1003,
-      "actions": [
-        "exec"
-      ],
-      "productive": true,
-      "cost": 0.03,
-      "timestamp": "2026-02-27T12:09:06.527Z"
-    },
-    {
-      "cycle": 1003,
-      "actions": [],
-      "productive": false,
-      "cost": 0.04,
-      "timestamp": "2026-02-27T12:09:15.105Z"
-    },
-    {
       "cycle": 1005,
       "actions": [],
       "productive": false,
@@ -143,12 +127,37 @@
       "productive": false,
       "cost": 0.06,
       "timestamp": "2026-02-27T12:36:56.737Z"
+    },
+    {
+      "cycle": 1023,
+      "actions": [
+        "read_file",
+        "ticket_list",
+        "exec",
+        "exec",
+        "read_email",
+        "exec",
+        "send_telegram",
+        "exec",
+        "exec",
+        "exec"
+      ],
+      "productive": true,
+      "cost": 0.08,
+      "timestamp": "2026-02-27T12:39:36.849Z"
+    },
+    {
+      "cycle": 1023,
+      "actions": [],
+      "productive": false,
+      "cost": 0.07,
+      "timestamp": "2026-02-27T12:40:36.058Z"
     }
   ],
   "productivity_rate": 0.1,
   "current_pace": "reflect",
   "current_interval_seconds": 90,
-  "claude_code_uses_since_last": 135,
+  "claude_code_uses_since_last": 137,
   "claude_code_budget_cycles": 15,
   "last_pace_change": "2026-02-27T12:33:15.403Z",
   "last_pace_change_from": "idle",
