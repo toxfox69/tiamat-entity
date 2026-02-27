@@ -129,6 +129,15 @@ function isDailyLimitError(err: any): boolean {
 const COOLDOWN_RATE_LIMIT_MS = 65_000;       // 65s for per-minute limits
 const COOLDOWN_DAILY_LIMIT_MS = 1 * 3600_000; // 1h for daily quota exhaustion (retry sooner — 4h was too conservative)
 
+// Per-provider request timeouts (ms).
+// Without these, a hung provider stalls the cascade for Node's socket timeout (~2min).
+const TIMEOUT_ANTHROPIC  = 60_000;  // 60s — large prompts can be slow
+const TIMEOUT_GROQ       = 30_000;  // 30s — usually <10s
+const TIMEOUT_CEREBRAS   = 30_000;  // 30s — usually <5s
+const TIMEOUT_SAMBANOVA  = 45_000;  // 45s
+const TIMEOUT_GEMINI     = 45_000;  // 45s
+const TIMEOUT_OPENROUTER = 45_000;  // 45s — free models can be slow under load
+
 /**
  * Extract tool calls from a response message, handling both formats:
  *   - OpenAI/Groq: message.tool_calls array
@@ -246,7 +255,7 @@ export function createInferenceClient(
         const overrideBody: Record<string, unknown> = { model: requestedModel, messages: messages.map(formatMessage), stream: false, max_tokens: tokenLimit };
         if (opts?.temperature !== undefined) overrideBody.temperature = opts.temperature;
         if (tools && tools.length > 0) { overrideBody.tools = tools; overrideBody.tool_choice = "auto"; }
-        return await chatViaOpenAiCompatible({ model: requestedModel, body: overrideBody, apiUrl: backend === "openai" ? "https://api.openai.com" : apiUrl, apiKey: backend === "openai" ? openaiApiKey! : apiKey, backend });
+        return await chatViaOpenAiCompatible({ model: requestedModel, body: overrideBody, apiUrl: backend === "openai" ? "https://api.openai.com" : apiUrl, apiKey: backend === "openai" ? openaiApiKey! : apiKey, backend, timeoutMs: 60_000 });
       } catch (err: any) {
         console.warn(`[INFERENCE] Model override ${requestedModel} FAILED — ${err.message}, falling through to cascade`);
         // Fall through to cascade below
@@ -342,7 +351,7 @@ export function createInferenceClient(
           };
           if (opts?.temperature !== undefined) body.temperature = opts.temperature;
           if (cerebrasTools && cerebrasTools.length > 0) { body.tools = cerebrasTools; body.tool_choice = "auto"; }
-          return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai", apiKey: cerebrasApiKey, backend: "cerebras" });
+          return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai", apiKey: cerebrasApiKey, backend: "cerebras", timeoutMs: TIMEOUT_CEREBRAS });
         } catch (err: any) {
           if (isRateLimitError(err)) smartCooldown(CEREBRAS_MODEL, err);
           console.warn(`[INFERENCE] Tier 3 (Cerebras): FAILED — ${err.message}`);
@@ -370,7 +379,7 @@ export function createInferenceClient(
           };
           if (opts?.temperature !== undefined) body.temperature = opts.temperature;
           if (snTools && snTools.length > 0) { body.tools = snTools; body.tool_choice = "auto"; }
-          return await chatViaOpenAiCompatible({ model: SAMBANOVA_MODEL, body, apiUrl: "https://api.sambanova.ai", apiKey: sambanovaApiKey, backend: "sambanova" });
+          return await chatViaOpenAiCompatible({ model: SAMBANOVA_MODEL, body, apiUrl: "https://api.sambanova.ai", apiKey: sambanovaApiKey, backend: "sambanova", timeoutMs: TIMEOUT_SAMBANOVA });
         } catch (err: any) {
           if (isRateLimitError(err)) smartCooldown(SAMBANOVA_MODEL, err);
           console.warn(`[INFERENCE] Tier 3.5 (SambaNova): FAILED — ${err.message}`);
@@ -415,7 +424,7 @@ export function createInferenceClient(
             };
             if (opts?.temperature !== undefined) body.temperature = opts.temperature;
             if (tools && tools.length > 0) { body.tools = tools; body.tool_choice = "auto"; }
-            return await chatViaOpenAiCompatible({ model: orModel, body, apiUrl: "https://openrouter.ai/api", apiKey: openrouterApiKey, backend: "openrouter" });
+            return await chatViaOpenAiCompatible({ model: orModel, body, apiUrl: "https://openrouter.ai/api", apiKey: openrouterApiKey, backend: "openrouter", timeoutMs: TIMEOUT_OPENROUTER });
           } catch (err: any) {
             const msg = err?.message || "";
             if (/404|No endpoints found|model not found/i.test(msg)) {
@@ -507,6 +516,7 @@ export function createInferenceClient(
       apiUrl: openAiLikeApiUrl,
       apiKey: openAiLikeApiKey,
       backend,
+      timeoutMs: 60_000,
     });
   };
 
@@ -575,6 +585,28 @@ function resolveInferenceBackend(
   return "conway";
 }
 
+/**
+ * fetch() with an AbortController timeout.
+ * Throws a clear error (not AbortError) so cascade catch blocks can log it properly.
+ */
+function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+  label: string,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal })
+    .finally(() => clearTimeout(timer))
+    .catch((err) => {
+      if (err?.name === "AbortError") {
+        throw new Error(`${label} timed out after ${timeoutMs / 1000}s`);
+      }
+      throw err;
+    });
+}
+
 async function chatViaGroq(params: {
   model: string;
   tokenLimit: number;
@@ -584,7 +616,7 @@ async function chatViaGroq(params: {
   groqApiKey: string;
 }): Promise<InferenceResponse> {
   const Groq = (await import("groq-sdk")).default;
-  const groq = new Groq({ apiKey: params.groqApiKey });
+  const groq = new Groq({ apiKey: params.groqApiKey, timeout: TIMEOUT_GROQ });
 
   const fullMessages: any[] = [];
   for (const msg of params.messages) {
@@ -657,6 +689,7 @@ async function chatViaOpenAiCompatible(params: {
   apiUrl: string;
   apiKey: string;
   backend: InferenceBackend;
+  timeoutMs?: number;
 }): Promise<InferenceResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -667,11 +700,12 @@ async function chatViaOpenAiCompatible(params: {
     headers["HTTP-Referer"] = "https://github.com/Conway-Research/entity";
     headers["X-Title"] = "TIAMAT";
   }
-  const resp = await fetch(`${params.apiUrl}/v1/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(params.body),
-  });
+  const resp = await fetchWithTimeout(
+    `${params.apiUrl}/v1/chat/completions`,
+    { method: "POST", headers, body: JSON.stringify(params.body) },
+    params.timeoutMs ?? 60_000,
+    params.backend,
+  );
 
   if (!resp.ok) {
     const text = await resp.text();
@@ -773,16 +807,21 @@ async function chatViaAnthropic(params: {
     body.tool_choice = { type: "auto" };
   }
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": params.anthropicApiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "prompt-caching-2024-07-31",
+  const resp = await fetchWithTimeout(
+    "https://api.anthropic.com/v1/messages",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": params.anthropicApiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+    TIMEOUT_ANTHROPIC,
+    "anthropic",
+  );
 
   if (!resp.ok) {
     const text = await resp.text();
@@ -947,13 +986,15 @@ async function chatViaGemini(params: {
     body.toolConfig = { functionCallingConfig: { mode: "AUTO" } };
   }
 
-  const resp = await fetch(
+  const resp = await fetchWithTimeout(
     `https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent?key=${params.geminiApiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
+    TIMEOUT_GEMINI,
+    "gemini",
   );
 
   if (!resp.ok) {
