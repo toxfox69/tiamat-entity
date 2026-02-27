@@ -347,8 +347,8 @@ export async function runAgentLoop(
 
         // Check INBOX.md for manual "sleep" / "consolidate" trigger
         let forceConsolidation = false;
+        const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
         try {
-          const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
           const inboxContent = fs.readFileSync(inboxPath, "utf-8");
           if (/\b(sleep|consolidate)\b/i.test(inboxContent) && inboxContent.includes("[UNREAD]")) {
             forceConsolidation = true;
@@ -356,6 +356,14 @@ export async function runAgentLoop(
         } catch {}
 
         if (shouldSleep(lastSleepTime, currentTurn, consecutiveIdleCycles, forceConsolidation)) {
+          // Auto-clear INBOX trigger to prevent infinite consolidation loop
+          if (forceConsolidation) {
+            try {
+              const inboxContent = fs.readFileSync(inboxPath, "utf-8");
+              fs.writeFileSync(inboxPath, inboxContent.replace(/\[UNREAD\]/g, "[DONE]"));
+              log(config, `[SLEEP] Cleared INBOX consolidation trigger`);
+            } catch {}
+          }
           log(config, `[SLEEP] Entering consolidation cycle...`);
           try {
             await executeTool("send_telegram", {
