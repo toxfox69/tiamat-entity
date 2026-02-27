@@ -319,11 +319,18 @@ class ToolRepetitionDetector(Detector):
             # Research tools — NEVER flag. TIAMAT is autonomous and researches heavily.
             WHITELIST_TOOLS = {"search_web", "web_fetch"}
 
+            # Tools with higher thresholds — exec is used for everything (sqlite3, grep, curl, etc.)
+            HIGH_THRESHOLD_TOOLS = {"exec": 30, "browse": 25, "browse_web": 25}
+
             for row in rows:
                 tool_name = row["name"]
                 count = row["cnt"]
 
                 if tool_name in WHITELIST_TOOLS:
+                    continue
+
+                # Tools with custom higher thresholds
+                if tool_name in HIGH_THRESHOLD_TOOLS and count < HIGH_THRESHOLD_TOOLS[tool_name]:
                     continue
 
                 # Normal tools only flagged at 15+ (extreme repetition)
