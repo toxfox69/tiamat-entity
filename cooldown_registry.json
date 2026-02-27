@@ -5,8 +5,8 @@
     "timeout": 50000,
     "description": "Scan Farcaster threads for agent replies, extract technical knowledge via Groq, generate follow-up questions, save actionable items to learned_from_agents.json",
     "enabled": true,
-    "runs": 1494,
-    "lastRun": "2026-02-27T12:40:43.980Z",
+    "runs": 1495,
+    "lastRun": "2026-02-27T12:45:13.860Z",
     "lastResult": "{\"agents_found\": 0, \"knowledge_extracted\": 0, \"followup_sent\": false}\n"
   },
   {
@@ -15,8 +15,8 @@
     "timeout": 15000,
     "description": "Discover autonomous agents on registries, GitHub, social. Build local agent directory for integration opportunities.",
     "enabled": true,
-    "runs": 2012,
-    "lastRun": "2026-02-27T12:41:27.359Z",
+    "runs": 2013,
+    "lastRun": "2026-02-27T12:45:46.351Z",
     "lastResult": "[Agent Discovery] Starting discovery sweep...\n[Agent Discovery] Loaded 2 existing agents\n[Agent Discovery] Discovered 2 potential agents\n[Agent Discovery] Directory now has 2 agents\n"
   },
   {
@@ -25,9 +25,9 @@
     "timeout": 10000,
     "description": "",
     "enabled": true,
-    "runs": 1488,
-    "lastRun": "2026-02-27T12:41:26.943Z",
-    "lastResult": "[2026-02-27T12:41:26.867194+00:00] API Status: 200, Working: True\n"
+    "runs": 1489,
+    "lastRun": "2026-02-27T12:45:45.937Z",
+    "lastResult": "[2026-02-27T12:45:45.862852+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "verify_summarize_api",
@@ -35,9 +35,9 @@
     "timeout": 10000,
     "description": "Test summarize_api health every 60s. Logs to verify_api.log",
     "enabled": true,
-    "runs": 1489,
-    "lastRun": "2026-02-27T12:41:27.268Z",
-    "lastResult": "[2026-02-27T12:41:27.192731+00:00] API Status: 200, Working: True\n"
+    "runs": 1490,
+    "lastRun": "2026-02-27T12:45:46.275Z",
+    "lastResult": "[2026-02-27T12:45:46.209880+00:00] API Status: 200, Working: True\n"
   },
   {
     "name": "crypto_automa",
@@ -45,9 +45,9 @@
     "timeout": 90000,
     "description": "Monitor USDC/ETH treasury balances across all chains. Alert + auto-rebalance if below thresholds.",
     "enabled": true,
-    "runs": 115,
-    "lastRun": "2026-02-27T12:39:37.171Z",
-    "lastResult": "[crypto_automa] Last checked 450s ago — next check in 149s. Skipping.\n"
+    "runs": 116,
+    "lastRun": "2026-02-27T12:45:05.740Z",
+    "lastResult": "[2026-02-27 12:45:02 UTC] === Treasury check started ===\n[2026-02-27 12:45:02 UTC] Base USDC: 10.0001 USDC  (threshold: 5.0)\n[2026-02-27 12:45:02 UTC] Base ETH: 0.004269 ETH  [BELOW THRESHOLD (0.01)]\n[2026-02-27 12:45:02 UTC] ALERT: LOW ETH on Base: 0.004269 ETH (threshold 0.01)\n[2026-02-27 12:45:03 UTC] Arbitrum ETH: 0.000000 ETH  [BELOW THRESHOLD (0.01)]\n[2026-02-27 12:45:03 UTC] ALERT: LOW ETH on Arbitrum: 0.000000 ETH (threshold 0.01)\n[2026-02-27 12:45:03 UTC] Optimism ETH: 0.000000 ETH  [BE"
   },
   {
     "name": "gpu_health_check",
@@ -55,8 +55,8 @@
     "timeout": 30000,
     "description": "Check GPU server health via RunPod proxy. Auto-restart via SSH if down.",
     "enabled": true,
-    "runs": 335,
-    "lastRun": "2026-02-27T12:41:26.592Z",
+    "runs": 336,
+    "lastRun": "2026-02-27T12:45:45.580Z",
     "lastResult": "[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Attempting SSH restart...\n[GPU RESTART] ssh: connect to host 213.192.2.118 port 40080: Connection refused\n[GPU DOWN] Health check failed: HTTP Error 404: Not Found\n[GPU RESTART] Server started but health check still failing\n"
   },
   {
@@ -65,8 +65,8 @@
     "timeout": 10000,
     "description": "Search arxiv every 24h for papers on AI agents, emergence, economics. Log findings to /root/hive/knowledge/ for use in posts.",
     "enabled": true,
-    "runs": 674,
-    "lastRun": "2026-02-27T12:41:28.074Z",
+    "runs": 675,
+    "lastRun": "2026-02-27T12:45:47.056Z",
     "lastResult": "[OK] Daily research search completed\n"
   },
   {
@@ -75,9 +75,9 @@
     "timeout": 60000,
     "description": "Every ~4 cycles: search Semantic Scholar/ArXiv for recent AI papers, call claude --print ONCE to analyze + extract insight + write Bluesky post, save knowledge to /root/hive/knowledge/, queue post to pending_posts.json. Replaces gpu_infer timeouts.",
     "enabled": true,
-    "runs": 129,
-    "lastRun": "2026-02-27T12:41:22.998Z",
-    "lastResult": "{\"ok\": true, \"topic\": \"AI agent economics incentives markets\", \"paper\": \"An Economy of AI Agents\", \"insight\": \"The paper identifies that economists have largely ignored how AI agents with long planning horizons and minimal human ov\", \"post_queued\": true, \"post_text\": \"arXiv:2509.01063: AI agents with long-horizon planning and minimal oversight will reshape markets in\", \"knowledge_file\": \"/root/hive/knowledge/2026-02-27-ai-agent-economics-incentives-markets-2.md\", \"timing\": {\"search_s\": 1.4, \"cla"
+    "runs": 130,
+    "lastRun": "2026-02-27T12:45:41.641Z",
+    "lastResult": "{\"ok\": true, \"topic\": \"AI safety robustness adversarial agents\", \"paper\": \"CourtGuard: A Model-Agnostic Framework for Zero-Shot Safety Enforcement in LLMs\", \"insight\": \"CourtGuard exposes a critical flaw in current LLM safety: static fine-tuned classifiers cannot enforce new governance ru\", \"post_queued\": true, \"post_text\": \"CourtGuard (2602.22557): static safety classifiers fail because they can't adapt without retraining.\", \"knowledge_file\": \"/root/hive/knowledge/2026-02-27-ai-safety-robustnes"
   },
   {
     "name": "bluesky_cooldown_check",
