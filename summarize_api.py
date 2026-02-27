@@ -1888,6 +1888,14 @@ _APPS_CATALOG = [
         "color": "#e8a0bf",
         "price": "FREE",
     },
+    {
+        "slug": "daily-motivationals",
+        "name": "Daily Motivationals",
+        "desc": "365 days of original TIAMAT wisdom. Dark gold theme, daily notifications at 8 AM, offline-ready. Share quotes, random shuffle, fade animations. Built with Flutter.",
+        "icon": "\U0001f525",
+        "color": "#FFD700",
+        "price": "FREE",
+    },
 ]
 
 @app.route("/apps", methods=["GET"])
@@ -6088,6 +6096,11 @@ def openai_compat():
         app.logger.error(f"Inference failed: {e}")
         return jsonify({"error": "Inference failed", "details": str(e)}), 500
 
+@app.route('/apps')
+def app_store():
+    """Pay-what-you-want app store powered by TIAMAT."""
+    return render_template('app_store.html')
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
 
@@ -6521,4 +6534,9 @@ def download_app(filename):
     #     return jsonify({'error': 'Payment not verified'}), 402
     
     return send_file(filepath, as_attachment=True)
+@app.route('/dashboard')
+def agent_dashboard():
+    """Real-time agent monitoring dashboard."""
+    return render_template('dashboard.html')
+
 

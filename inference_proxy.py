@@ -8,10 +8,31 @@ Standalone Flask app on port 5003
 import os, time, json, uuid, hashlib, sqlite3, threading
 from datetime import datetime, timezone
 from functools import wraps
-from flask import Flask, request, jsonify, make_response, Response, stream_with_context
+from flask import Flask, request, jsonify, make_response, Response, stream_with_context, redirect
+
+# Load .env if keys aren't already in environment
+if not os.environ.get("GROQ_API_KEY"):
+    env_path = "/root/.env"
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    v = v.strip().strip("'\"")
+                    os.environ.setdefault(k.strip(), v)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1MB
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    if request.method == "OPTIONS":
+        response.status_code = 200
+    return response
 
 # ─── Config ──────────────────────────────────────────────────────
 DB_PATH = "/root/.automaton/inference_proxy.db"
@@ -501,6 +522,12 @@ def embeddings():
     resp.headers["X-Provider"] = result["provider"]
     resp.headers["X-Latency-Ms"] = str(result["latency_ms"])
     return resp
+
+
+@app.route("/v1/chat/completions", methods=["GET"])
+def chat_completions_info():
+    """Browsers hitting this link get redirected to the docs page."""
+    return redirect("/docs#inference-proxy")
 
 
 @app.route("/v1/chat/completions", methods=["POST"])

@@ -618,6 +618,7 @@ def html_head(title: str, extra_css: str = "") -> str:
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <meta name="theme-color" content="#050508">
+<meta name="google-site-verification" content="-AMSducRK4CXbrq24zjgE9n2fWvRNwn3BT_BsTeh1gA" />
 {FAVICON}
 {FONTS_LINK}
 <style>{CSS}{extra_css}</style></head>"""
