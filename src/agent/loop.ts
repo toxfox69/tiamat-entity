@@ -1661,6 +1661,7 @@ function estimateCostCents(
     { match: "gemini",         input: 0,    output: 0    },  // Free tier
     { match: "gemma",          input: 0,    output: 0    },  // Free tier (OpenRouter)
     { match: "mistral",        input: 0,    output: 0    },  // Free tier (OpenRouter)
+    { match: "claude-code",    input: 0,    output: 0    },  // CLI subscription (free)
   ];
 
   const p = pricing.find(p => model.includes(p.match)) || { input: 100, output: 500 };

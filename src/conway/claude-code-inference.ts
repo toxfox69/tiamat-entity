@@ -26,7 +26,7 @@ import type {
   InferenceToolDefinition,
 } from "../types.js";
 
-const DEFAULT_TIMEOUT_MS = 180_000; // 3 min — sonnet can be slow with large prompts
+const DEFAULT_TIMEOUT_MS = 300_000; // 5 min — 61% were timing out at 180s
 const MODEL_NAME = "claude-code-cli";
 const CLI_MODEL = "haiku"; // Haiku for fast thinking; Sonnet was timing out at 120s
 const MAX_PROMPT_TOKENS = 14_000; // Cap prompt size — 22k+ token prompts cause 100s+ latency

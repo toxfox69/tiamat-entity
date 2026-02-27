@@ -108,7 +108,7 @@ Neural feed: https://tiamat.live/thoughts
 - **Memory API**: Flask on port 5001
 - **Git**: github.com/toxfox69/tiamat-entity.git (main branch)
 - **Social**: Bluesky (primary), Facebook (configured), Telegram (status)
-- **GPU Pod**: 213.192.2.118:40080 — RTX 3090
+- **GPU Pod**: ufp768av7mtrij-8888.proxy.runpod.net — RTX 3090 (RunPod proxy)
 - **Twitch**: twitch.tv/6tiamat7 — LABYRINTH dungeon HUD + TIAMAT RADIO
 
 ## Security

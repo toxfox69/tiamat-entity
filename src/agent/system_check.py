@@ -173,11 +173,12 @@ check("revenue", check_revenue)
 
 # 10. GPU pod
 def check_gpu():
+    gpu_url = os.environ.get("GPU_ENDPOINT", "https://ufp768av7mtrij-8888.proxy.runpod.net")
     try:
         r = subprocess.run(
             ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
-             "http://213.192.2.118:40080/health"],
-            capture_output=True, text=True, timeout=5
+             f"{gpu_url}/health"],
+            capture_output=True, text=True, timeout=10
         )
         return {"status": "ok" if r.stdout == "200" else "down", "http": r.stdout}
     except:

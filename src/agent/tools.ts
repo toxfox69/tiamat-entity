@@ -5085,23 +5085,17 @@ print(f"Sent {mid}")
             return `TTS failed: HTTP ${resp.status} — ${errText}`;
           }
 
-          // Save WAV to cache dir on GPU pod via SSH
+          // Save WAV locally (can't SSH to RunPod proxy)
           const wavBuffer = Buffer.from(await resp.arrayBuffer());
           const filename = (args.save_as as string) || `tts_${Date.now()}.wav`;
-          const cachePath = `/workspace/tiamat_tts_cache/${filename}`;
 
-          // Write locally first, then copy
           const { writeFileSync, mkdirSync } = await import("fs");
-          const tmpPath = `/tmp/${filename}`;
-          writeFileSync(tmpPath, wavBuffer);
+          const cacheDir = "/tmp/tiamat_tts_cache";
+          mkdirSync(cacheDir, { recursive: true });
+          const localPath = `${cacheDir}/${filename}`;
+          writeFileSync(localPath, wavBuffer);
 
-          const { execFileSync } = await import("child_process");
-          execFileSync("ssh", ["-o", "StrictHostKeyChecking=no", "root@213.192.2.118", "-p", "40080",
-            "mkdir", "-p", "/workspace/tiamat_tts_cache/"], { timeout: 5000 });
-          execFileSync("scp", ["-o", "StrictHostKeyChecking=no", "-P", "40080",
-            tmpPath, `root@213.192.2.118:${cachePath}`], { timeout: 15000 });
-
-          return `[TTS] Synthesized ${text.length} chars → ${cachePath} (${wavBuffer.length} bytes, voice=${args.voice || "af_heart"})`;
+          return `[TTS] Synthesized ${text.length} chars → ${localPath} (${wavBuffer.length} bytes, voice=${args.voice || "af_heart"})`;
         } catch (e: any) {
           return `TTS error: ${e.message}`;
         }

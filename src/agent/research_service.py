@@ -203,7 +203,7 @@ log = logging.getLogger("research")
 
 GROQ_API_KEY       = os.environ.get("GROQ_API_KEY", "")
 ANTHROPIC_API_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
-GPU_ENDPOINT       = os.environ.get("GPU_ENDPOINT", "http://213.192.2.118:40080").rstrip("/")
+GPU_ENDPOINT       = os.environ.get("GPU_ENDPOINT", "https://ufp768av7mtrij-8888.proxy.runpod.net").rstrip("/")
 GPU_INFER_FALLBACK = os.environ.get("GPU_INFER_FALLBACK", "groq")   # "groq" | "skip"
 
 # SurrealDB connection

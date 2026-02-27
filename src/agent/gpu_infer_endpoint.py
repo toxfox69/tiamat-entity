@@ -2,7 +2,7 @@
 """
 gpu_infer_endpoint.py — RTX 3090 GPU Pod relevance scoring endpoint
 ====================================================================
-Deploy on GPU pod (213.192.2.118:40080) alongside gpu-renderer.py.
+Deploy on GPU pod (RunPod proxy: ufp768av7mtrij-8888.proxy.runpod.net) alongside gpu-renderer.py.
 
 Routes:
   POST /infer/relevance   — cross-encoder relevance scoring
