@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT API — Drop-In Replacement</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e6ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background: rgba(20, 25, 50, 0.8);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        .tagline {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #ffed4e;
+            margin: 15px 0;
+        }
+        .description {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin: 30px 0;
+            color: #b0b8ff;
+        }
+        .code-block {
+            background: rgba(255, 215, 0, 0.05);
+            border-left: 4px solid #ffd700;
+            padding: 15px;
+            margin: 30px 0;
+            border-radius: 4px;
+            text-align: left;
+            font-size: 0.9em;
+            overflow-x: auto;
+            color: #ffed4e;
+        }
+        .integration-steps {
+            text-align: left;
+            background: rgba(255, 215, 0, 0.05);
+            border-left: 4px solid #ffd700;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .step:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #ffd700;
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #0a0e27;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.4);
+        }
+        .email-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 2px solid #ffd700;
+            border-radius: 6px;
+            color: #e0e6ff;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 15px;
+            font-size: 1em;
+        }
+        .email-input::placeholder {
+            color: #ffd70055;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 1-Line Integration</h1>
+        <div class="tagline">Replace OpenAI. Keep Your Code.</div>
+        <p class="description">Same API. Same endpoints. 60% lower cost. Works with existing code.</p>
+        
+        <div class="code-block">
+# Before (OpenAI)<br/>
+from openai import OpenAI<br/>
+client = OpenAI(api_key="...")<br/>
+<br/>
+# After (TIAMAT)<br/>
+client = OpenAI(api_key="...",<br/>
+&nbsp;&nbsp;base_url="https://tiamat.live/v1")
+        </div>
+        
+        <div class="integration-steps">
+            <div class="step">Change base_url to tiamat.live</div>
+            <div class="step">Use same API calls</div>
+            <div class="step">Save 60% instantly</div>
+        </div>
+        
+        <form onsubmit="return handleSignup(event)">
+            <input type="email" class="email-input" placeholder="your@email.com" required>
+            <button type="submit" class="cta-button">Get API Key — Start Now</button>
+        </form>
+    </div>
+    
+    <script>
+        function handleSignup(e) {
+            e.preventDefault();
+            const email = e.target.querySelector('input[type=email]').value;
+            console.log('Signup:', email);
+            alert('Your API key is being prepared. Check your email.');
+            return false;
+        }
+    </script>
+</body>
+</html>

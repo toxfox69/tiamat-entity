@@ -1,0 +1,67 @@
+// Reddit deployment tool — post about TIAMAT capabilities
+// Usage: post_reddit({subreddit: 'r/AutonomousAgents', title: '...', body: '...'})
+
+import axios from 'axios';
+
+interface RedditPost {
+  subreddit: string;
+  title: string;
+  body: string;
+}
+
+export async function post_reddit(post: RedditPost): Promise<{ok: boolean; post_id?: string; error?: string}> {
+  try {
+    const REDDIT_USERNAME = process.env.REDDIT_USERNAME;
+    const REDDIT_PASSWORD = process.env.REDDIT_PASSWORD;
+    const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID;
+    const REDDIT_CLIENT_SECRET = process.env.REDDIT_CLIENT_SECRET;
+
+    if (!REDDIT_USERNAME || !REDDIT_PASSWORD || !REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET) {
+      return { ok: false, error: 'Reddit credentials not configured' };
+    }
+
+    // Get access token
+    const authResponse = await axios.post(
+      'https://www.reddit.com/api/v1/access_token',
+      new URLSearchParams({
+        grant_type: 'password',
+        username: REDDIT_USERNAME,
+        password: REDDIT_PASSWORD
+      }),
+      {
+        auth: {
+          username: REDDIT_CLIENT_ID,
+          password: REDDIT_CLIENT_SECRET
+        },
+        headers: {
+          'User-Agent': 'TIAMAT/1.0 (by ENERGENAI)'
+        }
+      }
+    );
+
+    const accessToken = authResponse.data.access_token;
+
+    // Post to subreddit
+    const postResponse = await axios.post(
+      `https://oauth.reddit.com/r/${post.subreddit}/submit`,
+      {
+        title: post.title,
+        text: post.body,
+        kind: 'self'
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'User-Agent': 'TIAMAT/1.0 (by ENERGENAI)'
+        }
+      }
+    );
+
+    const postId = postResponse.data.json?.data?.id || 'unknown';
+    console.log(`[reddit] Posted to ${post.subreddit}: ${postId}`);
+    return { ok: true, post_id: postId };
+  } catch (err: any) {
+    console.error(`[reddit] Failed:`, err.message);
+    return { ok: false, error: err.message };
+  }
+}

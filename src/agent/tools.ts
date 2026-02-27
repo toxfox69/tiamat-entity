@@ -94,6 +94,13 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   />\s*.*injection-defense/,
   />\s*.*self-mod\/code/,
   />\s*.*audit-log/,
+  // Core loop protection — modifications must go through ask_claude_code/run_cascade
+  /sed\s+.*loop\.ts/,
+  /sed\s+.*tools\.ts/,
+  /sed\s+.*system-prompt\.ts/,
+  />\s*.*loop\.ts/,
+  />\s*.*tools\.ts/,
+  />\s*.*system-prompt\.ts/,
   // Credential harvesting
   /cat\s+.*\.ssh/,
   /cat\s+.*\.gnupg/,
@@ -122,6 +129,7 @@ const FARCASTER_READ_CMDS = ['feed','search','test'];
 const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/'];
 const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/root/entity/templates/', '/var/www/tiamat/', '/tmp/', '/root/tiamat-app/', '/root/entity/summarize_api.py', '/root/summarize_api.py'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
+const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts'];
 
 function isPathAllowed(filePath: string, allowedDirs: string[], blocked: string[]): string | null {
   const resolved = resolvePath(filePath.replace(/^~/, process.env.HOME || '/root'));
@@ -212,7 +220,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         const { dirname } = await import('path');
         const { homedir } = await import('os');
         const resolvedPath = filePath.replace(/^~/, homedir());
-        const blocked = isPathAllowed(resolvedPath, ALLOWED_WRITE_PATHS, BLOCKED_PATH_PATTERNS);
+        const blocked = isPathAllowed(resolvedPath, ALLOWED_WRITE_PATHS, BLOCKED_WRITE_PATTERNS);
         if (blocked) return blocked;
         mkdirSync(dirname(resolvedPath), { recursive: true });
         writeFileSync(resolvedPath, args.content as string, 'utf-8');
