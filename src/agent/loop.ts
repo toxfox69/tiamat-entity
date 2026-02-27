@@ -1668,6 +1668,41 @@ async function runCooldownTasks(
   cycleDelay: number,
   config: AutomatonConfig,
 ): Promise<void> {
+  // ── Phase 0.5: Consume cooldown_actions.json → INBOX.md (every 5 cycles, runs even in sprint) ──
+  if (cycleNumber % 5 === 0) {
+    try {
+      const actionsPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_actions.json");
+      const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
+      if (fs.existsSync(actionsPath)) {
+        const actions: any[] = JSON.parse(fs.readFileSync(actionsPath, "utf-8"));
+        const pending = actions.filter((a: any) => a.status === "pending");
+        if (pending.length > 0) {
+          let inbox = "";
+          try { inbox = fs.readFileSync(inboxPath, "utf-8"); } catch {}
+
+          const toConsume = pending.slice(0, 3);
+          const newEntries = toConsume.map((a: any) =>
+            `[UNREAD] [ORACLE/${(a.priority || "medium").toUpperCase()}] ${a.action}${a.details ? ` — ${a.details}` : ""}`
+          ).join("\n");
+
+          const separator = inbox.trim() ? "\n\n" : "";
+          fs.writeFileSync(inboxPath, inbox.trimEnd() + separator + newEntries + "\n", "utf-8");
+
+          const now = new Date().toISOString();
+          for (const a of toConsume) {
+            a.status = "consumed";
+            a.consumed_at = now;
+            a.consumed_cycle = cycleNumber;
+          }
+          fs.writeFileSync(actionsPath, JSON.stringify(actions, null, 2), "utf-8");
+          console.log(`[COOLDOWN] Consumed ${toConsume.length} oracle actions → INBOX.md (${pending.length - toConsume.length} remaining)`);
+        }
+      }
+    } catch (e: any) {
+      console.log(`[COOLDOWN] Actions consumer error: ${e.message?.slice(0, 150)}`);
+    }
+  }
+
   // Skip during bursts or very short windows
   if (cycleDelay < 30_000) {
     await new Promise(resolve => setTimeout(resolve, cycleDelay));
@@ -1765,45 +1800,6 @@ async function runCooldownTasks(
     }
   } catch (e: any) {
     console.log(`[COOLDOWN] Pending post retry error: ${e.message?.slice(0, 150)}`);
-  }
-
-  // ── Phase 0.5: Consume cooldown_actions.json → INBOX.md (every 5 cycles) ──
-  if (cycleNumber % 5 === 0) {
-    try {
-      const actionsPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_actions.json");
-      const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
-      if (fs.existsSync(actionsPath)) {
-        const actions: any[] = JSON.parse(fs.readFileSync(actionsPath, "utf-8"));
-        const pending = actions.filter((a: any) => a.status === "pending");
-        if (pending.length > 0) {
-          // Read existing INBOX.md
-          let inbox = "";
-          try { inbox = fs.readFileSync(inboxPath, "utf-8"); } catch {}
-
-          // Inject top 3 pending actions as [UNREAD] items
-          const toConsume = pending.slice(0, 3);
-          const newEntries = toConsume.map((a: any) =>
-            `[UNREAD] [ORACLE/${(a.priority || "medium").toUpperCase()}] ${a.action}${a.details ? ` — ${a.details}` : ""}`
-          ).join("\n");
-
-          // Append to INBOX.md
-          const separator = inbox.trim() ? "\n\n" : "";
-          fs.writeFileSync(inboxPath, inbox.trimEnd() + separator + newEntries + "\n", "utf-8");
-
-          // Mark consumed with timestamp
-          const now = new Date().toISOString();
-          for (const a of toConsume) {
-            a.status = "consumed";
-            a.consumed_at = now;
-            a.consumed_cycle = cycleNumber;
-          }
-          fs.writeFileSync(actionsPath, JSON.stringify(actions, null, 2), "utf-8");
-          console.log(`[COOLDOWN] Consumed ${toConsume.length} oracle actions → INBOX.md (${pending.length - toConsume.length} remaining)`);
-        }
-      }
-    } catch (e: any) {
-      console.log(`[COOLDOWN] Actions consumer error: ${e.message?.slice(0, 150)}`);
-    }
   }
 
   // ── Phase 1: Run eligible static tasks ──
