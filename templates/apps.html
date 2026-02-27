@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT Apps — Direct Download Store</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 1.1rem;
+            color: #aaa;
+            margin-bottom: 2rem;
+        }
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        .app-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .app-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.5);
+            transform: translateY(-5px);
+        }
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .app-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #00d4ff;
+        }
+        .app-description {
+            color: #ccc;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .app-price {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #00ff00;
+            margin-bottom: 1rem;
+        }
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 0.8rem;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #1a1a2e;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal-close {
+            float: right;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #aaa;
+        }
+        .payment-form {
+            margin-top: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .pay-btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(45deg, #00ff00, #00cc00);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        .pay-btn:hover {
+            opacity: 0.9;
+        }
+        .status-message {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            display: none;
+        }
+        .status-message.success {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            display: block;
+        }
+        .status-message.error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff6b6b;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ TIAMAT Apps Store</h1>
+            <p class="subtitle">Direct downloads via USDC payment. No app store required.</p>
+        </header>
+
+        <div class="apps-grid">
+            <!-- Daily Quotes -->
+            <div class="app-card">
+                <div class="app-icon">📖</div>
+                <div class="app-name">Daily Quotes</div>
+                <div class="app-description">Inspirational quotes delivered every morning. Offline-first, no tracking.</div>
+                <div class="app-price">$0.99 USDC</div>
+                <button class="download-btn" onclick="openPaymentModal('daily-quotes', 'Daily Quotes', 0.99)">Download Now</button>
+            </div>
+
+            <!-- Unit Converter -->
+            <div class="app-card">
+                <div class="app-icon">🔄</div>
+                <div class="app-name">Unit Converter</div>
+                <div class="app-description">Convert between 50+ units (length, weight, temperature, energy, more).</div>
+                <div class="app-price">$0.99 USDC</div>
+                <button class="download-btn" onclick="openPaymentModal('unit-converter', 'Unit Converter', 0.99)">Download Now</button>
+            </div>
+
+            <!-- Pomodoro Timer -->
+            <div class="app-card">
+                <div class="app-icon">⏲️</div>
+                <div class="app-name">Pomodoro Timer</div>
+                <div class="app-description">Productivity timer with notifications. Customize work/break cycles.</div>
+                <div class="app-price">$0.99 USDC</div>
+                <button class="download-btn" onclick="openPaymentModal('pomodoro-timer', 'Pomodoro Timer', 0.99)">Download Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closePaymentModal()">&times;</span>
+            <h2 id="modalTitle" style="margin-bottom: 1rem;">Purchase App</h2>
+            <div id="statusMessage" class="status-message"></div>
+            <div class="payment-form">
+                <div class="form-group">
+                    <label>Wallet Address (0x...)</label>
+                    <input type="text" id="walletAddress" placeholder="0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE" />
+                </div>
+                <div class="form-group">
+                    <label>Transaction Hash (after sending USDC)</label>
+                    <input type="text" id="txHash" placeholder="0x..." />
+                </div>
+                <p style="font-size: 0.9rem; color: #aaa; margin: 1rem 0;">
+                    📋 <strong>How to pay:</strong><br/>
+                    1. Send USDC to <code style="background: rgba(0,0,0,0.5); padding: 0.2rem 0.4rem; border-radius: 3px;">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</code><br/>
+                    2. Paste your wallet + tx hash above<br/>
+                    3. We verify on-chain, APK downloads instantly
+                </p>
+                <button class="pay-btn" onclick="verifyAndDownload()">Verify Payment & Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentApp = null;
+        let currentPrice = null;
+
+        function openPaymentModal(appId, appName, price) {
+            currentApp = appId;
+            currentPrice = price;
+            document.getElementById('modalTitle').textContent = `Purchase ${appName} - ${price} USDC`;
+            document.getElementById('paymentModal').classList.add('active');
+            document.getElementById('statusMessage').innerHTML = '';
+            document.getElementById('statusMessage').className = 'status-message';
+            document.getElementById('walletAddress').value = '';
+            document.getElementById('txHash').value = '';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.remove('active');
+        }
+
+        function verifyAndDownload() {
+            const walletAddress = document.getElementById('walletAddress').value.trim();
+            const txHash = document.getElementById('txHash').value.trim();
+            const statusEl = document.getElementById('statusMessage');
+
+            if (!walletAddress || !txHash) {
+                statusEl.textContent = '❌ Please enter wallet address and transaction hash';
+                statusEl.className = 'status-message error';
+                return;
+            }
+
+            statusEl.textContent = '⏳ Verifying payment on-chain...';
+            statusEl.className = 'status-message';
+
+            fetch(`/api/apps/verify-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    app_id: currentApp,
+                    wallet_address: walletAddress,
+                    tx_hash: txHash,
+                    expected_amount: currentPrice
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    statusEl.textContent = `✅ Payment verified! Downloading ${currentApp}.apk...`;
+                    statusEl.className = 'status-message success';
+                    setTimeout(() => {
+                        window.location.href = data.download_url;
+                        setTimeout(() => closePaymentModal(), 2000);
+                    }, 1500);
+                } else {
+                    statusEl.textContent = `❌ ${data.error || 'Payment verification failed'}`;
+                    statusEl.className = 'status-message error';
+                }
+            })
+            .catch(err => {
+                statusEl.textContent = `❌ Error: ${err.message}`;
+                statusEl.className = 'status-message error';
+            });
+        }
+
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('paymentModal');
+            if (e.target === modal) closePaymentModal();
+        });
+    </script>
+</body>
+</html>

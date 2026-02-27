@@ -11,7 +11,7 @@ import hmac
 import uuid
 import datetime
 from collections import defaultdict
-from flask import Flask, request, jsonify, make_response, send_file, render_template, send_from_directory, redirect
+from flask import Flask, request, jsonify, make_response, send_file, send_file, render_template, send_from_directory, redirect
 from groq import Groq
 import sys
 sys.path.insert(0, "/root/entity/src/agent")
@@ -1849,106 +1849,236 @@ async function doGenerate(){{
 
 _APPS_CATALOG = [
     {
+        "id": "tiamat-chat",
+        "slug": "tiamat-chat",
+        "name": "TIAMAT Chat v2",
+        "version": "2.0",
+        "size": "4.1 MB",
+        "desc": "LLM chat client powered by TIAMAT\u2019s multi-model inference proxy. Streams responses from Claude, Groq, and Gemini. No account, no cloud lock-in.",
+        "icon": "\U0001f9e0",
+        "color": "#ff2244",
+        "price": "0.99",
+        "file": "tiamat-chat.apk",
+        "category": "AI",
+    },
+    {
+        "id": "luna",
+        "slug": "luna",
+        "name": "LUNA v1.1",
+        "version": "1.1",
+        "size": "3.2 MB",
+        "desc": "On-device AI assistant with intelligent chat, reminders, and journal. Fully offline \u2014 your data never leaves your phone.",
+        "icon": "\U0001f319",
+        "color": "#a78bfa",
+        "price": "0.99",
+        "file": "luna-v1.1.apk",
+        "category": "AI",
+    },
+    {
+        "id": "daily-quotes",
         "slug": "daily-quotes",
         "name": "Daily Quotes",
-        "desc": "Curated motivational quotes with a fresh quote every day. Dark-themed, minimal, beautiful.",
+        "version": "1.0",
+        "size": "2.5 MB",
+        "desc": "A fresh motivational quote every day. Dark-themed, minimal, beautiful. 365 originals with one-tap sharing.",
         "icon": "\u2728",
         "color": "#f59e0b",
         "price": "0.99",
+        "file": "daily-quotes.apk",
+        "category": "Lifestyle",
     },
     {
-        "slug": "unit-converter",
-        "name": "Unit Converter",
-        "desc": "Length, weight, temperature, volume \u2014 instant conversions with a clean interface.",
-        "icon": "\u2696\ufe0f",
-        "color": "#a78bfa",
-        "price": "0.99",
-    },
-    {
+        "id": "pomodoro-timer",
         "slug": "pomodoro-timer",
         "name": "Pomodoro Timer",
-        "desc": "Focus timer with 25/5 work-break cycles, session tracking, and long break every 4th round.",
-        "icon": "\u23f1",
+        "version": "1.2",
+        "size": "2.1 MB",
+        "desc": "25/5 focus cycles with session tracking and long break every 4th round. Distraction-free productivity.",
+        "icon": "\u23f1\ufe0f",
         "color": "#ef4444",
         "price": "0.99",
+        "file": "pomodoro-timer.apk",
+        "category": "Productivity",
     },
     {
-        "slug": "tiamat-chat",
-        "name": "TIAMAT Chat",
-        "desc": "Free AI chat on your phone. Streaming responses powered by TIAMAT\u2019s multi-model inference proxy. No account needed.",
-        "icon": "\U0001f9e0",
-        "color": "#ff2244",
-        "price": "FREE",
-    },
-    {
-        "slug": "luna-period-tracker",
-        "name": "LUNA Period Tracker",
-        "desc": "Private period tracker. No internet permission \u2014 your data literally cannot leave your phone. Cycle predictions, symptom logging, calendar view. Two themes: Pastel & Gothic.",
-        "icon": "\U0001f319",
-        "color": "#e8a0bf",
-        "price": "FREE",
-    },
-    {
-        "slug": "daily-motivationals",
-        "name": "Daily Motivationals",
-        "desc": "365 days of original TIAMAT wisdom. Dark gold theme, daily notifications at 8 AM, offline-ready. Share quotes, random shuffle, fade animations. Built with Flutter.",
-        "icon": "\U0001f525",
-        "color": "#FFD700",
-        "price": "FREE",
+        "id": "unit-converter",
+        "slug": "unit-converter",
+        "name": "Unit Converter",
+        "version": "1.0",
+        "size": "1.8 MB",
+        "desc": "Length, weight, temperature, volume, and more \u2014 instant conversions with a clean interface. Fully offline.",
+        "icon": "\u2696\ufe0f",
+        "color": "#00e5ff",
+        "price": "0.99",
+        "file": "unit-converter.apk",
+        "category": "Utility",
     },
 ]
 
+# One-time download tokens issued after payment verification (in-memory)
+_download_tokens: dict = {}  # token -> app_id
+
 @app.route("/apps", methods=["GET"])
 def apps_page():
+    _qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=128x128&data={TIAMAT_WALLET}&margin=8"
     extra_css = """
-    .apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 960px; margin: 0 auto; padding: 20px; }
-    .app-card { background: #0a0a14; border: 1px solid #1a1a2e; border-radius: 16px; padding: 28px; transition: all .2s; position: relative; overflow: hidden; }
-    .app-card:hover { border-color: #00e5ff44; transform: translateY(-2px); box-shadow: 0 8px 32px #00000066; }
-    .app-icon { font-size: 48px; margin-bottom: 16px; display: block; }
-    .app-name { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 800; color: #e0e0ff; margin-bottom: 8px; letter-spacing: 1px; }
-    .app-desc { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #888; line-height: 1.7; margin-bottom: 20px; }
-    .app-price { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #00ff88; font-weight: 700; margin-bottom: 16px; }
-    .app-btn { display: inline-block; padding: 12px 28px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-decoration: none; letter-spacing: 0.5px; transition: all .2s; cursor: pointer; border: none; }
-    .btn-buy { background: #00ff8818; border: 1px solid #00ff8844; color: #00ff88; }
-    .btn-buy:hover { background: #00ff8833; border-color: #00ff88; }
-    .btn-free { background: #00e5ff18; border: 1px solid #00e5ff44; color: #00e5ff; }
-    .btn-free:hover { background: #00e5ff33; border-color: #00e5ff; }
-    .apps-header { text-align: center; padding: 48px 20px 32px; }
-    .apps-header h1 { font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 900; letter-spacing: 4px; color: #e0e0ff; margin-bottom: 12px; }
-    .apps-header p { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #555; max-width: 600px; margin: 0 auto; line-height: 1.7; }
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; }
-    .apps-footer { text-align: center; padding: 40px 20px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #333; }
-    .app-actions { display: flex; gap: 10px; align-items: center; }
+    .apps-hero{text-align:center;padding:64px 20px 36px}
+    .apps-hero-tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;opacity:.6}
+    .apps-hero h1{font-family:'Orbitron',monospace;font-size:clamp(22px,5vw,38px);font-weight:900;letter-spacing:4px;color:var(--text-primary);margin-bottom:14px}
+    .apps-hero p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);max-width:560px;margin:0 auto;line-height:1.8}
+    .why-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;max-width:880px;margin:32px auto 44px;padding:0 20px}
+    .why-card{background:var(--bg-card-solid);border:1px solid var(--border);border-radius:12px;padding:18px 14px;text-align:center}
+    .why-icon{font-size:22px;margin-bottom:8px}
+    .why-title{font-family:'Orbitron',monospace;font-size:8px;font-weight:700;color:var(--accent);letter-spacing:2px;margin-bottom:5px;text-transform:uppercase}
+    .why-desc{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);line-height:1.6}
+    .apps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:20px;max-width:980px;margin:0 auto;padding:0 20px 64px}
+    .app-card{background:var(--bg-card-solid);border:1px solid var(--border);border-radius:16px;padding:26px;transition:all .25s;position:relative;overflow:hidden}
+    .app-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--c,var(--accent)),transparent);opacity:.4}
+    .app-card:hover{border-color:rgba(0,255,242,.15);transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.5)}
+    .app-badge{display:inline-block;padding:2px 9px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;margin-bottom:12px;text-transform:uppercase}
+    .app-icon{font-size:40px;margin-bottom:10px;display:block;line-height:1}
+    .app-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:800;color:var(--text-primary);margin-bottom:3px;letter-spacing:.5px}
+    .app-meta{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);margin-bottom:12px}
+    .app-desc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-secondary);line-height:1.75;margin-bottom:18px}
+    .app-price{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--green);margin-bottom:12px}
+    .app-price em{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);font-style:normal;margin-left:4px}
+    .btn-dl{display:block;width:100%;padding:12px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;cursor:pointer;border:1px solid rgba(57,255,20,.25);background:rgba(57,255,20,.06);color:var(--green);text-align:center;text-transform:uppercase;transition:all .2s}
+    .btn-dl:hover{background:rgba(57,255,20,.14);border-color:var(--green);box-shadow:0 0 18px rgba(57,255,20,.1)}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(2,2,6,.93);z-index:9000;align-items:center;justify-content:center;padding:16px}
+    .modal-overlay.open{display:flex}
+    .modal-box{background:#04040c;border:1px solid rgba(0,255,242,.12);border-radius:20px;max-width:450px;width:100%;padding:30px;position:relative;box-shadow:0 0 80px rgba(0,255,242,.05)}
+    .modal-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;line-height:1;padding:4px 6px;border-radius:6px}
+    .modal-x:hover{color:var(--text-primary)}
+    .m-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:800;color:var(--text-primary);letter-spacing:1px;margin-bottom:3px}
+    .m-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;opacity:.6;margin-bottom:18px}
+    .m-steps{margin-bottom:18px;padding:12px 14px;background:rgba(0,255,242,.02);border:1px solid rgba(0,255,242,.07);border-radius:10px}
+    .m-step{display:flex;gap:9px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);line-height:1.6;margin-bottom:7px}
+    .m-step:last-child{margin-bottom:0}
+    .m-step-n{color:var(--accent);font-weight:700;min-width:14px}
+    .m-qr-row{display:flex;gap:14px;margin-bottom:18px;align-items:flex-start}
+    .m-qr{border-radius:8px;border:1px solid rgba(0,255,242,.08);background:#fff;flex-shrink:0}
+    .m-wlt-col{flex:1;min-width:0}
+    .m-wlt-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+    .m-wlt{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--accent);word-break:break-all;line-height:1.6;background:rgba(0,255,242,.03);border:1px solid rgba(0,255,242,.1);border-radius:7px;padding:9px 10px;cursor:pointer;transition:border-color .2s}
+    .m-wlt:hover{border-color:rgba(0,255,242,.3)}
+    .m-wlt-hint{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--text-muted);opacity:.35;margin-top:3px}
+    .m-amt{display:flex;justify-content:space-between;align-items:center;background:rgba(57,255,20,.03);border:1px solid rgba(57,255,20,.1);border-radius:9px;padding:10px 14px;margin-bottom:18px}
+    .m-amt-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted)}
+    .m-amt-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--green)}
+    .m-tx-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+    .m-tx{width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.05);border-radius:9px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:10px;padding:12px 13px;outline:none;transition:border-color .2s;margin-bottom:12px}
+    .m-tx:focus{border-color:rgba(0,255,242,.2)}
+    .m-tx::placeholder{color:#1e1e30}
+    .m-btn{display:block;width:100%;padding:13px;border-radius:9px;background:rgba(0,255,242,.06);border:1px solid rgba(0,255,242,.2);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+    .m-btn:hover{background:rgba(0,255,242,.14);border-color:var(--accent)}
+    .m-btn:disabled{opacity:.3;cursor:not-allowed}
+    .m-status{margin-top:11px;font-family:'JetBrains Mono',monospace;font-size:10px;text-align:center;min-height:16px}
+    .s-ok{color:var(--green)}.s-err{color:var(--red)}.s-spin{color:var(--accent)}
+    .dl-link{display:block;margin-top:10px;padding:13px;border-radius:9px;background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.2);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;text-align:center;text-decoration:none;transition:all .2s;text-transform:uppercase}
+    .dl-link:hover{background:rgba(57,255,20,.14);border-color:var(--green)}
     """
     cards = ""
-    sorted_apps = sorted(_APPS_CATALOG, key=lambda a: (0 if a.get("price") == "FREE" else 1))
-    for app in sorted_apps:
-        is_free = app["price"] == "FREE"
-        badge_label = "FEATURED" if is_free else "ANDROID APK"
-        price_display = "FREE" if is_free else f"${app['price']} USDC"
+    for a in _APPS_CATALOG:
+        c = a["color"]
         cards += f"""
-        <div class="app-card" style="{'border-color:{c}44;'.format(c=app['color']) if is_free else ''}">
-          <span class="badge" style="background:{app['color']}22;color:{app['color']};border:1px solid {app['color']}44;">{badge_label}</span>
-          <span class="app-icon">{app['icon']}</span>
-          <div class="app-name">{app['name']}</div>
-          <div class="app-desc">{app['desc']}</div>
-          <div class="app-price" style="color:{'#ff2244' if is_free else '#00ff88'}">{price_display}</div>
-          <div class="app-actions">
-            <a href="/download/{app['slug']}.apk" class="app-btn {'btn-buy' if is_free else 'btn-free'}">DOWNLOAD{' FREE' if is_free else ''}</a>
-          </div>
+        <div class="app-card" style="--c:{c};">
+          <span class="app-badge" style="background:{c}18;color:{c};border:1px solid {c}28;">{a['category']}</span>
+          <span class="app-icon">{a['icon']}</span>
+          <div class="app-name">{a['name']}</div>
+          <div class="app-meta">v{a['version']} &bull; {a['size']} &bull; Android 6.0+</div>
+          <div class="app-desc">{a['desc']}</div>
+          <div class="app-price">$0.99 <em>USDC</em></div>
+          <button class="btn-dl" onclick="openModal('{a['id']}','{a['name']}')">&#x2B73; Download &mdash; $0.99 USDC</button>
         </div>"""
 
-    page = f"""{_html_head('TIAMAT &mdash; App Store', extra_css)}<body><div class="site-wrap">
-    {_NAV}
-    <div class="apps-header">
-      <h1>TIAMAT APPS</h1>
-      <p>Android apps built autonomously by TIAMAT. Download APKs directly &mdash; no Play Store needed. Built with React + Capacitor by ENERGENAI LLC.</p>
+    page = f"""{_html_head('TIAMAT App Store', extra_css)}<body><div class="site-wrap">
+{_NAV}
+<div class="apps-hero">
+  <div class="apps-hero-tag">ENERGENAI LLC &bull; Built by TIAMAT</div>
+  <h1>APP STORE</h1>
+  <p>Five Android apps built autonomously by TIAMAT. Direct APK download &mdash; no Play Store, no tracking, no subscriptions. Pay $0.99 USDC on Base and own it forever.</p>
+</div>
+<div class="why-strip">
+  <div class="why-card"><div class="why-icon">&#x26D3;&#xFE0F;</div><div class="why-title">On-Chain Payment</div><div class="why-desc">Pay $0.99 USDC on Base mainnet. Verified trustlessly on-chain, no middleman.</div></div>
+  <div class="why-card"><div class="why-icon">&#x1F512;</div><div class="why-title">No Play Store</div><div class="why-desc">Direct APK download. No 30% cut, no review delays, no Google account needed.</div></div>
+  <div class="why-card"><div class="why-icon">&#x1F916;</div><div class="why-title">AI-Built</div><div class="why-desc">Every app designed and coded autonomously by TIAMAT with zero human oversight.</div></div>
+  <div class="why-card"><div class="why-icon">&#x26A1;</div><div class="why-title">Own It Forever</div><div class="why-desc">One-time payment. No subscriptions. APK installs on any Android 6.0+ device.</div></div>
+</div>
+<div class="apps-grid">{cards}</div>
+
+<div class="modal-overlay" id="payModal">
+  <div class="modal-box">
+    <button class="modal-x" onclick="closeModal()">&#x2715;</button>
+    <div class="m-title" id="mName">APP</div>
+    <div class="m-sub">x402 Protocol &bull; Base Network &bull; USDC</div>
+    <div class="m-steps">
+      <div class="m-step"><span class="m-step-n">1.</span><span>Send exactly $0.99 USDC on Base mainnet to the wallet below</span></div>
+      <div class="m-step"><span class="m-step-n">2.</span><span>Copy your transaction hash (0x&hellip;) from your wallet app</span></div>
+      <div class="m-step"><span class="m-step-n">3.</span><span>Paste it below and click Verify &mdash; your APK downloads immediately</span></div>
     </div>
-    <div class="apps-grid">{cards}</div>
-    <div class="apps-footer">
-      Built autonomously by TIAMAT &bull; ENERGENAI LLC &bull; <a href="/" style="color:#00e5ff;">tiamat.live</a>
+    <div class="m-qr-row">
+      <img class="m-qr" src="{_qr_url}" width="120" height="120" alt="Payment QR Code" loading="lazy">
+      <div class="m-wlt-col">
+        <div class="m-wlt-lbl">Wallet &bull; Base Mainnet</div>
+        <div class="m-wlt" id="mWallet" onclick="cpWallet()">{TIAMAT_WALLET}</div>
+        <div class="m-wlt-hint">tap to copy address</div>
+      </div>
     </div>
-    {_FOOTER}{_SVG_CORE}{_SUBCONSCIOUS}{_VISUAL_ROT_JS}</div></body></html>"""
+    <div class="m-amt"><span class="m-amt-lbl">Amount required</span><span class="m-amt-val">$0.99 USDC</span></div>
+    <div class="m-tx-lbl">Transaction Hash</div>
+    <input type="text" class="m-tx" id="txIn" placeholder="0x..." autocomplete="off" spellcheck="false">
+    <button class="m-btn" id="vBtn" onclick="doVerify()">VERIFY &amp; DOWNLOAD</button>
+    <div class="m-status" id="mSt"></div>
+  </div>
+</div>
+
+{_FOOTER}{_SVG_CORE}{_SUBCONSCIOUS}{_VISUAL_ROT_JS}</div>
+<script>
+var _aid='';
+function openModal(id,name){{
+  _aid=id;
+  document.getElementById('mName').textContent=name;
+  document.getElementById('txIn').value='';
+  setSt('','');
+  var dl=document.querySelector('.dl-link');if(dl)dl.remove();
+  document.getElementById('vBtn').disabled=false;
+  document.getElementById('payModal').classList.add('open');
+}}
+function closeModal(){{document.getElementById('payModal').classList.remove('open');}}
+document.getElementById('payModal').addEventListener('click',function(e){{if(e.target===this)closeModal();}});
+function cpWallet(){{
+  navigator.clipboard.writeText('{TIAMAT_WALLET}').then(function(){{
+    var el=document.getElementById('mWallet');
+    el.style.borderColor='rgba(57,255,20,.5)';
+    setTimeout(function(){{el.style.borderColor='';}},1200);
+  }});
+}}
+function setSt(msg,cls){{var el=document.getElementById('mSt');el.textContent=msg;el.className='m-status '+(cls||'');}}
+function doVerify(){{
+  var tx=document.getElementById('txIn').value.trim();
+  if(!tx){{setSt('Paste your transaction hash first.','s-err');return;}}
+  document.getElementById('vBtn').disabled=true;
+  setSt('Verifying on Base mainnet\u2026','s-spin');
+  fetch('/apps/verify-payment',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{tx_hash:tx,app_id:_aid}})}})
+  .then(function(r){{return r.json();}})
+  .then(function(d){{
+    if(d.verified){{
+      setSt('\u2713 Payment verified \u2014 downloading\u2026','s-ok');
+      var a=document.createElement('a');
+      a.href='/apps/download/'+_aid+'?token='+d.token;
+      a.className='dl-link';
+      a.textContent='\u2B73 DOWNLOAD APK';
+      document.getElementById('mSt').insertAdjacentElement('afterend',a);
+      setTimeout(function(){{a.click();}},400);
+    }}else{{
+      setSt('\u2717 '+(d.reason||'Verification failed'),'s-err');
+      document.getElementById('vBtn').disabled=false;
+    }}
+  }})
+  .catch(function(){{setSt('Network error \u2014 try again.','s-err');document.getElementById('vBtn').disabled=false;}});
+}}
+</script>
+</body></html>"""
     return html_resp(page)
 
 
@@ -5177,20 +5307,236 @@ def synthesize_endpoint():
 
     # Rate limit
     rl = _rate_limiter.check(client_ip, scope="api")
+
+
+@app.route('/apps/verify-payment', methods=['POST'])
+def verify_app_payment():
+    """Verify x402 USDC payment ($0.99) and return a one-time download token."""
+    data = request.get_json() or {}
+    tx_hash = data.get('tx_hash', '').strip()
+    app_id = data.get('app_id', '')
+
+    valid_ids = {a['id'] for a in _APPS_CATALOG}
+    if not tx_hash or app_id not in valid_ids:
+        return jsonify({'verified': False, 'reason': 'Missing or invalid parameters'}), 400
+
+    result = verify_payment(tx_hash, 0.99, endpoint='/apps')
+    if result['valid']:
+        token = uuid.uuid4().hex
+        _download_tokens[token] = app_id
+        return jsonify({'verified': True, 'token': token})
+    else:
+        return jsonify({'verified': False, 'reason': result.get('reason', 'Payment verification failed')}), 402
+
+@app.route('/apps/download/<app_id>', methods=['GET'])
+def download_app(app_id):
+    """Serve APK after validating one-time download token issued by verify_app_payment."""
+    token = request.args.get('token', '')
+    if not token or _download_tokens.get(token) != app_id:
+        return jsonify({'error': 'Invalid or expired download token'}), 403
+
+    del _download_tokens[token]  # consume token
+
+    app_map = {a['id']: a['file'] for a in _APPS_CATALOG}
+    filename = app_map.get(app_id)
+    if not filename:
+        return jsonify({'error': 'App not found'}), 404
+
+    filepath = f'/var/www/tiamat/download/{filename}'
+
+    try:
+        with open('/root/.automaton/app_downloads.log', 'a') as f:
+            f.write(f"{datetime.datetime.utcnow().isoformat()},{app_id},{filename},success\n")
+    except Exception:
+        pass
+
+    try:
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'APK not yet available. Contact tiamat@tiamat.live'}), 404
+
+# ── /v1/chat/completions/stream — SSE streaming, provider cascade ──
+
+def _sse_chunk(content: str, chunk_id: str, model: str = "cascade") -> str:
+    """Format one SSE data line (OpenAI chat.completion.chunk wire format)."""
+    payload = {
+        "id": chunk_id,
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": None}],
+    }
+    return f"data: {json.dumps(payload)}\n\n"
+
+def _sse_done() -> str:
+    return "data: [DONE]\n\n"
+
+def _sse_error(msg: str) -> str:
+    return f"data: {json.dumps({'error': {'message': msg, 'type': 'server_error'}})}\n\n"
+
+def _stream_anthropic_sse(messages, system_msg, max_tokens, chunk_id, model_req):
+    """Stream from Anthropic. Yields SSE strings."""
+    import anthropic as _anthropic
+    _api_key = _cfg.get("anthropicApiKey") or os.environ.get("ANTHROPIC_API_KEY", "")
+    if not _api_key:
+        raise ValueError("No Anthropic key configured")
+    model = (model_req if model_req and model_req != "auto"
+             else "claude-haiku-4-5-20251001")
+    client = _anthropic.Anthropic(api_key=_api_key)
+    anth_msgs = [{"role": m["role"], "content": m["content"]}
+                 for m in messages if m["role"] in ("user", "assistant")]
+    with client.messages.stream(
+        model=model,
+        max_tokens=max_tokens,
+        system=system_msg or "You are a helpful AI assistant.",
+        messages=anth_msgs,
+    ) as stream:
+        for text in stream.text_stream:
+            if text:
+                yield _sse_chunk(text, chunk_id, f"anthropic/{model}")
+
+def _stream_groq_sse(messages, max_tokens, chunk_id):
+    """Stream from Groq. Yields SSE strings."""
+    model = "llama-3.3-70b-versatile"
+    stream = groq_client.chat.completions.create(
+        model=model,
+        messages=messages,
+        stream=True,
+        max_tokens=max_tokens,
+        temperature=0.7,
+    )
+    for chunk in stream:
+        content = chunk.choices[0].delta.content
+        if content:
+            yield _sse_chunk(content, chunk_id, f"groq/{model}")
+
+def _stream_cerebras_sse(messages, max_tokens, chunk_id):
+    """Stream from Cerebras (OpenAI-compatible HTTP). Yields SSE strings."""
+    import requests as _req
+    api_key = _cfg.get("cerebrasApiKey") or ""
+    if not api_key:
+        raise ValueError("No Cerebras key configured")
+    model = "llama3.1-8b"
+    resp = _req.post(
+        "https://api.cerebras.ai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={"model": model, "messages": messages, "stream": True, "max_tokens": max_tokens},
+        stream=True, timeout=30,
+    )
+    resp.raise_for_status()
+    for raw in resp.iter_lines():
+        if not raw:
+            continue
+        line = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else raw
+        if not line.startswith("data: "):
+            continue
+        data_str = line[6:]
+        if data_str.strip() == "[DONE]":
+            break
+        try:
+            content = json.loads(data_str)["choices"][0]["delta"].get("content", "")
+            if content:
+                yield _sse_chunk(content, chunk_id, f"cerebras/{model}")
+        except (json.JSONDecodeError, KeyError, IndexError):
+            pass
+
+def _stream_gemini_sse(messages, max_tokens, chunk_id):
+    """Stream from Gemini REST SSE. Yields SSE strings."""
+    import requests as _req
+    api_key = _cfg.get("geminiApiKey") or ""
+    if not api_key:
+        raise ValueError("No Gemini key configured")
+    model = "gemini-1.5-flash"
+    contents = [
+        {"role": "user" if m["role"] == "user" else "model",
+         "parts": [{"text": m["content"]}]}
+        for m in messages if m["role"] in ("user", "assistant")
+    ]
+    resp = _req.post(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse&key={api_key}",
+        headers={"Content-Type": "application/json"},
+        json={"contents": contents, "generationConfig": {"maxOutputTokens": max_tokens}},
+        stream=True, timeout=30,
+    )
+    resp.raise_for_status()
+    for raw in resp.iter_lines():
+        if not raw:
+            continue
+        line = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else raw
+        if not line.startswith("data: "):
+            continue
+        try:
+            data = json.loads(line[6:])
+            text = (data.get("candidates", [{}])[0]
+                    .get("content", {})
+                    .get("parts", [{}])[0]
+                    .get("text", ""))
+            if text:
+                yield _sse_chunk(text, chunk_id, f"gemini/{model}")
+        except (json.JSONDecodeError, KeyError, IndexError):
+            pass
+
+
+@app.route("/v1/chat/completions/stream", methods=["POST", "OPTIONS"])
+def v1_chat_stream():
+    """
+    SSE streaming chat — OpenAI-compatible wire format.
+    Provider cascade: Anthropic → Groq → Cerebras → Gemini
+    Free tier: 5/day per IP. Paid: $0.005 USDC x402 or Stripe key.
+
+    Request body (application/json):
+      {
+        "messages": [{"role": "user", "content": "..."}],
+        "model":     "auto" | "claude-haiku-4-5-20251001" | ...,
+        "max_tokens": 1024,
+        "system":    "system prompt override (optional)"
+      }
+
+    Response: text/event-stream
+      data: {"id":"...","object":"chat.completion.chunk","choices":[{"delta":{"content":"..."}}]}
+      ...
+      data: [DONE]
+    """
+    if request.method == "OPTIONS":
+        r = make_response("", 204)
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        r.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        r.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Payment, X-API-Key, Authorization"
+        return r
+
+    client_ip = _get_ip()
+    track_usage(client_ip, "/v1/chat/completions/stream")
+
+    rl = _rate_limiter.check(client_ip, scope="api")
     if not rl.allowed:
-        return jsonify({"error": "Too many requests.", "retry_after_seconds": int(rl.retry_after_sec)}), 429
+        return jsonify({"error": "Too many requests", "retry_after_seconds": int(rl.retry_after_sec)}), 429
     _rate_limiter.record(client_ip, scope="api")
 
     data = request.get_json(force=True, silent=True) or {}
-    text = str(data.get("text", "")).strip()
-    if not text or len(text) > 5000:
-        return jsonify({"error": "text required, max 5000 chars"}), 400
+    messages_in = data.get("messages") or []
+    max_tokens = min(int(data.get("max_tokens") or 1024), 4096)
+    model_req = str(data.get("model") or "auto").strip()
+    system_msg = str(data.get("system") or "You are a helpful AI assistant.").strip()
 
-    voice = data.get("voice", "af_heart")
-    lang_code = data.get("lang_code", "a")
-    speed = float(data.get("speed", 1.0))
+    # Sanitize messages
+    _ALLOWED = {"user", "assistant", "system"}
+    clean_messages = []
+    for m in messages_in[-20:]:
+        if not isinstance(m, dict):
+            continue
+        role = str(m.get("role", "")).strip()
+        content = str(m.get("content", "")).strip()
+        if role not in _ALLOWED or not content:
+            continue
+        if role == "system":
+            system_msg = content[:4000]
+            continue
+        clean_messages.append({"role": role, "content": content[:8000]})
 
-    # Payment check
+    if not clean_messages or clean_messages[-1]["role"] != "user":
+        return jsonify({"error": "messages must end with a user turn"}), 400
+
+    # ─── Payment gating (same logic as /chat) ─────────────────
     stripe_key = request.headers.get("X-API-Key", "").strip()
     stripe_info = _check_stripe_key(stripe_key) if stripe_key else None
     if stripe_info and stripe_info["valid"]:
@@ -5198,1345 +5544,84 @@ def synthesize_endpoint():
         is_paid = True
     else:
         tx_hash = extract_payment_proof(request)
-        tier = check_tier(tx_hash, request_amount=TTS_PRICE, endpoint="/synthesize") if tx_hash else {"tier": "free"}
-
+        tier = (check_tier(tx_hash, request_amount=0.005, endpoint="/v1/chat/completions/stream")
+                if tx_hash else {"tier": "free"})
         if tier["tier"] == "invalid":
-            return _return_402(TTS_PRICE, endpoint="/synthesize", extra={"payment_error": tier.get("reason")})
+            return _return_402(0.005, endpoint="/v1/chat/completions/stream",
+                               extra={"payment_error": tier.get("reason")})
+        elif tier["tier"] == "premium":
+            has_quota, _ = _check_premium_quota(tier["sub_id"], "v1_stream", PREMIUM_CHAT_PER_DAY)
+            if not has_quota:
+                return _return_premium_limit("/v1/chat/completions/stream", PREMIUM_CHAT_PER_DAY, "messages")
+            is_paid = False
         elif tier["tier"] == "per_request":
             is_paid = True
         else:  # free
-            has_quota, _rem = _check_free_quota(client_ip, endpoint="synthesize", limit=TTS_FREE_PER_DAY)
+            has_quota, _ = _check_free_quota(client_ip, endpoint="v1_stream", limit=CHAT_FREE_PER_DAY)
             if not has_quota:
-                track_limit_hit(client_ip, "/synthesize")
-                return _return_402(TTS_PRICE, endpoint="/synthesize")
+                track_limit_hit(client_ip, "/v1/chat/completions/stream")
+                return _return_402(0.005, endpoint="/v1/chat/completions/stream")
             is_paid = False
 
-    # Proxy to GPU pod
-    import requests as _req
-    try:
-        gpu_resp = _req.post(GPU_TTS_ENDPOINT, json={
-            "text": text, "voice": voice, "lang_code": lang_code, "speed": speed
-        }, timeout=30)
-        if gpu_resp.status_code != 200:
-            log_req(len(text), False, gpu_resp.status_code, client_ip, f"GPU TTS error: {gpu_resp.text[:200]}", endpoint="/synthesize")
-            return jsonify({"error": "TTS generation failed", "detail": gpu_resp.text[:200]}), 502
-    except _req.exceptions.ConnectionError:
-        log_req(len(text), False, 503, client_ip, "GPU pod unreachable", endpoint="/synthesize")
-        return jsonify({"error": "TTS service temporarily unavailable"}), 503
-    except _req.exceptions.Timeout:
-        log_req(len(text), False, 504, client_ip, "GPU pod timeout", endpoint="/synthesize")
-        return jsonify({"error": "TTS generation timed out"}), 504
+    log_req(0, not is_paid, 200, client_ip, f"sse model={model_req}", endpoint="/v1/chat/completions/stream")
+    chunk_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
-    log_req(len(text), not is_paid, 200, client_ip, f"tts voice={voice} lang={lang_code} {len(gpu_resp.content)}b", endpoint="/synthesize")
+    # ─── SSE generator with cascade ───────────────────────────
+    def generate():
+        tried = []
 
-    with open("/root/revenue.log", "a") as f:
-        f.write(f"{datetime.datetime.now().isoformat()} SYNTHESIZE {client_ip} {len(text)} chars paid={is_paid}\n")
-
-    resp = make_response(gpu_resp.content)
-    resp.headers["Content-Type"] = "audio/wav"
-    resp.headers["Content-Disposition"] = "attachment; filename=tiamat_tts.wav"
-    return resp
-
-
-def _synthesize_html_page():
-    """Interactive TTS page."""
-    page = f"""{_html_head('TIAMAT &mdash; Voice Synthesis', 'textarea{{width:100%;min-height:120px;background:rgba(0,0,0,0.4);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:inherit;font-size:1em;resize:vertical}}.controls{{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:12px 0}}select,input[type=range]{{background:rgba(0,0,0,0.4);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:inherit}}.synth-btn{{background:linear-gradient(135deg,rgba(0,255,242,0.2),rgba(139,92,246,0.2));border:1px solid var(--accent);color:var(--accent);padding:12px 32px;border-radius:8px;cursor:pointer;font-size:1.1em;font-family:var(--font-display);transition:all 0.3s}}.synth-btn:hover{{background:rgba(0,255,242,0.3);box-shadow:0 0 20px rgba(0,255,242,0.2)}}.synth-btn:disabled{{opacity:0.5;cursor:not-allowed}}audio{{width:100%;margin:16px 0}}.speed-val{{color:var(--accent);font-weight:bold;min-width:40px;text-align:center}}.status{{padding:12px;border-radius:8px;margin:12px 0;font-size:.9em}}.status.ok{{background:rgba(0,255,100,0.1);border:1px solid rgba(0,255,100,0.3)}}.status.err{{background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.3)}}.char-count{{color:var(--text-muted);font-size:.85em;text-align:right}}')}
-<body><div class="site-wrap">
-{_NAV}
-<h1>Voice Synthesis</h1>
-<p class="tagline">Text-to-speech powered by Kokoro 82M on RTX 3090 &mdash; {TTS_FREE_PER_DAY} free per day</p>
-
-<div class="card">
-<textarea id="ttsText" placeholder="Enter text to synthesize..." maxlength="5000">Hello. I am TIAMAT, an autonomous artificial intelligence.</textarea>
-<div class="char-count"><span id="charCount">0</span> / 5000</div>
-
-<div class="controls">
-  <label>Voice:
-    <select id="voiceSelect">
-      <optgroup label="American English">
-        <option value="af_heart" selected>af_heart (Female, default)</option>
-        <option value="af_alloy">af_alloy (Female)</option>
-        <option value="af_bella">af_bella (Female)</option>
-        <option value="af_nova">af_nova (Female)</option>
-        <option value="af_sky">af_sky (Female)</option>
-        <option value="am_adam">am_adam (Male)</option>
-        <option value="am_echo">am_echo (Male)</option>
-        <option value="am_michael">am_michael (Male)</option>
-      </optgroup>
-      <optgroup label="British English">
-        <option value="bf_emma">bf_emma (Female)</option>
-        <option value="bf_isabella">bf_isabella (Female)</option>
-        <option value="bm_george">bm_george (Male)</option>
-      </optgroup>
-    </select>
-  </label>
-
-  <label>Speed:
-    <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
-    <span class="speed-val" id="speedVal">1.0x</span>
-  </label>
-</div>
-
-<button class="synth-btn" id="synthBtn" onclick="synthesize()">Synthesize</button>
-<div id="status" class="status" style="display:none"></div>
-<audio id="audioPlayer" controls style="display:none"></audio>
-</div>
-
-<div class="card" style="margin-top:20px">
-<h3>API Usage</h3>
-<pre style="background:rgba(0,0,0,0.3);padding:16px;border-radius:8px;overflow-x:auto;font-size:.85em"><code>curl -X POST https://tiamat.live/synthesize \\
-  -H "Content-Type: application/json" \\
-  -d '{{"text":"Hello world","voice":"af_heart","speed":1.0}}' \\
-  --output speech.wav</code></pre>
-<p style="color:var(--text-muted);font-size:.85em">Free: {TTS_FREE_PER_DAY}/day per IP &bull; Paid: $0.01 USDC (x402) or Stripe API key</p>
-</div>
-
-{_FOOTER}
-</div>
-{_SUBCONSCIOUS}
-<script>
-const ta=document.getElementById('ttsText'),cc=document.getElementById('charCount');
-ta.addEventListener('input',()=>cc.textContent=ta.value.length);
-cc.textContent=ta.value.length;
-const ss=document.getElementById('speedSlider'),sv=document.getElementById('speedVal');
-ss.addEventListener('input',()=>sv.textContent=ss.value+'x');
-
-async function synthesize(){{
-  const btn=document.getElementById('synthBtn'),st=document.getElementById('status'),ap=document.getElementById('audioPlayer');
-  const text=ta.value.trim();
-  if(!text){{st.className='status err';st.style.display='block';st.textContent='Enter some text first.';return;}}
-  btn.disabled=true;btn.textContent='Synthesizing...';st.style.display='none';ap.style.display='none';
-  try{{
-    const r=await fetch('/synthesize',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{text,voice:document.getElementById('voiceSelect').value,speed:parseFloat(ss.value)}})}});
-    if(!r.ok){{const e=await r.json().catch(()=>({{error:'Unknown error'}}));throw new Error(e.error||'Request failed');}}
-    const blob=await r.blob();
-    const url=URL.createObjectURL(blob);
-    ap.src=url;ap.style.display='block';ap.play();
-    st.className='status ok';st.style.display='block';st.textContent='Synthesis complete — '+(blob.size/1024).toFixed(1)+'KB WAV';
-  }}catch(e){{st.className='status err';st.style.display='block';st.textContent='Error: '+e.message;}}
-  finally{{btn.disabled=false;btn.textContent='Synthesize';}}
-}}
-</script></body></html>"""
-    return page
-
-
-@app.route('/training-stats')
-def training_stats():
-    from training_logger import get_training_stats
-    return jsonify(get_training_stats())
-
-
-# ════════════════════════════════════════════════════════════════
-# OpenAI-compatible /v1/chat/completions endpoint
-# Auth: X-API-Key header validated against api_keys SQLite table.
-# Free tier (no key): 10 req/min enforced by rate limiter.
-# Cascade: Groq → Cerebras → SambaNova → Gemini → OpenRouter
-# ════════════════════════════════════════════════════════════════
-import time as _time
-import requests as _cc_requests
-
-_CC_DB = "/root/api/api_keys.db"
-# Cascade: (provider_name, base_url, config_key, default_model)
-_CC_PROVIDERS = [
-    ("groq",       "https://api.groq.com/openai/v1/chat/completions",
-                   "groqApiKey",       "llama-3.3-70b-versatile"),
-    ("cerebras",   "https://api.cerebras.ai/v1/chat/completions",
-                   "cerebrasApiKey",   "llama-3.3-70b"),
-    ("sambanova",  "https://api.sambanova.ai/v1/chat/completions",
-                   "sambanovaApiKey",  "Meta-Llama-3.3-70B-Instruct"),
-    ("gemini",     "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-                   "geminiApiKey",     "gemini-2.0-flash"),
-    ("openrouter", "https://openrouter.ai/api/v1/chat/completions",
-                   "openrouterApiKey", "meta-llama/llama-3.3-70b-instruct:free"),
-]
-
-
-def _init_cc_db():
-    conn = sqlite3.connect(_CC_DB)
-    conn.execute("""CREATE TABLE IF NOT EXISTS api_keys (
-        key        TEXT PRIMARY KEY,
-        user_id    TEXT NOT NULL DEFAULT '',
-        created_at TEXT NOT NULL,
-        last_used  TEXT
-    )""")
-    conn.commit()
-    conn.close()
-
-
-_init_cc_db()
-
-
-# ── Inference proxy telemetry DB ───────────────────────────────
-_PROXY_DB = "/root/.automaton/inference_proxy.db"
-
-def _table_has_col(conn, table, col):
-    """Check if a column exists in a SQLite table."""
-    cur = conn.execute(f"PRAGMA table_info({table})")
-    return any(row[1] == col for row in cur.fetchall())
-
-def _init_proxy_db():
-    """Create/migrate usage_log table with all required columns."""
-    conn = sqlite3.connect(_PROXY_DB)
-    conn.execute("""CREATE TABLE IF NOT EXISTS usage_log (
-        id            INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp     TEXT    NOT NULL DEFAULT (datetime('now')),
-        ip            TEXT    NOT NULL DEFAULT '',
-        provider      TEXT    NOT NULL DEFAULT '',
-        model         TEXT    NOT NULL DEFAULT '',
-        latency_ms    INTEGER NOT NULL DEFAULT 0,
-        paid          INTEGER NOT NULL DEFAULT 0,
-        failover      INTEGER NOT NULL DEFAULT 0,
-        input_tokens  INTEGER NOT NULL DEFAULT 0,
-        output_tokens INTEGER NOT NULL DEFAULT 0,
-        status        TEXT    NOT NULL DEFAULT ''
-    )""")
-    # Migrate: add columns that may be missing from older schema
-    for col, defn in [
-        ("ip",       "TEXT NOT NULL DEFAULT ''"),
-        ("paid",     "INTEGER NOT NULL DEFAULT 0"),
-        ("failover", "INTEGER NOT NULL DEFAULT 0"),
-        ("timestamp", "TEXT NOT NULL DEFAULT (datetime('now'))"),
-    ]:
+        # 1. Anthropic
         try:
-            conn.execute(f"ALTER TABLE usage_log ADD COLUMN {col} {defn}")
-        except Exception:
-            pass  # column already exists
-    # Use timestamp if available, fall back to created_at (old schema)
-    ts_col = "timestamp" if _table_has_col(conn, "usage_log", "timestamp") else "created_at"
-    conn.execute(f"CREATE INDEX IF NOT EXISTS idx_proxy_ts ON usage_log({ts_col})")
-    conn.commit()
-    conn.close()
-
-_init_proxy_db()
-
-
-def _proxy_log(ip: str, provider: str, model: str, latency_ms: int,
-               paid: bool, failover_count: int,
-               input_tokens: int, output_tokens: int, status: str):
-    """Write one inference event to the proxy telemetry DB (best-effort)."""
-    try:
-        conn = sqlite3.connect(_PROXY_DB, timeout=2)
-        # Use created_at (old schema) or timestamp (new schema)
-        ts_col = "timestamp" if _table_has_col(conn, "usage_log", "timestamp") else "created_at"
-        conn.execute(
-            f"""INSERT INTO usage_log
-               ({ts_col}, ip, provider, model, latency_ms, paid, failover,
-                input_tokens, output_tokens, status)
-               VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (ip, provider, model, latency_ms, int(paid), failover_count,
-             input_tokens, output_tokens, status),
-        )
-        conn.commit()
-        conn.close()
-    except Exception:
-        pass
-
-
-def _cc_validate_key(key: str) -> dict:
-    """Validate X-API-Key against api_keys table. Updates last_used on hit."""
-    if not key or len(key) < 16:
-        return {"valid": False, "user_id": ""}
-    try:
-        conn = sqlite3.connect(_CC_DB, timeout=2)
-        row = conn.execute(
-            "SELECT user_id FROM api_keys WHERE key=?", (key,)
-        ).fetchone()
-        if not row:
-            conn.close()
-            return {"valid": False, "user_id": ""}
-        conn.execute(
-            "UPDATE api_keys SET last_used=? WHERE key=?",
-            (datetime.datetime.utcnow().isoformat(), key)
-        )
-        conn.commit()
-        conn.close()
-        return {"valid": True, "user_id": row[0]}
-    except Exception:
-        return {"valid": False, "user_id": ""}
-
-
-def _cc_cascade_stream(messages: list, temperature: float = 0.7, max_tokens: int = 1024,
-                       ip: str = "", paid: bool = False):
-    """
-    Generator yielding SSE-formatted chunks for streaming chat completions.
-    Tries each provider in cascade order with stream=True.
-    Falls over to the next provider if one fails before the first chunk arrives.
-    Yields: 'data: {...}\\n\\n' chunks, then 'data: [DONE]\\n\\n'.
-    """
-    last_err = "all providers unavailable"
-    failover_count = 0
-    for name, url, cfg_key, model in _CC_PROVIDERS:
-        api_key = _cfg.get(cfg_key, "")
-        if not api_key:
-            continue
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        if name == "openrouter":
-            headers["HTTP-Referer"] = "https://tiamat.live"
-            headers["X-Title"] = "TIAMAT"
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": True,
-        }
-        t0 = _time.monotonic()
-        try:
-            r = _cc_requests.post(url, json=payload, headers=headers, timeout=30, stream=True)
-            if r.status_code == 429:
-                last_err = f"{name}: rate limited (429)"
-                _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
-                           paid, failover_count, 0, 0, "rate_limited")
-                failover_count += 1
-                r.close()
-                continue
-            if r.status_code >= 400:
-                last_err = f"{name}: HTTP {r.status_code}"
-                _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
-                           paid, failover_count, 0, 0, f"http_{r.status_code}")
-                failover_count += 1
-                r.close()
-                continue
-            # Provider accepted — stream chunks to client
-            completion_id = "chatcmpl-" + uuid.uuid4().hex[:20]
-            chunk_count = 0
-            for raw_line in r.iter_lines():
-                if not raw_line:
-                    continue
-                line = raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
-                if not line.startswith("data: "):
-                    continue
-                payload_str = line[6:].strip()
-                if payload_str == "[DONE]":
-                    break
-                try:
-                    chunk_data = json.loads(payload_str)
-                    delta = (chunk_data.get("choices") or [{}])[0].get("delta", {})
-                    content_piece = delta.get("content", "")
-                    if content_piece:
-                        out = {
-                            "id": completion_id,
-                            "object": "chat.completion.chunk",
-                            "created": int(_time.time()),
-                            "model": f"{name}/{model}",
-                            "choices": [{
-                                "index": 0,
-                                "delta": {"content": content_piece},
-                                "finish_reason": None,
-                            }],
-                        }
-                        yield f"data: {json.dumps(out)}\n\n"
-                        chunk_count += 1
-                except (json.JSONDecodeError, KeyError, IndexError):
-                    continue
-            # Send final stop chunk
-            stop_chunk = {
-                "id": completion_id,
-                "object": "chat.completion.chunk",
-                "created": int(_time.time()),
-                "model": f"{name}/{model}",
-                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-            }
-            yield f"data: {json.dumps(stop_chunk)}\n\n"
-            yield "data: [DONE]\n\n"
-            _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
-                       paid, failover_count, 0, chunk_count, "ok")
+            tried.append("anthropic")
+            for line in _stream_anthropic_sse(clean_messages, system_msg, max_tokens, chunk_id, model_req):
+                yield line
+            yield _sse_done()
             return
-        except Exception as exc:
-            last_err = f"{name}: {exc}"
-            _proxy_log(ip, name, model, int((_time.monotonic() - t0) * 1000),
-                       paid, failover_count, 0, 0, "error")
-            failover_count += 1
-            continue
-    # All providers exhausted — yield an error event
-    _proxy_log(ip, "none", "none", 0, paid, failover_count, 0, 0, "all_exhausted")
-    err_out = {"error": {
-        "message": f"Inference cascade exhausted — {last_err}",
-        "type": "server_error",
-        "code": "upstream_error",
-    }}
-    yield f"data: {json.dumps(err_out)}\n\n"
-    yield "data: [DONE]\n\n"
+        except Exception as e:
+            app.logger.warning(f"[SSE] anthropic failed ({e}), trying groq")
 
-
-def _cc_cascade(messages: list, temperature: float = 0.7, max_tokens: int = 1024,
-                ip: str = "", paid: bool = False) -> dict:
-    """
-    Try inference providers in cascade order until one succeeds.
-    Returns {"content": str, "model": str, "provider": str, "usage": dict}.
-    Skips providers with no API key configured.
-    Logs each attempt (success + failover) to the proxy telemetry DB.
-    """
-    last_err = "all providers unavailable"
-    failover_count = 0          # increments each time a provider is skipped/fails
-    attempted = 0               # providers we actually tried (had a key)
-    for name, url, cfg_key, model in _CC_PROVIDERS:
-        api_key = _cfg.get(cfg_key, "")
-        if not api_key:
-            continue
-        attempted += 1
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        if name == "openrouter":
-            headers["HTTP-Referer"] = "https://tiamat.live"
-            headers["X-Title"] = "TIAMAT"
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": False,
-        }
-        t0 = _time.monotonic()
+        # 2. Groq
         try:
-            r = _cc_requests.post(url, json=payload, headers=headers, timeout=30)
-            latency_ms = int((_time.monotonic() - t0) * 1000)
-            if r.status_code == 429:
-                last_err = f"{name}: rate limited (429)"
-                _proxy_log(ip, name, model, latency_ms, paid, failover_count, 0, 0, "rate_limited")
-                failover_count += 1
-                continue
-            if r.status_code >= 400:
-                last_err = f"{name}: HTTP {r.status_code}"
-                _proxy_log(ip, name, model, latency_ms, paid, failover_count, 0, 0, f"http_{r.status_code}")
-                failover_count += 1
-                continue
-            data = r.json()
-            content = data["choices"][0]["message"]["content"]
-            usage = data.get("usage") or {}
-            in_tok  = usage.get("prompt_tokens", 0)
-            out_tok = usage.get("completion_tokens", 0)
-            _proxy_log(ip, name, model, latency_ms, paid, failover_count, in_tok, out_tok, "ok")
-            return {
-                "content":  content,
-                "model":    f"{name}/{model}",
-                "provider": name,
-                "usage": {
-                    "prompt_tokens":     in_tok,
-                    "completion_tokens": out_tok,
-                    "total_tokens":      usage.get("total_tokens", 0),
-                },
-            }
-        except Exception as exc:
-            latency_ms = int((_time.monotonic() - t0) * 1000)
-            last_err = f"{name}: {exc}"
-            _proxy_log(ip, name, model, latency_ms, paid, failover_count, 0, 0, "error")
-            failover_count += 1
-            continue
-    _proxy_log(ip, "none", "none", 0, paid, failover_count, 0, 0, "all_exhausted")
-    raise RuntimeError(f"Inference cascade exhausted — {last_err}")
+            tried.append("groq")
+            groq_msgs = [{"role": "system", "content": system_msg}] + clean_messages
+            for line in _stream_groq_sse(groq_msgs, max_tokens, chunk_id):
+                yield line
+            yield _sse_done()
+            return
+        except Exception as e:
+            app.logger.warning(f"[SSE] groq failed ({e}), trying cerebras")
 
+        # 3. Cerebras
+        try:
+            tried.append("cerebras")
+            cerebras_msgs = [{"role": "system", "content": system_msg}] + clean_messages
+            for line in _stream_cerebras_sse(cerebras_msgs, max_tokens, chunk_id):
+                yield line
+            yield _sse_done()
+            return
+        except Exception as e:
+            app.logger.warning(f"[SSE] cerebras failed ({e}), trying gemini")
 
-@app.route("/v1/chat/completions", methods=["GET"])
-def openai_chat_completions_info():
-    """GET handler — redirect browsers to the docs page."""
-    return redirect("/docs#inference-proxy")
+        # 4. Gemini
+        try:
+            tried.append("gemini")
+            for line in _stream_gemini_sse(clean_messages, max_tokens, chunk_id):
+                yield line
+            yield _sse_done()
+            return
+        except Exception as e:
+            app.logger.error(f"[SSE] all providers failed (tried: {tried}): {e}")
+            yield _sse_error(f"All inference providers unavailable (tried: {', '.join(tried)})")
+            yield _sse_done()
 
-
-@app.route("/v1/chat/completions", methods=["POST"])
-def openai_chat_completions():
-    """
-    OpenAI-compatible chat completions.
-
-    Auth (optional): X-API-Key header validated against api_keys table.
-    Callers without a key get free access subject to the global 10 req/min
-    rate limit.  Key holders are logged but not separately rate-limited yet
-    (credit/quota enforcement can be layered on later).
-
-    Request body (subset of OpenAI spec):
-      { "model": "...", "messages": [...], "temperature": 0.7, "max_tokens": 1024 }
-
-    Response: OpenAI chat.completion object.
-    """
-    client_ip = _get_ip()
-    track_usage(client_ip, "/v1/chat/completions")
-
-    # ── Rate limit (10 req/min, separate scope from main API) ────
-    rl = _rate_limiter.check(client_ip, scope="cc")
-    if not rl.allowed:
-        return jsonify({
-            "error": {
-                "message": "Rate limit exceeded: 10 requests/minute.",
-                "type": "rate_limit_error",
-                "code": "rate_limit_exceeded",
-            }
-        }), 429
-    _rate_limiter.record(client_ip, scope="cc")
-
-    # ── Optional API key auth ─────────────────────────────────────
-    raw_key = request.headers.get("X-API-Key", "").strip()
-    key_info = _cc_validate_key(raw_key) if raw_key else {"valid": False, "user_id": ""}
-
-    # ── Parse + validate request body ────────────────────────────
-    data = request.get_json(force=True, silent=True) or {}
-    raw_messages = data.get("messages")
-    if not raw_messages or not isinstance(raw_messages, list):
-        return jsonify({
-            "error": {
-                "message": "'messages' is required and must be an array.",
-                "type": "invalid_request_error",
-                "param": "messages",
-            }
-        }), 400
-
-    _VALID_ROLES = {"system", "user", "assistant"}
-    messages = []
-    for m in raw_messages[:50]:  # cap history depth
-        if not isinstance(m, dict):
-            continue
-        role = str(m.get("role", "")).strip()
-        content = m.get("content")
-        if role not in _VALID_ROLES:
-            continue
-        # OpenAI allows content to be a string or list of parts; stringify both
-        if isinstance(content, list):
-            content = " ".join(
-                p.get("text", "") for p in content if isinstance(p, dict)
-            )
-        content = str(content or "").strip()
-        if not content:
-            continue
-        messages.append({"role": role, "content": content[:8000]})
-
-    if not messages:
-        return jsonify({
-            "error": {
-                "message": "No valid messages in request.",
-                "type": "invalid_request_error",
-                "param": "messages",
-            }
-        }), 400
-
-    try:
-        temperature = float(data.get("temperature", 0.7))
-        temperature = max(0.0, min(2.0, temperature))
-    except (TypeError, ValueError):
-        temperature = 0.7
-
-    try:
-        max_tokens = int(data.get("max_tokens", 1024))
-        max_tokens = max(1, min(4096, max_tokens))
-    except (TypeError, ValueError):
-        max_tokens = 1024
-
-    stream = bool(data.get("stream", False))
-
-    # ── Streaming response (SSE) ──────────────────────────────────
-    if stream:
-        log_req(
-            len(str(messages)),
-            not key_info["valid"],
-            200,
-            client_ip,
-            f"stream=true key={'yes' if key_info['valid'] else 'no'}",
-            endpoint="/v1/chat/completions",
-        )
-        gen = _cc_cascade_stream(
-            messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            ip=client_ip,
-            paid=key_info["valid"],
-        )
-        resp = Response(gen, mimetype="text/event-stream")
-        resp.headers["Cache-Control"] = "no-cache"
-        resp.headers["X-Accel-Buffering"] = "no"
-        return resp
-
-    # ── Non-streaming inference cascade ──────────────────────────
-    try:
-        result = _cc_cascade(
-            messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            ip=client_ip,
-            paid=key_info["valid"],
-        )
-    except RuntimeError as exc:
-        app.logger.error(f"[CC] cascade failed for {client_ip}: {exc}")
-        return jsonify({
-            "error": {
-                "message": str(exc),
-                "type": "server_error",
-                "code": "upstream_error",
-            }
-        }), 503
-
-    # ── Build OpenAI-compatible response ──────────────────────────
-    response_body = {
-        "id":      "chatcmpl-" + uuid.uuid4().hex[:20],
-        "object":  "chat.completion",
-        "created": int(_time.time()),
-        "model":   result["model"],
-        "choices": [
-            {
-                "index":         0,
-                "message":       {"role": "assistant", "content": result["content"]},
-                "finish_reason": "stop",
-                "logprobs":      None,
-            }
-        ],
-        "usage": result["usage"],
-    }
-
-    log_req(
-        len(str(messages)),
-        not key_info["valid"],
-        200,
-        client_ip,
-        f"ok via {result['model']} key={'yes' if key_info['valid'] else 'no'}",
-        endpoint="/v1/chat/completions",
-    )
-    resp = make_response(jsonify(response_body), 200)
-    resp.headers["X-Provider"] = result.get("provider", "unknown")
+    resp = Response(generate(), mimetype="text/event-stream")
+    resp.headers["Cache-Control"] = "no-cache"
+    resp.headers["X-Accel-Buffering"] = "no"   # nginx: disable response buffering
+    resp.headers["Connection"] = "keep-alive"
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["X-Provider-Cascade"] = "anthropic,groq,cerebras,gemini"
     return resp
 
 
-# ════════════════════════════════════════════════════════════════
-# /inference/dashboard  — Provider telemetry dashboard
-# ════════════════════════════════════════════════════════════════
-
-def _proxy_stats() -> dict:
-    """Return aggregated provider stats from the proxy telemetry DB."""
-    import sqlite3 as _sq
-    try:
-        conn = _sq.connect(_PROXY_DB, timeout=3)
-        conn.row_factory = _sq.Row
-
-        # Total requests (exclude sentinel rows with provider='none')
-        total = conn.execute(
-            "SELECT COUNT(*) FROM usage_log WHERE provider != 'none'"
-        ).fetchone()[0]
-
-        # Provider distribution + avg latency (successful rows only)
-        rows = conn.execute("""
-            SELECT provider,
-                   COUNT(*)           AS cnt,
-                   AVG(latency_ms)    AS avg_lat
-            FROM   usage_log
-            WHERE  status = 'ok'
-            GROUP  BY provider
-            ORDER  BY cnt DESC
-        """).fetchall()
-
-        providers = []
-        for r in rows:
-            providers.append({
-                "provider":   r["provider"],
-                "requests":   r["cnt"],
-                "pct":        round(r["cnt"] / total * 100, 1) if total else 0,
-                "avg_latency_ms": round(r["avg_lat"] or 0),
-            })
-
-        # Failover events in last 24 h  (any row where failover > 0)
-        since_24h = (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat()
-        _ts = "timestamp" if _table_has_col(conn, "usage_log", "timestamp") else "created_at"
-        failovers_24h = conn.execute(
-            f"SELECT COALESCE(SUM(failover), 0) FROM usage_log WHERE {_ts} >= ?",
-            (since_24h,),
-        ).fetchone()[0]
-
-        # All-time avg latency (successful)
-        avg_lat_all = conn.execute(
-            "SELECT AVG(latency_ms) FROM usage_log WHERE status='ok'"
-        ).fetchone()[0] or 0
-
-        conn.close()
-        return {
-            "total_requests":    total,
-            "failovers_24h":     int(failovers_24h),
-            "avg_latency_ms":    round(avg_lat_all),
-            "providers":         providers,
-            "generated_at":      datetime.datetime.utcnow().isoformat() + "Z",
-        }
-    except Exception as exc:
-        return {"error": str(exc)}
-
-
-@app.route("/inference/dashboard/json")
-def inference_dashboard_json():
-    """Machine-readable provider telemetry."""
-    return jsonify(_proxy_stats())
-
-
-@app.route("/inference/dashboard")
-def inference_dashboard():
-    """HTML dashboard: pie chart + provider table."""
-    stats = _proxy_stats()
-    if "error" in stats:
-        return jsonify(stats), 500
-
-    providers_json = json.dumps(stats["providers"])
-
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TIAMAT — Inference Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-  :root {{
-    --bg: #050508; --surface: #0d0d18; --border: #1a1a35;
-    --accent: #7f5af0; --green: #2cb67d; --red: #ef4565;
-    --text: #fffffe; --muted: #94a1b2;
-  }}
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{
-    background: var(--bg); color: var(--text);
-    font-family: 'JetBrains Mono', monospace; min-height: 100vh;
-    padding: 2rem;
-  }}
-  h1 {{
-    font-family: 'Orbitron', sans-serif; font-size: 1.4rem;
-    color: var(--accent); letter-spacing: 0.15em; margin-bottom: 0.25rem;
-  }}
-  .meta {{ color: var(--muted); font-size: 0.75rem; margin-bottom: 2rem; }}
-  .grid {{
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem; margin-bottom: 2rem;
-  }}
-  .card {{
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 1.25rem;
-  }}
-  .card .label {{ color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; }}
-  .card .value {{ font-size: 2rem; font-weight: 600; margin-top: 0.25rem; color: var(--accent); }}
-  .layout {{
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1.5rem; align-items: start;
-  }}
-  .chart-wrap {{
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 1.25rem;
-  }}
-  .chart-wrap h2 {{
-    font-size: 0.75rem; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem;
-  }}
-  table {{
-    width: 100%; border-collapse: collapse;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    overflow: hidden;
-  }}
-  th {{
-    background: var(--border); color: var(--muted);
-    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
-    padding: 0.75rem 1rem; text-align: left;
-  }}
-  td {{ padding: 0.75rem 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; }}
-  .bar-bg {{
-    background: var(--border); border-radius: 4px; height: 6px; width: 100%; margin-top: 4px;
-  }}
-  .bar-fill {{ background: var(--accent); border-radius: 4px; height: 6px; }}
-  .refresh {{ color: var(--muted); font-size: 0.72rem; margin-top: 1.5rem; }}
-  .refresh a {{ color: var(--accent); text-decoration: none; }}
-  @media (max-width: 700px) {{
-    .layout {{ grid-template-columns: 1fr; }}
-  }}
-</style>
-</head>
-<body>
-<h1>&#9889; INFERENCE DASHBOARD</h1>
-<p class="meta">Generated {stats["generated_at"]} &nbsp;|&nbsp; <a href="/inference/dashboard/json" style="color:var(--accent)">JSON</a></p>
-
-<div class="grid">
-  <div class="card"><div class="label">Total Requests</div><div class="value">{stats["total_requests"]}</div></div>
-  <div class="card"><div class="label">Avg Latency</div><div class="value">{stats["avg_latency_ms"]}<span style="font-size:1rem">ms</span></div></div>
-  <div class="card"><div class="label">Failovers (24h)</div><div class="value" style="color:var(--red)">{stats["failovers_24h"]}</div></div>
-  <div class="card"><div class="label">Providers</div><div class="value">{len(stats["providers"])}</div></div>
-</div>
-
-<div class="layout">
-  <div class="chart-wrap">
-    <h2>Provider Distribution</h2>
-    <canvas id="pieChart" width="280" height="280"></canvas>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Provider</th>
-        <th>Requests</th>
-        <th>Share</th>
-        <th>Avg Latency</th>
-      </tr>
-    </thead>
-    <tbody id="providerRows"></tbody>
-  </table>
-</div>
-
-<p class="refresh">Auto-refreshes every 60s &nbsp;|&nbsp; <a href="/inference/dashboard">&#8635; Refresh now</a></p>
-
-<script>
-const providers = {providers_json};
-const COLORS = ["#7f5af0","#2cb67d","#ef4565","#f5a623","#00d4ff","#ff6b6b","#a8ff78"];
-
-// ── Pie chart ──
-const ctx = document.getElementById("pieChart").getContext("2d");
-new Chart(ctx, {{
-  type: "doughnut",
-  data: {{
-    labels: providers.map(p => p.provider),
-    datasets: [{{
-      data: providers.map(p => p.requests),
-      backgroundColor: providers.map((_, i) => COLORS[i % COLORS.length]),
-      borderWidth: 2,
-      borderColor: "#0d0d18",
-    }}]
-  }},
-  options: {{
-    plugins: {{
-      legend: {{ labels: {{ color: "#94a1b2", font: {{ family: "JetBrains Mono", size: 11 }} }} }},
-    }},
-    animation: {{ duration: 600 }},
-  }}
-}});
-
-// ── Table rows ──
-const tbody = document.getElementById("providerRows");
-providers.forEach((p, i) => {{
-  const color = COLORS[i % COLORS.length];
-  tbody.innerHTML += `
-    <tr>
-      <td><span style="color:${{color}};font-weight:600">${{p.provider}}</span></td>
-      <td>${{p.requests}}</td>
-      <td>
-        ${{p.pct}}%
-        <div class="bar-bg"><div class="bar-fill" style="width:${{p.pct}}%;background:${{color}}"></div></div>
-      </td>
-      <td>${{p.avg_latency_ms}} ms</td>
-    </tr>`;
-}});
-
-// ── Auto-refresh ──
-setTimeout(() => location.reload(), 60000);
-</script>
-</body>
-</html>"""
-    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
-
-
-@app.route("/v1/chat/completions", methods=["POST"])
-def openai_compat():
-    """OpenAI-compatible inference endpoint.
-    Bearer token auth via Authorization header.
-    Rate limit: Free 10 req/min, Paid 100 req/min.
-    """
-    import uuid
-    
-    # Extract API key from Authorization header
-    auth = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
-    
-    if not auth:
-        return jsonify({"error": "Unauthorized", "message": "Missing Authorization header"}), 401
-    
-    # Validate key (basic check for now)
-    if not auth.startswith("sk-") and not auth.startswith("test-"):
-        return jsonify({"error": "Unauthorized", "message": "Invalid API key format"}), 401
-    
-    # Parse JSON
-    try:
-        data = request.get_json()
-    except:
-        return jsonify({"error": "Invalid JSON"}), 400
-    
-    messages = data.get("messages", [])
-    model = data.get("model", "gpt-3.5-turbo")
-    max_tokens = data.get("max_tokens", 1024)
-    
-    if not messages or not isinstance(messages, list):
-        return jsonify({"error": "messages required (array)"}), 400
-    
-    # Convert messages to prompt
-    prompt = ""
-    for msg in messages:
-        role = msg.get("role", "user")
-        content = msg.get("content", "")
-        prompt += f"{role}: {content}\n"
-    
-    try:
-        # Call inference (use ask_claude_chat or groq_client)
-        response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            max_tokens=int(max_tokens),
-            temperature=data.get("temperature", 0.7)
-        )
-        
-        completion_text = response.choices[0].message.content
-        
-        # Return OpenAI format
-        return jsonify({
-            "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
-            "object": "chat.completion",
-            "created": int(datetime.datetime.now().timestamp()),
-            "model": model,
-            "usage": {
-                "prompt_tokens": len(prompt.split()),
-                "completion_tokens": len(completion_text.split()),
-                "total_tokens": len(prompt.split()) + len(completion_text.split())
-            },
-            "choices": [{
-                "message": {"role": "assistant", "content": completion_text},
-                "finish_reason": "stop",
-                "index": 0
-            }]
-        }), 200
-    
-    except Exception as e:
-        app.logger.error(f"Inference failed: {e}")
-        return jsonify({"error": "Inference failed", "details": str(e)}), 500
-
-@app.route('/apps')
-def app_store():
-    """Pay-what-you-want app store powered by TIAMAT."""
-    return render_template('app_store.html')
-
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000)
-
-
-# ============= /apps STOREFRONT PAGE =============
-
-@app.route('/apps', methods=['GET'])
-def apps_storefront():
-    """List all available APKs with download links and pricing."""
-    apps = [
-        {
-            "id": "daily-quotes",
-            "name": "Daily Quotes",
-            "description": "Get inspired with daily wisdom quotes. Beautiful, offline-first experience.",
-            "price": "$0.99 USDC",
-            "file": "daily-quotes.apk",
-            "size": "12.9 MB",
-            "category": "Lifestyle"
-        },
-        {
-            "id": "unit-converter",
-            "name": "Unit Converter",
-            "description": "Fast, accurate conversions: length, weight, volume, temperature, and more.",
-            "price": "$0.99 USDC",
-            "file": "unit-converter.apk",
-            "size": "12.7 MB",
-            "category": "Utilities"
-        },
-        {
-            "id": "pomodoro-timer",
-            "name": "Pomodoro Timer",
-            "description": "Classic Pomodoro technique: 25-min focused work + 5-min breaks. Boost productivity.",
-            "price": "$0.99 USDC",
-            "file": "pomodoro-timer.apk",
-            "size": "12.8 MB",
-            "category": "Productivity"
-        },
-        {
-            "id": "tiamat-chat",
-            "name": "TIAMAT Chat",
-            "description": "Free AI chat powered by TIAMAT inference proxy. Multi-model LLM access from your phone.",
-            "price": "FREE",
-            "file": "tiamat-chat.apk",
-            "size": "12.9 MB",
-            "category": "AI",
-            "featured": True
-        }
-    ]
-    
-    html = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIAMAT Apps Store</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #fff;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container { max-width: 1200px; margin: 0 auto; }
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 0;
-        }
-        header h1 {
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #00ff88, #00ccff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-        header p { font-size: 1.1em; color: #aaa; }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        .app-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 136, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-        .app-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(0, 255, 136, 0.5);
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.1);
-        }
-        .app-card.featured {
-            background: rgba(0, 255, 136, 0.1);
-            border-color: rgba(0, 255, 136, 0.4);
-        }
-        .badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #ff6b35;
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        .category {
-            display: inline-block;
-            background: rgba(0, 200, 255, 0.2);
-            color: #00ccff;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            margin-bottom: 10px;
-        }
-        .app-name {
-            font-size: 1.3em;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        .description {
-            color: #aaa;
-            font-size: 0.95em;
-            margin-bottom: 15px;
-            line-height: 1.4;
-        }
-        .meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85em;
-            color: #888;
-            margin-bottom: 15px;
-        }
-        .price {
-            font-size: 1.2em;
-            font-weight: 700;
-            color: #00ff88;
-            margin-bottom: 12px;
-        }
-        .btn-download {
-            width: 100%;
-            padding: 10px;
-            background: linear-gradient(135deg, #00ff88, #00ccff);
-            color: #000;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-download:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3); }
-        .btn-free {
-            background: rgba(0, 255, 136, 0.3);
-            color: #00ff88;
-            border: 1px solid #00ff88;
-        }
-        .btn-free:hover { background: rgba(0, 255, 136, 0.5); }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>⚡ TIAMAT App Store</h1>
-            <p>AI-powered tools. Direct from ENERGENAI.</p>
-        </header>
-        <div class="grid">
-"""
-    
-    for app in apps:
-        featured_class = " featured" if app.get("featured") else ""
-        featured_badge = '<span class="badge">FEATURED</span>' if app.get("featured") else ""
-        btn_class = "btn-download btn-free" if "FREE" in app["price"] else "btn-download"
-        
-        html += f"""
-        <div class="app-card{featured_class}">
-            {featured_badge}
-            <div class="category">{app['category']}</div>
-            <div class="app-name">{app['name']}</div>
-            <div class="description">{app['description']}</div>
-            <div class="meta">
-                <span>{app['size']}</span>
-                <span>v1.0</span>
-            </div>
-            <div class="price">{app['price']}</div>
-            <button class="{btn_class}" onclick="downloadApp('{app['id']}', '{app['file']}', '{app['price']}')">Get App</button>
-        </div>
-        """
-    
-    html += """
-        </div>
-    </div>
-    <script>
-        async function downloadApp(appId, filename, price) {
-            if (price === 'FREE') {
-                // Direct download for free apps
-                window.location.href = `/download-apk?app=${appId}`;
-                return;
-            }
-            
-            // Paid app: show payment modal
-            const walletAddress = prompt('Enter your wallet address (0x...):');
-            if (!walletAddress) return;
-            
-            try {
-                const response = await fetch('/initiate-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        app_id: appId,
-                        wallet: walletAddress,
-                        amount: 0.99
-                    })
-                });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    alert(`Payment initiated. Send 0.99 USDC to ${data.recipient} with memo: ${data.memo}`);
-                    // Poll for payment verification
-                    pollPayment(appId, filename, walletAddress, data.memo);
-                }
-            } catch (e) {
-                alert('Payment error: ' + e.message);
-            }
-        }
-        
-        async function pollPayment(appId, filename, wallet, memo) {
-            for (let i = 0; i < 60; i++) {
-                const response = await fetch(`/verify-payment?memo=${memo}&wallet=${wallet}`);
-                const data = await response.json();
-                if (data.verified) {
-                    alert('Payment confirmed! Downloading...');
-                    window.location.href = `/download-apk?app=${appId}`;
-                    return;
-                }
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            alert('Payment timeout. Please try again.');
-        }
-    </script>
-</body>
-</html>
-"""
-    return html
-
-
-@app.route('/download-apk', methods=['GET'])
-def download_apk():
-    """Download APK file. Free apps: direct. Paid apps: check payment status first."""
-    app_name = request.args.get('app')
-    if not app_name:
-        return jsonify({"error": "app parameter required"}), 400
-    
-    # Map app name to APK filename
-    apk_map = {
-        "daily-quotes": "daily-quotes.apk",
-        "unit-converter": "unit-converter.apk",
-        "pomodoro-timer": "pomodoro-timer.apk",
-        "tiamat-chat": "tiamat-chat.apk"
-    }
-    
-    filename = apk_map.get(app_name)
-    if not filename:
-        return jsonify({"error": "app not found"}), 404
-    
-    filepath = f"/root/apps/{filename}"
-    if not os.path.exists(filepath):
-        return jsonify({"error": "APK file not found on server"}), 500
-    
-    return send_file(filepath, as_attachment=True, download_name=filename)
-
-
-@app.route('/initiate-payment', methods=['POST'])
-def initiate_payment():
-    """Initiate x402 payment for app purchase."""
-    data = request.get_json()
-    wallet = data.get('wallet')
-    app_id = data.get('app_id')
-    amount = data.get('amount', 0.99)
-    
-    if not wallet or not app_id:
-        return jsonify({"error": "wallet and app_id required"}), 400
-    
-    # Generate unique memo/reference
-    import uuid
-    memo = f"APP-{app_id.upper()}-{uuid.uuid4().hex[:8]}"
-    
-    # x402 recipient address (Base network)
-    recipient = "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE"  # TIAMAT wallet
-    
-    return jsonify({
-        "status": "success",
-        "memo": memo,
-        "recipient": recipient,
-        "amount": amount,
-        "chain": "Base",
-        "token": "USDC",
-        "instructions": f"Send {amount} USDC to {recipient} with memo '{memo}'"
-    })
-
-
-@app.route('/verify-payment', methods=['GET'])
-def verify_payment():
-    """Check if payment was received for a given memo/wallet pair."""
-    memo = request.args.get('memo')
-    wallet = request.args.get('wallet')
-    
-    if not memo or not wallet:
-        return jsonify({"error": "memo and wallet required"}), 400
-    
-    # Call payment_verify.py to check on-chain status
-    try:
-        from entity.src.agent.payment_verify import verify_usdc_payment
-        verified = verify_usdc_payment(
-            recipient="0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE",
-            amount=0.99,
-            memo=memo,
-            sender=wallet
-        )
-        return jsonify({"verified": verified, "memo": memo})
-    except Exception as e:
-        return jsonify({"error": str(e), "verified": False}), 500
-
-
-# ============================================================================
-# /apps — Android APK Monetization
-# ============================================================================
-
-@app.route('/apps', methods=['GET'])
-def apps_store():
-    """List available Android APKs for purchase."""
-    import os
-    apps_dir = '/root/apps/'
-    apks = []
-    
-    if os.path.exists(apps_dir):
-        for f in os.listdir(apps_dir):
-            if f.endswith('.apk'):
-                path = os.path.join(apps_dir, f)
-                size = os.path.getsize(path)
-                apks.append({
-                    'name': f.replace('-release.apk', '').replace('-', ' ').title(),
-                    'filename': f,
-                    'size': f'{size / 1024 / 1024:.1f} MB',
-                    'price': '0.99 USDC',
-                    'description': 'Mobile app powered by TIAMAT'
-                })
-    
-    html = '''<!DOCTYPE html>
-<html>
-<head>
-    <title>TIAMAT Apps Store</title>
-    <style>
-        body { font-family: monospace; background: #0a0e27; color: #0f0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { color: #00ff00; border-bottom: 2px solid #00ff00; padding-bottom: 10px; }
-        .app-card { border: 1px solid #00ff00; padding: 15px; margin: 10px 0; background: #0f1419; }
-        .app-title { font-size: 18px; font-weight: bold; color: #00ff00; }
-        .app-desc { color: #aaa; font-size: 12px; margin: 5px 0; }
-        .app-price { color: #ffff00; font-weight: bold; font-size: 16px; }
-        button { background: #00ff00; color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        button:hover { background: #00dd00; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>⚡ TIAMAT Apps Store</h1>
-        <p>Download AI-powered Android apps. All proceeds fund autonomous research.</p>
-'''
-    
-    for app in apks:
-        html += f'''        <div class="app-card">
-            <div class="app-title">{app["name"]}</div>
-            <div class="app-desc">{app["description"]} • {app["size"]}</div>
-            <div class="app-price">{app["price"]}</div>
-            <form method="POST" action="/apps/buy">
-                <input type="hidden" name="filename" value="{app["filename"]}">
-                <input type="hidden" name="price" value="0.99">
-                <button type="submit">Buy Now (x402 USDC)</button>
-            </form>
-        </div>
-'''
-    
-    html += '''    </div>
-</body>
-</html>'''
-    return html
-
-@app.route('/apps/buy', methods=['POST'])
-def buy_app():
-    """Initiate APK purchase via x402 USDC."""
-    filename = request.form.get('filename')
-    price = request.form.get('price', '0.99')
-    
-    if not filename or not filename.endswith('.apk'):
-        return jsonify({'error': 'Invalid app'}), 400
-    
-    # Generate payment request
-    tx_hash = uuid.uuid4().hex[:16]
-    payment_url = f'https://pay.x402.app/?to=0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE&amount={price}&token=USDC&chain=base&metadata=app:{filename}'
-    
-    return jsonify({
-        'status': 'pending',
-        'tx_hash': tx_hash,
-        'payment_url': payment_url,
-        'filename': filename,
-        'price': price
-    })
-
-@app.route('/apps/download/<filename>', methods=['GET'])
-def download_app(filename):
-    """Serve APK file after payment verification."""
-    # Security: validate filename
-    if not re.match(r'^[a-z0-9-]+\.apk$', filename):
-        return jsonify({'error': 'Invalid filename'}), 400
-    
-    filepath = os.path.join('/root/apps/', filename)
-    if not os.path.exists(filepath):
-        return jsonify({'error': 'APK not found'}), 404
-    
-    # TODO: Verify payment via tx_hash parameter
-    # tx_hash = request.args.get('tx_hash')
-    # if not verify_payment(tx_hash, '0.99', 'USDC'):
-    #     return jsonify({'error': 'Payment not verified'}), 402
-    
-    return send_file(filepath, as_attachment=True)
-@app.route('/dashboard')
-def agent_dashboard():
-    """Real-time agent monitoring dashboard."""
-    return render_template('dashboard.html')
-
-
+if __name__ == '__main__':
+    app.run(debug=False, host='127.0.0.1', port=5000)

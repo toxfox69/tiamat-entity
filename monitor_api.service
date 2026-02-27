@@ -1,0 +1,23 @@
+[Unit]
+Description=TIAMAT Inference Monitor API — drift detection and latency tracking
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/gunicorn \
+    --bind 127.0.0.1:5003 \
+    --workers 2 \
+    --timeout 120 \
+    --access-logfile /root/.automaton/monitor_access.log \
+    --error-logfile  /root/.automaton/monitor_error.log \
+    monitor_api:app
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
