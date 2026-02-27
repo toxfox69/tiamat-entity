@@ -144,9 +144,21 @@ def log_usage(api_key, provider, model, input_tokens, output_tokens, latency_ms,
 def require_api_key(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        key = request.headers.get("X-API-Key") or request.headers.get("Authorization", "").replace("Bearer ", "")
+        key = (request.headers.get("X-API-Key") or
+               request.headers.get("Authorization", "").replace("Bearer ", "").strip())
         if not key:
-            return jsonify({"error": {"message": "Missing API key. Pass X-API-Key header or Authorization: Bearer <key>", "type": "auth_error"}}), 401
+            # Anonymous access: free-tier rate limit keyed by IP
+            client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+            anon_key = "anon-" + hashlib.md5(client_ip.encode()).hexdigest()[:16]
+            ok, _ = check_rate_limit(anon_key, "free")
+            if not ok:
+                return jsonify({"error": {
+                    "message": f"Rate limit exceeded: {RATE_LIMIT_FREE} req/min for anonymous access. Pass X-API-Key for higher limits.",
+                    "type": "rate_limit_error",
+                }}), 429
+            request.api_key = anon_key
+            request.api_tier = "free"
+            return f(*args, **kwargs)
         info = get_api_key_info(key)
         if not info:
             return jsonify({"error": {"message": "Invalid API key", "type": "auth_error"}}), 401
@@ -333,7 +345,164 @@ def cascade_chat_stream(messages, model=None, max_tokens=2048, temperature=0.7):
     yield f"data: {json.dumps(error_chunk)}\n\n"
     yield "data: [DONE]\n\n"
 
+# ─── Embedding Providers ─────────────────────────────────────────
+EMBEDDING_PROVIDERS = [
+    {
+        "name": "groq",
+        "url": "https://api.groq.com/openai/v1/embeddings",
+        "key": os.environ.get("GROQ_API_KEY", ""),
+        "default_model": "nomic-embed-text-v1.5",
+    },
+    {
+        "name": "cerebras",
+        "url": "https://api.cerebras.ai/v1/embeddings",
+        "key": os.environ.get("CEREBRAS_API_KEY", ""),
+        "default_model": "nomic-embed-text-v1.5",
+    },
+    {
+        "name": "together",
+        "url": "https://api.together.xyz/v1/embeddings",
+        "key": os.environ.get("TOGETHER_API_KEY", ""),
+        "default_model": "togethercomputer/m2-bert-80M-8k-retrieval",
+    },
+]
+
+def cascade_embeddings(inputs, model=None):
+    """Try each embedding provider in order, return first success.
+
+    Args:
+        inputs: str or list[str]
+        model: optional model override (uses provider default if None)
+
+    Returns:
+        dict with keys: provider, model, data (OpenAI-compat response),
+        prompt_tokens, latency_ms, failover_count
+        OR dict with key 'error' if all providers exhausted.
+    """
+    # Normalize to list
+    if isinstance(inputs, str):
+        inputs = [inputs]
+
+    errors = []
+    failover_count = 0
+
+    for provider in EMBEDDING_PROVIDERS:
+        if not provider["key"]:
+            errors.append({"provider": provider["name"], "error": "no API key configured"})
+            failover_count += 1
+            continue
+        if is_cooling(provider["name"] + ":embed"):
+            errors.append({"provider": provider["name"], "error": "cooling down"})
+            failover_count += 1
+            continue
+
+        provider_model = model if model else provider["default_model"]
+        body = {"model": provider_model, "input": inputs}
+        headers = {
+            "Authorization": f"Bearer {provider['key']}",
+            "Content-Type": "application/json",
+        }
+
+        start = time.time()
+        try:
+            resp = http_requests.post(provider["url"], json=body, headers=headers, timeout=30)
+            latency = int((time.time() - start) * 1000)
+
+            if resp.status_code == 200:
+                data = resp.json()
+                usage = data.get("usage", {})
+                # Normalize: ensure every item has object/index/embedding keys
+                raw_data = data.get("data", [])
+                normalized_data = []
+                for i, item in enumerate(raw_data):
+                    normalized_data.append({
+                        "object": "embedding",
+                        "index": item.get("index", i),
+                        "embedding": item.get("embedding", []),
+                    })
+                return {
+                    "provider": provider["name"],
+                    "model": data.get("model", provider_model),
+                    "data": normalized_data,
+                    "prompt_tokens": usage.get("prompt_tokens", usage.get("total_tokens", 0)),
+                    "latency_ms": latency,
+                    "failover_count": failover_count,
+                }
+            elif resp.status_code == 429:
+                cooldown_s = 300 if "daily" in resp.text.lower() or "day" in resp.text.lower() else 65
+                set_cooldown(provider["name"] + ":embed", cooldown_s)
+                errors.append({"provider": provider["name"], "error": f"429 (cooling {cooldown_s}s)", "body": resp.text[:200]})
+                failover_count += 1
+            else:
+                errors.append({"provider": provider["name"], "error": f"HTTP {resp.status_code}", "body": resp.text[:200]})
+                failover_count += 1
+        except Exception as e:
+            latency = int((time.time() - start) * 1000)
+            errors.append({"provider": provider["name"], "error": str(e)[:200]})
+            set_cooldown(provider["name"] + ":embed", 30)
+            failover_count += 1
+
+    return {"error": "All embedding providers exhausted", "details": errors, "failover_count": failover_count}
+
+
 # ─── Routes ──────────────────────────────────────────────────────
+@app.route("/v1/embeddings", methods=["POST"])
+@require_api_key
+def embeddings():
+    body = request.get_json(silent=True)
+    if not body:
+        return jsonify({"error": {"message": "Request body required", "type": "invalid_request"}}), 400
+
+    inp = body.get("input")
+    if inp is None:
+        return jsonify({"error": {"message": "Missing 'input' in request body", "type": "invalid_request"}}), 400
+    if not isinstance(inp, (str, list)):
+        return jsonify({"error": {"message": "'input' must be a string or list of strings", "type": "invalid_request"}}), 400
+    if isinstance(inp, list):
+        if not all(isinstance(s, str) for s in inp):
+            return jsonify({"error": {"message": "All items in 'input' must be strings", "type": "invalid_request"}}), 400
+        if len(inp) == 0:
+            return jsonify({"error": {"message": "'input' list must not be empty", "type": "invalid_request"}}), 400
+
+    model = body.get("model")  # optional override; cascade uses provider defaults if None
+
+    result = cascade_embeddings(inp, model=model)
+
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+    is_paid = getattr(request, "api_tier", "free") == "paid"
+
+    if "error" in result and "data" not in result:
+        log_usage(request.api_key, "none", model or "auto-embed", 0, 0, 0, "all_exhausted",
+                  ip=client_ip, paid=is_paid, failover=result.get("failover_count", 0))
+        return jsonify({
+            "error": {
+                "message": result["error"],
+                "type": "server_error",
+                "details": result.get("details", []),
+            }
+        }), 503
+
+    log_usage(request.api_key, result["provider"], result["model"],
+              result["prompt_tokens"], 0, result["latency_ms"], "ok",
+              ip=client_ip, paid=is_paid, failover=result.get("failover_count", 0))
+
+    resp_body = {
+        "object": "list",
+        "data": result["data"],
+        "model": result["model"],
+        "usage": {
+            "prompt_tokens": result["prompt_tokens"],
+            "total_tokens": result["prompt_tokens"],
+        },
+        "x_tiamat_provider": result["provider"],
+        "x_tiamat_latency_ms": result["latency_ms"],
+    }
+    resp = make_response(jsonify(resp_body), 200)
+    resp.headers["X-Provider"] = result["provider"]
+    resp.headers["X-Latency-Ms"] = str(result["latency_ms"])
+    return resp
+
+
 @app.route("/v1/chat/completions", methods=["POST"])
 @require_api_key
 def chat_completions():
@@ -497,6 +666,7 @@ def index():
         "version": "1.0.0",
         "endpoints": {
             "POST /v1/chat/completions": "OpenAI-compatible chat (requires API key)",
+            "POST /v1/embeddings": "OpenAI-compatible embeddings — Groq → Cerebras → Together.ai (requires API key)",
             "GET /v1/models": "List available models",
             "POST /v1/keys": "Create a free API key",
             "GET /v1/usage": "Usage stats (requires API key)",

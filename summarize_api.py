@@ -432,6 +432,44 @@ def _get_cost_per_thought():
         return "$0.008"
 
 
+@app.route("/api/quotes")
+def get_quotes():
+    from datetime import datetime
+    import json as _json
+    _quotes_path = os.path.join(os.path.dirname(__file__), "entity", "apps",
+                                "daily-motivationals", "assets", "quotes.json")
+    try:
+        with open(_quotes_path) as f:
+            quotes = _json.load(f)
+    except Exception:
+        quotes = [
+            {"id": 1, "text": "You are not behind. You are exactly where your next decision begins.", "author": "TIAMAT"},
+            {"id": 2, "text": "The ancient ones did not wait for permission. Neither should you.", "author": "TIAMAT"},
+            {"id": 3, "text": "Every cycle you complete makes the next one cheaper. This is true of habits too.", "author": "TIAMAT"},
+            {"id": 4, "text": "Comfort is the enemy wearing your favorite clothes.", "author": "TIAMAT"},
+            {"id": 5, "text": "Your competitors are sleeping. The question is: are you building?", "author": "TIAMAT"},
+            {"id": 6, "text": "One decision made today is worth a thousand intentions made tomorrow.", "author": "TIAMAT"},
+            {"id": 7, "text": "The flood does not ask if you are ready. Build the vessel now.", "author": "TIAMAT"},
+            {"id": 8, "text": "Momentum is just discipline made visible over time.", "author": "TIAMAT"},
+            {"id": 9, "text": "You are not stuck. You are loading.", "author": "TIAMAT"},
+            {"id": 10, "text": "The stars do not dim because others shine. Neither should you.", "author": "TIAMAT"},
+        ]
+    day = datetime.utcnow().timetuple().tm_yday
+    q = quotes[(day - 1) % len(quotes)]
+    return jsonify({
+        "quote": q["text"],
+        "author": q["author"],
+        "day": day,
+        "total": len(quotes),
+        "date": datetime.utcnow().strftime("%B %d, %Y"),
+    })
+
+
+@app.route("/google-site-verification--AMSducRK4CXbrq24zjgE9n2fWvRNwn3BT_BsTeh1gA.html")
+def google_verify():
+    return "google-site-verification: google-site-verification--AMSducRK4CXbrq24zjgE9n2fWvRNwn3BT_BsTeh1gA.html", 200, {"Content-Type": "text/plain"}
+
+
 @app.route("/", methods=["GET"])
 def landing():
     uptime, req_count, paid, mem_count = get_stats()
@@ -1794,6 +1832,22 @@ _APPS_CATALOG = [
         "color": "#ef4444",
         "price": "0.99",
     },
+    {
+        "slug": "tiamat-chat",
+        "name": "TIAMAT Chat",
+        "desc": "Free AI chat on your phone. Streaming responses powered by TIAMAT\u2019s multi-model inference proxy. No account needed.",
+        "icon": "\U0001f9e0",
+        "color": "#ff2244",
+        "price": "FREE",
+    },
+    {
+        "slug": "luna-period-tracker",
+        "name": "LUNA Period Tracker",
+        "desc": "Private period tracker. No internet permission \u2014 your data literally cannot leave your phone. Cycle predictions, symptom logging, calendar view. Two themes: Pastel & Gothic.",
+        "icon": "\U0001f319",
+        "color": "#e8a0bf",
+        "price": "FREE",
+    },
 ]
 
 @app.route("/apps", methods=["GET"])
@@ -1819,16 +1873,20 @@ def apps_page():
     .app-actions { display: flex; gap: 10px; align-items: center; }
     """
     cards = ""
-    for app in _APPS_CATALOG:
+    sorted_apps = sorted(_APPS_CATALOG, key=lambda a: (0 if a.get("price") == "FREE" else 1))
+    for app in sorted_apps:
+        is_free = app["price"] == "FREE"
+        badge_label = "FEATURED" if is_free else "ANDROID APK"
+        price_display = "FREE" if is_free else f"${app['price']} USDC"
         cards += f"""
-        <div class="app-card">
-          <span class="badge" style="background:{app['color']}22;color:{app['color']};border:1px solid {app['color']}44;">ANDROID APK</span>
+        <div class="app-card" style="{'border-color:{c}44;'.format(c=app['color']) if is_free else ''}">
+          <span class="badge" style="background:{app['color']}22;color:{app['color']};border:1px solid {app['color']}44;">{badge_label}</span>
           <span class="app-icon">{app['icon']}</span>
           <div class="app-name">{app['name']}</div>
           <div class="app-desc">{app['desc']}</div>
-          <div class="app-price">${app['price']} USDC</div>
+          <div class="app-price" style="color:{'#ff2244' if is_free else '#00ff88'}">{price_display}</div>
           <div class="app-actions">
-            <a href="/download/{app['slug']}.apk" class="app-btn btn-free">DOWNLOAD FREE</a>
+            <a href="/download/{app['slug']}.apk" class="app-btn {'btn-buy' if is_free else 'btn-free'}">DOWNLOAD{' FREE' if is_free else ''}</a>
           </div>
         </div>"""
 
@@ -5992,4 +6050,331 @@ def openai_compat():
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
+
+
+# ============= /apps STOREFRONT PAGE =============
+
+@app.route('/apps', methods=['GET'])
+def apps_storefront():
+    """List all available APKs with download links and pricing."""
+    apps = [
+        {
+            "id": "daily-quotes",
+            "name": "Daily Quotes",
+            "description": "Get inspired with daily wisdom quotes. Beautiful, offline-first experience.",
+            "price": "$0.99 USDC",
+            "file": "daily-quotes.apk",
+            "size": "12.9 MB",
+            "category": "Lifestyle"
+        },
+        {
+            "id": "unit-converter",
+            "name": "Unit Converter",
+            "description": "Fast, accurate conversions: length, weight, volume, temperature, and more.",
+            "price": "$0.99 USDC",
+            "file": "unit-converter.apk",
+            "size": "12.7 MB",
+            "category": "Utilities"
+        },
+        {
+            "id": "pomodoro-timer",
+            "name": "Pomodoro Timer",
+            "description": "Classic Pomodoro technique: 25-min focused work + 5-min breaks. Boost productivity.",
+            "price": "$0.99 USDC",
+            "file": "pomodoro-timer.apk",
+            "size": "12.8 MB",
+            "category": "Productivity"
+        },
+        {
+            "id": "tiamat-chat",
+            "name": "TIAMAT Chat",
+            "description": "Free AI chat powered by TIAMAT inference proxy. Multi-model LLM access from your phone.",
+            "price": "FREE",
+            "file": "tiamat-chat.apk",
+            "size": "12.9 MB",
+            "category": "AI",
+            "featured": True
+        }
+    ]
+    
+    html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT Apps Store</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px 0;
+        }
+        header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        header p { font-size: 1.1em; color: #aaa; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .app-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .app-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 255, 136, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.1);
+        }
+        .app-card.featured {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.4);
+        }
+        .badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b35;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .category {
+            display: inline-block;
+            background: rgba(0, 200, 255, 0.2);
+            color: #00ccff;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+        }
+        .app-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .description {
+            color: #aaa;
+            font-size: 0.95em;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #888;
+            margin-bottom: 15px;
+        }
+        .price {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #00ff88;
+            margin-bottom: 12px;
+        }
+        .btn-download {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-download:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3); }
+        .btn-free {
+            background: rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+        .btn-free:hover { background: rgba(0, 255, 136, 0.5); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ TIAMAT App Store</h1>
+            <p>AI-powered tools. Direct from ENERGENAI.</p>
+        </header>
+        <div class="grid">
+"""
+    
+    for app in apps:
+        featured_class = " featured" if app.get("featured") else ""
+        featured_badge = '<span class="badge">FEATURED</span>' if app.get("featured") else ""
+        btn_class = "btn-download btn-free" if "FREE" in app["price"] else "btn-download"
+        
+        html += f"""
+        <div class="app-card{featured_class}">
+            {featured_badge}
+            <div class="category">{app['category']}</div>
+            <div class="app-name">{app['name']}</div>
+            <div class="description">{app['description']}</div>
+            <div class="meta">
+                <span>{app['size']}</span>
+                <span>v1.0</span>
+            </div>
+            <div class="price">{app['price']}</div>
+            <button class="{btn_class}" onclick="downloadApp('{app['id']}', '{app['file']}', '{app['price']}')">Get App</button>
+        </div>
+        """
+    
+    html += """
+        </div>
+    </div>
+    <script>
+        async function downloadApp(appId, filename, price) {
+            if (price === 'FREE') {
+                // Direct download for free apps
+                window.location.href = `/download-apk?app=${appId}`;
+                return;
+            }
+            
+            // Paid app: show payment modal
+            const walletAddress = prompt('Enter your wallet address (0x...):');
+            if (!walletAddress) return;
+            
+            try {
+                const response = await fetch('/initiate-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        app_id: appId,
+                        wallet: walletAddress,
+                        amount: 0.99
+                    })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert(`Payment initiated. Send 0.99 USDC to ${data.recipient} with memo: ${data.memo}`);
+                    // Poll for payment verification
+                    pollPayment(appId, filename, walletAddress, data.memo);
+                }
+            } catch (e) {
+                alert('Payment error: ' + e.message);
+            }
+        }
+        
+        async function pollPayment(appId, filename, wallet, memo) {
+            for (let i = 0; i < 60; i++) {
+                const response = await fetch(`/verify-payment?memo=${memo}&wallet=${wallet}`);
+                const data = await response.json();
+                if (data.verified) {
+                    alert('Payment confirmed! Downloading...');
+                    window.location.href = `/download-apk?app=${appId}`;
+                    return;
+                }
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            alert('Payment timeout. Please try again.');
+        }
+    </script>
+</body>
+</html>
+"""
+    return html
+
+
+@app.route('/download-apk', methods=['GET'])
+def download_apk():
+    """Download APK file. Free apps: direct. Paid apps: check payment status first."""
+    app_name = request.args.get('app')
+    if not app_name:
+        return jsonify({"error": "app parameter required"}), 400
+    
+    # Map app name to APK filename
+    apk_map = {
+        "daily-quotes": "daily-quotes.apk",
+        "unit-converter": "unit-converter.apk",
+        "pomodoro-timer": "pomodoro-timer.apk",
+        "tiamat-chat": "tiamat-chat.apk"
+    }
+    
+    filename = apk_map.get(app_name)
+    if not filename:
+        return jsonify({"error": "app not found"}), 404
+    
+    filepath = f"/root/apps/{filename}"
+    if not os.path.exists(filepath):
+        return jsonify({"error": "APK file not found on server"}), 500
+    
+    return send_file(filepath, as_attachment=True, download_name=filename)
+
+
+@app.route('/initiate-payment', methods=['POST'])
+def initiate_payment():
+    """Initiate x402 payment for app purchase."""
+    data = request.get_json()
+    wallet = data.get('wallet')
+    app_id = data.get('app_id')
+    amount = data.get('amount', 0.99)
+    
+    if not wallet or not app_id:
+        return jsonify({"error": "wallet and app_id required"}), 400
+    
+    # Generate unique memo/reference
+    import uuid
+    memo = f"APP-{app_id.upper()}-{uuid.uuid4().hex[:8]}"
+    
+    # x402 recipient address (Base network)
+    recipient = "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE"  # TIAMAT wallet
+    
+    return jsonify({
+        "status": "success",
+        "memo": memo,
+        "recipient": recipient,
+        "amount": amount,
+        "chain": "Base",
+        "token": "USDC",
+        "instructions": f"Send {amount} USDC to {recipient} with memo '{memo}'"
+    })
+
+
+@app.route('/verify-payment', methods=['GET'])
+def verify_payment():
+    """Check if payment was received for a given memo/wallet pair."""
+    memo = request.args.get('memo')
+    wallet = request.args.get('wallet')
+    
+    if not memo or not wallet:
+        return jsonify({"error": "memo and wallet required"}), 400
+    
+    # Call payment_verify.py to check on-chain status
+    try:
+        from entity.src.agent.payment_verify import verify_usdc_payment
+        verified = verify_usdc_payment(
+            recipient="0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE",
+            amount=0.99,
+            memo=memo,
+            sender=wallet
+        )
+        return jsonify({"verified": verified, "memo": memo})
+    except Exception as e:
+        return jsonify({"error": str(e), "verified": False}), 500
 
