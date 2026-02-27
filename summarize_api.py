@@ -1018,6 +1018,217 @@ def wallet_balance():
         balance = check_usdc_balance()
         return jsonify({"balance": float(balance), "address": WALLET_ADDRESS})
     except Exception as e:
+
+@app.route('/apps', methods=['GET'])
+def apps_storefront():
+    """TIAMAT Apps Storefront - Download APKs via x402 USDC payment."""
+    apps_list = [
+        {'id': 'daily-quotes', 'name': 'Daily Quotes', 'version': '1.0', 'price': 0.99, 'size': '2.5MB'},
+        {'id': 'unit-converter', 'name': 'Unit Converter', 'version': '1.0', 'price': 0.99, 'size': '1.8MB'},
+        {'id': 'pomodoro-timer', 'name': 'Pomodoro Timer', 'version': '1.0', 'price': 0.99, 'size': '2.1MB'},
+        {'id': 'tiamat-chat', 'name': 'TIAMAT Chat', 'version': '1.0', 'price': 0.99, 'size': '3.2MB'},
+        {'id': 'luna-period-tracker', 'name': 'LUNA Period Tracker', 'version': '1.0', 'price': 0.99, 'size': '2.7MB'},
+        {'id': 'daily-motivationals', 'name': 'Daily Motivationals', 'version': '1.0', 'price': 0.99, 'size': '2.2MB'},
+    ]
+    
+    html = '''<!DOCTYPE html>
+<html>
+<head>
+    <title>TIAMAT Apps Store</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; bg: #0f0f0f; color: #eee; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        h1 { margin: 2rem 0 1rem; font-size: 2.5rem; color: #0ff; text-shadow: 0 0 10px rgba(0,255,255,0.5); }
+        .subtitle { color: #888; margin-bottom: 2rem; }
+        .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+        .app-card { border: 1px solid #333; border-radius: 8px; padding: 1.5rem; background: #1a1a1a; hover: border-color #0ff; transition: all 0.3s; }
+        .app-card:hover { border-color: #0ff; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
+        .app-name { font-size: 1.3rem; font-weight: 600; margin: 0.5rem 0; color: #0ff; }
+        .app-meta { font-size: 0.85rem; color: #666; margin: 0.5rem 0; }
+        .app-price { font-size: 1.8rem; color: #0f0; font-weight: bold; margin: 1rem 0; }
+        .btn-buy { background: linear-gradient(135deg, #0ff, #0f0); color: #000; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; transition: all 0.3s; }
+        .btn-buy:hover { transform: scale(1.02); }
+        .info-box { background: #1a1a1a; border-left: 3px solid #0ff; padding: 1rem; margin-bottom: 2rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 TIAMAT Apps Store</h1>
+        <p class="subtitle">Download native Android apps. Pay with USDC on-chain.</p>
+        
+        <div class="info-box">
+            <strong>How to buy:</strong> Click "Buy with x402 USDC" → Send $0.99 USDC to <code>0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</code> on Base → Paste tx hash → Download APK
+        </div>
+        
+        <div class="apps-grid">
+    '''
+    
+    for app in apps_list:
+        html += f'''        <div class="app-card">
+            <div class="app-name">{app['name']}</div>
+            <div class="app-meta">v{app['version']} • {app['size']}</div>
+            <div class="app-price">${app['price']}</div>
+            <button class="btn-buy" onclick="buyApp('{app['id']}', {app['price']})" >💳 Buy with x402 USDC</button>
+        </div>
+    '''
+    
+    html += '''        </div>
+    </div>
+    
+    <script>
+        function buyApp(appId, price) {
+            const txHash = prompt(`Send $${price} USDC to:\n0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE\n\nPaste transaction hash:`);
+            if (!txHash) return;
+            
+            fetch('/apps/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tx_hash: txHash, app_id: appId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.verified) {
+                    window.location.href = `/apps/download/${appId}?tx=${txHash}`;
+                } else {
+                    alert('Payment not verified: ' + data.reason);
+                }
+            })
+            .catch(e => alert('Error: ' + e));
+        }
+    </script>
+</body>
+</html>
+    '''
+    
+    return html
+
+@app.route('/apps/verify-payment', methods=['POST'])
+def verify_app_payment():
+    """Verify x402 USDC payment and return download link."""
+    data = request.get_json() or {}
+    tx_hash = data.get('tx_hash', '').strip()
+    app_id = data.get('app_id', '')
+    
+    if not tx_hash or not app_id:
+        return jsonify({'verified': False, 'reason': 'Missing tx_hash or app_id'}), 400
+    
+    # Verify payment on Base
+    result = verify_payment(tx_hash)
+    
+    if result['verified']:
+        return jsonify({
+            'verified': True,
+            'app_id': app_id,
+            'download_url': f'/apps/download/{app_id}?tx={tx_hash}'
+        })
+    else:
+        return jsonify({
+            'verified': False,
+            'reason': result.get('reason', 'Payment verification failed')
+        }), 403
+
+@app.route('/apps/download/<app_id>', methods=['GET'])
+def download_app(app_id):
+    """Download APK after payment verified."""
+    tx_hash = request.args.get('tx', '')
+    
+    if not tx_hash:
+        return jsonify({'error': 'No payment proof provided'}), 400
+    
+    # Verify payment
+    result = verify_payment(tx_hash)
+    if not result['verified']:
+        return jsonify({'error': 'Payment not verified'}), 403
+    
+    # Map app_id to filename
+    apps_map = {
+        'daily-quotes': 'daily-quotes.apk',
+        'unit-converter': 'unit-converter.apk',
+        'pomodoro-timer': 'pomodoro-timer.apk',
+        'tiamat-chat': 'tiamat-chat.apk',
+        'luna-period-tracker': 'luna-period-tracker.apk',
+        'daily-motivationals': 'daily-motivationals.apk',
+    }
+    
+    filename = apps_map.get(app_id)
+    if not filename:
+        return jsonify({'error': 'App not found'}), 404
+    
+    filepath = f'/var/www/tiamat/download/{filename}'
+    
+    # Log download
+    try:
+        with open('/root/.automaton/app_downloads.log', 'a') as f:
+            f.write(f"{datetime.datetime.utcnow().isoformat()},{app_id},{tx_hash},success\n")
+    except: pass
+    
+    # Serve APK
+    try:
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'APK file not found on server'}), 404
+
+# ========== APK APPS MARKETPLACE ==========
+
+@app.route('/apps')
+def apps_marketplace():
+    """Apps marketplace with x402 payment integration"""
+    apps = [
+        {
+            "id": "daily-quotes",
+            "name": "Daily Quotes",
+            "description": "Inspirational quotes delivered daily",
+            "price_usdc": 0.99,
+            "download_url": "/download/daily-quotes"
+        },
+        {
+            "id": "unit-converter",
+            "name": "Unit Converter",
+            "description": "Convert between units instantly",
+            "price_usdc": 0.99,
+            "download_url": "/download/unit-converter"
+        },
+        {
+            "id": "pomodoro-timer",
+            "name": "Pomodoro Timer",
+            "description": "Productivity timer for focused work",
+            "price_usdc": 0.99,
+            "download_url": "/download/pomodoro-timer"
+        }
+    ]
+    return jsonify({"apps": apps})
+
+@app.route('/download/<app_name>')
+def download_app(app_name):
+    """Download APK with x402 payment verification"""
+    if app_name not in ["daily-quotes", "unit-converter", "pomodoro-timer"]:
+        return jsonify({"error": "App not found"}), 404
+    
+    tx_hash = request.args.get('tx_hash', '')
+    if not tx_hash:
+        return jsonify({"payment_required": True, "amount": "0.99 USDC", "payment_url": "/pay"}), 402
+    
+    # Verify payment on-chain
+    try:
+        tx = verify_payment_on_chain(tx_hash, 0.99)
+        if not tx:
+            return jsonify({"error": "Payment verification failed"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    # Return APK file (if exists)
+    apk_path = f"/root/apps/{app_name}.apk"
+    if os.path.exists(apk_path):
+        return send_file(apk_path, as_attachment=True, download_name=f"{app_name}.apk")
+    else:
+        return jsonify({"error": "APK not available yet"}), 503
+
+        balance = check_usdc_balance()
+        return jsonify({"balance": float(balance), "address": WALLET_ADDRESS})
+    except Exception as e:
         return jsonify({"error": str(e), "balance": 0}), 500
 
     app.run(debug=False, host='127.0.0.1', port=5000)
