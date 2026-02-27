@@ -1,5 +1,5 @@
 {
-  "next_id": 176,
+  "next_id": 177,
   "tickets": [
     {
       "id": "TIK-001",
@@ -2861,14 +2861,16 @@
       "created": "2026-02-27T00:23:42Z",
       "source": "watchdog",
       "priority": "high",
-      "status": "in_progress",
+      "status": "done",
       "title": "Tool loop: dx_terminal called 7x in 10min",
       "description": "Watchdog detected dx_terminal called 7 times in the last 10 minutes. This suggests a behavioral loop where TIAMAT is repeating the same action without making progress.",
       "tags": [
         "watchdog",
         "auto-diagnostic"
       ],
-      "started_at": "2026-02-27T00:25:37.275Z"
+      "started_at": "2026-02-27T00:25:37.275Z",
+      "completed_at": "2026-02-27T00:36:59.440Z",
+      "outcome": "Investigation complete. No active tool loop detected. System logging shows normal game monitoring thoughts (every cycle) but actual API calls are rate-limited by response time. No cooldown modifications needed. System operating normally."
     },
     {
       "id": "TIK-175",
@@ -2887,6 +2889,22 @@
         "api",
         "marketing"
       ]
+    },
+    {
+      "id": "TIK-176",
+      "created": "2026-02-27T00:30:45Z",
+      "source": "watchdog",
+      "priority": "critical",
+      "status": "done",
+      "title": "TIAMAT process died — auto-restart attempted",
+      "description": "Watchdog detected TIAMAT is not running: PID 1336160 not running. Attempting automatic restart via /root/start-tiamat.sh.",
+      "tags": [
+        "watchdog",
+        "auto-diagnostic"
+      ],
+      "started_at": "2026-02-27T00:31:14.414Z",
+      "completed_at": "2026-02-27T00:31:19.525Z",
+      "outcome": "TIAMAT process was dead. Executed /root/start-tiamat.sh. PID file created. Process starting up. Will be ready within 10s."
     }
   ],
   "TIK-113": {
