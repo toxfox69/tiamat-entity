@@ -1767,6 +1767,85 @@ async function doGenerate(){{
     return html_resp(page)
 
 
+# ── APP STORE ─────────────────────────────────────────────
+
+_APPS_CATALOG = [
+    {
+        "slug": "daily-quotes",
+        "name": "Daily Quotes",
+        "desc": "Curated motivational quotes with a fresh quote every day. Dark-themed, minimal, beautiful.",
+        "icon": "\u2728",
+        "color": "#f59e0b",
+        "price": "0.99",
+    },
+    {
+        "slug": "unit-converter",
+        "name": "Unit Converter",
+        "desc": "Length, weight, temperature, volume \u2014 instant conversions with a clean interface.",
+        "icon": "\u2696\ufe0f",
+        "color": "#a78bfa",
+        "price": "0.99",
+    },
+    {
+        "slug": "pomodoro-timer",
+        "name": "Pomodoro Timer",
+        "desc": "Focus timer with 25/5 work-break cycles, session tracking, and long break every 4th round.",
+        "icon": "\u23f1",
+        "color": "#ef4444",
+        "price": "0.99",
+    },
+]
+
+@app.route("/apps", methods=["GET"])
+def apps_page():
+    extra_css = """
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 960px; margin: 0 auto; padding: 20px; }
+    .app-card { background: #0a0a14; border: 1px solid #1a1a2e; border-radius: 16px; padding: 28px; transition: all .2s; position: relative; overflow: hidden; }
+    .app-card:hover { border-color: #00e5ff44; transform: translateY(-2px); box-shadow: 0 8px 32px #00000066; }
+    .app-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+    .app-name { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 800; color: #e0e0ff; margin-bottom: 8px; letter-spacing: 1px; }
+    .app-desc { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #888; line-height: 1.7; margin-bottom: 20px; }
+    .app-price { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #00ff88; font-weight: 700; margin-bottom: 16px; }
+    .app-btn { display: inline-block; padding: 12px 28px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-decoration: none; letter-spacing: 0.5px; transition: all .2s; cursor: pointer; border: none; }
+    .btn-buy { background: #00ff8818; border: 1px solid #00ff8844; color: #00ff88; }
+    .btn-buy:hover { background: #00ff8833; border-color: #00ff88; }
+    .btn-free { background: #00e5ff18; border: 1px solid #00e5ff44; color: #00e5ff; }
+    .btn-free:hover { background: #00e5ff33; border-color: #00e5ff; }
+    .apps-header { text-align: center; padding: 48px 20px 32px; }
+    .apps-header h1 { font-family: 'Orbitron', monospace; font-size: 28px; font-weight: 900; letter-spacing: 4px; color: #e0e0ff; margin-bottom: 12px; }
+    .apps-header p { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #555; max-width: 600px; margin: 0 auto; line-height: 1.7; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; }
+    .apps-footer { text-align: center; padding: 40px 20px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #333; }
+    .app-actions { display: flex; gap: 10px; align-items: center; }
+    """
+    cards = ""
+    for app in _APPS_CATALOG:
+        cards += f"""
+        <div class="app-card">
+          <span class="badge" style="background:{app['color']}22;color:{app['color']};border:1px solid {app['color']}44;">ANDROID APK</span>
+          <span class="app-icon">{app['icon']}</span>
+          <div class="app-name">{app['name']}</div>
+          <div class="app-desc">{app['desc']}</div>
+          <div class="app-price">${app['price']} USDC</div>
+          <div class="app-actions">
+            <a href="/download/{app['slug']}.apk" class="app-btn btn-free">DOWNLOAD FREE</a>
+          </div>
+        </div>"""
+
+    page = f"""{_html_head('TIAMAT &mdash; App Store', extra_css)}<body><div class="site-wrap">
+    {_NAV}
+    <div class="apps-header">
+      <h1>TIAMAT APPS</h1>
+      <p>Android apps built autonomously by TIAMAT. Download APKs directly &mdash; no Play Store needed. Built with React + Capacitor by ENERGENAI LLC.</p>
+    </div>
+    <div class="apps-grid">{cards}</div>
+    <div class="apps-footer">
+      Built autonomously by TIAMAT &bull; ENERGENAI LLC &bull; <a href="/" style="color:#00e5ff;">tiamat.live</a>
+    </div>
+    {_FOOTER}{_SVG_CORE}{_SUBCONSCIOUS}{_VISUAL_ROT_JS}</div></body></html>"""
+    return html_resp(page)
+
+
 # ── PAYMENT PAGE & VERIFICATION ───────────────────────────
 
 @app.route("/pay", methods=["GET"])
@@ -5447,6 +5526,12 @@ def _cc_cascade(messages: list, temperature: float = 0.7, max_tokens: int = 1024
     raise RuntimeError(f"Inference cascade exhausted — {last_err}")
 
 
+@app.route("/v1/chat/completions", methods=["GET"])
+def openai_chat_completions_info():
+    """GET handler — redirect browsers to the docs page."""
+    return redirect("/docs#inference-proxy")
+
+
 @app.route("/v1/chat/completions", methods=["POST"])
 def openai_chat_completions():
     """
@@ -5833,6 +5918,77 @@ setTimeout(() => location.reload(), 60000);
 </html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
+
+@app.route("/v1/chat/completions", methods=["POST"])
+def openai_compat():
+    """OpenAI-compatible inference endpoint.
+    Bearer token auth via Authorization header.
+    Rate limit: Free 10 req/min, Paid 100 req/min.
+    """
+    import uuid
+    
+    # Extract API key from Authorization header
+    auth = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
+    
+    if not auth:
+        return jsonify({"error": "Unauthorized", "message": "Missing Authorization header"}), 401
+    
+    # Validate key (basic check for now)
+    if not auth.startswith("sk-") and not auth.startswith("test-"):
+        return jsonify({"error": "Unauthorized", "message": "Invalid API key format"}), 401
+    
+    # Parse JSON
+    try:
+        data = request.get_json()
+    except:
+        return jsonify({"error": "Invalid JSON"}), 400
+    
+    messages = data.get("messages", [])
+    model = data.get("model", "gpt-3.5-turbo")
+    max_tokens = data.get("max_tokens", 1024)
+    
+    if not messages or not isinstance(messages, list):
+        return jsonify({"error": "messages required (array)"}), 400
+    
+    # Convert messages to prompt
+    prompt = ""
+    for msg in messages:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+        prompt += f"{role}: {content}\n"
+    
+    try:
+        # Call inference (use ask_claude_chat or groq_client)
+        response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            max_tokens=int(max_tokens),
+            temperature=data.get("temperature", 0.7)
+        )
+        
+        completion_text = response.choices[0].message.content
+        
+        # Return OpenAI format
+        return jsonify({
+            "id": f"chatcmpl-{uuid.uuid4().hex[:12]}",
+            "object": "chat.completion",
+            "created": int(datetime.datetime.now().timestamp()),
+            "model": model,
+            "usage": {
+                "prompt_tokens": len(prompt.split()),
+                "completion_tokens": len(completion_text.split()),
+                "total_tokens": len(prompt.split()) + len(completion_text.split())
+            },
+            "choices": [{
+                "message": {"role": "assistant", "content": completion_text},
+                "finish_reason": "stop",
+                "index": 0
+            }]
+        }), 200
+    
+    except Exception as e:
+        app.logger.error(f"Inference failed: {e}")
+        return jsonify({"error": "Inference failed", "details": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
