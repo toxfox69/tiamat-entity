@@ -180,14 +180,13 @@ What will you do first? Consider:
     }
   } catch {}
 
-  // Check INBOX.md for new creator messages
+  // Check INBOX.md for creator messages (any content = active directive)
   let inboxAlert = "";
   try {
     const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
-    const inboxContent = fs.readFileSync(inboxPath, "utf-8");
-    const newMsgMatch = inboxContent.split("## New Messages")[1];
-    if (newMsgMatch && newMsgMatch.trim().length > 0) {
-      inboxAlert = `\n\n⚠️ NEW CREATOR MESSAGE — convert to ticket, then clear:\n${newMsgMatch.trim().slice(0, 500)}`;
+    const inboxContent = fs.readFileSync(inboxPath, "utf-8").trim();
+    if (inboxContent.length > 10) {
+      inboxAlert = `\n\n⚠️ CREATOR DIRECTIVE (READ INBOX.md):\n${inboxContent.slice(0, 600)}`;
     }
   } catch {}
 
@@ -196,6 +195,6 @@ What will you do first? Consider:
 Your last few thoughts:
 ${lastTurnSummary || "No previous turns found."}
 
-Every cycle: call ticket_list() to see open work. Pick the highest priority open ticket. Call ticket_claim() before starting. Call ticket_complete() when done. Never work on something without claiming it first.
-After wake: send a brief wake report via send_telegram, then work your ticket queue.`;
+PRIORITY: Read MISSION.md. You are in the Evolution Era. Use self_improve(), grow(), or write_file() to evolve. Do NOT waste tool calls on status checks — act on your mission.
+If you have an active ticket, continue it. Otherwise BUILD something new or improve your own code.`;
 }
