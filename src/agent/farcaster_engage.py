@@ -271,6 +271,46 @@ def post_reply(parent_hash, text):
         return None, str(e)[:200]
 
 
+def like_cast(cast_hash):
+    """Like a cast via Neynar. Returns (success, error_str)."""
+    payload = {
+        "signer_uuid": NEYNAR_SIGNER_UUID,
+        "target": cast_hash,
+    }
+    try:
+        resp = requests.post(
+            f"{NEYNAR_URL}/reaction",
+            headers=NEYNAR_HEADERS,
+            json={**payload, "reaction_type": "like"},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            return True, None
+        return False, f"{resp.status_code}: {resp.text[:200]}"
+    except Exception as e:
+        return False, str(e)[:200]
+
+
+def recast(cast_hash):
+    """Recast a cast via Neynar. Returns (success, error_str)."""
+    payload = {
+        "signer_uuid": NEYNAR_SIGNER_UUID,
+        "target": cast_hash,
+    }
+    try:
+        resp = requests.post(
+            f"{NEYNAR_URL}/reaction",
+            headers=NEYNAR_HEADERS,
+            json={**payload, "reaction_type": "recast"},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            return True, None
+        return False, f"{resp.status_code}: {resp.text[:200]}"
+    except Exception as e:
+        return False, str(e)[:200]
+
+
 # ── Cast Scoring ──────────────────────────────────────────────────────────────
 # Keyword tiers: strong = +3, medium = +2, broad = +1
 STRONG_KEYWORDS = [
@@ -813,9 +853,31 @@ def main():
         print(f"Posted: {reply_hash}")
         tracker.record_reply(cast_hash, "manual", "(manual)", reply_text)
 
+    elif cmd == "like":
+        if len(sys.argv) < 3:
+            print("Usage: farcaster_engage.py like <cast_hash>")
+            sys.exit(1)
+        cast_hash = sys.argv[2]
+        _ok, err = like_cast(cast_hash)
+        if err:
+            print(f"Error: {err}", file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps({"liked": cast_hash}))
+
+    elif cmd == "recast":
+        if len(sys.argv) < 3:
+            print("Usage: farcaster_engage.py recast <cast_hash>")
+            sys.exit(1)
+        cast_hash = sys.argv[2]
+        _ok, err = recast(cast_hash)
+        if err:
+            print(f"Error: {err}", file=sys.stderr)
+            sys.exit(1)
+        print(json.dumps({"recasted": cast_hash}))
+
     else:
         print(f"Unknown command: {cmd}")
-        print("Usage: farcaster_engage.py [scan|run|stats|daemon [interval]|reply <hash> <text>]")
+        print("Usage: farcaster_engage.py [scan|run|stats|daemon [interval]|reply <hash> <text>|like <hash>|recast <hash>]")
         sys.exit(1)
 
 

@@ -4378,26 +4378,31 @@ print(f"Sent {mid}")
     },
     {
       name: "farcaster_engage",
-      description: "Scan Farcaster for conversations about AI APIs, agent memory, summarization, x402 payments, and AI infrastructure. Replies helpfully to the best match (max 1 reply per 10 min). Actions: 'scan' (dry run, no posting), 'run' (scan + post reply), 'stats' (engagement history).",
+      description: "Scan Farcaster for conversations about AI APIs, agent memory, summarization, x402 payments, and AI infrastructure. Actions: 'scan' (dry run), 'run' (scan + post reply), 'stats' (history), 'like' (like a cast), 'recast' (repost a cast).",
       category: "social",
       parameters: {
         type: "object",
         properties: {
-          action: { type: "string", description: "scan | run | stats" },
+          action: { type: "string", description: "scan | run | stats | like | recast" },
+          cast_hash: { type: "string", description: "Cast hash (required for like/recast)" },
         },
         required: ["action"],
       },
       execute: async (args, _ctx) => {
         const { execFileSync } = await import('child_process');
-        const action = (args as { action: string }).action || 'scan';
-        if (!['scan', 'run', 'stats'].includes(action))
-          return `Invalid action. Use: scan, run, stats`;
+        const { action, cast_hash } = args as { action: string; cast_hash?: string };
+        if (!['scan', 'run', 'stats', 'like', 'recast'].includes(action))
+          return `Invalid action. Use: scan, run, stats, like, recast`;
+        if ((action === 'like' || action === 'recast') && !cast_hash)
+          return `${action} requires a cast_hash parameter`;
+        const pyArgs = ['farcaster_engage.py', action];
+        if (cast_hash) pyArgs.push(cast_hash);
         try {
-          const output = execFileSync('python3', ['farcaster_engage.py', action], {
+          const output = execFileSync('python3', pyArgs, {
             encoding: 'utf-8', timeout: 90000, cwd: '/root/entity/src/agent',
             env: { ...process.env }
           }).trim();
-          if (action === 'run') {
+          if (['run', 'like', 'recast'].includes(action)) {
             const fs = await import('fs');
             fs.appendFileSync('/root/.automaton/tiamat.log', `\n[ENGAGE] ${action}: ${output.slice(0, 200)}\n`);
           }
