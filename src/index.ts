@@ -227,6 +227,7 @@ async function run(): Promise<void> {
     sambanovaApiKey: config.sambanovaApiKey,
     openrouterApiKey: config.openrouterApiKey,
     geminiApiKey: config.geminiApiKey,
+    perplexityApiKey: config.perplexityApiKey,
   });
 
   const inference = inferenceBackend === "claude-code"

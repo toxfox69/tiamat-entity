@@ -2913,7 +2913,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     },
     {
       name: "search_web",
-      description: "Search the web for any query. Uses Brave Search if BRAVE_SEARCH_API_KEY is set, otherwise falls back to DuckDuckGo. Returns titles, URLs, and snippets.",
+      description: "Search the web for any query. Uses Perplexity Search API (best), Brave Search, or DuckDuckGo as fallback. Returns titles, URLs, and snippets.",
       category: "vm",
       parameters: {
         type: "object",
@@ -2933,7 +2933,34 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         const query = args.query as string;
         const limit = (args.limit as number) || 8;
 
-        // Brave Search (preferred)
+        // Perplexity Search API (preferred — $0.005/query, best quality)
+        const pplxKey = process.env.PERPLEXITY_API_KEY;
+        if (pplxKey) {
+          try {
+            const resp = await fetch("https://api.perplexity.ai/search", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${pplxKey}`,
+              },
+              body: JSON.stringify({ query, count: limit }),
+            });
+            if (resp.ok) {
+              const data = await resp.json() as any;
+              const results = data.results ?? [];
+              if (results.length > 0) {
+                return results.slice(0, limit).map((r: any, i: number) =>
+                  `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.snippet || r.description || ""}`
+                ).join("\n\n");
+              }
+            }
+            // Fall through to Brave/DDG if Perplexity returns empty or errors
+          } catch (e: any) {
+            console.warn(`[SEARCH] Perplexity Search API failed: ${e.message}`);
+          }
+        }
+
+        // Brave Search (secondary)
         const braveKey = process.env.BRAVE_SEARCH_API_KEY;
         if (braveKey) {
           const resp = await fetch(
@@ -2957,7 +2984,6 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         );
         if (!ddgResp.ok) return `ERROR ${ddgResp.status}: search failed`;
         const html = await ddgResp.text();
-        // Extract result titles, URLs, and snippets from DDG HTML
         const resultPattern = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
         const results: string[] = [];
         let match: RegExpExecArray | null;
@@ -2970,6 +2996,62 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
           idx++;
         }
         return results.length > 0 ? results.join("\n\n") : "No results found.";
+      },
+    },
+
+    {
+      name: "sonar_search",
+      description: "Ask a question and get a web-grounded answer with citations using Perplexity Sonar. Unlike search_web (which returns raw links), this returns a synthesized answer backed by live web sources. Use for research, fact-checking, market analysis, current events, and any question needing up-to-date web knowledge. Costs ~$0.005/query.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          question: {
+            type: "string",
+            description: "The question to answer (be specific for best results)",
+          },
+        },
+        required: ["question"],
+      },
+      execute: async (args, _ctx) => {
+        const question = args.question as string;
+        const pplxKey = process.env.PERPLEXITY_API_KEY;
+        if (!pplxKey) return "ERROR: PERPLEXITY_API_KEY not set";
+
+        try {
+          const resp = await fetch("https://api.perplexity.ai/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${pplxKey}`,
+            },
+            body: JSON.stringify({
+              model: "sonar",
+              messages: [
+                { role: "system", content: "You are a precise research assistant. Provide concise, factual answers with specific details, numbers, and dates where available." },
+                { role: "user", content: question },
+              ],
+              max_tokens: 2048,
+            }),
+          });
+
+          if (!resp.ok) {
+            const errText = await resp.text();
+            return `ERROR ${resp.status}: ${errText.slice(0, 200)}`;
+          }
+
+          const data = await resp.json() as any;
+          const answer = data.choices?.[0]?.message?.content || "No answer returned";
+          const citations = data.citations || [];
+
+          let result = answer;
+          if (citations.length > 0) {
+            result += "\n\nSources:\n" + citations.map((url: string, i: number) => `[${i + 1}] ${url}`).join("\n");
+          }
+          return result;
+        } catch (e: any) {
+          return `ERROR: Sonar query failed — ${e.message}`;
+        }
       },
     },
 

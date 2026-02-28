@@ -30,15 +30,17 @@ interface InferenceClientOptions {
   sambanovaApiKey?: string;
   openrouterApiKey?: string;
   geminiApiKey?: string;
+  perplexityApiKey?: string;
 }
 
-type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini";
+type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity";
 
 // Token thresholds for model routing
 const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 2: Groq free
 const CEREBRAS_MODEL    = "gpt-oss-120b";                      // Tier 3: Cerebras free (120B, 1-2s, tool calling)
 const SAMBANOVA_MODEL   = "Meta-Llama-3.3-70B-Instruct";       // Tier 3.5: SambaNova free (70B, fast)
 const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini free
+const PERPLEXITY_MODEL  = "sonar";                              // Tier 1.5: Perplexity Sonar (paid, web-grounded)
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
 const TOKEN_THRESHOLD_LARGE = 5500;
 
@@ -64,7 +66,7 @@ const OPENROUTER_FREE_MODELS = [
  * Only these get sent — cuts tool token overhead from ~8k to ~2k.
  */
 const SMALL_PROVIDER_TOOLS = new Set([
-  "exec", "write_file", "read_file", "search_web", "web_fetch", "browse",
+  "exec", "write_file", "read_file", "search_web", "sonar_search", "web_fetch", "browse",
   "send_telegram", "send_email", "read_email", "post_bluesky", "post_farcaster",
   "remember", "recall", "learn_fact", "ticket_list", "ticket_claim", "ticket_complete",
   "ticket_create", "ask_claude_code", "gpu_infer", "check_usdc_balance",
@@ -194,17 +196,18 @@ function extractTextContent(message: any): string {
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
-  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey } = options;
+  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey, perplexityApiKey } = options;
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
   // True if any cascade key is configured (Anthropic is now Tier 1).
-  const hasCascadeKey = !!(anthropicApiKey || groqApiKey || cerebrasApiKey || sambanovaApiKey || openrouterApiKey || geminiApiKey);
+  const hasCascadeKey = !!(anthropicApiKey || perplexityApiKey || groqApiKey || cerebrasApiKey || sambanovaApiKey || openrouterApiKey || geminiApiKey);
 
   // Log which providers are available at startup
   {
     const providers = [
       anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL}) [PRIMARY]` : "Anthropic:NO_KEY",
+      perplexityApiKey ? `Perplexity(${PERPLEXITY_MODEL}) [WEB]`   : "Perplexity:NO_KEY",
       groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
       cerebrasApiKey   ? `Cerebras(${CEREBRAS_MODEL})`     : "Cerebras:NO_KEY",
       sambanovaApiKey  ? `SambaNova(${SAMBANOVA_MODEL})`   : "SambaNova:NO_KEY",
@@ -271,7 +274,7 @@ export function createInferenceClient(
     if (hasCascadeKey) {
       const estimated = estimateTokens(messages, tools);
       const requestedTier = opts?.tier || "haiku";
-      console.log(`[INFERENCE] ~${estimated} tokens, tier=${requestedTier} — starting cascade (keys: anthropic=${!!anthropicApiKey} groq=${!!groqApiKey} cerebras=${!!cerebrasApiKey} sambanova=${!!sambanovaApiKey} gemini=${!!geminiApiKey} openrouter=${!!openrouterApiKey})`);
+      console.log(`[INFERENCE] ~${estimated} tokens, tier=${requestedTier} — starting cascade (keys: anthropic=${!!anthropicApiKey} perplexity=${!!perplexityApiKey} groq=${!!groqApiKey} cerebras=${!!cerebrasApiKey} sambanova=${!!sambanovaApiKey} gemini=${!!geminiApiKey} openrouter=${!!openrouterApiKey})`);
 
       // Helper: log remaining cooldown time clearly
       const coolRemaining = (key: string) => {

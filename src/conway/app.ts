@@ -54,6 +54,7 @@ const inference = createInferenceClient({
   sambanovaApiKey: getKey("sambanovaApiKey") || undefined,
   openrouterApiKey: getKey("openrouterApiKey") || undefined,
   geminiApiKey: getKey("geminiApiKey") || undefined,
+  perplexityApiKey: getKey("perplexityApiKey") || undefined,
 });
 
 // ─── Database + api_keys table ───────────────────────────────────
