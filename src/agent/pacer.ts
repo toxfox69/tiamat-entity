@@ -152,10 +152,10 @@ interface PaceTierConfig {
 }
 
 const PACE_TIERS: Record<PaceTier, PaceTierConfig> = {
-  sprint:  { interval: 45,  claudeCodeBudget: 3 },   // 45s prevents rate limit exhaustion
-  active:  { interval: 60,  claudeCodeBudget: 5 },
-  idle:    { interval: 120, claudeCodeBudget: 10 },
-  reflect: { interval: 180, claudeCodeBudget: 15 },
+  sprint:  { interval: 60,   claudeCodeBudget: 3 },
+  active:  { interval: 120,  claudeCodeBudget: 5 },
+  idle:    { interval: 300,  claudeCodeBudget: 10 },   // 5 min — no point spinning faster
+  reflect: { interval: 600,  claudeCodeBudget: 15 },   // 10 min — nothing to do, wait
 };
 
 function rateToPace(rate: number): PaceTier {
