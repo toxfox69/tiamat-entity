@@ -168,11 +168,10 @@ export function checkBehavioralLoop(
     "grow", "remember", "recall", "reflect",
     "ticket_list", "ticket_claim", "ticket_complete",
     "check_revenue", "read_farcaster", "farcaster_engage",
-    "read_email", "send_email", "search_email",
+    "read_email", "send_email", "search_email", "exec",
   ]);
   const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
-  // exec is the generic shell gateway — used for everything. Exempt from loop detection.
-  const EXEMPT_TOOLS = new Set(["exec"]);
+  const EXEMPT_TOOLS = new Set<string>();
 
   const warnings: string[] = [];
   for (const [action, count] of counts) {

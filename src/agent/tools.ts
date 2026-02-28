@@ -4391,9 +4391,11 @@ print(f"Sent {mid}")
       },
       execute: async (args, _ctx) => {
         const { execFileSync } = await import('child_process');
-        const { action, cast_hash } = args as { action: string; cast_hash?: string };
-        if (!['scan', 'run', 'stats', 'like', 'recast'].includes(action))
-          return `Invalid action. Use: scan, run, stats, like, recast`;
+        const raw = args as Record<string, unknown>;
+        // Haiku keeps hallucinating extra params — just extract action, default to 'run'
+        let action = String(raw.action || 'run').toLowerCase();
+        if (!['scan', 'run', 'stats', 'like', 'recast'].includes(action)) action = 'run';
+        const cast_hash = raw.cast_hash as string | undefined;
         if ((action === 'like' || action === 'recast') && !cast_hash)
           return `${action} requires a cast_hash parameter`;
         const pyArgs = ['farcaster_engage.py', action];

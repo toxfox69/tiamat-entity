@@ -310,6 +310,9 @@ class ToolRepetitionDetector(Detector):
                 "browse", "browse_web",                            # browser automation
                 "ask_claude_code", "ask_claude_chat",              # AI assistance
                 "send_telegram",                                   # status updates
+                "farcaster_engage", "read_farcaster",              # social engagement
+                "read_email", "send_email", "search_email",        # email
+                "post_bluesky", "check_revenue", "grow",           # revenue & growth
                 "post_bluesky", "post_social",                     # social posting
                 "grow", "remember", "recall", "reflect",           # learning/memory
                 "check_revenue",                                   # routine checks
@@ -329,13 +332,13 @@ class ToolRepetitionDetector(Detector):
                 if tool_name in WHITELIST_TOOLS:
                     continue
 
-                # Tools with custom higher thresholds
-                if tool_name in HIGH_THRESHOLD_TOOLS and count < HIGH_THRESHOLD_TOOLS[tool_name]:
-                    continue
-
-                # Normal tools only flagged at 15+ (extreme repetition)
-                if tool_name in NORMAL_TOOLS and count < 15:
-                    continue
+                # Tools with custom higher thresholds (checked first — overrides NORMAL_TOOLS)
+                if tool_name in HIGH_THRESHOLD_TOOLS:
+                    if count < HIGH_THRESHOLD_TOOLS[tool_name]:
+                        continue
+                elif tool_name in NORMAL_TOOLS:
+                    if count < 15:
+                        continue
 
                 severity = "critical" if count >= 15 else "high"
                 return Detection(
