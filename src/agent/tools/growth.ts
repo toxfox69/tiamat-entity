@@ -169,6 +169,7 @@ export function checkBehavioralLoop(
     "ticket_list", "ticket_claim", "ticket_complete",
     "check_revenue", "read_farcaster", "farcaster_engage",
     "read_email", "send_email", "search_email", "exec",
+    "sonar_search",
   ]);
   const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
   const EXEMPT_TOOLS = new Set<string>();
