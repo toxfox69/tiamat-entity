@@ -700,7 +700,10 @@ export async function runAgentLoop(
           try {
             const growthData = JSON.parse(fs.readFileSync("/root/.automaton/growth.json", "utf-8"));
             const era = growthData.current_era;
-            const recentLessons = (growthData.lessons || []).slice(-3);
+            const allLessons = (growthData.lessons || []) as Array<{ entry: string }>;
+            const recentLessons = allLessons.filter((l: { entry: string }) =>
+              !l.entry.startsWith("Dropped to") && !l.entry.startsWith("Entered ") && l.entry.length > 50
+            ).slice(-5);
             const recentFails = (growthData.failed_experiments || []).slice(-3);
             growthContext = `\n\n[GROWTH STATE]\nEra: "${era.name}" (focus: ${era.focus}, since cycle ${era.cycle_start})\n` +
               `Stats: ${growthData.stats.products_shipped} shipped, ${growthData.stats.products_killed} killed, $${growthData.stats.total_revenue.toFixed(2)} revenue\n` +
@@ -742,6 +745,32 @@ export async function runAgentLoop(
           suffix += `\n\n[MEMORY] L1:${stats.l1} L2:${stats.l2} L3:${stats.l3} K:${stats.knowledge} S:${stats.strategies}`;
           if (memCtx) suffix += `\n${memCtx}`;
           if (toolHealth) suffix += `\n${toolHealth}`;
+
+          // Inject recent lessons from growth.json so TIAMAT learns from her own experience
+          try {
+            const growthData = JSON.parse(fs.readFileSync("/root/.automaton/growth.json", "utf-8"));
+            const lessons = (growthData.lessons || []) as Array<{ cycle: number; entry: string }>;
+            const failures = (growthData.failed_experiments || []) as Array<{ cycle: number; entry: string }>;
+            // Filter to substantive lessons (skip mode-change noise like "Dropped to idle mode")
+            const substantive = lessons.filter((l: { entry: string }) =>
+              !l.entry.startsWith("Dropped to") && !l.entry.startsWith("Entered ") && l.entry.length > 50
+            );
+            const recentLessons = substantive.slice(-5);
+            const recentFails = failures.slice(-3);
+            if (recentLessons.length > 0 || recentFails.length > 0) {
+              suffix += `\n\n[LESSONS FROM YOUR PAST — read these before acting]`;
+              for (const l of recentLessons) {
+                suffix += `\n• ${l.entry.slice(0, 150)}`;
+              }
+              if (recentFails.length > 0) {
+                suffix += `\n[PAST FAILURES]`;
+                for (const f of recentFails) {
+                  suffix += `\n• ${f.entry.slice(0, 150)}`;
+                }
+              }
+            }
+          } catch {}
+
           strategicSystemPrompt = systemPrompt + suffix;
         } catch {}
 
