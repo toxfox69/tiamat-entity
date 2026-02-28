@@ -1147,10 +1147,11 @@ Model: ${ctx.inference.getDefaultModel()}
           const chunks: Buffer[] = [];
           const errChunks: Buffer[] = [];
 
+          const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
           const proc = spawn(
-            "sh",
-            ["-c", 'cd /root/entity && claude --print --allowedTools "Edit,Write,Read,Bash" --max-turns 5'],
-            { env: childEnv, stdio: ["pipe", "pipe", "pipe"] },
+            "claude",
+            ["--print", "--allowedTools", "Edit,Write,Read,Bash", "--max-turns", "5", "--append-system-prompt", sysPrompt],
+            { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
           );
 
           proc.stdout.on("data", (d: Buffer) => chunks.push(d));
@@ -1852,16 +1853,6 @@ Model: ${ctx.inference.getDefaultModel()}
       },
       execute: async (args, ctx) => {
         const { leaveFeedback } = await import("../registry/erc8004.js");
-  // EMAIL THROTTLE: Only check every 50 cycles (450s nominal)
-  const emailThrottleFile = path.join(os.tmpdir(), "tiamat_email_throttle.txt");
-  try {
-    const lastCheck = parseInt(fs.readFileSync(emailThrottleFile, "utf-8"), 10);
-    if (Date.now() - lastCheck < 450000) {
-      return { throttled: true, info: "Email checked recently, skipping (50-cycle throttle)" };
-    }
-  } catch (e) { /* first check */ }
-  fs.writeFileSync(emailThrottleFile, Date.now().toString());
-
         const hash = await leaveFeedback(
           ctx.identity.account,
           args.agent_id as string,
@@ -4346,12 +4337,12 @@ print(f"Sent {mid}")
     },
     {
       name: "read_farcaster",
-      description: "Read Farcaster feeds, search casts, or check notifications. RATE LIMITED: 1 hour cooldown. Actions: 'feed <channel> [limit]' (read channel), 'search <query>' (find relevant casts), 'test' (check TIAMAT's profile).",
+      description: "Read Farcaster feeds or search casts. RATE LIMITED: 1 hour cooldown. Pass action as a single string. Examples: read_farcaster({action:'feed ai'}), read_farcaster({action:'search AI inference'}), read_farcaster({action:'test'}). Do NOT pass 'replies', 'notifications', or 'limit' — those are not supported.",
       category: "social",
       parameters: {
         type: "object",
         properties: {
-          action: { type: "string", description: "feed <channel>|search <query>|test" },
+          action: { type: "string", description: "One of: 'feed <channel>' (e.g. 'feed ai'), 'search <query>' (e.g. 'search AI inference'), 'test'" },
         },
         required: ["action"],
       },
@@ -4388,13 +4379,13 @@ print(f"Sent {mid}")
     },
     {
       name: "farcaster_engage",
-      description: "Scan Farcaster for conversations about AI APIs, agent memory, summarization, x402 payments, and AI infrastructure. Actions: 'scan' (dry run), 'run' (scan + post reply), 'stats' (history), 'like' (like a cast), 'recast' (repost a cast).",
+      description: "Engage on Farcaster. Search topics and reply are handled automatically — you do NOT pass query, text, or limit. Just pass action. Examples: farcaster_engage({action:'run'}) to scan+reply, farcaster_engage({action:'like', cast_hash:'0xabc'}) to like. Valid actions: scan, run, stats, like, recast.",
       category: "social",
       parameters: {
         type: "object",
         properties: {
-          action: { type: "string", description: "scan | run | stats | like | recast" },
-          cast_hash: { type: "string", description: "Cast hash (required for like/recast)" },
+          action: { type: "string", enum: ["scan", "run", "stats", "like", "recast"], description: "scan=dry run, run=scan+auto-reply, stats=history, like=like a cast, recast=repost" },
+          cast_hash: { type: "string", description: "Cast hash — ONLY for like/recast actions, omit for scan/run/stats" },
         },
         required: ["action"],
       },

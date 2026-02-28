@@ -167,7 +167,8 @@ export function checkBehavioralLoop(
     "send_telegram", "post_bluesky", "post_social", "post_farcaster",
     "grow", "remember", "recall", "reflect",
     "ticket_list", "ticket_claim", "ticket_complete",
-    "check_revenue", "read_farcaster",
+    "check_revenue", "read_farcaster", "farcaster_engage",
+    "read_email", "send_email", "search_email",
   ]);
   const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
   // exec is the generic shell gateway — used for everything. Exempt from loop detection.
