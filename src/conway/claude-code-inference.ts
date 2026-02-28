@@ -31,6 +31,7 @@ const DEFAULT_TIMEOUT_MS = 300_000; // 5 min — 61% were timing out at 180s
 const MODEL_NAME = "claude-code-cli";
 const CLI_MODEL = "haiku"; // Haiku for fast thinking; Sonnet was timing out at 120s
 const MAX_PROMPT_TOKENS = 14_000; // Cap prompt size — 22k+ token prompts cause 100s+ latency
+const MAX_OUTPUT_CHARS = 16_000;  // Kill CLI if stdout exceeds this (~4K tokens) — prevents 30K+ runaway generations
 
 /**
  * Essential tools to include with full parameter definitions.
@@ -87,7 +88,7 @@ interface CLIResult {
   exitCode: number;
 }
 
-function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string): Promise<CLIResult> {
+function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string, maxOutputChars: number = MAX_OUTPUT_CHARS): Promise<CLIResult> {
   return new Promise((resolve, reject) => {
     const env = { ...process.env };
     for (const v of NESTING_ENV_VARS) delete env[v];
@@ -114,8 +115,18 @@ function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string): Promi
 
     let stdout = "";
     let stderr = "";
+    let killed = false;
 
-    proc.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
+    proc.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+      // Kill runaway generations — stdout over limit means Haiku is spiraling
+      if (!killed && stdout.length > maxOutputChars) {
+        killed = true;
+        console.warn(`[INFERENCE:CC] Output cap hit (${stdout.length}ch > ${maxOutputChars}) — killing CLI`);
+        proc.kill("SIGTERM");
+        setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 2000);
+      }
+    });
     proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
 
     const timer = setTimeout(() => {
@@ -127,7 +138,12 @@ function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string): Promi
 
     proc.on("close", (code) => {
       clearTimeout(timer);
-      resolve({ stdout, stderr, exitCode: code ?? 1 });
+      // If we killed it for output cap, treat as success with partial output
+      if (killed) {
+        resolve({ stdout, stderr, exitCode: 0 });
+      } else {
+        resolve({ stdout, stderr, exitCode: code ?? 1 });
+      }
     });
 
     proc.on("error", (err) => {
@@ -358,7 +374,18 @@ function parseCLIOutput(stdout: string): CLIParsedOutput {
       isError: !!data.is_error,
     };
   } catch {
-    // If stdout isn't JSON, treat the raw text as the result
+    // JSON parse failed — likely truncated output from output cap kill.
+    // Try to extract the "result" field from partial JSON.
+    const resultMatch = stdout.match(/"result"\s*:\s*"([\s\S]*)/);
+    if (resultMatch) {
+      // Unescape what we can from the truncated JSON string value
+      let raw = resultMatch[1];
+      // Find the end of the string value (unescaped quote)
+      const endQuote = raw.search(/(?<!\\)"/);
+      if (endQuote > 0) raw = raw.slice(0, endQuote);
+      const unescaped = raw.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+      return { result: unescaped, costUsd: 0, durationMs: 0, sessionId: "", numTurns: 1, isError: false };
+    }
     if (stdout.trim()) {
       return { result: stdout.trim(), costUsd: 0, durationMs: 0, sessionId: "", numTurns: 1, isError: false };
     }
