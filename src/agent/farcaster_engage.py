@@ -776,12 +776,27 @@ class EngagementBot:
 
         log.info(f"Reply posted: {reply_hash}")
         self.tracker.record_reply(cast_hash, author, cast_text, reply_text)
+
+        # Auto-like top scored posts (cheap engagement, gets us noticed)
+        liked = []
+        for item in evaluated[:5]:
+            h = item["cast"]["hash"]
+            if h == cast_hash:
+                continue  # already replied to this one
+            ok, err = like_cast(h)
+            if ok:
+                liked.append(f"@{item['cast']['author_username']}")
+                log.info(f"Auto-liked @{item['cast']['author_username']} ({h[:10]})")
+        if liked:
+            print(f"\n>>> Auto-liked {len(liked)} posts: {', '.join(liked)}")
+
         return {
             "found": len(evaluated),
             "replied": True,
             "to": author,
             "reply_hash": reply_hash,
             "reply_text": reply_text,
+            "auto_liked": liked,
         }
 
 
