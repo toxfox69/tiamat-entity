@@ -1173,11 +1173,17 @@ export async function runAgentLoop(
       // Strategic cycles get 3072 tokens (more room to plan ask_claude_code calls), routine gets 2048
       const maxTokensThisCycle = isStrategicCycle ? 3072 : 2048;
 
+      const cycleContext = burstPhase === 1 ? "reflect" as const
+        : burstPhase === 2 ? "build" as const
+        : burstPhase === 3 ? "market" as const
+        : "routine" as const;
+
       const response = await inference.chat(messages, {
         tools: toolsToInferenceFormat(tools),
         maxTokens: maxTokensThisCycle,
         ...(inferenceModel ? { model: inferenceModel } : {}),
         tier: cycleTier,
+        cycleContext,
       });
 
       // ── Training data capture: record cycle start time ──

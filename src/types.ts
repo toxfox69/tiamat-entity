@@ -322,6 +322,7 @@ export interface InferenceOptions {
   tools?: InferenceToolDefinition[];
   stream?: boolean;
   tier?: "free" | "haiku" | "sonnet";
+  cycleContext?: "routine" | "reflect" | "build" | "market";
 }
 
 export interface InferenceToolDefinition {

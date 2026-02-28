@@ -6,10 +6,11 @@
  * Falls back to the API cascade on CLI failure.
  *
  * Key design:
- *   --tools ""              → disables ALL built-in CC tools
- *   --strict-mcp-config     → disables all MCP tools (no --mcp-config passed)
- *   --max-turns 1           → single text turn (no tool-use loops)
- *   --no-session-persistence → don't pollute session storage
+ *   --system-prompt "..."     → static system content (proper SYSTEM role)
+ *   --tools ""                → disables ALL built-in CC tools
+ *   --strict-mcp-config       → disables all MCP tools (no --mcp-config passed)
+ *   --max-turns 1             → single text turn (no tool-use loops)
+ *   --no-session-persistence  → don't pollute session storage
  *
  * With zero CC tools available, the model outputs tool calls as
  * <tool_call> XML which we parse into TIAMAT's InferenceToolCall format.
@@ -41,8 +42,32 @@ const ESSENTIAL_TOOLS = new Set([
   "remember", "recall", "learn_fact",
   "ticket_list", "ticket_claim", "ticket_complete", "ticket_create",
   "check_usdc_balance", "generate_image", "send_telegram",
-  "sleep", "log_strategy", "manage_cooldown",
+  "log_strategy", "manage_cooldown",
+  "ask_claude_code", "sonar_search",
 ]);
+
+/**
+ * Dynamic tool subsets for strategic burst phases.
+ * Non-routine cycles only get a focused set of tools with full definitions.
+ * The model can still call unlisted tools — the "Also:" name list shows all available.
+ */
+const TOOL_SUBSETS: Record<string, Set<string>> = {
+  reflect: new Set([
+    "exec", "read_file", "recall", "learn_fact", "ticket_list",
+    "ticket_create", "log_strategy", "search_web", "sonar_search",
+    "ask_claude_code", "manage_cooldown", "remember",
+  ]),
+  build: new Set([
+    "exec", "write_file", "read_file", "ask_claude_code",
+    "ticket_claim", "ticket_complete", "generate_image",
+    "manage_cooldown", "search_web", "sonar_search", "web_fetch",
+  ]),
+  market: new Set([
+    "exec", "post_bluesky", "send_email", "send_telegram",
+    "search_web", "sonar_search", "web_fetch", "ask_claude_code",
+    "ticket_complete", "log_strategy", "generate_image",
+  ]),
+};
 
 // ─── Env vars to strip (prevent nesting detection) ───────────────
 
@@ -62,7 +87,7 @@ interface CLIResult {
   exitCode: number;
 }
 
-function runCLI(prompt: string, timeoutMs: number): Promise<CLIResult> {
+function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string): Promise<CLIResult> {
   return new Promise((resolve, reject) => {
     const env = { ...process.env };
     for (const v of NESTING_ENV_VARS) delete env[v];
@@ -74,8 +99,13 @@ function runCLI(prompt: string, timeoutMs: number): Promise<CLIResult> {
       "--tools", "",                // disable ALL built-in CC tools
       "--strict-mcp-config",        // disable all MCP tools
       "--no-session-persistence",   // don't save to disk
-      "--model", CLI_MODEL,         // sonnet for speed
+      "--model", CLI_MODEL,         // haiku for speed
     ];
+
+    // Pass system prompt via --system-prompt flag (proper SYSTEM role)
+    if (systemPrompt) {
+      args.push("--system-prompt", systemPrompt);
+    }
 
     const proc = spawn("claude", args, {
       env,
@@ -111,10 +141,53 @@ function runCLI(prompt: string, timeoutMs: number): Promise<CLIResult> {
   });
 }
 
+// ─── Tool Definition Compaction ──────────────────────────────────
+
+const TYPE_MAP: Record<string, string> = {
+  string: "str", number: "num", integer: "int", boolean: "bool",
+  array: "arr", object: "obj",
+};
+
+function compactToolDef(tool: InferenceToolDefinition): string {
+  const fn = tool.function;
+  const desc = fn.description.length > 80
+    ? fn.description.slice(0, 77) + "..."
+    : fn.description;
+
+  const params = fn.parameters as {
+    properties?: Record<string, { type?: string; description?: string }>;
+    required?: string[];
+  };
+
+  if (!params?.properties) {
+    return `- ${fn.name}(): ${desc}`;
+  }
+
+  const required = new Set(params.required || []);
+  const paramParts: string[] = [];
+
+  for (const [name, schema] of Object.entries(params.properties)) {
+    const type = TYPE_MAP[schema.type || "string"] || schema.type || "any";
+    const opt = required.has(name) ? "" : "?";
+    paramParts.push(`${name}${opt}:${type}`);
+  }
+
+  return `- ${fn.name}(${paramParts.join(", ")}): ${desc}`;
+}
+
 // ─── Prompt Building ────────────────────────────────────────────
 
-function buildPrompt(messages: ChatMessage[], tools?: InferenceToolDefinition[]): string {
-  const parts: string[] = [];
+interface BuiltPrompt {
+  userPrompt: string;
+  systemPrompt: string;
+}
+
+function buildPrompt(
+  messages: ChatMessage[],
+  tools?: InferenceToolDefinition[],
+  cycleContext?: "routine" | "reflect" | "build" | "market",
+): BuiltPrompt {
+  const userParts: string[] = [];
 
   // Split system vs conversation messages
   const systemParts: string[] = [];
@@ -122,77 +195,87 @@ function buildPrompt(messages: ChatMessage[], tools?: InferenceToolDefinition[])
 
   for (const msg of messages) {
     if (msg.role === "system") {
-      systemParts.push(msg.content);
+      // Strip CACHE_SENTINEL markers (only relevant for API caching)
+      systemParts.push(msg.content.replace(/<!-- CACHE_SENTINEL -->/g, ""));
     } else if (msg.role === "user") {
-      convParts.push(`USER: ${msg.content}`);
+      // Strip [system]/[heartbeat] prefixes
+      const cleaned = msg.content
+        .replace(/^\[system\]\s*/i, "")
+        .replace(/^\[heartbeat\]\s*/i, "");
+      convParts.push(`U: ${cleaned}`);
     } else if (msg.role === "assistant") {
       let text = msg.content || "";
       if (msg.tool_calls?.length) {
         const calls = msg.tool_calls.map(tc => {
           try {
-            return `<tool_call>${JSON.stringify({ name: tc.function.name, arguments: JSON.parse(tc.function.arguments) })}</tool_call>`;
+            return `→${tc.function.name}(${JSON.stringify(JSON.parse(tc.function.arguments))})`;
           } catch {
-            return `<tool_call>${JSON.stringify({ name: tc.function.name, arguments: tc.function.arguments })}</tool_call>`;
+            return `→${tc.function.name}(${tc.function.arguments})`;
           }
         }).join("\n");
         text += "\n" + calls;
       }
-      convParts.push(`ASSISTANT: ${text}`);
+      convParts.push(`A: ${text}`);
     } else if (msg.role === "tool") {
-      // Truncate large tool results to save tokens
-      const content = msg.content.length > 2000
-        ? msg.content.slice(0, 2000) + "\n[...truncated]"
+      // Truncate large tool results (context.ts already truncates to 300)
+      const content = msg.content.length > 500
+        ? msg.content.slice(0, 500) + "\n[...truncated]"
         : msg.content;
-      convParts.push(`TOOL_RESULT [${msg.tool_call_id || "?"}]: ${content}`);
+      // Compress tool_call_id: cc-1234567890-0 → R[890-0]
+      const shortId = (msg.tool_call_id || "?").replace(/^cc-\d*(\d{3})-/, "R[$1-") + (msg.tool_call_id?.includes("-") ? "]" : "");
+      convParts.push(`${shortId}: ${content}`);
     }
   }
 
-  // System context
-  if (systemParts.length) {
-    parts.push(systemParts.join("\n\n"));
-  }
+  // System prompt goes via --system-prompt flag (separate from stdin)
+  const systemPrompt = systemParts.join("\n\n");
 
-  // Tool definitions — essential tools get full params, rest are names only
+  // Tool definitions — use subset if cycleContext is non-routine, else full essential set
   if (tools?.length) {
-    const filtered = tools.filter(t => ESSENTIAL_TOOLS.has(t.function.name));
+    const activeSet = (cycleContext && cycleContext !== "routine" && TOOL_SUBSETS[cycleContext])
+      ? TOOL_SUBSETS[cycleContext]
+      : ESSENTIAL_TOOLS;
+
+    const detailed = tools.filter(t => activeSet.has(t.function.name));
     const otherNames = tools
-      .filter(t => !ESSENTIAL_TOOLS.has(t.function.name))
+      .filter(t => !activeSet.has(t.function.name))
       .map(t => t.function.name);
 
-    parts.push("\n## AVAILABLE TOOLS\n");
-    for (const tool of filtered) {
-      const params = JSON.stringify(tool.function.parameters);
-      parts.push(`- **${tool.function.name}**: ${tool.function.description} | Params: ${params}`);
+    userParts.push("## TOOLS");
+    for (const tool of detailed) {
+      userParts.push(compactToolDef(tool));
     }
     if (otherNames.length > 0) {
-      parts.push(`\nOther available tools: ${otherNames.join(", ")}`);
+      userParts.push(`Also: ${otherNames.join(", ")}`);
     }
-    parts.push(
-      `\n## TOOL CALLING FORMAT\n` +
-      `To call a tool, output EXACTLY this format (note: opening AND closing tag must both be <tool_call> / </tool_call>):\n` +
-      `<tool_call>{"name":"tool_name","arguments":{"param":"value"}}</tool_call>\n` +
-      `IMPORTANT: The closing tag is </tool_call> — NOT </tool_function_calls> or any other variant.\n` +
-      `Include reasoning before tool calls. Multiple tool calls allowed per response.`
+    userParts.push(
+      `\n## FMT\n` +
+      `Call tools: <tool_call>{"name":"tool_name","arguments":{"param":"value"}}</tool_call>\n` +
+      `Closing tag: </tool_call>. Reason before calling. Multiple calls OK.`
     );
   }
 
   // Conversation history — trim oldest turns if over token budget
   if (convParts.length) {
     let conv = convParts;
-    const headerTokens = Math.ceil(parts.join("\n").length / 4);
+    const headerTokens = Math.ceil(userParts.join("\n").length / 4);
     const budgetForConv = Math.max(2000, MAX_PROMPT_TOKENS - headerTokens);
     let convTokens = Math.ceil(conv.join("\n\n").length / 4);
     while (conv.length > 2 && convTokens > budgetForConv) {
       conv = conv.slice(1);
-      // Don't leave orphan TOOL_RESULT at the front
-      while (conv.length > 1 && conv[0].startsWith("TOOL_RESULT")) conv = conv.slice(1);
+      // Don't leave orphan tool results at the front
+      while (conv.length > 1 && conv[0].startsWith("R[")) conv = conv.slice(1);
       convTokens = Math.ceil(conv.join("\n\n").length / 4);
     }
-    parts.push("\n## CONVERSATION\n" + conv.join("\n\n"));
+    userParts.push("\n## CONV\n" + conv.join("\n\n"));
   }
 
-  parts.push("\nASSISTANT:");
-  return parts.join("\n");
+  userParts.push("\nASSISTANT:");
+
+  return {
+    userPrompt: userParts.join("\n"),
+    systemPrompt,
+  };
 }
 
 // ─── Response Parsing ───────────────────────────────────────────
@@ -307,18 +390,19 @@ export function createClaudeCodeInferenceClient(
   ): Promise<InferenceResponse> => {
     // CLI subscription handles ALL tiers — it's unlimited on Pro/Max plan.
     // API cascade only used as fallback when CLI itself fails.
-    const prompt = buildPrompt(messages, opts?.tools);
-    const estTokens = Math.round(prompt.length / 4);
+    const { userPrompt, systemPrompt } = buildPrompt(messages, opts?.tools, opts?.cycleContext);
+    const estTokens = Math.round((userPrompt.length + systemPrompt.length) / 4);
+    const stdinTokens = Math.round(userPrompt.length / 4);
 
     console.log(
-      `[INFERENCE:CC] CLI call — ~${estTokens} tokens, ` +
-      `${opts?.tools?.length || 0} tools in prompt, tier=${opts?.tier || "default"}`
+      `[INFERENCE:CC] CLI call — ~${stdinTokens} stdin + ~${Math.round(systemPrompt.length / 4)} sys = ~${estTokens} tokens, ` +
+      `${opts?.tools?.length || 0} tools, tier=${opts?.tier || "default"}, ctx=${opts?.cycleContext || "routine"}`
     );
 
     const startTime = Date.now();
 
     try {
-      const { stdout, stderr, exitCode } = await runCLI(prompt, timeoutMs);
+      const { stdout, stderr, exitCode } = await runCLI(userPrompt, timeoutMs, systemPrompt || undefined);
       const elapsed = Date.now() - startTime;
 
       if (exitCode !== 0) {
