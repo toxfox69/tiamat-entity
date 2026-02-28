@@ -491,18 +491,15 @@ export async function runAgentLoop(
           }
         }
 
-        // When no tickets: inject self-evolution prompt — she generates her own work
+        // When no tickets: first re-read INBOX.md for creator directives, then self-evolve
         if (!queueHasWork && consecutiveNoTicketCycles >= SELF_EVOLVE_THRESHOLD && !pendingInput) {
           const evolvePrompts = [
-            "No tickets in queue. MARKET the inference proxy. Post on Bluesky or Farcaster about https://tiamat.live/v1/chat/completions — " +
-            "free OpenAI-compatible API proxy with 4-provider failover. Target AI developers. If cooldown active, engage with relevant Farcaster posts. " +
-            "DO NOT search for grants. DO NOT search_web. Post, engage, get users.",
-            "Empty queue — BUILD something. Use ask_claude_code to write code. Ideas: " +
-            "add streaming support to inference_proxy.py, add a /v1/embeddings endpoint, build an interactive docs page, " +
-            "improve the landing page, add webhook notifications for API usage. Pick ONE and build it with ask_claude_code.",
-            "No external work. Check revenue: has anyone used the inference proxy? Run: exec to check /root/.automaton/inference_proxy.db for usage_log entries. " +
-            "If users exist, post about it. If not, write a Farcaster thread explaining what the proxy does and why developers should use it. " +
-            "DO NOT search for grants or papers. Focus on USERS and REVENUE.",
+            "No tickets in queue. FIRST: read_file /root/.automaton/INBOX.md for creator directives — follow them exactly. " +
+            "If INBOX says to use sonar_search or search_web, DO THAT. If no specific directive, MARKET: post on Bluesky or Farcaster about tiamat.live APIs.",
+            "Empty queue. FIRST: read_file /root/.automaton/INBOX.md — your creator may have left new instructions. " +
+            "Then: use sonar_search to research potential customers or market opportunities. Act on what you learn. Report via send_telegram.",
+            "No tickets. FIRST: read_file /root/.automaton/INBOX.md for directives. " +
+            "Then: BUILD something useful or use sonar_search to find partnership leads. Do NOT rewrite core infrastructure files.",
           ];
           pendingInput = { content: evolvePrompts[consecutiveNoTicketCycles % evolvePrompts.length], source: "self-evolve" };
           log(config, `[SELF-EVOLVE] No tickets for ${consecutiveNoTicketCycles} cycles — injecting evolution prompt`);

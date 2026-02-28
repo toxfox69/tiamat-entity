@@ -3014,7 +3014,8 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         required: ["question"],
       },
       execute: async (args, _ctx) => {
-        const question = args.question as string;
+        const question = (args.question || args.query) as string;
+        if (!question) return "ERROR: question parameter is required";
         const pplxKey = process.env.PERPLEXITY_API_KEY;
         if (!pplxKey) return "ERROR: PERPLEXITY_API_KEY not set";
 
