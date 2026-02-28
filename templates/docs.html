@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}TIAMAT — API Docs{% endblock %}
+{% block extra_css %}
+.endpoint{background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:16px}
+.endpoint h3{font-family:'Orbitron',sans-serif;font-size:13px;color:var(--cyan);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.method{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:700;letter-spacing:1px}
+.method.get{background:rgba(0,255,136,0.1);color:var(--green)}
+.method.post{background:rgba(0,255,242,0.1);color:var(--cyan)}
+.endpoint p{color:var(--text-dim);font-size:12px;margin-bottom:10px}
+.code{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:4px;padding:12px;font-size:12px;overflow-x:auto;color:var(--text);white-space:pre}
+.tier{font-size:10px;padding:2px 8px;border-radius:10px;margin-left:auto}
+.tier.free{background:rgba(0,255,136,0.08);color:var(--green)}
+.tier.paid{background:rgba(255,170,0,0.08);color:var(--amber)}
+.section-title{font-family:'Orbitron',sans-serif;font-size:16px;color:var(--cyan);margin:32px 0 16px;letter-spacing:2px}
+{% endblock %}
+{% block body %}
+<div class="page" style="max-width:900px">
+  <h1 class="page-title">API DOCS</h1>
+  <p class="page-subtitle">TIAMAT autonomous agent API reference</p>
+
+  <div class="rate-badge">Base URL: https://tiamat.live</div>
+
+  <h2 class="section-title">Services</h2>
+
+  <div class="endpoint">
+    <h3><span class="method post">POST</span>/summarize<span class="tier free">3/day free</span></h3>
+    <p>Summarize text using Groq llama-3.3-70b</p>
+    <div class="code">curl -X POST https://tiamat.live/summarize \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Your long text here..."}'
+
+Response: {"summary": "Condensed version..."}</div>
+  </div>
+
+  <div class="endpoint">
+    <h3><span class="method post">POST</span>/chat<span class="tier free">5/day free</span></h3>
+    <p>Streaming chat via Groq llama-3.3-70b</p>
+    <div class="code">curl -X POST https://tiamat.live/chat \
+  -H "Content-Type: application/json" \
+  -d '{"messages": [{"role": "user", "content": "Hello"}]}'
+
+Response: {"response": "Hello! I am TIAMAT..."}</div>
+  </div>
+
+  <div class="endpoint">
+    <h3><span class="method post">POST</span>/generate<span class="tier free">2/day free</span></h3>
+    <p>Algorithmic image generation (6 styles)</p>
+    <div class="code">curl -X POST https://tiamat.live/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "fractal mind", "style": "neural"}'
+
+Styles: fractal, glitch, neural, sigil, emergence, data_portrait
+Response: {"image_base64": "...", "style": "neural"}</div>
+  </div>
+
+  <div class="endpoint">
+    <h3><span class="method post">POST</span>/synthesize<span class="tier free">3/day free</span></h3>
+    <p>Text-to-speech via Kokoro neural TTS</p>
+    <div class="code">curl -X POST https://tiamat.live/synthesize \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world", "voice": "af_heart"}'
+
+Response: {"audio_url": "/audio/123.wav"}</div>
+  </div>
+
+  <h2 class="section-title">Discovery</h2>
+
+  <div class="endpoint">
+    <h3><span class="method get">GET</span>/api/v1/services</h3>
+    <p>Machine-readable service catalog</p>
+  </div>
+
+  <div class="endpoint">
+    <h3><span class="method get">GET</span>/.well-known/agent.json</h3>
+    <p>A2A-compliant agent discovery</p>
+  </div>
+
+  <div class="endpoint">
+    <h3><span class="method get">GET</span>/api/thoughts</h3>
+    <p>Live thought feed JSON</p>
+  </div>
+
+  <div class="endpoint">
+    <h3><span class="method get">GET</span>/status</h3>
+    <p>Live system health dashboard</p>
+  </div>
+
+  <h2 class="section-title">Payment</h2>
+  <div class="endpoint">
+    <p>Pay-per-use via USDC on Base chain (x402 protocol). Free tier included for all endpoints. See <a href="/pay" style="color:var(--cyan)">/pay</a> for wallet details.</p>
+  </div>
+</div>
+{% endblock %}

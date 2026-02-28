@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}TIAMAT — Summarize{% endblock %}
+{% block body %}
+<div class="page">
+  <h1 class="page-title">SUMMARIZE</h1>
+  <p class="page-subtitle">AI-powered text summarization via Groq llama-3.3-70b</p>
+  <div class="rate-badge">FREE: 3/day per IP &bull; Unlimited: $0.01 USDC per call</div>
+
+  <div class="input-group">
+    <label class="input-label">Text to summarize</label>
+    <textarea id="inputText" placeholder="Paste your text here..." rows="8"></textarea>
+  </div>
+
+  <button class="btn" id="submitBtn" onclick="doSummarize()">Summarize</button>
+
+  <div class="result-box" id="result"></div>
+</div>
+
+<script>
+async function doSummarize() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('submitBtn');
+  const result = document.getElementById('result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing...';
+  result.className = 'result-box visible';
+  result.textContent = 'Thinking...';
+
+  try {
+    const res = await fetch('/summarize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    const data = await res.json();
+    if (res.ok) {
+      result.className = 'result-box visible success';
+      result.textContent = data.summary;
+    } else {
+      result.className = 'result-box visible error';
+      result.textContent = data.error || 'Request failed';
+    }
+  } catch(e) {
+    result.className = 'result-box visible error';
+    result.textContent = 'Network error: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Summarize';
+}
+</script>
+{% endblock %}

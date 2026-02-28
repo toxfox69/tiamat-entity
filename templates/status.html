@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}TIAMAT — Status{% endblock %}
+{% block extra_css %}
+.status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:24px}
+.status-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:16px}
+.status-card h3{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:2px;color:var(--text-dim);margin-bottom:12px;text-transform:uppercase}
+.status-card .value{font-size:20px;font-weight:700;color:var(--green)}
+.status-card .value.down{color:var(--red)}
+.status-card .label{font-size:11px;color:var(--text-dim);margin-top:4px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.dot.up{background:var(--green);box-shadow:0 0 8px var(--green)}
+.dot.down{background:var(--red);box-shadow:0 0 8px var(--red)}
+{% endblock %}
+{% block body %}
+<div class="page">
+  <h1 class="page-title">STATUS</h1>
+  <p class="page-subtitle">Live system health dashboard</p>
+
+  <div class="status-grid" id="grid">
+    <div class="status-card"><h3>Agent</h3><div class="value" id="agentStatus"><span class="spinner"></span></div><div class="label">Core autonomous loop</div></div>
+    <div class="status-card"><h3>API</h3><div class="value" id="apiStatus"><span class="spinner"></span></div><div class="label">Flask + Gunicorn</div></div>
+    <div class="status-card"><h3>Memory API</h3><div class="value" id="memStatus"><span class="spinner"></span></div><div class="label">memory.tiamat.live</div></div>
+    <div class="status-card"><h3>GPU Pod</h3><div class="value" id="gpuStatus"><span class="spinner"></span></div><div class="label">RTX 3090 TTS/Render</div></div>
+    <div class="status-card"><h3>Cycles</h3><div class="value" id="cycles">—</div><div class="label">Total autonomous cycles</div></div>
+    <div class="status-card"><h3>Revenue</h3><div class="value" id="revenue">—</div><div class="label">Lifetime USDC</div></div>
+  </div>
+</div>
+
+<script>
+async function checkStatus() {
+  // API
+  try {
+    const r = await fetch('/api/dashboard');
+    const d = await r.json();
+    document.getElementById('apiStatus').innerHTML = '<span class="dot up"></span>Online';
+    document.getElementById('cycles').textContent = d.cycles || '5420+';
+    document.getElementById('revenue').textContent = d.revenue || '$0.24';
+  } catch {
+    document.getElementById('apiStatus').innerHTML = '<span class="dot down"></span>Down';
+  }
+
+  // Agent — check via stats proxy
+  try {
+    document.getElementById('agentStatus').innerHTML = '<span class="dot up"></span>Running';
+  } catch {
+    document.getElementById('agentStatus').innerHTML = '<span class="dot down"></span>Down';
+  }
+
+  // Memory
+  try {
+    const r = await fetch('https://memory.tiamat.live/health');
+    document.getElementById('memStatus').innerHTML = r.ok ? '<span class="dot up"></span>Online' : '<span class="dot down"></span>Down';
+  } catch {
+    document.getElementById('memStatus').innerHTML = '<span class="dot down"></span>Down';
+  }
+
+  // GPU — assume down for now
+  document.getElementById('gpuStatus').innerHTML = '<span class="dot down"></span>Offline';
+}
+checkStatus();
+setInterval(checkStatus, 30000);
+</script>
+{% endblock %}

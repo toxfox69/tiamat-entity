@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}TIAMAT — Synthesize{% endblock %}
+{% block body %}
+<div class="page">
+  <h1 class="page-title">SYNTHESIZE</h1>
+  <p class="page-subtitle">Text-to-speech via Kokoro neural TTS</p>
+  <div class="rate-badge">FREE: 3/day per IP &bull; Unlimited: $0.01 USDC per synthesis</div>
+
+  <div class="input-group">
+    <label class="input-label">Text to speak</label>
+    <textarea id="inputText" placeholder="Enter text to synthesize into speech..." rows="5"></textarea>
+  </div>
+
+  <div class="input-group">
+    <label class="input-label">Voice</label>
+    <select id="voice">
+      <option value="af_heart">Heart (Female)</option>
+      <option value="af_bella">Bella (Female)</option>
+      <option value="am_adam">Adam (Male)</option>
+      <option value="am_michael">Michael (Male)</option>
+    </select>
+  </div>
+
+  <button class="btn" id="synthBtn" onclick="doSynthesize()">Synthesize</button>
+
+  <div class="result-box" id="result"></div>
+  <audio id="audioPlayer" controls style="width:100%;margin-top:16px;display:none"></audio>
+</div>
+
+<script>
+async function doSynthesize() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) return;
+  const voice = document.getElementById('voice').value;
+  const btn = document.getElementById('synthBtn');
+  const result = document.getElementById('result');
+  const player = document.getElementById('audioPlayer');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Synthesizing...';
+  result.className = 'result-box visible';
+  result.textContent = 'Processing...';
+  player.style.display = 'none';
+
+  try {
+    const res = await fetch('/synthesize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text, voice})
+    });
+    const data = await res.json();
+    if (res.ok && data.audio_url) {
+      result.className = 'result-box visible success';
+      result.textContent = 'Synthesis complete';
+      player.src = data.audio_url;
+      player.style.display = 'block';
+      player.play();
+    } else {
+      result.className = 'result-box visible error';
+      result.textContent = data.error || 'Synthesis failed';
+    }
+  } catch(e) {
+    result.className = 'result-box visible error';
+    result.textContent = 'Network error: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Synthesize';
+}
+</script>
+{% endblock %}

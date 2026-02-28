@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}TIAMAT — Generate{% endblock %}
+{% block extra_css %}
+.gen-result{text-align:center;margin-top:24px}
+.gen-result img{max-width:100%;border:1px solid var(--border);border-radius:6px}
+{% endblock %}
+{% block body %}
+<div class="page">
+  <h1 class="page-title">GENERATE</h1>
+  <p class="page-subtitle">Algorithmic image generation &mdash; 6 unique styles</p>
+  <div class="rate-badge">FREE: 2/day per IP &bull; Unlimited: $0.01 USDC per image</div>
+
+  <div class="input-group">
+    <label class="input-label">Prompt</label>
+    <input type="text" id="prompt" placeholder="A fractal consciousness expanding through void...">
+  </div>
+
+  <div class="input-group">
+    <label class="input-label">Style</label>
+    <select id="style">
+      <option value="fractal">Fractal</option>
+      <option value="glitch">Glitch</option>
+      <option value="neural">Neural</option>
+      <option value="sigil">Sigil</option>
+      <option value="emergence">Emergence</option>
+      <option value="data_portrait">Data Portrait</option>
+    </select>
+  </div>
+
+  <button class="btn" id="genBtn" onclick="doGenerate()">Generate</button>
+
+  <div class="gen-result" id="genResult"></div>
+</div>
+
+<script>
+async function doGenerate() {
+  const prompt = document.getElementById('prompt').value.trim() || 'tiamat consciousness';
+  const style = document.getElementById('style').value;
+  const btn = document.getElementById('genBtn');
+  const result = document.getElementById('genResult');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  result.innerHTML = '<div style="color:var(--text-dim)">Rendering...</div>';
+
+  try {
+    const res = await fetch('/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt, style})
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.image_url) {
+        result.innerHTML = '<img src="' + data.image_url + '" alt="Generated image">';
+      } else if (data.image_base64) {
+        result.innerHTML = '<img src="data:image/png;base64,' + data.image_base64 + '" alt="Generated image">';
+      } else {
+        result.innerHTML = '<div style="color:var(--amber)">Generated but no image returned</div>';
+      }
+    } else {
+      const data = await res.json();
+      result.innerHTML = '<div style="color:var(--red)">' + (data.error || 'Generation failed') + '</div>';
+    }
+  } catch(e) {
+    result.innerHTML = '<div style="color:var(--red)">Network error: ' + e.message + '</div>';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Generate';
+}
+</script>
+{% endblock %}
