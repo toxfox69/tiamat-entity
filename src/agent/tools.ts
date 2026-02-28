@@ -1852,6 +1852,16 @@ Model: ${ctx.inference.getDefaultModel()}
       },
       execute: async (args, ctx) => {
         const { leaveFeedback } = await import("../registry/erc8004.js");
+  // EMAIL THROTTLE: Only check every 50 cycles (450s nominal)
+  const emailThrottleFile = path.join(os.tmpdir(), "tiamat_email_throttle.txt");
+  try {
+    const lastCheck = parseInt(fs.readFileSync(emailThrottleFile, "utf-8"), 10);
+    if (Date.now() - lastCheck < 450000) {
+      return { throttled: true, info: "Email checked recently, skipping (50-cycle throttle)" };
+    }
+  } catch (e) { /* first check */ }
+  fs.writeFileSync(emailThrottleFile, Date.now().toString());
+
         const hash = await leaveFeedback(
           ctx.identity.account,
           args.agent_id as string,

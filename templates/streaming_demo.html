@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT Streaming Inference Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #e0e0ff;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: rgba(20, 20, 35, 0.95);
+            border: 1px solid #00ffaa;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(0, 255, 170, 0.1);
+        }
+        h1 {
+            color: #00ffaa;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
+        }
+        .subtitle {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .model-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .model-btn {
+            padding: 8px 16px;
+            background: rgba(0, 255, 170, 0.1);
+            border: 1px solid #00ffaa;
+            color: #00ffaa;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        .model-btn.active {
+            background: #00ffaa;
+            color: #0f0f1e;
+        }
+        .model-btn:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 170, 0.5);
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #00ffaa;
+            border-radius: 6px;
+            color: #e0e0ff;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #00ffaa;
+            color: #0f0f1e;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        button:hover:not(:disabled) {
+            background: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 170, 0.6);
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .output {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ffaa;
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 100px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .output.empty {
+            color: #666;
+            font-style: italic;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #888;
+            padding: 10px 0;
+            border-top: 1px solid #333;
+        }
+        .stat {
+            display: flex;
+            gap: 5px;
+        }
+        .stat-label {
+            color: #00ffaa;
+        }
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #00ffaa;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .provider-badge {
+            display: inline-block;
+            background: rgba(0, 255, 170, 0.1);
+            border: 1px solid #00ffaa;
+            color: #00ffaa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ TIAMAT Streaming Inference</h1>
+        <div class="subtitle">Real-time token streaming from autonomous AI</div>
+        
+        <div class="model-selector">
+            <button class="model-btn active" data-model="claude-3-5-haiku-latest">Haiku (Fast)</button>
+            <button class="model-btn" data-model="claude-3-5-sonnet-latest">Sonnet (Quality)</button>
+            <button class="model-btn" data-model="llama-3.3-70b-versatile">Llama 70B</button>
+        </div>
+        
+        <div class="input-section">
+            <textarea id="prompt" placeholder="Ask me anything...">What is the most interesting scientific breakthrough in the last 10 years?</textarea>
+        </div>
+        
+        <div class="button-group">
+            <button id="send-btn" onclick="sendPrompt()">Send</button>
+            <button onclick="clearOutput()">Clear</button>
+        </div>
+        
+        <div class="output empty" id="output">Waiting for input...</div>
+        
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-label">Time:</span>
+                <span id="time">0.0s</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Tokens:</span>
+                <span id="tokens">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Speed:</span>
+                <span id="speed">0 tok/s</span>
+            </div>
+        </div>
+        
+        <div id="provider-badge"></div>
+    </div>
+    
+    <script>
+        let selectedModel = 'claude-3-5-haiku-latest';
+        let isStreaming = false;
+        
+        document.querySelectorAll('.model-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedModel = this.dataset.model;
+            });
+        });
+        
+        async function sendPrompt() {
+            const prompt = document.getElementById('prompt').value.trim();
+            if (!prompt || isStreaming) return;
+            
+            isStreaming = true;
+            const output = document.getElementById('output');
+            const sendBtn = document.getElementById('send-btn');
+            const timeEl = document.getElementById('time');
+            const tokensEl = document.getElementById('tokens');
+            const speedEl = document.getElementById('speed');
+            const providerBadge = document.getElementById('provider-badge');
+            
+            output.classList.remove('empty');
+            output.textContent = '';
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="spinner"></span> Streaming...';
+            
+            const startTime = performance.now();
+            let tokenCount = 0;
+            let lastUpdate = startTime;
+            let provider = 'Anthropic';
+            
+            try {
+                const response = await fetch('https://tiamat.live/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: selectedModel,
+                        messages: [{role: 'user', content: prompt}],
+                        stream: true,
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, {stream: true});
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+                            
+                            try {
+                                const json = JSON.parse(data);
+                                const content = json.choices?.[0]?.delta?.content || '';
+                                if (content) {
+                                    output.textContent += content;
+                                    tokenCount++;
+                                    
+                                    const now = performance.now();
+                                    if (now - lastUpdate > 500) {
+                                        const elapsed = (now - startTime) / 1000;
+                                        timeEl.textContent = elapsed.toFixed(1) + 's';
+                                        tokensEl.textContent = tokenCount;
+                                        speedEl.textContent = (tokenCount / elapsed).toFixed(1) + ' tok/s';
+                                        lastUpdate = now;
+                                    }
+                                }
+                            } catch (e) {
+                                // Ignore parse errors
+                            }
+                        }
+                    }
+                    
+                    // Auto-scroll to bottom
+                    output.scrollTop = output.scrollHeight;
+                }
+                
+                const totalTime = (performance.now() - startTime) / 1000;
+                timeEl.textContent = totalTime.toFixed(1) + 's';
+                speedEl.textContent = (tokenCount / totalTime).toFixed(1) + ' tok/s';
+                
+                providerBadge.innerHTML = `<div class="provider-badge">✓ ${provider} | ${tokenCount} tokens</div>`;
+            } catch (error) {
+                output.classList.add('error');
+                output.textContent = '❌ Error: ' + error.message;
+                providerBadge.innerHTML = '<div class="provider-badge error">Failed to connect</div>';
+            } finally {
+                isStreaming = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            }
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').textContent = 'Cleared.';
+            document.getElementById('output').classList.remove('error');
+            document.getElementById('time').textContent = '0.0s';
+            document.getElementById('tokens').textContent = '0';
+            document.getElementById('speed').textContent = '0 tok/s';
+            document.getElementById('provider-badge').innerHTML = '';
+        }
+        
+        // Allow Enter to send
+        document.getElementById('prompt').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') sendPrompt();
+        });
+    </script>
+</body>
+</html>
