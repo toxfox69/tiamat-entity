@@ -25,7 +25,6 @@ import type {
   SocialClientInterface,
   InboxMessage,
 } from "../types.js";
-import { DEFAULT_CONFIG } from "../types.js";
 import path from "path";
 import os from "os";
 import fs from "fs";

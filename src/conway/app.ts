@@ -436,7 +436,7 @@ server.on("error", (err) => {
 export { app };
 
 // Farcaster Frame v2 endpoints
-app.get('/api/frame-image', (req, res) => {
+app.get('/api/frame-image', (_req, res) => {
   res.setHeader('Content-Type', 'image/png');
   // Return a frame image (gradient TIAMAT branding)
   res.send(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'));
@@ -467,7 +467,7 @@ app.post('/api/frame-action', async (req, res) => {
   }
   
   try {
-    const response = await (async (opts: { messages: { role: string; content: string }[]; isPaid: boolean }) => {
+    const response = await (async (_opts: { messages: { role: string; content: string }[]; isPaid: boolean }) => {
       // TODO: implement proxyInference — stub returns placeholder
       return "TIAMAT inference temporarily unavailable via frame.";
     })({ messages: [{ role: 'user', content: inputText }], isPaid });
@@ -487,6 +487,6 @@ app.post('/api/frame-action', async (req, res) => {
   }
 });
 
-app.get('/frame', (req, res) => {
+app.get('/frame', (_req, res) => {
   res.sendFile(path.join(__dirname, '../templates/frame.html'));
 });

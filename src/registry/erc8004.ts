@@ -12,15 +12,13 @@ import {
   createPublicClient,
   createWalletClient,
   http,
-  encodeFunctionData,
   parseAbi,
   type Address,
-  type PrivateKeyAccount,
+  type PrivateKeyAccount
 } from "viem";
 import { base, baseSepolia } from "viem/chains";
 import type {
   RegistryEntry,
-  ReputationEntry,
   DiscoveredAgent,
   AutomatonDatabase,
 } from "../types.js";
@@ -163,7 +161,7 @@ export async function leaveFeedback(
   score: number,
   comment: string,
   network: Network = "mainnet",
-  db: AutomatonDatabase,
+  _db: AutomatonDatabase,
 ): Promise<string> {
   const contracts = CONTRACTS[network];
   const chain = contracts.chain;

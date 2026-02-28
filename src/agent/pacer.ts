@@ -23,7 +23,7 @@ const CRONTASKS_PATH = "/root/.automaton/crontasks.json";
 
 export type PaceTier = "sprint" | "active" | "idle" | "reflect";
 
-export interface CycleRecord {
+interface CycleRecord {
   cycle: number;
   actions: string[];
   productive: boolean;
@@ -31,7 +31,7 @@ export interface CycleRecord {
   timestamp: string;
 }
 
-export interface PacerState {
+interface PacerState {
   last_20_cycles: CycleRecord[];
   productivity_rate: number;
   current_pace: PaceTier;
@@ -43,7 +43,7 @@ export interface PacerState {
   total_pace_changes: number;
 }
 
-export interface CronTask {
+interface CronTask {
   id: string;
   name: string;
   command: string;
@@ -57,7 +57,7 @@ export interface CronTask {
   created_at: string;
 }
 
-export interface CronState {
+interface CronState {
   tasks: CronTask[];
 }
 
@@ -88,12 +88,6 @@ const PRODUCTIVE_TOOLS = new Set([
   "learn_fact", "remember",
 ]);
 
-/** Tools that are definitely NOT productive (status checks, reads) */
-const UNPRODUCTIVE_TOOLS = new Set([
-  "read_file", "ticket_list", "check_opportunities",
-  "read_farcaster", "read_email", "search_email",
-  "introspect", "manage_cooldown",
-]);
 
 // ─── Pacer State I/O ─────────────────────────────────────────
 
@@ -263,7 +257,7 @@ export function updatePacer(
 
 // ─── Cron Check ──────────────────────────────────────────────
 
-export interface CronResult {
+interface CronResult {
   id: string;
   name: string;
   output: string | null;

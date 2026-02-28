@@ -47,7 +47,7 @@ const payload = {
 const apiUrl = config.conwayApiUrl || "https://api.conway.tech";
 const paths = ["/v1/credits/transfer", "/v1/credits/transfers"];
 
-let success: any | null = null;
+let success: Record<string, unknown> | null = null;
 let lastError = "";
 
 for (const path of paths) {

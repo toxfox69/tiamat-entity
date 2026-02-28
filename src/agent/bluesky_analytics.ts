@@ -3,8 +3,6 @@
  * Tracks post performance, engagement trends, optimal posting times
  */
 
-import Database from 'better-sqlite3';
-import * as fs from 'fs';
 import * as path from 'path';
 
 const ANALYTICS_DB = path.join('/root/.automaton', 'bluesky_analytics.db');

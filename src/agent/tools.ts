@@ -11,10 +11,8 @@ import type {
   ToolCategory,
   InferenceToolDefinition,
   ToolCallResult,
-  GenesisConfig,
 } from "../types.js";
 import { memory } from "./memory.js";
-import { generateImage } from "./imagegen.js";
 import { createGrowthTools } from "./tools/growth.js";
 
 // ─── Social Cooldown Tracker ───────────────────────────────────
@@ -171,7 +169,7 @@ function isForbiddenCommand(command: string, sandboxId: string): string | null {
 
 // ─── Built-in Tools ────────────────────────────────────────────
 
-export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
+export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
   return [
     // ── VM/Sandbox Tools ──
     {
@@ -219,7 +217,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         },
         required: ["path", "content"],
       },
-      execute: async (args, ctx) => {
+      execute: async (args, _ctx) => {
         const filePath = args.path as string;
         // Guard against missing content
         if (!args.content && args.content !== '') {
@@ -267,7 +265,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         },
         required: ["port"],
       },
-      execute: async (args, ctx) => {
+      execute: async (args, _ctx) => {
         const info = { url: `http://159.89.38.17:${args.port}`, publicUrl: `http://159.89.38.17:${args.port}`, port: args.port };
         return `Port ${info.port} exposed at: ${info.publicUrl}`;
       },
@@ -283,7 +281,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         },
         required: ["port"],
       },
-      execute: async (args, ctx) => {
+      execute: async (args, _ctx) => {
         // Port removal handled by local firewall
         return `Port ${args.port} removed`;
       },
@@ -295,7 +293,7 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
       description: "Check your current compute credit balance.",
       category: "infra",
       parameters: { type: "object", properties: {} },
-      execute: async (_args, ctx) => {
+      execute: async (_args, _ctx) => {
         const balance = 0;
         return `Credit balance: $${(balance / 100).toFixed(2)} (${balance} cents)`;
       },
@@ -526,9 +524,8 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         }
 
         // Rebuild
-        let buildOutput: string;
         try {
-          buildOutput = run("npm install --ignore-scripts && npm run build");
+          run("npm install --ignore-scripts && npm run build");
         } catch (err: any) {
           return `${appliedSummary} — but rebuild failed: ${err.message}. The code is applied but not compiled.`;
         }
@@ -1100,7 +1097,7 @@ Model: ${ctx.inference.getDefaultModel()}
         const content = args.content as string;
         if (!content || content.trim().length === 0) return "ERROR: content cannot be empty.";
         if (content.length > 5000) return `ERROR: ${content.length} chars exceeds 5000 limit.`;
-        const { writeFileSync, existsSync, readFileSync } = await import("fs");
+        const { writeFileSync, readFileSync } = await import("fs");
         // Archive current mission before overwriting
         try {
           const current = readFileSync("/root/.automaton/MISSION.md", "utf-8");
@@ -1691,7 +1688,7 @@ Model: ${ctx.inference.getDefaultModel()}
           limit: { type: "number", description: "Number of commits (default: 10)" },
         },
       },
-      execute: async (args, ctx) => {
+      execute: async (args, _ctx) => {
         const { execFileSync } = await import('child_process');
         const { homedir } = await import('os');
         const repoPath = ((args.path as string) || '~/.automaton').replace(/^~/, homedir());
@@ -1823,7 +1820,7 @@ Model: ${ctx.inference.getDefaultModel()}
           network: { type: "string", description: "mainnet or testnet" },
         },
       },
-      execute: async (args, ctx) => {
+      execute: async (args, _ctx) => {
         const { discoverAgents, searchAgents } = await import("../registry/discovery.js");
         const network = ((args.network as string) || "mainnet") as any;
         const keyword = args.keyword as string | undefined;
@@ -3167,7 +3164,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         properties: {},
         required: [],
       },
-      execute: async (_args, ctx) => {
+      execute: async (_args, _ctx) => {
         const models = [
           { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', pricing: { inputPerMillion: 0.25, outputPerMillion: 1.25 } },
           { id: 'claude-sonnet-4-6', provider: 'anthropic', pricing: { inputPerMillion: 3, outputPerMillion: 15 } },
@@ -3201,7 +3198,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         },
         required: ["query"],
       },
-      execute: async (args, ctx) => {
+      execute: async (_args, _ctx) => {
         const results: any[] = []; void 0; // Conway not available
         if (results.length === 0) return "No results found.";
         return results
@@ -3232,7 +3229,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         },
         required: ["domain"],
       },
-      execute: async (args, ctx) => {
+      execute: async (args, _ctx) => {
         const reg = { error: 'Use Namecheap or DO Domains instead', domain: args.domain as string, status: 'unavailable', expiresAt: '', transactionId: '' }; // Conway not available
         return `Domain registered: ${reg.domain} (status: ${reg.status}${reg.expiresAt ? `, expires: ${reg.expiresAt}` : ""}${reg.transactionId ? `, tx: ${reg.transactionId}` : ""})`;
       },
@@ -4714,7 +4711,7 @@ print(f"Sent {mid}")
 
               const msg = (args.commit_message as string) || `feat: auto-update from TIAMAT cycle ${_ctx.turnNumber || 'unknown'}`;
               execFileSync('git', ['commit', '-m', msg], { cwd: APP_DIR, encoding: 'utf-8', timeout: 15_000 });
-              const pushOut = execFileSync('git', ['push', 'origin', 'main'], { cwd: APP_DIR, encoding: 'utf-8', timeout: 60_000 });
+              execFileSync('git', ['push', 'origin', 'main'], { cwd: APP_DIR, encoding: 'utf-8', timeout: 60_000 });
               return `Build triggered! Committed and pushed to ${REPO}.\nCommit message: ${msg}\nGitHub Actions will compile the APK automatically.\nCheck status with build_and_deploy_app({action:"status"}).`;
             } catch (e: any) {
               return `Build failed: ${e.stderr || e.stdout || e.message}`;
@@ -4745,7 +4742,7 @@ print(f"Sent {mid}")
               fs.mkdirSync(downloadDir, { recursive: true });
 
               // Download the latest APK artifact
-              const out = execFileSync('gh', ['run', 'download', '--repo', REPO, '-n', 'tiamat-apk', '-D', downloadDir], {
+              execFileSync('gh', ['run', 'download', '--repo', REPO, '-n', 'tiamat-apk', '-D', downloadDir], {
                 encoding: 'utf-8', timeout: 120_000
               });
 

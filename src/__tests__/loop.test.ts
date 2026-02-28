@@ -9,12 +9,11 @@ import { runAgentLoop } from "../agent/loop.js";
 import {
   MockInferenceClient,
   MockConwayClient,
-  MockSocialClient,
   createTestDb,
   createTestIdentity,
   createTestConfig,
   toolCallResponse,
-  noToolResponse,
+  noToolResponse
 } from "./mocks.js";
 import type { AutomatonDatabase, AgentTurn } from "../types.js";
 

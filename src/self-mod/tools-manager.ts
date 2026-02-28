@@ -64,7 +64,7 @@ export async function installNpmPackage(
  * The automaton can add new capabilities by installing MCP servers.
  */
 export async function installMcpServer(
-  conway: ConwayClient,
+  _conway: ConwayClient,
   db: AutomatonDatabase,
   name: string,
   command: string,

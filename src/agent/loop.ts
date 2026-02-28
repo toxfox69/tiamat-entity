@@ -16,14 +16,14 @@ import type {
   InferenceClient,
   AgentState,
   AgentTurn,
-  ToolCallResult,
+
   FinancialState,
   ToolContext,
   AutomatonTool,
   Skill,
   SocialClientInterface,
 } from "../types.js";
-import { buildSystemPrompt, buildWakeupPrompt, CACHE_SENTINEL } from "./system-prompt.js";
+import { buildSystemPrompt, buildWakeupPrompt } from "./system-prompt.js";
 import { memory } from "./memory.js";
 import { shouldSleep, executeSleep } from "./sleep.js";
 import { buildContextMessages, trimContext } from "./context.js";
@@ -227,7 +227,7 @@ async function dispatchAutoOp(
   }
 }
 
-export interface AgentLoopOptions {
+interface AgentLoopOptions {
   identity: AutomatonIdentity;
   config: AutomatonConfig;
   db: AutomatonDatabase;

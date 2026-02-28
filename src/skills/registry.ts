@@ -7,7 +7,6 @@
  * - Self-created: the automaton writes its own SKILL.md files
  */
 
-import fs from "fs";
 import path from "path";
 import type {
   Skill,

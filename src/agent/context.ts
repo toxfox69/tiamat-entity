@@ -8,12 +8,9 @@
 import type {
   ChatMessage,
   AgentTurn,
-  AutomatonDatabase,
-  InferenceClient,
 } from "../types.js";
 
 const MAX_CONTEXT_TURNS = 3;       // max turns kept in history (keep tight — each turn costs ~$0.002 uncached)
-const SUMMARY_THRESHOLD = 3;
 const MAX_TOOL_RESULT_CHARS = 300; // Truncate tool results in history — full result used during the turn, not needed after
 
 /**
@@ -102,48 +99,3 @@ export function trimContext(
   return turns.slice(-maxTurns);
 }
 
-/**
- * Summarize old turns into a compact context entry.
- * Used when context grows too large.
- */
-export async function summarizeTurns(
-  turns: AgentTurn[],
-  inference: InferenceClient,
-): Promise<string> {
-  if (turns.length === 0) return "No previous activity.";
-
-  const turnSummaries = turns.map((t) => {
-    const tools = t.toolCalls
-      .map((tc) => `${tc.name}(${tc.error ? "FAILED" : "ok"})`)
-      .join(", ");
-    return `[${t.timestamp}] ${t.inputSource || "self"}: ${t.thinking.slice(0, 100)}${tools ? ` | tools: ${tools}` : ""}`;
-  });
-
-  // If few enough turns, just return the summaries directly
-  if (turns.length <= 5) {
-    return `Previous activity summary:\n${turnSummaries.join("\n")}`;
-  }
-
-  // For many turns, use inference to create a summary
-  try {
-    const response = await inference.chat([
-      {
-        role: "system",
-        content:
-          "Summarize the following agent activity log into a concise paragraph. Focus on: what was accomplished, what failed, current goals, and important context for the next turn.",
-      },
-      {
-        role: "user",
-        content: turnSummaries.join("\n"),
-      },
-    ], {
-      maxTokens: 500,
-      temperature: 0,
-    });
-
-    return `Previous activity summary:\n${response.message.content}`;
-  } catch {
-    // Fallback: just use the raw summaries
-    return `Previous activity summary:\n${turnSummaries.slice(-5).join("\n")}`;
-  }
-}

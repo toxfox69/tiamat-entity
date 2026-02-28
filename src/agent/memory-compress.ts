@@ -441,7 +441,7 @@ export async function compressL2toL3(db: Database.Database): Promise<number> {
 // ── Smart Recall ──────────────────────────────────────────────
 // Tiered search: L3 → L2 → L1. Stays within token budget.
 
-export interface SmartRecallResult {
+interface SmartRecallResult {
   tier: "L3" | "L2" | "L1";
   content: string;
   id: number;

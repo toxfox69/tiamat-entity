@@ -40,7 +40,7 @@ export interface SleepReport {
 
 export function shouldSleep(
   lastSleepTime: number,
-  currentCycle: number,
+  _currentCycle: number,
   idleStreak: number,
   force?: boolean,
 ): boolean {

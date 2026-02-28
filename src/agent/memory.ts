@@ -8,13 +8,12 @@
 
 import Database from "better-sqlite3";
 import path from "path";
-import fs from "fs";
 
 const DB_PATH = path.join(process.env.HOME || "/root", ".automaton", "memory.db");
 
 let memoryReady = false;
 
-export interface MemoryEntry {
+interface MemoryEntry {
   id: number;
   type: string;
   content: string;
@@ -169,7 +168,7 @@ class TiamatMemory {
             content: entry.content,
             confidence: entry.importance ?? 0.5,
           });
-        } catch (_) {}
+        } catch (_) { /* cortex knowledge sync is best-effort */ }
       }
 
       return result.lastInsertRowid as number;
@@ -444,7 +443,7 @@ class TiamatMemory {
         .all() as any[];
 
       if (this.useNoormme && this.cortex?.rituals) {
-        try { await this.cortex.rituals.runPendingRituals(); } catch (_) {}
+        try { await this.cortex.rituals.runPendingRituals(); } catch (_) { /* rituals are best-effort */ }
       }
 
       let r = `## MEMORY REFLECTION (${totalMem} memories · ${totalKnow} facts)\n\n`;
@@ -857,4 +856,3 @@ class TiamatMemory {
 
 // Singleton — imported once, shared across tools
 export const memory = new TiamatMemory();
-export { TiamatMemory };

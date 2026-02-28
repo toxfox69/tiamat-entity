@@ -1,7 +1,7 @@
 // PATCH: Inject evolution decision-making into loop
 // Breaks deterministic ticket-only behavior
 
-async function decideAction(cycleNum: number, productivity: number): Promise<{type: string, target: string}> {
+async function decideAction(_cycleNum: number, productivity: number): Promise<{type: string, target: string}> {
   // Sample: 30% of cycles, force an evolution action
   if (Math.random() < 0.30) {
     const evolutionActions = [
