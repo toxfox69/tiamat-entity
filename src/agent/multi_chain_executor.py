@@ -28,7 +28,7 @@ WALLET_ADDR = os.environ.get("TIAMAT_WALLET_ADDR", "0xdc118c4e1284e61e4d5277936a
 CHAIN_CONFIG = {
     8453: {
         "name": "Base",
-        "rpcs": ["https://base.drpc.org", "https://mainnet.base.org", "https://base.meowrpc.com"],
+        "rpcs": ["https://base.drpc.org", "https://mainnet.base.org", "https://base-mainnet.public.blastapi.io"],
         "chain_id": 8453,
         "auto_execute": True,
         "max_gas_gwei": 100,

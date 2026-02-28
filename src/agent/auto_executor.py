@@ -29,7 +29,7 @@ log = logging.getLogger("vuln_scanner")
 BASE_RPCS = [
     "https://base.drpc.org",
     "https://mainnet.base.org",
-    "https://base.meowrpc.com",
+    "https://base-mainnet.public.blastapi.io",
 ]
 
 WETH = "0x4200000000000000000000000000000000000006"

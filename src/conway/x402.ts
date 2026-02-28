@@ -23,9 +23,9 @@ const USDC_ADDRESSES: Record<string, Address> = {
 
 const CHAIN_RPCS: Record<string, string[]> = {
   "eip155:8453": [
-    "https://base.drpc.org",
     "https://mainnet.base.org",
-    "https://base.meowrpc.com",
+    "https://base.drpc.org",
+    "https://base-mainnet.public.blastapi.io",
   ],
   "eip155:84532": [],
 };

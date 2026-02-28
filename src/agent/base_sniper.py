@@ -24,7 +24,7 @@ from opportunity_queue import OpportunityQueue
 BASE_HTTP_RPCS = [
     "https://base.drpc.org",
     "https://mainnet.base.org",
-    "https://base.meowrpc.com",
+    "https://base-mainnet.public.blastapi.io",
     "https://1rpc.io/base",
 ]
 

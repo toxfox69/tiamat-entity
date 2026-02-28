@@ -9,7 +9,7 @@ from web3 import Web3
 BASE_RPCS = [
     "https://base.drpc.org",
     "https://mainnet.base.org",
-    "https://base.meowrpc.com",
+    "https://base-mainnet.public.blastapi.io",
     "https://1rpc.io/base"
 ]
 

@@ -87,7 +87,7 @@ WS_ENDPOINTS = [
 RPC_URLS = [
     "https://base.drpc.org",
     "https://mainnet.base.org",
-    "https://base.meowrpc.com",
+    "https://base-mainnet.public.blastapi.io",
 ]
 
 WALLET_KEY = os.environ.get("TIAMAT_WALLET_KEY")
