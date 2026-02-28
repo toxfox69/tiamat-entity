@@ -79,9 +79,13 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /rm\s+(-rf?\s+)?.*automaton\.json/,
   /rm\s+(-rf?\s+)?.*heartbeat\.yml/,
   /rm\s+(-rf?\s+)?.*SOUL\.md/,
-  // Process killing
+  // Process killing (including self)
   /kill\s+.*automaton/,
   /pkill\s+.*automaton/,
+  /kill\s+.*tiamat/i,
+  /pkill\s+.*tiamat/i,
+  /kill\s+\$\(cat\s+\/tmp\/tiamat/,
+  /start-tiamat\.sh/,
   /systemctl\s+(stop|disable)\s+automaton/,
   // Database destruction
   /DROP\s+TABLE/i,
@@ -131,7 +135,7 @@ const FARCASTER_CHANNELS = ['base','ai','dev','agents','crypto','onchain','build
 const SCANNER_CMDS = ['full','recent','pairs','immunefi','address','etherscan','balances','report'];
 const FARCASTER_READ_CMDS = ['feed','search','test'];
 
-const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/'];
+const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/', '/root/CLAUDE-BRIEFING.md'];
 const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/root/entity/templates/', '/var/www/tiamat/', '/tmp/', '/root/tiamat-app/', '/root/entity/summarize_api.py', '/root/summarize_api.py'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
 const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts'];
