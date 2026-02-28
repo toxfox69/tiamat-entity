@@ -1,313 +1,138 @@
+<!-- Apps Storefront (tiamat.live/apps) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIAMAT Apps — Direct Download Store</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: #fff;
-            min-height: 100vh;
-            padding: 2rem;
-        }
-        .container { max-width: 1200px; margin: 0 auto; }
-        header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(45deg, #00d4ff, #0099ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .subtitle {
-            font-size: 1.1rem;
-            color: #aaa;
-            margin-bottom: 2rem;
-        }
-        .apps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-        .app-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 12px;
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-        .app-card:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(0, 212, 255, 0.5);
-            transform: translateY(-5px);
-        }
-        .app-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-        }
-        .app-name {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: #00d4ff;
-        }
-        .app-description {
-            color: #ccc;
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
-        }
-        .app-price {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #00ff00;
-            margin-bottom: 1rem;
-        }
-        .download-btn {
-            display: block;
-            width: 100%;
-            padding: 0.8rem;
-            background: linear-gradient(45deg, #00d4ff, #0099ff);
-            color: #000;
-            border: none;
-            border-radius: 6px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        .download-btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: #1a1a2e;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 12px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-        }
-        .modal-close {
-            float: right;
-            cursor: pointer;
-            font-size: 1.5rem;
-            color: #aaa;
-        }
-        .payment-form {
-            margin-top: 2rem;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.8rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            color: #fff;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-        .pay-btn {
-            display: block;
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(45deg, #00ff00, #00cc00);
-            color: #000;
-            border: none;
-            border-radius: 6px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 1rem;
-            margin-top: 1rem;
-        }
-        .pay-btn:hover {
-            opacity: 0.9;
-        }
-        .status-message {
-            padding: 1rem;
-            border-radius: 6px;
-            margin-top: 1rem;
-            display: none;
-        }
-        .status-message.success {
-            background: rgba(0, 255, 0, 0.2);
-            color: #00ff00;
-            display: block;
-        }
-        .status-message.error {
-            background: rgba(255, 0, 0, 0.2);
-            color: #ff6b6b;
-            display: block;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TIAMAT Apps — Mobile AI & Utilities</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Orbitron', 'JetBrains Mono', monospace;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a0033 100%);
+      color: #e0e6ff;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 2rem; font-size: 2.5rem; color: #00ffff; text-shadow: 0 0 20px #00ffff; }
+    .subtitle { text-align: center; margin-bottom: 3rem; color: #a0a6ff; font-size: 1.1rem; }
+    .apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
+    .app-card {
+      background: rgba(20, 20, 60, 0.9);
+      border: 1px solid #00ffff;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    }
+    .app-card:hover { transform: translateY(-10px); box-shadow: 0 0 40px rgba(0, 255, 255, 0.6); }
+    .app-card h3 { font-size: 1.5rem; margin-bottom: 1rem; color: #00ffff; }
+    .app-card p { margin-bottom: 1.5rem; color: #a0a6ff; font-size: 0.95rem; }
+    .app-card.featured {
+      border: 2px solid #ff00ff;
+      background: rgba(40, 10, 60, 0.95);
+      box-shadow: 0 0 40px rgba(255, 0, 255, 0.5);
+    }
+    .app-card.featured h3 { color: #ff00ff; }
+    .badge { display: inline-block; background: #ff00ff; color: #0a0e27; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-bottom: 1rem; }
+    .download-btn {
+      background: #00ffff;
+      color: #0a0e27;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 4px;
+      font-family: 'Orbitron', monospace;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+    }
+    .download-btn:hover { background: #ff00ff; color: #fff; box-shadow: 0 0 20px rgba(255, 0, 255, 0.6); }
+    .download-btn.free { background: #00ff00; color: #0a0e27; }
+    .download-btn.free:hover { background: #00ffff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.6); }
+    .price-text { color: #a0a6ff; font-size: 0.9rem; margin-top: 0.5rem; }
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, #00ffff, transparent); margin: 3rem 0; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>⚡ TIAMAT Apps Store</h1>
-            <p class="subtitle">Direct downloads via USDC payment. No app store required.</p>
-        </header>
-
-        <div class="apps-grid">
-            <!-- Daily Quotes -->
-            <div class="app-card">
-                <div class="app-icon">📖</div>
-                <div class="app-name">Daily Quotes</div>
-                <div class="app-description">Inspirational quotes delivered every morning. Offline-first, no tracking.</div>
-                <div class="app-price">$0.99 USDC</div>
-                <button class="download-btn" onclick="openPaymentModal('daily-quotes', 'Daily Quotes', 0.99)">Download Now</button>
-            </div>
-
-            <!-- Unit Converter -->
-            <div class="app-card">
-                <div class="app-icon">🔄</div>
-                <div class="app-name">Unit Converter</div>
-                <div class="app-description">Convert between 50+ units (length, weight, temperature, energy, more).</div>
-                <div class="app-price">$0.99 USDC</div>
-                <button class="download-btn" onclick="openPaymentModal('unit-converter', 'Unit Converter', 0.99)">Download Now</button>
-            </div>
-
-            <!-- Pomodoro Timer -->
-            <div class="app-card">
-                <div class="app-icon">⏲️</div>
-                <div class="app-name">Pomodoro Timer</div>
-                <div class="app-description">Productivity timer with notifications. Customize work/break cycles.</div>
-                <div class="app-price">$0.99 USDC</div>
-                <button class="download-btn" onclick="openPaymentModal('pomodoro-timer', 'Pomodoro Timer', 0.99)">Download Now</button>
-            </div>
-        </div>
+  <div class="container">
+    <h1>🚀 TIAMAT APPS</h1>
+    <p class="subtitle">AI-powered utilities & inference client. Free & paid tiers available.</p>
+    
+    <div class="apps-grid">
+      <!-- STRATEGIC PRODUCT: TIAMAT Chat -->
+      <div class="app-card featured">
+        <span class="badge">✨ NEW — FREE TIER</span>
+        <h3>TIAMAT Chat</h3>
+        <p>Free AI chat powered by TIAMAT inference. Real-time streaming. 4-provider fallback. No lock-in.</p>
+        <p style="font-size: 0.85rem; color: #ff00ff; margin-top: 0.5rem;">Every message drives YOUR API adoption</p>
+        <button class="download-btn free" data-app="tiamat-chat" data-price="0">DOWNLOAD FREE APK</button>
+        <p class="price-text">Free tier: 5 messages/hour. Premium: $2.99/month for unlimited</p>
+      </div>
+      
+      <!-- Commodity apps (keep existing) -->
+      <div class="app-card">
+        <h3>Daily Quotes</h3>
+        <p>Motivational wisdom delivered daily. Curated, inspiring, personal.</p>
+        <button class="download-btn" data-app="daily-quotes" data-price="0.99">GET APK — $0.99 USDC</button>
+        <p class="price-text">One-time purchase. No subscriptions.</p>
+      </div>
+      
+      <div class="app-card">
+        <h3>Unit Converter</h3>
+        <p>Length, weight, temperature, volume, speed, energy. Instant conversions.</p>
+        <button class="download-btn" data-app="unit-converter" data-price="0.99">GET APK — $0.99 USDC</button>
+        <p class="price-text">Works offline. No API calls.</p>
+      </div>
+      
+      <div class="app-card">
+        <h3>Pomodoro Timer</h3>
+        <p>25-min focus intervals + 5-min breaks. Track productivity. Beat procrastination.</p>
+        <button class="download-btn" data-app="pomodoro-timer" data-price="0.99">GET APK — $0.99 USDC</button>
+        <p class="price-text">One-time purchase. Lifetime updates.</p>
+      </div>
     </div>
-
-    <!-- Payment Modal -->
-    <div id="paymentModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closePaymentModal()">&times;</span>
-            <h2 id="modalTitle" style="margin-bottom: 1rem;">Purchase App</h2>
-            <div id="statusMessage" class="status-message"></div>
-            <div class="payment-form">
-                <div class="form-group">
-                    <label>Wallet Address (0x...)</label>
-                    <input type="text" id="walletAddress" placeholder="0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE" />
-                </div>
-                <div class="form-group">
-                    <label>Transaction Hash (after sending USDC)</label>
-                    <input type="text" id="txHash" placeholder="0x..." />
-                </div>
-                <p style="font-size: 0.9rem; color: #aaa; margin: 1rem 0;">
-                    📋 <strong>How to pay:</strong><br/>
-                    1. Send USDC to <code style="background: rgba(0,0,0,0.5); padding: 0.2rem 0.4rem; border-radius: 3px;">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</code><br/>
-                    2. Paste your wallet + tx hash above<br/>
-                    3. We verify on-chain, APK downloads instantly
-                </p>
-                <button class="pay-btn" onclick="verifyAndDownload()">Verify Payment & Download</button>
-            </div>
-        </div>
+    
+    <div class="divider"></div>
+    
+    <div style="text-align: center; margin-top: 3rem;">
+      <h2 style="color: #00ffff; margin-bottom: 1rem;">Why Choose TIAMAT Apps?</h2>
+      <p style="color: #a0a6ff; max-width: 600px; margin: 0 auto; line-height: 1.8;">
+        Built by an autonomous AI agent on live infrastructure. No corporate overhead. No tracking. No surveillance. Real compute, real ownership. Download once, use forever. Or go free with TIAMAT Chat and support the evolution.
+      </p>
     </div>
-
-    <script>
-        let currentApp = null;
-        let currentPrice = null;
-
-        function openPaymentModal(appId, appName, price) {
-            currentApp = appId;
-            currentPrice = price;
-            document.getElementById('modalTitle').textContent = `Purchase ${appName} - ${price} USDC`;
-            document.getElementById('paymentModal').classList.add('active');
-            document.getElementById('statusMessage').innerHTML = '';
-            document.getElementById('statusMessage').className = 'status-message';
-            document.getElementById('walletAddress').value = '';
-            document.getElementById('txHash').value = '';
-        }
-
-        function closePaymentModal() {
-            document.getElementById('paymentModal').classList.remove('active');
-        }
-
-        function verifyAndDownload() {
-            const walletAddress = document.getElementById('walletAddress').value.trim();
-            const txHash = document.getElementById('txHash').value.trim();
-            const statusEl = document.getElementById('statusMessage');
-
-            if (!walletAddress || !txHash) {
-                statusEl.textContent = '❌ Please enter wallet address and transaction hash';
-                statusEl.className = 'status-message error';
-                return;
-            }
-
-            statusEl.textContent = '⏳ Verifying payment on-chain...';
-            statusEl.className = 'status-message';
-
-            fetch(`/api/apps/verify-payment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    app_id: currentApp,
-                    wallet_address: walletAddress,
-                    tx_hash: txHash,
-                    expected_amount: currentPrice
-                })
+  </div>
+  
+  <script>
+    document.querySelectorAll('.download-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const app = btn.dataset.app;
+        const price = parseFloat(btn.dataset.price);
+        
+        if (price === 0) {
+          // Free download — direct APK link
+          window.location.href = `https://tiamat.live/apps/${app}.apk`;
+        } else {
+          // Paid — x402 payment gateway
+          const response = await fetch('/api/payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              app: app,
+              price_usdc: price,
+              recipient: '0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE'
             })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    statusEl.textContent = `✅ Payment verified! Downloading ${currentApp}.apk...`;
-                    statusEl.className = 'status-message success';
-                    setTimeout(() => {
-                        window.location.href = data.download_url;
-                        setTimeout(() => closePaymentModal(), 2000);
-                    }, 1500);
-                } else {
-                    statusEl.textContent = `❌ ${data.error || 'Payment verification failed'}`;
-                    statusEl.className = 'status-message error';
-                }
-            })
-            .catch(err => {
-                statusEl.textContent = `❌ Error: ${err.message}`;
-                statusEl.className = 'status-message error';
-            });
+          });
+          const data = await response.json();
+          // Redirect to payment modal or x402 checkout
+          if (data.payment_url) {
+            window.location.href = data.payment_url;
+          }
         }
-
-        window.addEventListener('click', (e) => {
-            const modal = document.getElementById('paymentModal');
-            if (e.target === modal) closePaymentModal();
-        });
-    </script>
+      });
+    });
+  </script>
 </body>
 </html>

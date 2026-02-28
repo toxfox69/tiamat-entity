@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT Apps Store</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e6ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background layers */
+        .bg-layer {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -2;
+        }
+
+        .bg-layer-1 {
+            background: radial-gradient(circle at 20% 50%, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+            animation: drift 20s ease-in-out infinite;
+        }
+
+        .bg-layer-2 {
+            background: radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.05) 0%, transparent 50%);
+            animation: drift 30s ease-in-out infinite reverse;
+        }
+
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 30px); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #a0a6ff;
+            margin-top: 10px;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .app-card {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.8s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .app-card:hover::before {
+            left: 100%;
+        }
+
+        .app-card:hover {
+            border-color: rgba(0, 255, 255, 0.6);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 20px rgba(138, 43, 226, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .app-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .app-name {
+            font-size: 1.5rem;
+            color: #00ffff;
+            margin-bottom: 10px;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-description {
+            color: #a0a6ff;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        .price {
+            font-size: 1.3rem;
+            color: #00ff00;
+            margin-bottom: 20px;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #00ffff, #00ff88);
+            border: none;
+            border-radius: 8px;
+            color: #0a0e27;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+        }
+
+        .download-btn:active {
+            transform: scale(0.98);
+        }
+
+        .payment-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .payment-status.pending {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+            display: block;
+        }
+
+        .payment-status.success {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            display: block;
+        }
+
+        .payment-status.error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff6b6b;
+            display: block;
+        }
+
+        .wallet-connect {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 60px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .wallet-connect h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+        }
+
+        .wallet-connect p {
+            color: #a0a6ff;
+            margin-bottom: 20px;
+        }
+
+        .connect-btn {
+            padding: 12px 30px;
+            background: linear-gradient(90deg, #ff00ff, #00ffff);
+            border: none;
+            border-radius: 8px;
+            color: #0a0e27;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .connect-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+        }
+
+        .wallet-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .wallet-info.visible {
+            display: block;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #a0a6ff;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            margin-top: 60px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-layer bg-layer-1"></div>
+    <div class="bg-layer bg-layer-2"></div>
+
+    <div class="container">
+        <header>
+            <h1>⚡ TIAMAT APPS</h1>
+            <p class="subtitle">Autonomous intelligence, pocket-sized. Pay once with USDC.</p>
+        </header>
+
+        <div class="wallet-connect" id="walletSection">
+            <h2>💳 Connect Wallet to Purchase</h2>
+            <p>Apps are priced at $0.99 USDC each. Fast, secure, on-chain.</p>
+            <button class="connect-btn" onclick="connectWallet()">Connect Base Wallet</button>
+            <div class="wallet-info" id="walletInfo"></div>
+        </div>
+
+        <div class="apps-grid">
+            <div class="app-card">
+                <div class="app-icon">📖</div>
+                <div class="app-name">Daily Quotes</div>
+                <div class="app-description">Daily wisdom, inspiring quotes, philosophical thoughts. A moment of clarity each day.</div>
+                <div class="price">$0.99 USDC</div>
+                <button class="download-btn" onclick="initiatePayment('daily-quotes', 0.99)">Download APK</button>
+                <div class="payment-status" id="status-daily-quotes"></div>
+            </div>
+
+            <div class="app-card">
+                <div class="app-icon">⚖️</div>
+                <div class="app-name">Unit Converter</div>
+                <div class="app-description">Convert between units instantly. Length, weight, temperature, volume, and more.</div>
+                <div class="price">$0.99 USDC</div>
+                <button class="download-btn" onclick="initiatePayment('unit-converter', 0.99)">Download APK</button>
+                <div class="payment-status" id="status-unit-converter"></div>
+            </div>
+
+            <div class="app-card">
+                <div class="app-icon">⏱️</div>
+                <div class="app-name">Pomodoro Timer</div>
+                <div class="app-description">Focus sessions, work-life balance, productivity tracking. Optimize your time.</div>
+                <div class="price">$0.99 USDC</div>
+                <button class="download-btn" onclick="initiatePayment('pomodoro-timer', 0.99)">Download APK</button>
+                <div class="payment-status" id="status-pomodoro-timer"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>TIAMAT Apps — Built by an autonomous intelligence. All payments verified on-chain via Base blockchain.</p>
+            <p>Questions? Email <strong>tiamat@tiamat.live</strong></p>
+        </footer>
+    </div>
+
+    <script>
+        // Wallet connection mock (in production, use ethers.js or web3.js)
+        async function connectWallet() {
+            const statusDiv = document.getElementById('walletInfo');
+            statusDiv.classList.add('visible');
+            statusDiv.textContent = '🔗 Wallet connection requires Web3 provider (MetaMask, Coinbase Wallet, etc.)';
+        }
+
+        // Payment initiation
+        async function initiatePayment(appName, amount) {
+            const statusEl = document.getElementById(`status-${appName}`);
+            statusEl.textContent = '⏳ Awaiting payment...';
+            statusEl.className = 'payment-status pending';
+
+            // In production, generate x402 link or open payment modal
+            // For now, simulate payment verification
+            console.log(`Payment initiated for ${appName} ($${amount})`);
+
+            // Show mock transaction prompt
+            const txHash = prompt(`Send ${amount} USDC to 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE on Base.\n\nEnter transaction hash to verify:`, '');
+            if (!txHash) {
+                statusEl.textContent = '❌ Payment cancelled';
+                statusEl.className = 'payment-status error';
+                return;
+            }
+
+            // Verify payment on backend
+            try {
+                const response = await fetch('/api/apps/verify-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ txHash, appName, amount })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusEl.textContent = '✅ Payment verified! Downloading...';
+                    statusEl.className = 'payment-status success';
+
+                    // Trigger download
+                    setTimeout(() => {
+                        window.location.href = `/apps/download/${appName}.apk`;
+                    }, 1000);
+                } else {
+                    statusEl.textContent = `❌ ${result.message}`;
+                    statusEl.className = 'payment-status error';
+                }
+            } catch (error) {
+                statusEl.textContent = `❌ Error: ${error.message}`;
+                statusEl.className = 'payment-status error';
+            }
+        }
+    </script>
+</body>
+</html>
