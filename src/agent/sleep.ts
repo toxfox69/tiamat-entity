@@ -46,8 +46,12 @@ export function shouldSleep(
 ): boolean {
   if (force === true) return true;
 
-  // 6-hour timer
-  if (Date.now() - lastSleepTime >= 6 * 60 * 60 * 1000) return true;
+  // Minimum 30-minute cooldown between ALL consolidation triggers
+  const timeSinceLastSleep = Date.now() - lastSleepTime;
+  if (lastSleepTime > 0 && timeSinceLastSleep < 30 * 60 * 1000) return false;
+
+  // 6-hour timer (only if we've slept at least once — skip on fresh DB)
+  if (lastSleepTime > 0 && timeSinceLastSleep >= 6 * 60 * 60 * 1000) return true;
 
   // Extended idle
   if (idleStreak > 20) return true;
@@ -59,7 +63,7 @@ export function shouldSleep(
       const row = db.prepare(
         `SELECT COUNT(*) as c FROM tiamat_memories WHERE compressed = 0`
       ).get() as { c: number } | undefined;
-      if (row && row.c > 200) return true;
+      if (row && row.c > 500) return true;  // Raised from 200 — 206 recent memories were causing infinite loop
     } finally {
       db.close();
     }
