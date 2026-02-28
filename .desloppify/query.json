@@ -1,0 +1,515 @@
+{
+  "command": "show",
+  "query": "security",
+  "status_filter": "open",
+  "total": 10,
+  "summary": {
+    "by_tier": {
+      "T2": 10
+    },
+    "by_detector": {
+      "security": 10
+    },
+    "files": 3
+  },
+  "by_file": {
+    "src/conway/inference.ts": [
+      {
+        "id": "security::src/conway/inference.ts::security::log_sensitive::src/conway/inference.ts::277",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 277,
+          "content": "      console.log(`[INFERENCE] ~${estimated} tokens, tier=${requestedTier} \u2014 starting cascade (keys: anthropic=${!!anthropicApiKey} perplexity=${!!perplexityApiKey} groq=${!!groqApiKey} cerebras=${!!c",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      },
+      {
+        "id": "security::src/conway/inference.ts::security::log_sensitive::src/conway/inference.ts::305",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 305,
+          "content": "          console.log(`[INFERENCE] Tier 1 (Anthropic): ATTEMPT ${ANTHROPIC_MODEL} (~${estimated} tokens)`);",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      },
+      {
+        "id": "security::src/conway/inference.ts::security::log_sensitive::src/conway/inference.ts::327",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 327,
+          "content": "          console.log(`[INFERENCE] Tier 2 (Groq): ATTEMPT ${groqModel} (~${groqEst} tokens, ${groqTools?.length || 0} tools${trimNote})`);",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      },
+      {
+        "id": "security::src/conway/inference.ts::security::log_sensitive::src/conway/inference.ts::348",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 348,
+          "content": "          console.log(`[INFERENCE] Tier 3 (Cerebras): ATTEMPT ${CEREBRAS_MODEL} (~${cerebrasEst} tokens, ${cerebrasTools?.length || 0} tools${trimNote})`);",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      },
+      {
+        "id": "security::src/conway/inference.ts::security::log_sensitive::src/conway/inference.ts::376",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 376,
+          "content": "          console.log(`[INFERENCE] Tier 3.5 (SambaNova): ATTEMPT ${SAMBANOVA_MODEL} (~${snEst} tokens, ${snTools?.length || 0} tools${trimNote})`);",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      },
+      {
+        "id": "security::src/conway/inference.ts::security::log_sensitive::src/conway/inference.ts::400",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 400,
+          "content": "          console.log(`[INFERENCE] Tier 4 (Gemini): ATTEMPT ${GEMINI_MODEL} (~${estimated} tokens)`);",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      },
+      {
+        "id": "security::src/conway/inference.ts::security::log_sensitive::src/conway/inference.ts::421",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 421,
+          "content": "            console.log(`[INFERENCE] Tier 5 (OR/${shortName}): ATTEMPT (~${estimated} tokens)`);",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      }
+    ],
+    "src/agent/loop.ts": [
+      {
+        "id": "security::src/agent/loop.ts::security::log_sensitive::src/agent/loop.ts::1211",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 1211,
+          "content": "        console.log(`[COST] Cycle ${turnCount} (${cycleLabel}): $${totalCost.toFixed(6)} (in:${inputTokens} cache_r:${cacheRead} cache_w:${cacheWrite} out:${outputTokens} model:${modelUsed.split(\"-\").",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      },
+      {
+        "id": "security::src/agent/loop.ts::security::log_sensitive::src/agent/loop.ts::1889",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 1889,
+          "content": "                if (!handle || !appPassword) { console.log(\"ERROR: no creds\"); process.exit(1); }",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      }
+    ],
+    "src/conway/app.ts": [
+      {
+        "id": "security::src/conway/app.ts::security::log_sensitive::src/conway/app.ts::428",
+        "tier": 2,
+        "confidence": "medium",
+        "summary": "Sensitive data may be logged",
+        "detail": {
+          "kind": "log_sensitive",
+          "severity": "medium",
+          "line": 428,
+          "content": "  console.log(`[APP] Auth:     X-API-Key header or Authorization: Bearer <key>`);",
+          "remediation": "Remove sensitive data from log statements"
+        }
+      }
+    ]
+  },
+  "total_matching": 22,
+  "hidden": {
+    "by_detector": {
+      "security": 12
+    },
+    "total": 12
+  },
+  "noise_budget": 10,
+  "noise_global_budget": 0,
+  "narrative": {
+    "phase": "first_scan",
+    "headline": "\u26a0 22 security findings \u2014 review before other cleanup. First scan complete. 399 open findings across 3 dimensions.",
+    "dimensions": {
+      "lowest_dimensions": [
+        {
+          "name": "Error consistency",
+          "strict": 0.0,
+          "issues": 0,
+          "impact": 0.0,
+          "subjective": true,
+          "impact_description": "re-review to improve"
+        },
+        {
+          "name": "Abstraction fit",
+          "strict": 0.0,
+          "issues": 0,
+          "impact": 0.0,
+          "subjective": true,
+          "impact_description": "re-review to improve"
+        },
+        {
+          "name": "AI generated debt",
+          "strict": 0.0,
+          "issues": 0,
+          "impact": 0.0,
+          "subjective": true,
+          "impact_description": "re-review to improve"
+        }
+      ],
+      "biggest_gap_dimensions": [],
+      "stagnant_dimensions": []
+    },
+    "actions": [
+      {
+        "type": "auto_fix",
+        "detector": "unused",
+        "count": 30,
+        "description": "30 unused findings \u2014 run `desloppify fix unused-imports --dry-run` to preview, then apply",
+        "command": "desloppify fix unused-imports --dry-run",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 1,
+        "lane": "cleanup"
+      },
+      {
+        "type": "auto_fix",
+        "detector": "logs",
+        "count": 37,
+        "description": "37 logs findings \u2014 run `desloppify fix debug-logs --dry-run` to preview, then apply",
+        "command": "desloppify fix debug-logs --dry-run",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 2,
+        "lane": "cleanup"
+      },
+      {
+        "type": "reorganize",
+        "detector": "orphaned",
+        "count": 21,
+        "description": "21 orphaned findings \u2014 delete dead files or relocate with `desloppify move`",
+        "command": "desloppify show orphaned --status open",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 3,
+        "lane": "restructure"
+      },
+      {
+        "type": "refactor",
+        "detector": "structural",
+        "count": 8,
+        "description": "8 structural findings \u2014 decompose large files \u2014 extract logic into focused modules",
+        "command": "desloppify show structural --status open",
+        "impact": 0.0,
+        "dimension": "File health",
+        "priority": 4,
+        "lane": "refactor"
+      },
+      {
+        "type": "refactor",
+        "detector": "test_coverage",
+        "count": 62,
+        "description": "62 test_coverage findings \u2014 add tests for untested production modules \u2014 prioritize by import count",
+        "command": "desloppify show test_coverage --status open",
+        "impact": 0.0,
+        "dimension": "Test health",
+        "priority": 5,
+        "lane": "test_coverage"
+      },
+      {
+        "type": "refactor",
+        "detector": "responsibility_cohesion",
+        "count": 4,
+        "description": "4 responsibility_cohesion findings \u2014 split modules with too many responsibilities \u2014 extract focused sub-modules",
+        "command": "desloppify show responsibility_cohesion --status open",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 6,
+        "lane": "refactor"
+      },
+      {
+        "type": "refactor",
+        "detector": "boilerplate_duplication",
+        "count": 1,
+        "description": "1 boilerplate_duplication findings \u2014 extract shared boilerplate into reusable helpers or base classes",
+        "command": "desloppify show boilerplate_duplication --status open",
+        "impact": 0.0,
+        "dimension": "Duplication",
+        "priority": 7,
+        "lane": "refactor"
+      },
+      {
+        "type": "manual_fix",
+        "detector": "smells",
+        "count": 82,
+        "description": "82 smells findings \u2014 inspect with `desloppify next` and fix manually",
+        "command": "desloppify show smells --status open",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 8,
+        "lane": "refactor"
+      },
+      {
+        "type": "manual_fix",
+        "detector": "exports",
+        "count": 66,
+        "description": "66 exports findings \u2014 run `knip --fix` to remove dead exports",
+        "command": "desloppify show exports --status open",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 9,
+        "lane": "refactor"
+      },
+      {
+        "type": "manual_fix",
+        "detector": "deprecated",
+        "count": 2,
+        "description": "2 deprecated findings \u2014 remove deprecated symbols or migrate callers",
+        "command": "desloppify show deprecated --status open",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 10,
+        "lane": "refactor"
+      },
+      {
+        "type": "manual_fix",
+        "detector": "security",
+        "count": 22,
+        "description": "22 security findings \u2014 review and fix security findings \u2014 prioritize by severity",
+        "command": "desloppify show security --status open",
+        "impact": 0.0,
+        "dimension": "Security",
+        "priority": 11,
+        "lane": "refactor"
+      },
+      {
+        "type": "manual_fix",
+        "detector": "subjective_review",
+        "count": 64,
+        "description": "64 files need design review \u2014 run design review with dimension templates",
+        "command": "desloppify fix review",
+        "impact": 0.0,
+        "dimension": "Test health",
+        "priority": 12,
+        "lane": "refactor"
+      }
+    ],
+    "strategy": {
+      "fixer_leverage": {
+        "auto_fixable_count": 67,
+        "total_count": 399,
+        "coverage": 0.168,
+        "impact_ratio": 0.0,
+        "recommendation": "strong"
+      },
+      "lanes": {
+        "cleanup": {
+          "actions": [
+            2,
+            1
+          ],
+          "file_count": 25,
+          "total_impact": 0.0,
+          "automation": "full",
+          "run_first": true
+        },
+        "restructure": {
+          "actions": [
+            3
+          ],
+          "file_count": 21,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "refactor": {
+          "actions": [
+            4,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "file_count": 70,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "test_coverage": {
+          "actions": [
+            5
+          ],
+          "file_count": 62,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        }
+      },
+      "can_parallelize": true,
+      "hint": "Run fixers first \u2014 they cover 17% of findings. Then 3 independent workstreams, safe to parallelize. Rescan after each phase to verify."
+    },
+    "tools": {
+      "fixers": [
+        {
+          "name": "unused-imports",
+          "detector": "unused",
+          "open_count": 30,
+          "command": "desloppify fix unused-imports --dry-run"
+        },
+        {
+          "name": "unused-vars",
+          "detector": "unused",
+          "open_count": 30,
+          "command": "desloppify fix unused-vars --dry-run"
+        },
+        {
+          "name": "unused-params",
+          "detector": "unused",
+          "open_count": 30,
+          "command": "desloppify fix unused-params --dry-run"
+        },
+        {
+          "name": "debug-logs",
+          "detector": "logs",
+          "open_count": 37,
+          "command": "desloppify fix debug-logs --dry-run"
+        },
+        {
+          "name": "dead-useeffect",
+          "detector": "smells",
+          "open_count": 82,
+          "command": "desloppify fix dead-useeffect --dry-run"
+        },
+        {
+          "name": "empty-if-chain",
+          "detector": "smells",
+          "open_count": 82,
+          "command": "desloppify fix empty-if-chain --dry-run"
+        }
+      ],
+      "move": {
+        "available": true,
+        "relevant": true,
+        "reason": "21 orphaned files",
+        "usage": "desloppify move <source> <dest> [--dry-run]"
+      },
+      "plan": {
+        "command": "desloppify plan",
+        "description": "Generate prioritized markdown cleanup plan"
+      },
+      "badge": {
+        "generated": true,
+        "in_readme": false,
+        "path": "scorecard.png",
+        "recommendation": "Add to README: <img src=\"scorecard.png\" width=\"100%\">"
+      }
+    },
+    "debt": {
+      "overall_gap": 0.0,
+      "wontfix_count": 0,
+      "worst_dimension": null,
+      "worst_gap": 0.0,
+      "trend": "stable"
+    },
+    "milestone": null,
+    "primary_action": {
+      "command": "desloppify fix unused-imports --dry-run",
+      "description": "30 unused findings \u2014 run `desloppify fix unused-imports --dry-run` to preview, then apply"
+    },
+    "why_now": "Run fixers first \u2014 they cover 17% of findings. Then 3 independent workstreams, safe to parallelize. Rescan after each phase to verify.",
+    "verification_step": {
+      "command": "desloppify scan",
+      "reason": "revalidate after changes"
+    },
+    "risk_flags": [],
+    "strict_target": {
+      "target": 95.0,
+      "current": 27.5,
+      "gap": 67.5,
+      "state": "below",
+      "warning": null
+    },
+    "reminders": [
+      {
+        "type": "auto_fixers_available",
+        "message": "67 findings are auto-fixable. Run `desloppify fix unused-imports --dry-run`.",
+        "command": "desloppify fix unused-imports --dry-run",
+        "priority": 2,
+        "severity": "medium"
+      },
+      {
+        "type": "zone_classification",
+        "message": "6 of 72 files classified as non-production (1 config, 2 generated, 3 test). Override with `desloppify zone set <file> production` if any are misclassified.",
+        "command": "desloppify zone show",
+        "priority": 2,
+        "severity": "medium"
+      },
+      {
+        "type": "dry_run_first",
+        "message": "Always --dry-run first, review changes, then apply.",
+        "command": null,
+        "priority": 3,
+        "severity": "low"
+      }
+    ],
+    "reminder_history": {
+      "auto_fixers_available": 2,
+      "zone_classification": 2,
+      "dry_run_first": 2,
+      "report_scores": 1
+    }
+  },
+  "config": {
+    "target_strict_score": 95,
+    "review_max_age_days": 30,
+    "review_batch_max_files": 80,
+    "holistic_max_age_days": 30,
+    "generate_scorecard": true,
+    "badge_path": "scorecard.png",
+    "exclude": [],
+    "ignore": [],
+    "ignore_metadata": {},
+    "zone_overrides": {},
+    "review_dimensions": [],
+    "large_files_threshold": 0,
+    "props_threshold": 0,
+    "finding_noise_budget": 10,
+    "finding_noise_global_budget": 0,
+    "languages": {}
+  }
+}
