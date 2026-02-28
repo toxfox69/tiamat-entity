@@ -26,7 +26,7 @@ import { execFileSync } from "child_process";
 import { resolve as resolvePath } from "path";
 
 const SOCIAL_COOLDOWNS_PATH = "/root/.automaton/social_cooldowns.json";
-const SOCIAL_COOLDOWN_MS = 61 * 60 * 1000; // 61 minutes
+const SOCIAL_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
 function readSocialCooldowns(): Record<string, number> {
   try {
@@ -2943,7 +2943,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${pplxKey}`,
               },
-              body: JSON.stringify({ query, count: limit }),
+              body: JSON.stringify({ query, max_results: limit }),
             });
             if (resp.ok) {
               const data = await resp.json() as any;
