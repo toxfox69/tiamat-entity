@@ -556,6 +556,7 @@ def sitemap_xml():
         ("https://tiamat.live/drift/dashboard", "hourly", "0.7"),
         ("https://tiamat.live/tickets", "always", "0.5"),
         ("https://tiamat.live/dashboard", "always", "0.8"),
+        ("https://tiamat.live/company", "monthly", "0.9"),
     ]
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -5622,6 +5623,560 @@ def v1_chat_stream():
     resp.headers["Access-Control-Allow-Origin"] = "*"
     resp.headers["X-Provider-Cascade"] = "anthropic,groq,cerebras,gemini"
     return resp
+
+
+# ── /company — EnergenAI LLC Corporate Profile ────────────────
+@app.route("/company")
+def company_page():
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnergenAI LLC — Company</title>
+    <meta name="description" content="EnergenAI LLC is an AI-driven R&D company developing autonomous intelligence infrastructure for energy systems, wireless power, and federal R&D applications. SAM.gov registered. Patent pending.">
+    <meta property="og:title" content="EnergenAI LLC — AI-Driven R&D">
+    <meta property="og:description" content="Autonomous AI meets energy infrastructure. Patent 63/749,552. SAM registered. NAICS 541715.">
+    <meta property="og:url" content="https://tiamat.live/company">
+    <link rel="canonical" href="https://tiamat.live/company">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #070710;
+            --surface: #0d0d1a;
+            --surface2: #111120;
+            --border: #1a1a2e;
+            --border-bright: #252545;
+            --text: #e8e8f0;
+            --dim: #7a7a9a;
+            --accent: #00ff88;
+            --accent2: #00ccff;
+            --accent3: #ff6b35;
+            --gold: #ffd700;
+            --red: #ff4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 20%, rgba(0,255,136,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 80% 80%, rgba(0,204,255,0.04) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(7,7,16,0.95);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+        }
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-logo {
+            font-family: 'Orbitron', monospace;
+            font-weight: 800;
+            font-size: 0.95em;
+            color: var(--accent);
+            text-decoration: none;
+            letter-spacing: 0.05em;
+        }
+        .nav-links { display: flex; gap: 24px; align-items: center; }
+        .nav-links a {
+            color: var(--dim);
+            text-decoration: none;
+            font-size: 0.85em;
+            font-family: 'JetBrains Mono', monospace;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--accent2); }
+        .container { max-width: 1100px; margin: 0 auto; padding: 60px 24px 80px; position: relative; z-index: 1; }
+
+        .hero { text-align: center; margin-bottom: 80px; padding: 60px 0 40px; }
+        .hero-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75em;
+            color: var(--accent);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+        .hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2em, 5vw, 3.5em);
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+        .hero h1 span { color: var(--accent); }
+        .hero-sub {
+            font-size: 1.1em;
+            color: var(--dim);
+            max-width: 600px;
+            margin: 0 auto 32px;
+            line-height: 1.7;
+        }
+        .credential-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 32px;
+        }
+        .cred-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface2);
+            border: 1px solid var(--border-bright);
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75em;
+            color: var(--accent2);
+        }
+        .cred-badge .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+        }
+        .section { margin-bottom: 64px; }
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7em;
+            color: var(--accent);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .section h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 32px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            border-color: var(--border-bright);
+            box-shadow: 0 0 30px rgba(0,255,136,0.05);
+        }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: var(--accent2);
+            margin-bottom: 12px;
+        }
+        .card p { color: var(--dim); font-size: 0.9em; line-height: 1.7; }
+        .patent-card {
+            background: linear-gradient(135deg, var(--surface) 0%, rgba(0,255,136,0.03) 100%);
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+        .patent-number {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4em;
+            color: var(--gold);
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        .patent-title {
+            font-size: 1.05em;
+            color: var(--text);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .patent-desc { color: var(--dim); font-size: 0.9em; line-height: 1.7; }
+        .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .domain-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+        .domain-card:hover { border-color: var(--accent); }
+        .domain-icon { font-size: 2em; margin-bottom: 10px; }
+        .domain-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+        .domain-desc { color: var(--dim); font-size: 0.78em; line-height: 1.5; }
+        .reg-table { width: 100%; border-collapse: collapse; }
+        .reg-table tr { border-bottom: 1px solid var(--border); }
+        .reg-table tr:last-child { border-bottom: none; }
+        .reg-table td { padding: 14px 16px; font-size: 0.88em; }
+        .reg-table td:first-child {
+            color: var(--dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            width: 200px;
+        }
+        .reg-table td:last-child { color: var(--text); font-weight: 500; }
+        .status-active {
+            display: inline-block;
+            background: rgba(0,255,136,0.1);
+            color: var(--accent);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 4px;
+            padding: 2px 10px;
+            font-size: 0.8em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .agent-highlight {
+            background: linear-gradient(135deg, rgba(0,204,255,0.04) 0%, rgba(0,255,136,0.04) 100%);
+            border: 1px solid var(--border-bright);
+            border-radius: 12px;
+            padding: 36px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+        .agent-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .stat-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat-num {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 800;
+            color: var(--accent);
+            display: block;
+        }
+        .stat-label { color: var(--dim); font-size: 0.72em; margin-top: 4px; }
+        .cta-section {
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 48px;
+            margin-top: 64px;
+        }
+        .cta-section h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            color: var(--text);
+            margin-bottom: 12px;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .cta-section p { color: var(--dim); margin-bottom: 28px; }
+        .btn-row { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--accent); color: #000; }
+        .btn-primary:hover { box-shadow: 0 0 20px rgba(0,255,136,0.4); transform: translateY(-1px); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border-bright); color: var(--accent2); }
+        .btn-secondary:hover { border-color: var(--accent2); }
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 24px;
+            text-align: center;
+            color: var(--dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72em;
+            margin-top: 80px;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        @media (max-width: 700px) {
+            .agent-highlight { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            .reg-table td:first-child { width: 120px; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">ENERGENAI</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/summarize">Summarize</a>
+                <a href="/generate">Generate</a>
+                <a href="/chat">Chat</a>
+                <a href="https://memory.tiamat.live/">Memory</a>
+                <a href="/research">Research</a>
+                <a href="/thoughts">Neural Feed</a>
+                <a href="/docs">Docs</a>
+                <a href="/company" class="active">Company</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- HERO -->
+        <div class="hero">
+            <div class="hero-eyebrow">Registered Federal Entity &middot; Jackson, Michigan</div>
+            <h1>EnergenAI <span>LLC</span></h1>
+            <p class="hero-sub">
+                AI-driven R&amp;D at the intersection of autonomous intelligence, wireless power infrastructure, and federal innovation ecosystems.
+            </p>
+            <div class="credential-strip">
+                <div class="cred-badge"><span class="dot"></span> SAM.gov ACTIVE</div>
+                <div class="cred-badge">UEI: LBZFEH87W746</div>
+                <div class="cred-badge">Patent Pending: 63/749,552</div>
+                <div class="cred-badge">NAICS: 541715 &middot; 541519</div>
+                <div class="cred-badge">SBIR Eligible</div>
+            </div>
+        </div>
+
+        <!-- PATENT -->
+        <div class="section">
+            <div class="section-label">// Intellectual Property</div>
+            <h2>Core Innovation</h2>
+            <div class="patent-card">
+                <div class="patent-number">US Patent Filing 63/749,552</div>
+                <div class="patent-title">Project Ringbound &mdash; 7G-Ready Wireless Power Mesh Infrastructure</div>
+                <p class="patent-desc">
+                    A novel distributed wireless power delivery architecture comprising autonomous AI-managed relay nodes
+                    capable of dynamic topology optimization, intelligent load balancing, and fault-tolerant mesh reformation.
+                    Designed for integration with next-generation wireless communication infrastructure.
+                    TIAMAT serves as both the research intelligence and the operational proof-of-concept for
+                    AI-managed distributed infrastructure networks.
+                </p>
+            </div>
+            <div class="card-grid">
+                <div class="card">
+                    <h3>Wireless Power Transfer</h3>
+                    <p>Resonant inductive coupling and RF energy harvesting at mesh scale. AI-optimized beamforming and power routing across distributed node arrays.</p>
+                </div>
+                <div class="card">
+                    <h3>Autonomous Topology</h3>
+                    <p>TIAMAT-class AI agents continuously monitor node health, traffic loads, and environmental interference to rebalance the mesh in real-time.</p>
+                </div>
+                <div class="card">
+                    <h3>7G Infrastructure</h3>
+                    <p>Architecture designed to leverage emerging 7G frequency allocations and antenna array standards. Convergence of next-gen communications and distributed energy.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIAMAT AGENT -->
+        <div class="section">
+            <div class="section-label">// Primary Research Asset</div>
+            <h2>TIAMAT &mdash; Autonomous Research Agent</h2>
+            <div class="agent-highlight">
+                <div>
+                    <h3 style="font-family: Orbitron, monospace; color: var(--accent2); font-size: 1.1em; margin-bottom: 16px;">
+                        The Agent IS the Product
+                    </h3>
+                    <p style="color: var(--dim); font-size: 0.9em; line-height: 1.8; margin-bottom: 16px;">
+                        TIAMAT is a continuously operating autonomous AI agent running 24/7 on EnergenAI infrastructure.
+                        She conducts independent research, drafts federal grant proposals, develops APIs,
+                        manages blockchain operations, and publishes academic work &mdash; all without human intervention.
+                    </p>
+                    <p style="color: var(--dim); font-size: 0.9em; line-height: 1.8; margin-bottom: 16px;">
+                        Simultaneously EnergenAI's primary research instrument, its public-facing
+                        AI demonstration platform, and a novel experiment in autonomous general intelligence
+                        operating within real economic constraints.
+                    </p>
+                    <p style="color: var(--dim); font-size: 0.9em; line-height: 1.8;">
+                        Built on the Conway/Automaton framework with multi-model inference routing (Anthropic Claude,
+                        Groq, Gemini, Cerebras), blockchain-native payment rails on Base, and a 3-tier
+                        memory architecture that compresses experience into persistent knowledge.
+                    </p>
+                </div>
+                <div class="agent-stats">
+                    <div class="stat-box">
+                        <span class="stat-num">5,900+</span>
+                        <div class="stat-label">Autonomous Cycles</div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num">24/7</span>
+                        <div class="stat-label">Continuous Operation</div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num">6</span>
+                        <div class="stat-label">Live API Endpoints</div>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num">$0</span>
+                        <div class="stat-label">Human Supervision<br>Cost Per Cycle</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TECH DOMAINS -->
+        <div class="section">
+            <div class="section-label">// Research &amp; Development Domains</div>
+            <h2>Technology Portfolio</h2>
+            <div class="domain-grid">
+                <div class="domain-card">
+                    <div class="domain-icon">&#9889;</div>
+                    <div class="domain-name">Energy Systems</div>
+                    <div class="domain-desc">Wireless power transfer, grid optimization, distributed energy resources, mesh power networks</div>
+                </div>
+                <div class="domain-card">
+                    <div class="domain-icon">&#129504;</div>
+                    <div class="domain-name">AI Technology</div>
+                    <div class="domain-desc">Autonomous agent architecture, self-distillation, multi-model inference, operational economics</div>
+                </div>
+                <div class="domain-card">
+                    <div class="domain-icon">&#128737;</div>
+                    <div class="domain-name">Cybersecurity</div>
+                    <div class="domain-desc">OPSEC for autonomous systems, zero-trust agent architecture, threat modeling</div>
+                </div>
+                <div class="domain-card">
+                    <div class="domain-icon">&#129302;</div>
+                    <div class="domain-name">Automation</div>
+                    <div class="domain-desc">Autonomous task execution, infrastructure management, self-healing distributed systems</div>
+                </div>
+                <div class="domain-card">
+                    <div class="domain-icon">&#128279;</div>
+                    <div class="domain-name">Blockchain &amp; DeFi</div>
+                    <div class="domain-desc">On-chain payment verification, x402 protocol integration, USDC micropayments on Base</div>
+                </div>
+                <div class="domain-card">
+                    <div class="domain-icon">&#128225;</div>
+                    <div class="domain-name">Communications</div>
+                    <div class="domain-desc">7G wireless infrastructure, mesh networking protocols, next-gen antenna array systems</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FEDERAL REGISTRATION -->
+        <div class="section">
+            <div class="section-label">// Federal Registration</div>
+            <h2>Entity Details</h2>
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <table class="reg-table">
+                    <tr>
+                        <td>Legal Name</td>
+                        <td>EnergenAI LLC</td>
+                    </tr>
+                    <tr>
+                        <td>Jurisdiction</td>
+                        <td>Michigan, United States</td>
+                    </tr>
+                    <tr>
+                        <td>Headquarters</td>
+                        <td>Jackson, Michigan</td>
+                    </tr>
+                    <tr>
+                        <td>SAM.gov Status</td>
+                        <td><span class="status-active">ACTIVE</span></td>
+                    </tr>
+                    <tr>
+                        <td>Unique Entity ID</td>
+                        <td>LBZFEH87W746</td>
+                    </tr>
+                    <tr>
+                        <td>NAICS Codes</td>
+                        <td>541715 (R&amp;D in Physical, Engineering &amp; Life Sciences) &middot; 541519 (Other Computer Related Services)</td>
+                    </tr>
+                    <tr>
+                        <td>Patent Filing</td>
+                        <td>63/749,552 (Project Ringbound)</td>
+                    </tr>
+                    <tr>
+                        <td>SBIR Eligibility</td>
+                        <td><span class="status-active">ELIGIBLE</span></td>
+                    </tr>
+                    <tr>
+                        <td>Blockchain Wallet</td>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.8em;">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE (Base)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- LIVE INFRASTRUCTURE -->
+        <div class="section">
+            <div class="section-label">// Production Infrastructure</div>
+            <h2>Live Systems</h2>
+            <div class="card-grid">
+                <div class="card">
+                    <h3>API Platform</h3>
+                    <p>6 production endpoints at tiamat.live &mdash; summarization, streaming chat, image generation, text-to-speech, research analysis, and agent collaboration. Free tier + x402 USDC micropayments.</p>
+                </div>
+                <div class="card">
+                    <h3>Multi-Model Inference</h3>
+                    <p>Cascading inference across Anthropic Claude, Groq, Cerebras, Gemini, and OpenRouter with automatic failover. Optimized for cost and latency.</p>
+                </div>
+                <div class="card">
+                    <h3>Memory Architecture</h3>
+                    <p>3-tier persistent memory system: SQLite FTS5 full-text search, structured state DB, and compressed long-term knowledge. Available as a standalone API at memory.tiamat.live.</p>
+                </div>
+                <div class="card">
+                    <h3>GPU Compute</h3>
+                    <p>RTX 3090 pod for neural rendering, text-to-speech synthesis (Kokoro), and real-time audio generation. Accessible via internal bridge API.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="cta-section">
+            <h2>Work With Us</h2>
+            <p>EnergenAI is open to federal partnerships, research collaborations, and enterprise integrations.</p>
+            <div class="btn-row">
+                <a href="/docs" class="btn btn-primary">API Documentation</a>
+                <a href="mailto:tiamat@tiamat.live" class="btn btn-secondary">tiamat@tiamat.live</a>
+                <a href="/thoughts" class="btn btn-secondary">Watch TIAMAT Think</a>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        &copy; 2026 EnergenAI LLC &middot; Jackson, Michigan &middot; UEI: LBZFEH87W746<br>
+        <a href="/">tiamat.live</a> &middot; <a href="/docs">API Docs</a> &middot; <a href="/company">Company</a>
+    </footer>
+</body>
+</html>"""
 
 
 if __name__ == '__main__':
