@@ -7,7 +7,7 @@
  * This wrapper optimizes cost without modifying loop.ts
  */
 
-import type { InferenceOptions, InferenceResponse } from '../types';
+import type { InferenceOptions, InferenceResponse } from '../types.js';
 
 export interface CycleContext {
   cycle_number: number;
@@ -63,7 +63,7 @@ export function optimizeInferenceOptions(
     return {
       ...baseOptions,
       model: 'claude-3-5-haiku-20241022',
-      max_tokens: 2048,
+      maxTokens: 2048,
       temperature: 0.5  // More deterministic for routine work
     };
   } else {
@@ -71,7 +71,7 @@ export function optimizeInferenceOptions(
     return {
       ...baseOptions,
       model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4096,
+      maxTokens: 4096,
       temperature: 0.7  // More creative for strategic work
     };
   }

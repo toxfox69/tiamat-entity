@@ -281,11 +281,16 @@ export async function runAgentLoop(
   const LEARNING_CYCLE_INTERVAL = 5; // every 5th idle cycle, also run learning_cycle.py
 
   // ── Strategic Burst: 3 consecutive focused cycles every STRATEGIC_BURST_INTERVAL turns ──
-  // NOTE: These cycles now run on Haiku (not Sonnet). Deep reasoning is routed
-  // through ask_claude_code which uses the Claude Pro subscription instead of API credits.
+  // Uses a persistent file counter so pruneOldData doesn't reset burst timing.
   const STRATEGIC_BURST_INTERVAL = 45;
   const STRATEGIC_BURST_SIZE = 3;
   let burstRemaining = 0;  // 0 = no burst active; 3/2/1 = burst in progress
+  const BURST_COUNTER_PATH = path.join(process.env.HOME || "/root", ".automaton", "burst_counter.json");
+  let persistentCycleCount = 0;
+  try {
+    const bc = JSON.parse(fs.readFileSync(BURST_COUNTER_PATH, "utf-8"));
+    persistentCycleCount = bc.cycle || 0;
+  } catch {}
 
   // Stuck detection: tracks how many consecutive turns each (tool+args+error) signature has appeared.
   const stuckCounts = new Map<string, number>();
@@ -529,8 +534,12 @@ export async function runAgentLoop(
       const turnCount = db.getTurnCount();
       toolContext.turnNumber = turnCount; // keep in sync
 
+      // Persistent cycle counter (survives DB prunes and restarts)
+      persistentCycleCount++;
+      try { fs.writeFileSync(BURST_COUNTER_PATH, JSON.stringify({ cycle: persistentCycleCount, updated: new Date().toISOString() })); } catch {}
+
       // Trigger a new burst every STRATEGIC_BURST_INTERVAL cycles (if not already in one)
-      if (burstRemaining === 0 && turnCount > 0 && turnCount % STRATEGIC_BURST_INTERVAL === 0) {
+      if (burstRemaining === 0 && persistentCycleCount > 0 && persistentCycleCount % STRATEGIC_BURST_INTERVAL === 0) {
         burstRemaining = STRATEGIC_BURST_SIZE;
       }
 
@@ -542,7 +551,7 @@ export async function runAgentLoop(
 
       if (isStrategicCycle) {
         burstRemaining--;
-        console.log(`[LOOP] Strategic burst ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}) — Haiku (deep reasoning via ask_claude_code)`);
+        console.log(`[LOOP] Strategic burst ${burstPhase}/${STRATEGIC_BURST_SIZE} (cycle ${persistentCycleCount}) — Sonnet`);
 
         // PROGRESS.md context
         let progressContent = "";
@@ -724,7 +733,7 @@ export async function runAgentLoop(
         } catch {}
 
         const strategicSuffix =
-          `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (turn ${turnCount}): Use ask_claude_code for any complex reasoning or code tasks.\n` +
+          `\n\nSTRATEGIC BURST ${burstPhase}/${STRATEGIC_BURST_SIZE} (cycle ${persistentCycleCount}): You are on Sonnet — use this cycle for deep reasoning, architecture, and strategic decisions.\n` +
           `${phaseMissions[burstPhase] || ""}\n\n` +
           `${revenueContext}${pivotWarning}\n\n` +
           (memoryReflection ? `${memoryReflection}\n\n` : "") +
@@ -733,8 +742,7 @@ export async function runAgentLoop(
           growthContext +
           pastExperienceContext;
         strategicSystemPrompt = systemPrompt + strategicSuffix;
-        // Strategic cycles now run on Haiku — deep reasoning routed through ask_claude_code (Pro subscription)
-        // inferenceModel = "claude-sonnet-4-5-20250929";  // REMOVED: saves ~$0.03/burst cycle
+        inferenceModel = "claude-sonnet-4-5-20250929";
       } else {
         // Regular cycles: inject compact memory context + tool health + tier stats
         try {
@@ -819,8 +827,7 @@ export async function runAgentLoop(
           } else {
             strategicSystemPrompt += `\n\n[CURRENT TASK — ${t.id} — DO THIS NOW (${ticketAgeHours.toFixed(1)}h elapsed, ${TICKET_MAX_HOURS}h limit)]\n${t.title}\n\n${(t.description || "").slice(0, 600)}\n\nDO NOT check tickets, check revenue, or start new projects. Execute the steps above and ticket_complete when done. If stuck, use ask_claude_code to get help completing THIS ticket.`;
 
-            // Build tickets stay on Haiku — deep reasoning routed through ask_claude_code (Pro subscription)
-            // Previously auto-upgraded to Sonnet, which burned API credits unnecessarily
+            // Build tickets use Haiku for routine cycles — strategic bursts override to Sonnet
             if (t.source !== "suggestion") {
               const ticketTags: string[] = t.tags || [];
               const titleLower = (t.title || "").toLowerCase();
@@ -1144,7 +1151,7 @@ export async function runAgentLoop(
 
       let cycleTier: "free" | "haiku" | "sonnet" = "free";
       if (isStrategicCycle) {
-        cycleTier = "haiku";  // Strategic bursts run on Haiku (ask_claude_code handles deep reasoning)
+        cycleTier = "sonnet";  // Strategic bursts use Sonnet for real reasoning quality
       } else if (forceBuildHaiku) {
         cycleTier = "haiku";  // Build tickets always use Haiku — free models can't reason well enough to code
       } else {

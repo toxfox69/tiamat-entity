@@ -8,8 +8,8 @@
  * const response = await interceptInference(client, messages, cycle_context);
  */
 
-import type { InferenceClient, ChatMessage, InferenceOptions, InferenceResponse } from '../types';
-import { selectModel, optimizeInferenceOptions, logModelSelection, estimateCycleCost } from './model_router';
+import type { InferenceClient, ChatMessage, InferenceOptions, InferenceResponse } from '../types.js';
+import { selectModel, optimizeInferenceOptions, logModelSelection, estimateCycleCost } from './model_router.js';
 
 export interface CycleMetadata {
   cycle_number: number;
