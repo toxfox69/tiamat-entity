@@ -175,6 +175,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .crisis-line .number{font-size:14px;font-weight:700;color:var(--violet-deep)}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes waterPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
 .fade-in{animation:fadeIn .3s ease}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
 .empty-state .icon{font-size:48px;margin-bottom:12px}
@@ -261,6 +263,30 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
     </div>
     <div class="content" id="content"></div>
   </div>
+</div>
+
+<!-- Water tracker floating widget -->
+<div id="waterFloat" onclick="toggleWaterPanel()" style="position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--mint));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(129,212,250,.4);cursor:pointer;z-index:100;transition:all .2s;font-size:11px;font-weight:700;line-height:1.1">
+  <span style="font-size:18px">&#128167;</span>
+  <span id="waterCount">0</span>
+</div>
+
+<div id="waterPanel" style="display:none;position:fixed;bottom:84px;right:16px;width:280px;background:var(--surface);border-radius:18px;box-shadow:0 8px 32px rgba(62,36,101,.15);border:1px solid var(--border);z-index:101;padding:16px;animation:fadeUp .2s ease">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="font-size:15px;font-weight:700;color:var(--sky-deep)">&#128167; Hydration</div>
+    <span id="waterGoalLabel" style="font-size:11px;color:var(--text-muted)"></span>
+  </div>
+  <div id="waterBar" style="height:10px;background:var(--surface-alt,#f0f0f0);border-radius:5px;overflow:hidden;margin-bottom:10px">
+    <div id="waterBarFill" style="height:100%;background:linear-gradient(90deg,var(--sky),var(--mint));border-radius:5px;transition:width .3s;width:0%"></div>
+  </div>
+  <div id="waterStatus" style="font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:12px"></div>
+  <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+    <button onclick="logWater(250);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)">+250ml</button>
+    <button onclick="logWater(500);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)">+500ml</button>
+    <button onclick="logWater(355);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)">+12oz</button>
+    <button onclick="logWater(-250);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--surface);color:var(--text-muted);font-size:12px;font-weight:500;border:1px solid var(--border)">Undo</button>
+  </div>
+  <div style="margin-top:10px;font-size:10px;color:var(--text-muted);text-align:center;line-height:1.5" id="waterTip"></div>
 </div>
 
 <script>
@@ -434,6 +460,44 @@ const LAB_TARGETS={
   'Creatinine':{unit:'mg/dL',low:0.5,high:1.2,urgentHigh:1.5}
 };
 
+const LAB_INFO={
+  'Estradiol':{cat:'Hormones',why:'Primary estrogen — drives breast growth, fat redistribution, skin softening. Always test at trough (before next dose).',ftmWhy:'Should be suppressed on T therapy.',critical:true},
+  'Testosterone':{cat:'Hormones',why:'Must suppress below 50 ng/dL for feminization. Confirms anti-androgen is working.',ftmWhy:'Primary androgen — drives voice, facial hair, muscle. Test at trough.',critical:true},
+  'Prolactin':{cat:'Hormones',why:'Raised by estrogen & cyproterone. Above 50 risks prolactinoma (pituitary tumor). Get MRI if persistently high.',critical:true},
+  'Estrone':{cat:'Hormones',why:'Oral E2 converts heavily to estrone via liver. High estrone:estradiol ratio (>5:1) = weaker feminization. Consider sublingual/patches.'},
+  'SHBG':{cat:'Hormones',why:'Binds hormones — very high SHBG means less free estradiol reaching tissues. Estrogen itself raises SHBG.'},
+  'Free T':{cat:'Hormones',why:'Unbound testosterone actually active in your body. More meaningful than total T alone.'},
+  'DHT':{cat:'Hormones',why:'Most potent androgen — causes hair loss, body hair, oily skin. Blocked by finasteride/dutasteride.'},
+  'ALT':{cat:'Liver & Kidney',why:'Liver enzyme. Oral estrogen & cyproterone stress the liver. Elevated = may need to switch routes.',critical:true},
+  'AST':{cat:'Liver & Kidney',why:'Liver enzyme. With ALT, monitors hepatotoxicity. Above 3x upper limit requires intervention.',critical:true},
+  'Creatinine':{cat:'Liver & Kidney',why:'Kidney function. Important on spironolactone (renally cleared). Rising = declining kidney function.'},
+  'Potassium':{cat:'Liver & Kidney',why:'Spironolactone retains potassium. Above 5.5 = fatal cardiac arrhythmia risk. Avoid K+ supplements & salt substitutes.',critical:true},
+  'Hemoglobin':{cat:'Blood',why:'Oxygen-carrying capacity. Anti-androgens lower it — watch for anemia (fatigue, dizziness).',ftmWhy:'Testosterone increases red blood cells. Polycythemia = stroke/clot risk. Most common T side effect.'},
+  'LDL':{cat:'Lipids & Heart',why:'Bad cholesterol. Above 160 = cardiovascular risk. Estrogen generally lowers LDL.'},
+  'HDL':{cat:'Lipids & Heart',why:'Good cholesterol. Below 40 = risk factor. Estrogen typically raises HDL.'},
+  'Triglycerides':{cat:'Lipids & Heart',why:'Blood fats. Oral estrogen raises these via liver first-pass. Above 500 = pancreatitis risk. Patches/injections bypass this.',critical:true},
+  'A1C':{cat:'Metabolic',why:'3-month blood sugar average. HRT affects insulin sensitivity. Above 5.7% = prediabetic.'},
+  'TSH':{cat:'Metabolic',why:'Thyroid screen. Estrogen raises thyroid-binding globulin, can mask or reveal thyroid problems.'},
+  'Vitamin D':{cat:'Metabolic',why:'Bone density essential. 70%+ of people are deficient. Supplement if below 30.'}
+};
+
+const LAB_SCHEDULE={
+  mtf:[
+    {time:'Baseline',desc:'Before starting HRT',labs:['Estradiol','Testosterone','Prolactin','ALT','AST','Potassium','Hemoglobin','LDL','HDL','Triglycerides','A1C','TSH','Vitamin D','Creatinine']},
+    {time:'3 Months',desc:'Hormones responding? Liver OK?',labs:['Estradiol','Testosterone','ALT','AST','Potassium']},
+    {time:'6 Months',desc:'Dose optimization',labs:['Estradiol','Testosterone','Prolactin','ALT','AST','Potassium','Free T','SHBG']},
+    {time:'12 Months',desc:'Full annual panel',labs:['Estradiol','Testosterone','Prolactin','ALT','AST','Potassium','Hemoglobin','LDL','HDL','Triglycerides','A1C','Vitamin D']},
+    {time:'Ongoing',desc:'Every 6-12mo once stable',labs:['Estradiol','Testosterone','Prolactin','ALT','AST','LDL','HDL','Triglycerides']}
+  ],
+  ftm:[
+    {time:'Baseline',desc:'Before starting T',labs:['Estradiol','Testosterone','Hemoglobin','ALT','AST','LDL','HDL','Triglycerides','A1C','TSH','Vitamin D']},
+    {time:'3 Months',desc:'T levels rising? Blood counts OK?',labs:['Testosterone','Estradiol','Hemoglobin','ALT','AST']},
+    {time:'6 Months',desc:'Dose optimization',labs:['Testosterone','Estradiol','Free T','Hemoglobin','ALT','AST','LDL','HDL']},
+    {time:'12 Months',desc:'Full annual panel',labs:['Testosterone','Estradiol','Free T','Hemoglobin','ALT','AST','LDL','HDL','Triglycerides','A1C','Vitamin D']},
+    {time:'Ongoing',desc:'Every 6-12mo once stable',labs:['Testosterone','Hemoglobin','ALT','AST','LDL','HDL','Triglycerides']}
+  ]
+};
+
 const INJECTION_SITES=['L Thigh','R Thigh','L VG','R VG','L Delt','R Delt','L Abd','R Abd'];
 
 const SYMPTOMS={
@@ -467,14 +531,14 @@ function getMedTypes(){
 
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
-function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[]}}
+function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],water:{}}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
 function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf'}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
 function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
 
-let D=loadData(),S=loadSettings(),currentView='dashboard',tempLog={};
+let D=loadData(),S=loadSettings(),currentView='dashboard',tempLog={},tempLogInited=false;
 if(!D.photos)D.photos=[];
 if(!D.supplements)D.supplements=[];
 if(!D.phases)D.phases=[];
@@ -708,7 +772,8 @@ function logInjection(){
 // ─── Log View ────────────────────────────────────────────────
 function renderLog(){
   const td=today(),ex=getLog(td)||{};
-  tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria||5,energy:ex.energy||5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||''};
+  if(!tempLogInited){tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria||5,energy:ex.energy||5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||''};tempLogInited=true;}
+  else{const n=document.getElementById('logNotes');if(n)tempLog.notes=n.value;}
 
   let h=`<div class="panel fade-in"><h3>Daily Log</h3>
     <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
@@ -728,17 +793,17 @@ function renderLog(){
     <div class="form-row"><label>Weight</label><input type="number" step="0.1" placeholder="${S.unitSystem==='imperial'?'lbs':'kg'}" value="${tempLog.weight}" style="flex:1" onchange="tempLog.weight=this.value"></div>`;
 
   for(const[cat,symptoms]of Object.entries(SYMPTOMS)){
-    h+=`<div class="section-title">${cat}</div><div class="chips">${symptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');renderLog()">${s}</button>`).join('')}</div>`;
+    h+=`<div class="section-title">${cat}</div><div class="chips">${symptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');this.classList.toggle('active')">${s}</button>`).join('')}</div>`;
   }
 
   if(D.customSymptoms.length){
-    h+=`<div class="section-title">Custom</div><div class="chips">${D.customSymptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active-mint':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');renderLog()">${s}</button>`).join('')}</div>`;
+    h+=`<div class="section-title">Custom</div><div class="chips">${D.customSymptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active-mint':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');this.classList.toggle('active-mint')">${s}</button>`).join('')}</div>`;
   }
-  h+=`<button class="btn-small" onclick="const t=prompt('Custom symptom:');if(t&&t.trim()){D.customSymptoms.push(t.trim());saveData();tempLog.tags.push(t.trim());renderLog()}">+ Custom</button>`;
+  h+=`<button class="btn-small" onclick="const t=prompt('Custom symptom:');if(t&&t.trim()){D.customSymptoms.push(t.trim());saveData();tempLog.tags.push(t.trim());const n=document.getElementById('logNotes');if(n)tempLog.notes=n.value;renderLog()}">+ Custom</button>`;
 
   h+=`<div class="section-title">Notes</div>
     <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today? Any changes?">${tempLog.notes}</textarea>
-    <button class="btn-primary" onclick="saveLog()">Save Today's Log</button>
+    <button class="btn-primary" id="saveLogBtn" onclick="saveLog()">Save Today's Log</button>
   </div>`;
   document.getElementById('content').innerHTML=h;
 }
@@ -747,9 +812,10 @@ function saveLog(){
   const entry={date:today(),mood:tempLog.mood,dysphoria:tempLog.dysphoria,energy:tempLog.energy,sleep:tempLog.sleep,weight:tempLog.weight,tags:tempLog.tags,notes:document.getElementById('logNotes').value};
   const idx=D.logs.findIndex(l=>l.date===today());
   if(idx>=0)D.logs[idx]=entry;else D.logs.push(entry);
-  saveData();
-  const btn=document.querySelector('.btn-primary');btn.textContent='Saved!';btn.style.background='var(--mint)';
-  setTimeout(()=>{btn.textContent="Save Today's Log";btn.style.background=''},1200);
+  saveData();tempLogInited=false;
+  const btn=document.getElementById('saveLogBtn');
+  btn.textContent='\u2714 Log Saved!';btn.style.background='var(--mint)';btn.style.transform='scale(1.03)';
+  setTimeout(()=>{btn.textContent="Save Today's Log";btn.style.background='';btn.style.transform=''},2000);
 }
 
 // ─── Meds View ───────────────────────────────────────────────
@@ -802,64 +868,185 @@ function addMed(){
 // ─── Labs View ───────────────────────────────────────────────
 function renderLabs(){
   let h='<div class="fade-in">';
+  const targets=getLabTargets();
+  const j=S.journeyType||'mtf';
+  const isFtm=j==='ftm'||j==='tomboy';
+  const sched=isFtm?LAB_SCHEDULE.ftm:LAB_SCHEDULE.mtf;
 
-  const latest=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  // Testing Schedule
+  h+=`<div class="panel"><h3>When to Test</h3>
+    <div class="panel-sub">${isFtm?'Testosterone':'Estrogen'}-based HRT monitoring schedule</div>`;
+  for(const s of sched){
+    h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:13px;font-weight:700;color:var(--violet-deep)">${s.time}</span>
+        <span style="font-size:11px;color:var(--text-muted)">${s.desc}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.5">${s.labs.map(l=>{const info=LAB_INFO[l];return`<span style="display:inline-block;padding:1px 6px;margin:2px;border-radius:6px;background:${info&&info.critical?'var(--pink-pale)':'var(--surface)'};${info&&info.critical?'font-weight:600':''}">${l}</span>`}).join('')}</div>
+    </div>`;
+  }
+  h+=`<div style="margin-top:8px;font-size:11px;color:var(--text-muted)">Pink = critical — never skip these</div></div>`;
+
+  // Latest Results
+  const sorted=D.labs.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const latest=sorted[0];
   if(latest){
-    h+=`<div class="panel"><h3>Latest Labs — ${new Date(latest.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</h3>`;
+    h+=`<div class="panel"><h3>Latest Results — ${new Date(latest.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</h3>`;
+    // Group results by category
+    const cats={};
     for(const r of latest.results){
-      const flag=flagLab(r.name,r.value);
-      const t=LAB_TARGETS[r.name];
-      h+=`<div class="lab-row">
-        <span class="lab-name">${r.name}</span>
-        <span class="lab-value" style="color:${flag==='normal'?'var(--text)':flag==='urgent'?'var(--danger)':'var(--warn)'}">${r.value}</span>
-        <span class="lab-unit">${t?t.unit:r.unit||''}</span>
-        <span class="lab-flag ${flag}">${flag}</span>
-      </div>`;
+      const info=LAB_INFO[r.name]||{cat:'Other'};
+      if(!cats[info.cat])cats[info.cat]=[];
+      cats[info.cat].push(r);
+    }
+    for(const[cat,results]of Object.entries(cats)){
+      h+=`<div class="section-title">${cat}</div>`;
+      for(const r of results){
+        const flag=flagLab(r.name,r.value);
+        const t=targets[r.name];
+        const info=LAB_INFO[r.name];
+        const why=info?(isFtm&&info.ftmWhy?info.ftmWhy:info.why):'';
+        h+=`<div style="padding:6px 0;border-bottom:1px solid var(--border)">
+          <div class="lab-row" style="border:none;padding:0">
+            <span class="lab-name">${r.name}</span>
+            <span class="lab-value" style="color:${flag==='normal'?'var(--text)':flag==='urgent'?'var(--danger)':'var(--warn)'}">${r.value}</span>
+            <span class="lab-unit">${t?t.unit:''}</span>
+            <span class="lab-flag ${flag}">${flag}</span>
+          </div>
+          ${t?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">Range: ${t.low||0}–${t.high} ${t.unit}${t.urgentHigh?' · Urgent above '+t.urgentHigh:''}${t.urgentLow?' · Urgent below '+t.urgentLow:''}</div>`:''}
+          ${why?`<div style="font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.4">${why}</div>`:''}
+        </div>`;
+      }
+    }
+    // Alerts
+    const urgents=latest.results.filter(r=>flagLab(r.name,r.value)==='urgent');
+    const abnormals=latest.results.filter(r=>{const f=flagLab(r.name,r.value);return f==='high'||f==='low';});
+    if(urgents.length){
+      h+=`<div style="margin-top:12px;padding:12px;background:#FFEBEE;border-radius:12px;font-size:13px;color:var(--danger)">
+        <strong>Urgent — contact your prescriber:</strong><br>${urgents.map(r=>`${r.name}: ${r.value} ${targets[r.name]?.unit||''}`).join(', ')}</div>`;
+    }
+    if(abnormals.length){
+      h+=`<div style="margin-top:8px;padding:12px;background:var(--peach-pale);border-radius:12px;font-size:13px;color:var(--warn)">
+        <strong>Out of range — discuss at next visit:</strong><br>${abnormals.map(r=>`${r.name}: ${r.value}`).join(', ')}</div>`;
     }
     h+=`</div>`;
+  }else{
+    h+=`<div class="panel"><h3>No Lab Results Yet</h3>
+      <div class="panel-sub">Enter your first labs below. Bring this list to your doctor or order through a self-pay lab service.</div>
+      <div style="margin-top:8px;font-size:13px;color:var(--text-dim)">
+        <strong>Essential first panel:</strong><br>${sched[0].labs.map(l=>{const t=targets[l];return t?`${l} (${t.unit})`:l}).join(' · ')}
+      </div></div>`;
   }
 
+  // Trend charts
   const e2hist=labHistory('Estradiol'),thist=labHistory('Testosterone');
   if(e2hist.length>=2){
-    const mx=Math.max(...e2hist.map(l=>l.value),200);
+    const tgt=targets['Estradiol'];
+    const mx=Math.max(...e2hist.map(l=>l.value),tgt.high);
     h+=`<div class="panel"><h3>Estradiol Trend</h3>
       <div class="chart-bar">${e2hist.slice(-8).map(l=>`<div class="bar" style="height:${Math.max(5,l.value/mx*100)}%;background:var(--pink-soft)" title="${l.value} pg/mL"></div>`).join('')}</div>
       <div class="chart-labels">${e2hist.slice(-8).map(l=>`<span>${l.value}</span>`).join('')}</div>
-      <div style="margin-top:4px;height:2px;background:var(--mint-soft);position:relative"><span style="position:absolute;right:0;top:-10px;font-size:10px;color:var(--mint-deep)">Target: 100-200</span></div>
+      <div style="margin-top:4px;height:2px;background:var(--mint-soft);position:relative"><span style="position:absolute;right:0;top:-10px;font-size:10px;color:var(--mint-deep)">Target: ${tgt.low}-${tgt.high}</span></div>
     </div>`;
   }
   if(thist.length>=2){
-    const mx=Math.max(...thist.map(l=>l.value),100);
+    const tgt=targets['Testosterone'];
+    const mx=Math.max(...thist.map(l=>l.value),tgt.high);
     h+=`<div class="panel"><h3>Testosterone Trend</h3>
       <div class="chart-bar">${thist.slice(-8).map(l=>`<div class="bar" style="height:${Math.max(5,l.value/mx*100)}%;background:var(--sky-soft)" title="${l.value} ng/dL"></div>`).join('')}</div>
       <div class="chart-labels">${thist.slice(-8).map(l=>`<span>${l.value}</span>`).join('')}</div>
-      <div style="margin-top:4px;height:2px;background:var(--mint-soft);position:relative"><span style="position:absolute;right:0;top:-10px;font-size:10px;color:var(--mint-deep)">Target: &lt;50</span></div>
+      <div style="margin-top:4px;height:2px;background:var(--mint-soft);position:relative"><span style="position:absolute;right:0;top:-10px;font-size:10px;color:var(--mint-deep)">Target: ${isFtm?tgt.low+'-'+tgt.high:'<'+tgt.high}</span></div>
     </div>`;
   }
 
-  h+=`<button class="btn-primary" onclick="addLabPanel()">+ Add Lab Results</button>`;
+  h+=`<button class="btn-primary" onclick="showLabEntry()">+ Add Lab Results</button>`;
 
-  if(D.labs.length>1){
+  if(sorted.length>1){
     h+=`<div class="section-title" style="margin-top:16px">Previous Labs</div>`;
-    for(const lab of D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(1)){
-      h+=`<div class="history-item"><div class="date">${new Date(lab.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
-        <div class="details">${lab.results.map(r=>r.name+': '+r.value).join(' · ')}</div></div>`;
+    for(const lab of sorted.slice(1)){
+      const flags=lab.results.map(r=>flagLab(r.name,r.value));
+      const hasIssue=flags.some(f=>f!=='normal');
+      h+=`<div class="history-item" style="cursor:pointer" onclick="viewLabDetail('${lab.date}')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="date">${new Date(lab.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+          ${hasIssue?'<span style="font-size:11px;color:var(--warn)">has flags</span>':'<span style="font-size:11px;color:var(--mint-deep)">all normal</span>'}
+        </div>
+        <div class="details" style="font-size:11px">${lab.results.map(r=>r.name+': '+r.value).join(' · ')}</div></div>`;
     }
   }
+
+  // What to ask your doctor
+  h+=`<div class="panel" style="margin-top:12px;background:linear-gradient(135deg,var(--violet-pale),var(--pink-pale))">
+    <h3>Ask Your Doctor</h3>
+    <div style="font-size:12px;line-height:1.6;color:var(--text-dim)">
+      ${isFtm?
+      `• "Can I get a complete metabolic panel + CBC + lipids with my T levels?"<br>
+      • "My hematocrit is ___. Should we adjust my dose or schedule a blood donation?"<br>
+      • "What's my free T vs total T ratio? Am I converting to DHT/estrogen?"<br>
+      • "Should I switch from IM to SubQ for more stable levels?"`:
+      `• "Can I get a complete metabolic panel + CBC + lipids with my hormone levels?"<br>
+      • "What's my estrone-to-estradiol ratio? Should I switch from oral to sublingual?"<br>
+      • "My prolactin is ___. Do I need an MRI?"<br>
+      • "Should I add progesterone at this stage for breast development?"<br>
+      • "Can we check free testosterone, not just total T?"`}
+    </div></div>`;
 
   h+='</div>';
   document.getElementById('content').innerHTML=h;
 }
 
-function addLabPanel(){
-  const date=prompt('Lab date (YYYY-MM-DD):',today());if(!date)return;
-  const labNames=Object.keys(LAB_TARGETS);
-  const results=[];
-  for(const name of labNames){
-    const val=prompt(`${name} (${LAB_TARGETS[name].unit}) — leave blank to skip:`);
-    if(val&&val.trim())results.push({name,value:parseFloat(val),unit:LAB_TARGETS[name].unit});
+function viewLabDetail(date){
+  const lab=D.labs.find(l=>l.date===date);if(!lab)return;
+  const targets=getLabTargets();const j=S.journeyType||'mtf';const isFtm=j==='ftm'||j==='tomboy';
+  let h='<div class="fade-in"><div class="panel"><h3>Labs — '+new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</h3>';
+  for(const r of lab.results){
+    const flag=flagLab(r.name,r.value);const t=targets[r.name];const info=LAB_INFO[r.name];
+    h+=`<div class="lab-row"><span class="lab-name">${r.name}</span>
+      <span class="lab-value" style="color:${flag==='normal'?'var(--text)':flag==='urgent'?'var(--danger)':'var(--warn)'}">${r.value}</span>
+      <span class="lab-unit">${t?t.unit:''}</span><span class="lab-flag ${flag}">${flag}</span></div>`;
   }
-  if(!results.length)return;
+  h+=`<button class="btn-secondary" onclick="renderLabs()">Back</button>
+    <button class="btn-small" style="margin-top:8px;background:#FFEBEE;color:var(--danger)" onclick="if(confirm('Delete this lab entry?')){D.labs=D.labs.filter(l=>l.date!=='${date}');saveData();renderLabs()}">Delete</button>`;
+  h+=`</div></div>`;
+  document.getElementById('content').innerHTML=h;
+}
+
+function showLabEntry(){
+  const targets=getLabTargets();
+  let h='<div class="fade-in"><div class="panel"><h3>Enter Lab Results</h3>';
+  h+=`<div class="panel-sub">Enter values from your lab report — leave blank any you don't have</div>`;
+  h+=`<div class="form-row"><label>Lab Date</label><input type="date" id="labDate" value="${today()}" style="flex:1"></div>`;
+  const cats={};
+  for(const[name,t]of Object.entries(targets)){
+    const info=LAB_INFO[name]||{cat:'Other'};
+    if(!cats[info.cat])cats[info.cat]=[];
+    cats[info.cat].push({name,t,info});
+  }
+  for(const[cat,labs]of Object.entries(cats)){
+    h+=`<div class="section-title">${cat}</div>`;
+    for(const{name,t,info}of labs){
+      h+=`<div class="form-row">
+        <label style="min-width:90px">${name}${info.critical?' *':''}</label>
+        <input type="number" step="0.01" id="lab_${name.replace(/[\s\/]/g,'_')}" placeholder="${t.low||0}–${t.high}" style="flex:1">
+        <span style="font-size:11px;color:var(--text-muted);min-width:45px">${t.unit}</span>
+      </div>`;
+    }
+  }
+  h+=`<div style="font-size:11px;color:var(--text-muted);margin-top:8px">* = critical — prioritize these</div>`;
+  h+=`<button class="btn-primary" id="saveLabBtn" onclick="saveLabEntry()">Save Lab Results</button>
+    <button class="btn-secondary" onclick="renderLabs()">Cancel</button></div></div>`;
+  document.getElementById('content').innerHTML=h;
+}
+
+function saveLabEntry(){
+  const date=document.getElementById('labDate').value;if(!date)return;
+  const targets=getLabTargets();
+  const results=[];
+  for(const name of Object.keys(targets)){
+    const el=document.getElementById('lab_'+name.replace(/[\s\/]/g,'_'));
+    if(el&&el.value&&el.value.trim())results.push({name,value:parseFloat(el.value),unit:targets[name].unit});
+  }
+  if(!results.length){const btn=document.getElementById('saveLabBtn');btn.textContent='Enter at least one value';btn.style.background='var(--warn)';setTimeout(()=>{btn.textContent='Save Lab Results';btn.style.background=''},2000);return;}
   D.labs.push({date,results});
   saveData();renderLabs();
 }
@@ -874,11 +1061,11 @@ function renderBody(){
     <div class="panel-sub">Track body changes over time</div>
     <div class="form-row"><label>Bust (${unit})</label><input type="number" step="0.1" id="mBust" value="${last?.bust||''}" style="flex:1"></div>
     <div class="form-row"><label>Underbust (${unit})</label><input type="number" step="0.1" id="mUnderbust" value="${last?.underbust||''}" style="flex:1"></div>
-    <div class="form-row"><label>Waist (${unit})</label><input type="number" step="0.1" id="mWaist" value="" style="flex:1"></div>
-    <div class="form-row"><label>Hips (${unit})</label><input type="number" step="0.1" id="mHips" value="" style="flex:1"></div>
-    <div class="form-row"><label>L Thigh (${unit})</label><input type="number" step="0.1" id="mThighL" value="" style="flex:1"></div>
-    <div class="form-row"><label>R Thigh (${unit})</label><input type="number" step="0.1" id="mThighR" value="" style="flex:1"></div>
-    <div class="form-row"><label>Weight</label><input type="number" step="0.1" id="mWeight" value="" style="flex:1"></div>
+    <div class="form-row"><label>Waist (${unit})</label><input type="number" step="0.1" id="mWaist" value="${last?.waist||''}" style="flex:1"></div>
+    <div class="form-row"><label>Hips (${unit})</label><input type="number" step="0.1" id="mHips" value="${last?.hips||''}" style="flex:1"></div>
+    <div class="form-row"><label>L Thigh (${unit})</label><input type="number" step="0.1" id="mThighL" value="${last?.thighL||''}" style="flex:1"></div>
+    <div class="form-row"><label>R Thigh (${unit})</label><input type="number" step="0.1" id="mThighR" value="${last?.thighR||''}" style="flex:1"></div>
+    <div class="form-row"><label>Weight</label><input type="number" step="0.1" id="mWeight" value="${last?.weight||''}" style="flex:1"></div>
     <button class="btn-primary" onclick="saveMeasurements()">Save Measurements</button>
   </div>`;
 
@@ -891,6 +1078,9 @@ function renderBody(){
       ${last.waist?`<div style="font-size:13px;margin-bottom:4px">Waist: <strong>${last.waist}${unit}</strong></div>`:''}
       ${last.hips?`<div style="font-size:13px;margin-bottom:4px">Hips: <strong>${last.hips}${unit}</strong></div>`:''}
       ${whr()?`<div style="font-size:13px;margin-bottom:4px">WHR: <strong style="color:var(--mint-deep)">${whr()}</strong> <span style="font-size:11px;color:var(--text-muted)">(female avg: 0.70-0.80)</span></div>`:''}
+      ${last.thighL?`<div style="font-size:13px;margin-bottom:4px">L Thigh: <strong>${last.thighL}${unit}</strong></div>`:''}
+      ${last.thighR?`<div style="font-size:13px;margin-bottom:4px">R Thigh: <strong>${last.thighR}${unit}</strong></div>`:''}
+      ${last.weight?`<div style="font-size:13px;margin-bottom:4px">Weight: <strong>${last.weight} ${S.unitSystem==='imperial'?'lbs':'kg'}</strong></div>`:''}
     </div>`;
   }
 
@@ -1595,6 +1785,19 @@ function renderSettings(){
       <div class="setting-row"><label>Storage used</label><span style="color:var(--text-dim)">${Math.round(storageUsed()/1024)} KB</span></div>
     </div>
 
+    <div class="settings-group"><h3>AI Health Assistant</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.5">Generate an anonymous prompt with your medical context to paste into any AI chatbot (ChatGPT, Claude, etc.). <strong>No personal info is included</strong> — no name, no dates, no location.</p>
+      <button class="btn-primary" style="background:linear-gradient(135deg,var(--violet),var(--sky))" onclick="generateAIPrompt()">Generate AI Prompt</button>
+      <div id="aiPromptResult" style="display:none;margin-top:12px">
+        <textarea id="aiPromptText" readonly style="width:100%;min-height:200px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-small" style="flex:1" onclick="navigator.clipboard.writeText(document.getElementById('aiPromptText').value).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy to Clipboard',1500)})">Copy to Clipboard</button>
+          <button class="btn-small" style="flex:1;background:var(--surface);color:var(--text-muted)" onclick="document.getElementById('aiPromptResult').style.display='none'">Hide</button>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text-muted);line-height:1.5">Review the prompt before sharing. No names, birthdays, or identifying details are included — only anonymized medical context.</div>
+      </div>
+    </div>
+
     <button class="btn-primary" onclick="exportDoctorReport()">Export Doctor Report (PDF-ready)</button>
     <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
@@ -1623,6 +1826,119 @@ function exportCSV(){
     csv+=`${l.date},"${l.mood||''}",${l.dysphoria||''},${l.energy||''},${l.sleep||''},${l.weight||''},"${(l.tags||[]).join('; ')}","${(l.notes||'').replace(/"/g,'""')}"\n`;
   }
   downloadFile(csv,'text/csv',`bloom-export-${today()}.csv`);
+}
+
+function generateAIPrompt(){
+  const j=S.journeyType||'mtf';
+  const jLabel=JOURNEY_TYPES[j]?.label||j.toUpperCase();
+  const targets=getLabTargets();
+  const isFtm=j==='ftm'||j==='tomboy';
+
+  let p=`You are a knowledgeable health assistant helping someone on hormone replacement therapy (HRT). Here is their anonymized medical context. Do NOT ask for personal identifying information. Use this context to provide informed, evidence-based guidance.\n\n`;
+  p+=`=== PROFILE ===\n`;
+  p+=`Journey: ${jLabel}\n`;
+
+  // Duration (relative, not dates)
+  if(D.startDate){
+    const months=Math.round((new Date()-new Date(D.startDate))/(30.44*864e5));
+    if(months<1)p+=`HRT Duration: Less than 1 month (just started)\n`;
+    else if(months<12)p+=`HRT Duration: ${months} months\n`;
+    else p+=`HRT Duration: ${Math.floor(months/12)} year(s), ${months%12} months\n`;
+  }else{p+=`HRT Duration: Not specified\n`;}
+
+  if(S.tannerStage&&(j==='mtf'||j==='femboy'||j==='nonbinary'))p+=`Tanner Stage: ${S.tannerStage}\n`;
+  if(S.lowDose)p+=`Dosing: Low-dose / microdose protocol\n`;
+
+  // Medications (active only, no start dates)
+  const active=D.meds.filter(m=>!m.ended);
+  if(active.length){
+    p+=`\n=== CURRENT MEDICATIONS ===\n`;
+    for(const m of active){
+      const days=D.startDate?Math.floor((new Date()-new Date(m.started))/864e5):null;
+      p+=`• ${m.name} — ${m.dose}, ${m.frequency}${m.route?' ('+m.route+')':''}${days?' — on this for ~'+Math.round(days/30)+' months':''}\n`;
+    }
+  }
+
+  // Active supplements
+  const activeSups=D.supplements.filter(s=>s.active!==false);
+  if(activeSups.length){
+    p+=`\n=== ACTIVE SUPPLEMENTS ===\n`;
+    for(const s of activeSups)p+=`• ${s.name}${s.dose?' — '+s.dose:''}${s.frequency?' — '+s.frequency:''}\n`;
+  }
+
+  // Latest labs (values + ranges, no dates)
+  const sorted=D.labs.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(sorted.length){
+    const latest=sorted[0];
+    const ageWeeks=Math.round((new Date()-new Date(latest.date))/(7*864e5));
+    p+=`\n=== MOST RECENT LAB RESULTS (${ageWeeks<=1?'this week':ageWeeks+' weeks ago'}) ===\n`;
+    for(const r of latest.results){
+      const t=targets[r.name];
+      const flag=flagLab(r.name,r.value);
+      p+=`• ${r.name}: ${r.value} ${t?t.unit:''}`;
+      if(t)p+=` (reference: ${t.low||0}–${t.high})`;
+      if(flag!=='normal')p+=` [${flag.toUpperCase()}]`;
+      p+=`\n`;
+    }
+  }
+
+  // Recent symptoms (aggregated, no dates)
+  const recentLogs=D.logs.slice(-14);
+  if(recentLogs.length){
+    const tagCounts={};
+    recentLogs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
+    const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    if(topTags.length){
+      p+=`\n=== RECENT SYMPTOMS (last ${recentLogs.length} log entries) ===\n`;
+      for(const[tag,count]of topTags)p+=`• ${tag} — reported ${count}/${recentLogs.length} days\n`;
+    }
+    // Dysphoria average
+    const dysLogs=recentLogs.filter(l=>l.dysphoria!==undefined);
+    if(dysLogs.length>=3){
+      const avg=(dysLogs.reduce((s,l)=>s+l.dysphoria,0)/dysLogs.length).toFixed(1);
+      p+=`• Average dysphoria level: ${avg}/10\n`;
+    }
+    // Energy average
+    const nrgLogs=recentLogs.filter(l=>l.energy!==undefined);
+    if(nrgLogs.length>=3){
+      const avg=(nrgLogs.reduce((s,l)=>s+l.energy,0)/nrgLogs.length).toFixed(1);
+      p+=`• Average energy level: ${avg}/10\n`;
+    }
+  }
+
+  // Body measurements (latest only, no dates)
+  const lastM=D.measurements.slice(-1)[0];
+  if(lastM){
+    p+=`\n=== BODY MEASUREMENTS ===\n`;
+    if(lastM.bust)p+=`• Bust: ${lastM.bust} ${S.unitSystem==='imperial'?'in':'cm'}\n`;
+    if(lastM.underbust)p+=`• Underbust: ${lastM.underbust} ${S.unitSystem==='imperial'?'in':'cm'}\n`;
+    if(lastM.waist)p+=`• Waist: ${lastM.waist} ${S.unitSystem==='imperial'?'in':'cm'}\n`;
+    if(lastM.hips)p+=`• Hips: ${lastM.hips} ${S.unitSystem==='imperial'?'in':'cm'}\n`;
+    if(lastM.weight)p+=`• Weight: ${lastM.weight} ${S.unitSystem==='imperial'?'lbs':'kg'}\n`;
+    const bs=braSize();if(bs)p+=`• Bra size: ${bs}\n`;
+    const w=whr();if(w)p+=`• Waist-to-hip ratio: ${w}\n`;
+  }
+
+  // Injection rotation if applicable
+  if(D.injections.length){
+    const last5=D.injections.slice(-5);
+    p+=`\n=== INJECTION HISTORY ===\n`;
+    p+=`• Recent sites: ${last5.map(i=>i.site).join(' → ')}\n`;
+  }
+
+  p+=`\n=== WHAT I NEED HELP WITH ===\n`;
+  p+=`[Describe your question here — e.g., "Are my estradiol levels optimal?", "Should I be concerned about my liver enzymes?", "What changes should I expect at my current stage?"]\n`;
+
+  p+=`\n=== GUIDELINES FOR THE AI ===\n`;
+  p+=`• Use evidence-based endocrinology (Endocrine Society, WPATH SOC8, UCSF guidelines)\n`;
+  p+=`• Flag anything that needs urgent medical attention\n`;
+  p+=`• Suggest specific lab values to discuss with my prescriber\n`;
+  p+=`• Note drug interactions between my current medications/supplements\n`;
+  p+=`• Do not diagnose — suggest questions to ask my doctor\n`;
+
+  document.getElementById('aiPromptText').value=p;
+  document.getElementById('aiPromptResult').style.display='block';
+  document.getElementById('aiPromptResult').scrollIntoView({behavior:'smooth'});
 }
 
 function exportDoctorReport(){
@@ -1780,7 +2096,83 @@ function updateBanner(){
 }
 
 // ─── Navigation ──────────────────────────────────────────────
+// ─── Water Tracking ──────────────────────────────────────────
+function getWaterGoal(){
+  // Calculate based on weight if available, otherwise default 2500ml
+  const lastLog=D.logs.slice().reverse().find(l=>l.weight&&parseFloat(l.weight)>0);
+  const lastMeas=D.measurements.slice().reverse().find(m=>m.weight&&parseFloat(m.weight)>0);
+  let weightKg=0;
+  if(lastLog&&lastLog.weight)weightKg=S.unitSystem==='imperial'?parseFloat(lastLog.weight)*0.4536:parseFloat(lastLog.weight);
+  else if(lastMeas&&lastMeas.weight)weightKg=S.unitSystem==='imperial'?parseFloat(lastMeas.weight)*0.4536:parseFloat(lastMeas.weight);
+  if(weightKg<=0)return{ml:2500,reason:'default (log weight for personalized goal)'};
+  // 35ml per kg base, +500ml if on spiro, +250ml if active supps
+  let ml=Math.round(weightKg*35);
+  let extras=[];
+  const onSpiro=D.meds.some(m=>!m.ended&&m.name&&m.name.toLowerCase().includes('spironolactone'));
+  if(onSpiro){ml+=500;extras.push('+500ml spironolactone');}
+  const activeSups=D.supplements.filter(s=>s.active!==false).length;
+  if(activeSups>=3){ml+=250;extras.push('+250ml supplements');}
+  ml=Math.round(ml/50)*50;// round to 50
+  return{ml,reason:`${Math.round(weightKg)}kg × 35ml/kg${extras.length?' + '+extras.join(', '):''}`};
+}
+function getTodayWater(){if(!D.water)D.water={};return D.water[today()]||0;}
+function logWater(ml){
+  if(!D.water)D.water={};
+  const key=today();
+  D.water[key]=(D.water[key]||0)+ml;
+  if(D.water[key]<0)D.water[key]=0;
+  saveData();updateWaterUI();
+  const fab=document.getElementById('waterFloat');
+  fab.style.animation='waterPulse .3s ease';
+  setTimeout(()=>fab.style.animation='',300);
+}
+function toggleWaterPanel(){
+  const p=document.getElementById('waterPanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+  updateWaterUI();
+}
+function updateWaterUI(){
+  const goal=getWaterGoal();
+  const current=getTodayWater();
+  const pct=Math.min(100,Math.round(current/goal.ml*100));
+  document.getElementById('waterCount').textContent=current>=1000?(current/1000).toFixed(1)+'L':current+'ml';
+  const fill=document.getElementById('waterBarFill');
+  if(fill)fill.style.width=pct+'%';
+  const label=document.getElementById('waterGoalLabel');
+  if(label)label.textContent=`Goal: ${goal.ml>=1000?(goal.ml/1000).toFixed(1)+'L':goal.ml+'ml'}`;
+  const status=document.getElementById('waterStatus');
+  if(status){
+    if(pct>=100)status.innerHTML='<span style="color:var(--mint-deep);font-weight:600">Goal reached! Great hydration today.</span>';
+    else if(pct>=75)status.innerHTML=`<strong>${pct}%</strong> — almost there, keep drinking!`;
+    else if(pct>=50)status.innerHTML=`<strong>${pct}%</strong> — good progress, stay on track`;
+    else if(pct>=25)status.innerHTML=`<strong>${pct}%</strong> — drink more water today`;
+    else status.innerHTML=`<strong>${pct}%</strong> — time to hydrate!`;
+  }
+  const tip=document.getElementById('waterTip');
+  if(tip){
+    const tips=[
+      'HRT tip: Spironolactone is a diuretic — drink extra water to prevent dizziness & electrolyte drops',
+      'Hydration helps your body absorb supplements more effectively',
+      'Water supports skin elasticity during body changes on HRT',
+      'Dehydration can skew lab results — drink normally before blood draws',
+      'Proper hydration reduces headaches, a common early HRT side effect',
+      'Water helps your kidneys process medications safely',
+      `Based on: ${goal.reason}`
+    ];
+    tip.textContent=tips[Math.floor(new Date().getHours()/4)%tips.length];
+  }
+  // Update floating button color based on progress
+  const fab=document.getElementById('waterFloat');
+  if(pct>=100)fab.style.background='linear-gradient(135deg,var(--mint),var(--mint-deep))';
+  else fab.style.background='linear-gradient(135deg,var(--sky),var(--mint))';
+}
+// Close water panel when clicking outside
+document.addEventListener('click',e=>{if(!e.target.closest('#waterPanel')&&!e.target.closest('#waterFloat')){document.getElementById('waterPanel').style.display='none'}});
+// Init water UI on load
+setTimeout(updateWaterUI,100);
+
 function showView(v){
+  if(currentView==='log')tempLogInited=false;
   currentView=v;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
   updateBanner();
