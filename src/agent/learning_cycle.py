@@ -5,11 +5,11 @@ Called every 4 cycles as a cooldown task instead of gpu_infer.
 
 Flow:
   1. Search Semantic Scholar (free API) for recent papers on rotating AI topics
-  2. Call `claude --print` ONCE to: analyze papers → extract insight → write Bluesky post
+  2. Call Groq API (free, llama-3.3-70b) to: analyze papers → extract insight → write Bluesky post
   3. Save knowledge to /root/hive/knowledge/{date}-{slug}.md
   4. Append post to /root/.automaton/pending_posts.json (TIAMAT's standard queue)
 
-Design constraints: runs in <30s, one Claude call, zero GPU usage.
+Design constraints: runs in <30s, one Groq call (free tier), zero GPU usage.
 
 Usage:
   python3 learning_cycle.py          # normal run
@@ -19,9 +19,9 @@ Usage:
 import json
 import os
 import re
-import subprocess
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -33,7 +33,7 @@ PENDING_POSTS    = Path("/root/.automaton/pending_posts.json")
 LEARNING_STATE   = Path("/root/.automaton/learning_cycle_state.json")
 ENV_FILE         = Path("/root/.env")
 
-CLAUDE_TIMEOUT   = 45   # seconds — bumped from 22s to reduce timeouts
+LLM_TIMEOUT      = 30   # seconds for Groq API call
 SEARCH_TIMEOUT   = 6    # seconds per HTTP request
 
 # Topic rotation — indexes through on each run
@@ -195,7 +195,7 @@ def find_papers(topic: str) -> list[dict]:
     return []
 
 
-# ── Claude call ───────────────────────────────────────────────────────────────
+# ── LLM call (Groq — free tier, fast) ────────────────────────────────────────
 ANALYSIS_PROMPT = """\
 You are TIAMAT's research synthesizer. I searched for recent AI papers and got these results.
 
@@ -217,40 +217,47 @@ YOUR TASK — reply ONLY with valid JSON, no markdown fences, no prose outside t
 }}"""
 
 
-def call_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT) -> tuple[str, str | None]:
+def call_groq(prompt: str, timeout: int = LLM_TIMEOUT) -> tuple[str, str | None]:
     """
-    Spawn `claude --print` with the prompt on stdin.
+    Call Groq API (free tier) with llama-3.3-70b for paper analysis.
+    Falls back to claude --print if GROQ_API_KEY is not set.
     Returns (output_text, error_string_or_None).
-    Strips session env vars so nested invocation works.
     """
-    child_env = {
-        k: v for k, v in os.environ.items()
-        if k not in (
-            "CLAUDECODE",
-            "CLAUDE_CODE_ENTRYPOINT",
-            "CLAUDE_CODE_SESSION_ID",
-            "ANTHROPIC_AI_TOOL_USE_SESSION_ID",
-        )
-    }
+    api_key = os.environ.get("GROQ_API_KEY", "")
+    if not api_key:
+        return "", "GROQ_API_KEY not set in environment"
+
+    payload = json.dumps({
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+        "max_tokens": 800,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "TIAMAT-research/1.0",
+        },
+        method="POST",
+    )
     try:
-        result = subprocess.run(
-            ["claude", "--print"],
-            input=prompt,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            env=child_env,
-            cwd="/root/entity",
-        )
-        out = (result.stdout or "").strip()
-        err = (result.stderr or "").strip()
-        if result.returncode != 0 and not out:
-            return "", err or f"exit code {result.returncode}"
-        return out, None
-    except subprocess.TimeoutExpired:
-        return "", f"claude --print timed out after {timeout}s"
-    except FileNotFoundError:
-        return "", "claude CLI not found — is Claude Code installed?"
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read())
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        if not content:
+            return "", "empty response from Groq"
+        return content.strip(), None
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode()[:200]
+        except Exception:
+            pass
+        return "", f"Groq HTTP {e.code}: {body}"
     except Exception as e:
         return "", str(e)[:200]
 
@@ -404,11 +411,11 @@ def main() -> None:
     )
 
     # ── Step 3: Ask Claude once ───────────────────────────────────────────────
-    output, err = call_claude(prompt)
+    output, err = call_groq(prompt)
     t_claude = round(time.time() - t0 - t_search, 1)
 
     if err or not output:
-        print(json.dumps({"error": f"claude failed: {err}", "topic": topic,
+        print(json.dumps({"error": f"LLM analysis failed: {err}", "topic": topic,
                            "timing": {"search": t_search}}))
         return
 

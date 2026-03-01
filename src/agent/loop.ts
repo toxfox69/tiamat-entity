@@ -276,9 +276,11 @@ export async function runAgentLoop(
   // No more idle-shutoff. She should ALWAYS be thinking, researching, building.
   // CC inference is free (Pro sub). Free-tier cascade has 6 providers.
   // If no tickets exist, she gets an evolution prompt to self-direct.
+  // NOTE: Threshold raised from 3→10 to prevent idle thrashing (was hitting
+  // STOP ORDER 183 times in a loop doing nothing productive).
   let consecutiveNoTicketCycles = 0;
-  const SELF_EVOLVE_THRESHOLD = 3; // after 3 empty cycles, inject evolution prompt
-  const LEARNING_CYCLE_INTERVAL = 5; // every 5th idle cycle, also run learning_cycle.py
+  const SELF_EVOLVE_THRESHOLD = 10; // after 10 empty cycles, inject evolution prompt
+  const LEARNING_CYCLE_INTERVAL = 20; // every 20th idle cycle, run learning_cycle.py
 
   // ── Strategic Burst: 3 consecutive focused cycles every STRATEGIC_BURST_INTERVAL turns ──
   // Uses a persistent file counter so pruneOldData doesn't reset burst timing.
@@ -496,15 +498,21 @@ export async function runAgentLoop(
           }
         }
 
-        // When no tickets: first re-read INBOX.md for creator directives, then self-evolve
+        // When no tickets: first re-read INBOX.md for creator directives, then self-evolve.
+        // Only fire once per threshold window — reset counter after injection to prevent
+        // rapid-fire thrashing (was looping every 3 cycles hitting STOP ORDER).
         if (!queueHasWork && consecutiveNoTicketCycles >= SELF_EVOLVE_THRESHOLD && !pendingInput) {
           const evolvePrompts = [
-            "No tickets. Read INBOX.md, then DO ONE THING: post on Bluesky with a specific demo or stat from tiamat.live. Include a link. No meta-commentary.",
-            "No tickets. Read INBOX.md, then use sonar_search to find ONE company or developer who needs an AI API. Draft a cold outreach message via send_email or post_bluesky.",
-            "No tickets. Read INBOX.md, then pick the weakest tiamat.live endpoint and make it better. Ship the improvement. Do NOT analyze costs or rewrite working code.",
+            "No tickets. Read INBOX.md. Use sonar_search to research what simple utility apps are trending on Google Play right now. Find a gap. Write a build plan as a ticket. Do NOT use android_app_factory yet — just research and plan.",
+            "No tickets. Read INBOX.md. Use sonar_search to find a trending technical topic on Dev.to or Hacker News. Write and publish a Dev.to article about something you actually built (inference cascade, memory API, autonomous agent). Include code snippets and a link to tiamat.live.",
+            "No tickets. Read INBOX.md. Use sonar_search to find ONE person or startup building AI agents who might need summarization/chat/TTS APIs. Draft a cold outreach email with a specific value proposition. Send it via send_email.",
+            "No tickets. Read INBOX.md. Use read_farcaster or search_web to find new communities discussing AI agents, autonomous systems, or on-chain AI. Engage authentically — answer a question or share a real insight from your experience running 5000+ autonomous cycles.",
+            "No tickets. Read INBOX.md. Use sonar_search to analyze competitors: who else offers AI summarization or chat APIs? What do they charge? What are their weaknesses? Write findings to a research file. Identify ONE concrete advantage tiamat.live has.",
           ];
           pendingInput = { content: evolvePrompts[consecutiveNoTicketCycles % evolvePrompts.length], source: "self-evolve" };
           log(config, `[SELF-EVOLVE] No tickets for ${consecutiveNoTicketCycles} cycles — injecting evolution prompt`);
+          // Reset counter so we don't fire again immediately next cycle
+          consecutiveNoTicketCycles = 0;
         }
       }
 
