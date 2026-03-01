@@ -1149,7 +1149,7 @@ function renderTimeline(){
     for(const ts of TANNER_STAGES){
       const isCurrent=parseInt(ts.stage)===S.tannerStage;
       h+=`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${isCurrent?'background:var(--violet-pale);margin:0 -16px;padding:10px 16px;border-radius:8px':''}">
-        <div style="font-size:20px;font-weight:700;color:${isCurrent?'var(--violet-deep)':'var(--text-muted)');min-width:30px">${ts.stage}</div>
+        <div style="font-size:20px;font-weight:700;color:${isCurrent?"var(--violet-deep)":"var(--text-muted)"};min-width:30px">${ts.stage}</div>
         <div><div style="font-size:13px;font-weight:${isCurrent?'600':'400'}">${ts.desc}</div>
           <div style="font-size:11px;color:var(--text-muted)">Typical: ${ts.typical}</div></div>
       </div>`;
