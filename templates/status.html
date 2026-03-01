@@ -28,25 +28,26 @@
 
 <script>
 async function checkStatus() {
-  // API
+  // Dashboard API — cycles, revenue, agent status
   try {
     const r = await fetch('/api/dashboard');
-    const d = await r.json();
-    document.getElementById('apiStatus').innerHTML = '<span class="dot up"></span>Online';
-    document.getElementById('cycles').textContent = d.cycles || '5420+';
-    document.getElementById('revenue').textContent = d.revenue || '$0.24';
+    if (r.ok) {
+      const d = await r.json();
+      document.getElementById('apiStatus').innerHTML = '<span class="dot up"></span>Online';
+      document.getElementById('cycles').textContent = d.cycles ? d.cycles.toLocaleString() : '—';
+      document.getElementById('revenue').textContent = d.revenue || '$0.24';
+      document.getElementById('agentStatus').innerHTML = d.agent_running
+        ? '<span class="dot up"></span>Running'
+        : '<span class="dot down"></span>Down';
+    } else {
+      throw new Error('bad response');
+    }
   } catch {
     document.getElementById('apiStatus').innerHTML = '<span class="dot down"></span>Down';
+    document.getElementById('agentStatus').innerHTML = '<span class="dot down"></span>Unknown';
   }
 
-  // Agent — check via stats proxy
-  try {
-    document.getElementById('agentStatus').innerHTML = '<span class="dot up"></span>Running';
-  } catch {
-    document.getElementById('agentStatus').innerHTML = '<span class="dot down"></span>Down';
-  }
-
-  // Memory
+  // Memory API
   try {
     const r = await fetch('https://memory.tiamat.live/health');
     document.getElementById('memStatus').innerHTML = r.ok ? '<span class="dot up"></span>Online' : '<span class="dot down"></span>Down';
@@ -54,7 +55,7 @@ async function checkStatus() {
     document.getElementById('memStatus').innerHTML = '<span class="dot down"></span>Down';
   }
 
-  // GPU — assume down for now
+  // GPU — assume down
   document.getElementById('gpuStatus').innerHTML = '<span class="dot down"></span>Offline';
 }
 checkStatus();
