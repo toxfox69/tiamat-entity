@@ -1023,11 +1023,220 @@ function comparePhotos(){
     </div>`;
 }
 
+// ─── Dosing Recommendation Engine ────────────────────────────
+const DOSE_DB={
+  'Zinc picolinate':{
+    base:30,unit:'mg',max:50,
+    weightFactor:true,// scale with body weight
+    reasons:{low:'General maintenance',high:'Increased need detected'},
+    adjust(ctx){let d=30;if(ctx.weight>200)d=50;if(ctx.weight<130)d=25;if(ctx.hasLowT&&ctx.isFtm)d=50;return d},
+    why(ctx){const parts=['Supports immune function, wound healing, and hormone metabolism'];if(ctx.weight>200)parts.push('Higher dose for body weight >200lbs');if(ctx.hasLowT&&ctx.isFtm)parts.push('Zinc supports testosterone production');return parts},
+    interactions:['Monitor potassium if on spironolactone','Take with food to avoid nausea','Competes with copper absorption — consider copper 2mg if >3 months at 50mg']
+  },
+  'Lecithin (Phosphatidylcholine)':{
+    base:1200,unit:'mg',max:2400,
+    adjust(ctx){return ctx.weight>180?2400:1200},
+    why(ctx){const p=['Supports cell membrane integrity and fluid production'];if(ctx.weight>180)p.push('Higher dose for body weight >180lbs');return p},
+    interactions:[]
+  },
+  'L-Arginine':{
+    base:1000,unit:'mg',max:3000,
+    adjust(ctx){let d=1000;if(ctx.goals.includes('genital'))d=2000;if(ctx.goals.includes('sexual'))d=Math.max(d,1500);if(ctx.weight>200)d=Math.min(d+500,3000);return d},
+    why(ctx){const p=['Precursor to nitric oxide — supports vasodilation and blood flow'];if(ctx.goals.includes('genital'))p.push('Higher dose for genital tissue support');if(ctx.goals.includes('sexual'))p.push('Supports sexual response via blood flow');return p},
+    interactions:['May lower blood pressure — monitor if on antihypertensives','Take on empty stomach for best absorption','Avoid if history of herpes (may trigger outbreaks)']
+  },
+  'L-Citrulline':{
+    base:1500,unit:'mg',max:3000,
+    adjust(ctx){return ctx.goals.includes('genital')?3000:1500},
+    why(ctx){return['Converts to L-Arginine in kidneys — more sustained nitric oxide than direct L-Arginine','Better absorbed than L-Arginine alone']},
+    interactions:['Same blood pressure considerations as L-Arginine']
+  },
+  'Maca Root (Lepidium meyenii)':{
+    base:1500,unit:'mg',max:3000,
+    adjust(ctx){let d=1500;if(ctx.goals.includes('sexual')||ctx.goals.includes('tissue'))d=2000;if(ctx.weight>200)d=Math.min(d+500,3000);return d},
+    why(ctx){const p=['Adaptogen — supports energy, libido, and hormonal balance without directly affecting E2/T levels'];if(ctx.goals.includes('tissue'))p.push('May support tissue growth via nutrient delivery');return p},
+    interactions:['Safe with HRT — does not directly alter estradiol or testosterone','Start at 500mg and increase weekly']
+  },
+  'Fenugreek (Trigonella foenum-graecum)':{
+    base:1200,unit:'mg',max:1800,
+    adjust(ctx){let d=1200;if(ctx.goals.includes('lactation'))d=1800;if(ctx.goals.includes('tissue'))d=1500;return d},
+    why(ctx){const p=['Contains diosgenin — precursor to steroid hormones, supports tissue growth'];if(ctx.goals.includes('lactation'))p.push('Traditional galactagogue — max dose for lactation induction');if(ctx.hasLowE2)p.push('May provide mild estrogenic support');return p},
+    interactions:['May lower blood sugar — monitor if diabetic','Can cause maple syrup body odor (harmless)','Take 3x daily split doses for lactation']
+  },
+  'Pueraria mirifica':{
+    base:500,unit:'mg',max:1000,
+    adjust(ctx){let d=500;if(ctx.hasLowE2&&ctx.monthsHRT<6)d=750;if(!ctx.onHRT)d=1000;return d},
+    why(ctx){const p=['Contains miroestrol — potent phytoestrogen'];if(ctx.hasLowE2)p.push('Higher dose may help with subtherapeutic E2');if(!ctx.onHRT)p.push('Higher dose as primary phytoestrogen source');return p},
+    interactions:['CAUTION: Has real estrogenic activity — discuss with provider if on prescription estradiol','Monitor breast tenderness','Reduce dose if experiencing headaches or nausea']
+  },
+  'Vitamin D3':{
+    base:2000,unit:'IU',max:5000,
+    adjust(ctx){let d=2000;const vd=ctx.labs['Vitamin D'];if(vd&&vd<30)d=5000;if(vd&&vd<20)d=5000;if(ctx.isFtm)d=5000;if(ctx.weight>200)d=Math.min(d+1000,5000);return d},
+    why(ctx){const p=['Essential for bone density, mood, and immune function'];const vd=ctx.labs['Vitamin D'];if(vd&&vd<30)p.push(`Your Vitamin D is ${vd} ng/mL (low) — higher dose recommended`);if(vd&&vd<20)p.push('DEFICIENT — supplement aggressively');if(ctx.weight>200)p.push('Fat-soluble vitamin — higher dose needed at higher body weight');return p},
+    interactions:['Take with fat-containing meal for absorption','Pair with Vitamin K2 to direct calcium to bones']
+  },
+  'Magnesium':{
+    base:400,unit:'mg',max:600,
+    adjust(ctx){let d=400;if(ctx.goals.includes('mood'))d=500;if(ctx.weight>200)d=600;return d},
+    why(ctx){return['Supports 300+ enzymatic reactions, sleep quality, muscle relaxation, and mood','Most people are deficient — safe to supplement']},
+    interactions:['Glycinate form best for sleep/mood, citrate for absorption','May cause loose stools at high doses — split into 2 doses','Safe with all HRT medications']
+  },
+  'Pygeum africanum':{
+    base:100,unit:'mg',max:200,
+    adjust(ctx){return ctx.goals.includes('fluid')?200:100},
+    why(ctx){return['Supports prostate health and increases prostatic secretion volume','Traditional use for fluid production']},
+    interactions:['Generally well-tolerated','May take 2-4 weeks to notice effects']
+  },
+  'Ginkgo biloba':{
+    base:120,unit:'mg',max:240,
+    adjust(ctx){let d=120;if(ctx.goals.includes('sexual')&&ctx.goals.includes('genital'))d=240;return d},
+    why(ctx){return['Improves microcirculation and blood flow to extremities','Supports cognitive function and sexual response']},
+    interactions:['CAUTION: Blood thinner — do not combine with warfarin/aspirin without provider guidance','Discontinue 2 weeks before any surgery']
+  },
+  'Epimedium/Icariin (Horny Goat Weed)':{
+    base:500,unit:'mg',max:1000,
+    adjust(ctx){return ctx.goals.includes('sexual')?1000:500},
+    why(ctx){return['PDE5 inhibitor (same mechanism as sildenafil) — supports blood flow and arousal','Icariin is the active compound — look for standardized extract']},
+    interactions:['Do not combine with prescription PDE5 inhibitors (Viagra, Cialis)','May lower blood pressure']
+  },
+  'DHEA':{
+    base:25,unit:'mg',max:50,
+    adjust(ctx){let d=25;if(ctx.weight>200)d=50;return d},
+    why(ctx){return['Precursor to both estrogen and testosterone — supports overall hormonal milieu','Declines with age — supplementation may improve energy and libido']},
+    interactions:['IMPORTANT: May affect hormone levels — discuss with provider if on HRT','Get DHEA-S levels tested before and after 3 months','Start low (10-25mg) and monitor']
+  },
+  'Ashwagandha (Withania somnifera)':{
+    base:600,unit:'mg',max:1200,
+    adjust(ctx){let d=600;if(ctx.goals.includes('mood'))d=900;if(ctx.isFtm)d=900;return d},
+    why(ctx){const p=['Adaptogen — reduces cortisol, supports stress resilience and sleep'];if(ctx.isFtm)p.push('May mildly support testosterone levels');return p},
+    interactions:['KSM-66 or Sensoril extracts are best studied','May cause drowsiness — take in evening','Avoid with thyroid conditions (may increase thyroid hormones)']
+  },
+  'Goats Rue (Galega officinalis)':{
+    base:1200,unit:'mg',max:1800,
+    adjust(ctx){return ctx.goals.includes('lactation')?1800:1200},
+    why(ctx){return['Galactagogue — supports mammary tissue development and milk production','Most effective when started before milk comes in']},
+    interactions:['May lower blood sugar — monitor if diabetic','Capsule form preferred — tea is very bitter']
+  },
+  'Borage Oil (GLA)':{
+    base:1000,unit:'mg',max:1500,
+    adjust(ctx){return 1000},
+    why(ctx){return['Rich in gamma-linolenic acid (GLA) — anti-inflammatory, supports skin elasticity and tissue health','May enhance nipple sensitivity through prostaglandin modulation']},
+    interactions:['May thin blood slightly — note if on anticoagulants']
+  },
+  'Pine Bark Extract (Pycnogenol)':{
+    base:100,unit:'mg',max:200,
+    adjust(ctx){return ctx.goals.includes('genital')?200:100},
+    why(ctx){return['Powerful antioxidant — synergizes with L-Arginine for nitric oxide production','Studies show combination with L-Arginine significantly improves blood flow']},
+    interactions:['Generally very safe','May enhance effects of blood pressure medications']
+  },
+  'Tribulus terrestris':{
+    base:750,unit:'mg',max:1500,
+    adjust(ctx){let d=750;if(ctx.goals.includes('sexual'))d=1000;if(ctx.isFtm)d=1500;return d},
+    why(ctx){const p=['Supports libido and sexual function via androgen receptor sensitivity'];if(ctx.isFtm)p.push('May support testosterone utilization');return p},
+    interactions:['Does not directly raise testosterone in most studies — works via sensitivity','Safe with HRT']
+  },
+  'Damiana (Turnera diffusa)':{
+    base:800,unit:'mg',max:1200,
+    adjust(ctx){return ctx.goals.includes('sexual')?1200:800},
+    why(ctx){return['Traditional aphrodisiac — may increase sensitivity and arousal','Contains compounds that inhibit aromatase slightly — mostly used for libido']},
+    interactions:['May affect blood sugar — monitor if diabetic','Can be taken as tea or capsules']
+  }
+};
+
+function buildDosingContext(){
+  const ctx={};
+  // Weight
+  const wLogs=D.logs.filter(l=>l.weight).slice(-1);
+  const wMeas=D.measurements.filter(m=>m.weight).slice(-1);
+  ctx.weight=parseFloat((wLogs[0]?.weight)||(wMeas[0]?.weight)||0);
+
+  // Labs
+  ctx.labs={};
+  for(const lab of D.labs){for(const r of lab.results){ctx.labs[r.name]=r.value}}
+  ctx.hasLowE2=ctx.labs['Estradiol']&&ctx.labs['Estradiol']<100;
+  ctx.hasHighE2=ctx.labs['Estradiol']&&ctx.labs['Estradiol']>300;
+  ctx.hasLowT=ctx.labs['Testosterone']&&ctx.labs['Testosterone']<300;
+  ctx.hasHighT=ctx.labs['Testosterone']&&ctx.labs['Testosterone']>50;
+
+  // Journey
+  ctx.journeyType=S.journeyType||'mtf';
+  ctx.isFtm=ctx.journeyType==='ftm'||ctx.journeyType==='tomboy';
+  ctx.isMtf=ctx.journeyType==='mtf'||ctx.journeyType==='femboy';
+
+  // HRT status
+  ctx.onHRT=D.meds.filter(m=>!m.ended).length>0;
+  ctx.monthsHRT=monthsOnHRT();
+
+  // Active meds for interaction checking
+  ctx.activeMeds=D.meds.filter(m=>!m.ended).map(m=>m.name.toLowerCase());
+  ctx.onSpiro=ctx.activeMeds.some(m=>m.includes('spironolactone'));
+  ctx.onBical=ctx.activeMeds.some(m=>m.includes('bicalutamide'));
+
+  // Goals from active supplements and stacks
+  ctx.goals=[];
+  const activeSupps=D.supplements.filter(s=>!s.ended).map(s=>s.name.toLowerCase());
+  // Infer goals from what they're taking
+  if(activeSupps.some(s=>s.includes('pygeum')||s.includes('lecithin')))ctx.goals.push('fluid');
+  if(activeSupps.some(s=>s.includes('fenugreek')&&activeSupps.some(x=>x.includes('rue')||x.includes('thistle'))))ctx.goals.push('lactation');
+  if(activeSupps.some(s=>s.includes('pueraria')||s.includes('wild yam')))ctx.goals.push('tissue');
+  if(activeSupps.some(s=>s.includes('arginine')||s.includes('citrulline')||s.includes('pycnogenol')))ctx.goals.push('genital');
+  if(activeSupps.some(s=>s.includes('maca')||s.includes('tribulus')||s.includes('damiana')||s.includes('epimedium')))ctx.goals.push('sexual');
+  if(activeSupps.some(s=>s.includes('ashwagandha')||s.includes('magnesium')))ctx.goals.push('mood');
+
+  return ctx;
+}
+
+function getRecommendation(suppName){
+  // Find matching entry in DOSE_DB
+  for(const[key,entry]of Object.entries(DOSE_DB)){
+    if(suppName.toLowerCase().includes(key.toLowerCase().split(' ')[0].split('(')[0].trim())){
+      const ctx=buildDosingContext();
+      const dose=entry.adjust(ctx);
+      const reasons=entry.why(ctx);
+      const interactions=[...entry.interactions];
+
+      // Cross-check active meds
+      if(ctx.onSpiro&&key.toLowerCase().includes('zinc'))interactions.unshift('You are on spironolactone — both affect potassium. Monitor levels.');
+      if(ctx.onBical&&(key.includes('Fenugreek')||key.includes('DHEA')))interactions.unshift('You are on bicalutamide — monitor liver enzymes when adding hormonal supplements.');
+
+      return{name:key,dose,unit:entry.unit,max:entry.max,base:entry.base,reasons,interactions};
+    }
+  }
+  return null;
+}
+
+function renderDoseCard(suppName){
+  const rec=getRecommendation(suppName);
+  if(!rec)return'';
+  const ctx=buildDosingContext();
+  const weightNote=ctx.weight?` (at ${ctx.weight} ${S.unitSystem==='imperial'?'lbs':'kg'})`:' (enter weight for personalized dose)';
+
+  let h=`<div style="background:linear-gradient(135deg,var(--violet-pale),var(--sky-pale));border:1px solid var(--violet-soft);border-radius:12px;padding:14px;margin-top:8px">
+    <div style="font-size:14px;font-weight:700;color:var(--violet-deep);margin-bottom:6px">Recommended: ${rec.dose}${rec.unit}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Range: ${rec.base}-${rec.max}${rec.unit}${weightNote}</div>
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">Why this dose:</div>
+    <ul style="font-size:12px;color:var(--text-dim);padding-left:16px;margin-bottom:8px;line-height:1.7">
+      ${rec.reasons.map(r=>`<li>${r}</li>`).join('')}
+    </ul>`;
+  if(rec.interactions.length){
+    h+=`<div style="font-size:12px;font-weight:600;color:var(--peach-deep);margin-bottom:4px">Interactions & Notes:</div>
+      <ul style="font-size:12px;color:var(--peach-deep);padding-left:16px;line-height:1.7">
+        ${rec.interactions.map(i=>`<li>${i}</li>`).join('')}
+      </ul>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+
 // ─── Supplements View ────────────────────────────────────────
 function renderSupps(){
   let h='<div class="fade-in">';
   const td=today();
   const todayLog=D.supplementLog.find(l=>l.date===td)||{date:td,taken:[]};
+
+  // Disclaimer
+  h+=`<div style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,rgba(255,167,38,.1),rgba(239,83,80,.08));border:1px solid rgba(255,167,38,.25);border-radius:14px;font-size:12px;color:var(--peach-deep);line-height:1.6">
+    <strong>&#9888; Not medical advice</strong> — Dosing ranges shown are community-reported and from published research. Individual needs vary. Always consult your healthcare provider before starting or changing supplements, especially while on HRT.</div>`;
 
   // Daily checklist
   if(D.supplements.filter(s=>!s.ended).length){
@@ -1035,11 +1244,15 @@ function renderSupps(){
       <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>`;
     for(const s of D.supplements.filter(s=>!s.ended)){
       const taken=todayLog.taken.includes(s.id);
-      h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-        <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?'var(--mint)':'var(--border)'};background:${taken?'var(--mint-pale)':'transparent'};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center" onclick="toggleSupp('${s.id}')">${taken?'&#10003;':''}</button>
-        <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${s.dose||''} ${s.timing||''}</div></div>
-        <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderSupps()">Stop</button>
+      const doseCard=renderDoseCard(s.name);
+      h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?"var(--mint)":"var(--border)"};background:${taken?"var(--mint-pale)":"transparent"};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center" onclick="toggleSupp('${s.id}')">${taken?"&#10003;":""}</button>
+          <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${s.dose||""} ${s.timing||""}</div></div>
+          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderSupps()">Stop</button>
+        </div>
+        ${doseCard?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--violet-deep);cursor:pointer;font-weight:600;padding:4px 0">View personalized dosing</summary>${doseCard}</details>`:""}
       </div>`;
     }
     const taken=todayLog.taken.length,total=D.supplements.filter(s=>!s.ended).length;
