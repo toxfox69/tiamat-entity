@@ -142,6 +142,67 @@ def status():
 def thoughts():
     return render_template('thoughts.html')
 
+@app.route('/api/thoughts')
+def api_thoughts():
+    feed = request.args.get('feed', 'thoughts')
+    lines_requested = min(int(request.args.get('lines', 200)), 500)
+    token = request.args.get('token', '')
+
+    FEED_FILES = {
+        'thoughts': '/root/.automaton/tiamat.log',
+        'costs': '/root/.automaton/cost.log',
+        'progress': '/root/.automaton/PROGRESS.md',
+    }
+    PRIVATE_FEEDS = {'costs', 'progress'}
+    AUTH_TOKEN = os.environ.get('THOUGHTS_TOKEN', '')
+
+    if feed in PRIVATE_FEEDS:
+        if not AUTH_TOKEN or token != AUTH_TOKEN:
+            return jsonify({'error': 'unauthorized'}), 403
+
+    filepath = FEED_FILES.get(feed)
+    if not filepath or not os.path.exists(filepath):
+        return jsonify({'lines': [], 'cycle': 0, 'daily_cost': '$0.00', 'cache_rate': '0%'})
+
+    try:
+        with open(filepath, 'rb') as f:
+            raw = f.read().decode('utf-8', errors='replace')
+        all_lines = raw.splitlines()
+        read_window = max(lines_requested * 20, 2000)
+        tail = all_lines[-read_window:]
+        if feed == 'thoughts':
+            THOUGHT_MARKERS = ['[THOUGHT]', '[LOOP]', '[WAKE UP]', '[TOOL]', '[COST]',
+                               '[SYSTEM CHECK]', '[MEMORY]', '[PACER]', '[INFERENCE]']
+            filtered = [l.strip() for l in tail
+                        if any(m in l for m in THOUGHT_MARKERS) and l.strip()]
+        else:
+            filtered = [l.strip() for l in tail if l.strip()]
+    except Exception:
+        filtered = []
+
+    cycle = 0
+    daily_cost = '$0.00'
+    cache_rate = '0%'
+    try:
+        with open('/root/.automaton/cost.log', 'r') as f:
+            cost_lines = f.readlines()
+        if cost_lines:
+            from datetime import timezone
+            today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            today_costs = [l for l in cost_lines[1:] if today in l]
+            total = sum(float(l.split(',')[7]) for l in today_costs if len(l.split(',')) > 7)
+            daily_cost = f'${total:.4f}'
+            cycle = len(cost_lines) - 1
+    except Exception:
+        pass
+
+    return jsonify({
+        'lines': filtered[-lines_requested:],
+        'cycle': cycle,
+        'daily_cost': daily_cost,
+        'cache_rate': cache_rate,
+    })
+
 @app.route('/pay')
 def pay():
     return render_template('pay.html')
