@@ -3006,63 +3006,89 @@ const DungeonRenderer = {
   // Pixel art sprite data: [x, y, w, h, color] in pixel units from tile center
   // 'm' = use monster/entity color — Fatal Labyrinth (Genesis) style sprites
   SPRITES: {
-    // PLAYER — 16-bit Trykaar warrior (proper Genesis sprite proportions)
+    // PLAYER — TIAMAT dragon (primordial chaos dragon, 16-bit Genesis style)
     player: [
-      // === HAIR / HELMET ===
-      [-1,-5,2,.5,'#5577bb'],            // helmet crest
-      [-1.5,-4.5,3,1,'#4466aa'],         // helmet top
-      [-2,-3.5,4,1,'#5577bb'],           // helmet brim
-      [-2,-3.5,.5,1,'#7799cc'],          // left highlight
-      [1.5,-3.5,.5,.5,'#334488'],        // right shadow
-      // Visor detail
-      [-1.5,-3,.5,.5,'#334488'], [1,-3,.5,.5,'#334488'],
-      // === FACE ===
-      [-1.5,-2.5,3,2,'#e8b878'],         // face base
-      [-1.5,-2.5,.5,.5,'#f0c888'],       // face highlight
-      [1,-2.5,.5,.5,'#d0a060'],          // face shadow
-      // Eyes
-      [-1,-1.8,.6,.5,'#fff'], [.4,-1.8,.6,.5,'#fff'],  // whites
-      [-.7,-1.7,.3,.3,'#224'], [.7,-1.7,.3,.3,'#224'],  // pupils
-      // Mouth
-      [-.3,-.8,.6,.2,'#c08050'],
-      // === ARMOR (chest plate) ===
-      [-2,-.5,4,2.5,'#2266aa'],          // main plate
-      [-2,-.5,4,.5,'#3388cc'],           // top highlight
-      [-2,-.5,.5,2.5,'#3388cc'],         // left highlight
-      [1.5,-.5,.5,2.5,'#114488'],        // right shadow
-      [-2,1.5,4,.5,'#114488'],           // bottom shadow
-      // Chest emblem
-      [-.5,0,1,1,'#ffcc22'],
-      [-.3,.2,.6,.6,'#ffdd44'],
-      // Shoulder pads
-      [-2.5,-.5,1,1.5,'#3388cc'], [-2.5,-.5,1,.5,'#44aadd'],
-      [1.5,-.5,1,1.5,'#2266aa'], [1.5,-.5,1,.5,'#3388cc'],
-      // === ARMS ===
-      [-3,.5,1,2,'#e8b878'],             // left arm (skin)
-      [-3,2,.5,.5,'#e8b878'],            // left hand
-      [2,.5,1,1.5,'#e8b878'],            // right arm
-      // === BELT ===
-      [-2,2,4,.5,'#8b6914'],
-      [-.3,2,.6,.5,'#ffcc00'],           // buckle
-      // === LEGS (armored greaves) ===
-      [-2,2.5,1.5,2,'#2255aa'],          // left leg
-      [.5,2.5,1.5,2,'#1e4488'],         // right leg (shadow)
-      // Knee guards
-      [-1.5,3,.5,.5,'#3388cc'], [.5,3,.5,.5,'#2266aa'],
-      // === BOOTS ===
-      [-2,4.5,1.5,.5,'#553311'],
-      [.5,4.5,1.5,.5,'#442200'],
-      // === SWORD (right hand) ===
-      [2.5,-3,.5,.5,'#ffffff'],          // blade tip
-      [2.5,-2.5,.5,2,'#ddeeff'],        // blade upper
-      [2.5,-.5,.5,1.5,'#ccddee'],       // blade lower
-      [2.5,-.5,.3,.5,'#aabbdd'],        // blood groove
-      [2,1,1.5,.5,'#8b6914'],           // crossguard
-      [2.5,1.5,.5,1,'#664422'],         // grip (leather)
-      [2.3,2.5,.8,.3,'#ffcc00'],        // pommel
-      // === CAPE (behind, visible edges) ===
-      [-2.5,.5,.5,3,'#cc2222'],          // cape left edge
-      [2,1,.5,2.5,'#aa1111'],            // cape right edge
+      // === HORNS (swept back, golden) ===
+      [-2.5,-6,.5,1.5,'#ddaa22'], [-2,-6.5,.5,1,'#eebb33'],  // left horn
+      [2,-6,.5,1.5,'#ddaa22'], [1.5,-6.5,.5,1,'#eebb33'],    // right horn
+      [-2.5,-4.5,.5,.5,'#cc9911'],                            // left horn base
+      [2,-4.5,.5,.5,'#cc9911'],                               // right horn base
+      // === HEAD (angular dragon snout) ===
+      [-1.5,-5,3,1,'#2a5a3a'],            // crown/forehead
+      [-2,-4,4,2,'#337744'],              // main head
+      [-2,-4,.5,2,'#44aa55'],             // left highlight
+      [1.5,-4,.5,.5,'#225533'],           // right shadow
+      // Snout (protruding forward)
+      [-1,-2,2,1,'#337744'],
+      [-.5,-2,1,.3,'#44aa55'],            // snout bridge highlight
+      // === EYES (glowing amber/fire) ===
+      [-1.5,-3.5,.7,.6,'#ff6600'],        // left eye glow
+      [.8,-3.5,.7,.6,'#ff6600'],          // right eye glow
+      [-1.3,-3.3,.4,.3,'#ffcc00'],        // left pupil (bright)
+      [1,-3.3,.4,.3,'#ffcc00'],           // right pupil
+      [-1.7,-3.6,.3,.3,'#ff440066'],      // left eye flare
+      [1.3,-3.6,.3,.3,'#ff440066'],       // right eye flare
+      // Nostrils
+      [-.8,-1.2,.3,.3,'#225533'], [.5,-1.2,.3,.3,'#225533'],
+      // Jaw / teeth
+      [-1.2,-1,2.4,.5,'#2a5a3a'],         // lower jaw
+      [-.8,-1,.3,.3,'#eee'], [-.2,-1,.3,.3,'#eee'], [.5,-1,.3,.3,'#eee'], // fangs
+      // === NECK ===
+      [-1.5,-.5,3,1,'#337744'],
+      [-.5,-.5,1,.5,'#44aa55'],           // neck highlight
+      // === BODY (muscular dragon torso with belly scales) ===
+      [-2,.5,4,3,'#337744'],              // main body
+      [-2,.5,.5,3,'#44aa55'],             // left highlight
+      [1.5,.5,.5,3,'#225533'],            // right shadow
+      // Belly scales (lighter underbelly — classic dragon)
+      [-1,1,2,2,'#55bb66'],
+      [-1,1,2,.3,'#66cc77'],             // scale row 1
+      [-.8,1.5,1.6,.3,'#66cc77'],        // scale row 2
+      [-.6,2,1.2,.3,'#66cc77'],          // scale row 3
+      // Back ridge spines
+      [-.3,-.3,.6,.3,'#2a8844'], [-.2,-.6,.4,.3,'#33aa55'],
+      // === WINGS (spread, membrane + bone) ===
+      // Left wing
+      [-3,-1,1,3,'#337744'],             // wing arm
+      [-4,-2,1,2,'#337744'],             // upper wing bone
+      [-5,-3,1,1.5,'#2a5a3a'],           // wing tip
+      [-4.5,-1.5,.5,2.5,'#22884488'],    // membrane
+      [-3.5,-.5,.5,2,'#22884466'],       // inner membrane
+      [-5,-3,.5,.5,'#44aa55'],           // wing tip highlight
+      // Right wing
+      [2,-1,1,3,'#2a5a3a'],             // wing arm
+      [3,-2,1,2,'#2a5a3a'],             // upper wing bone
+      [4,-3,1,1.5,'#225533'],           // wing tip
+      [3.5,-1.5,.5,2.5,'#22664488'],    // membrane
+      [2.5,-.5,.5,2,'#22664466'],       // inner membrane
+      [4,-3,.5,.5,'#337744'],            // wing tip highlight
+      // === ARMS / CLAWS ===
+      [-2.5,1,1,2,'#337744'],            // left arm
+      [-3,2.5,.5,.5,'#ffcc22'],          // left claw 1
+      [-2.5,3,.5,.5,'#ffcc22'],          // left claw 2
+      [-2,3,.3,.3,'#ffcc22'],            // left claw 3
+      [1.5,1,1,2,'#2a5a3a'],            // right arm
+      [2.5,2.5,.5,.5,'#ddaa11'],        // right claw 1
+      [2,3,.5,.5,'#ddaa11'],            // right claw 2
+      [1.5,3,.3,.3,'#ddaa11'],          // right claw 3
+      // === LEGS (powerful haunches) ===
+      [-2,3.5,1.5,1.5,'#337744'],        // left leg
+      [.5,3.5,1.5,1.5,'#2a5a3a'],       // right leg
+      // Feet with claws
+      [-2.5,5,.5,.5,'#ffcc22'], [-1.5,5,.5,.5,'#ffcc22'], [-.8,4.8,.3,.3,'#ffcc22'],
+      [.5,5,.5,.5,'#ddaa11'], [1.5,5,.5,.5,'#ddaa11'], [2,4.8,.3,.3,'#ddaa11'],
+      // === TAIL (curving to the right) ===
+      [1,3.5,.5,.5,'#337744'],
+      [1.5,4,.5,.5,'#2a5a3a'],
+      [2,4.5,.5,.5,'#2a5a3a'],
+      [2.5,4.5,.5,.5,'#225533'],
+      [3,4,.5,.5,'#225533'],
+      [3.5,3.5,.5,.5,'#225533'],
+      // Tail spike
+      [4,3,.5,.5,'#ffcc22'], [4.3,2.8,.3,.3,'#eebb33'],
+      // === BREATH GLOW (subtle fire ready) ===
+      [-1.5,-1,.3,.3,'#ff660044'],
+      [-2,-1.5,.3,.3,'#ff880033'],
     ],
     // JELLY — Green wobbling slime blob (Fatal Labyrinth's signature first enemy)
     j: [
