@@ -133,6 +133,11 @@ const FARCASTER_CHANNELS = ['base','ai','dev','agents','crypto','onchain','build
 const SCANNER_CMDS = ['full','recent','pairs','immunefi','address','etherscan','balances','report'];
 const FARCASTER_READ_CMDS = ['feed','search','test'];
 
+const REDDIT_SUBREDDITS = ['SideProject','artificial','MachineLearning','androiddev','programming','Python','opensource','selfhosted','ArtificialIntelligence','LLM','LocalLLaMA','ChatGPT','singularity','technology','webdev','startups','IndieHackers','buildinpublic'];
+const REDDIT_ACTIONS = ['post','comment','read','search','test'];
+const FOURCHAN_BOARDS = ['g','sci','biz','diy','pol'];
+const FOURCHAN_ACTIONS = ['catalog','thread','search','test'];
+
 const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/', '/root/CLAUDE-BRIEFING.md'];
 const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/root/entity/templates/', '/var/www/tiamat/', '/tmp/', '/root/tiamat-app/', '/root/entity/summarize_api.py', '/root/summarize_api.py'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
@@ -149,10 +154,32 @@ function isPathAllowed(filePath: string, allowedDirs: string[], blocked: string[
   return `Blocked: path '${resolved}' is outside allowed directories`;
 }
 
+/**
+ * Wasteful exploration commands that low-tier fallback models run when confused.
+ * These produce no useful output — block them to save cycles.
+ */
+const WASTEFUL_COMMAND_PATTERNS = [
+  /^\s*ls\s+(-\w+\s+)*(-R|-r|--recursive)\b/,    // ls -R, ls -la -R, etc.
+  /^\s*ls\s*$/,                                     // bare "ls" with no args
+  /^\s*ls\s+(-\w+\s+)*\/root\s*$/,                 // ls /root (exact, no subdir)
+  /^\s*ls\s+(-\w+\s+)*\/root\s*\|/,                // ls /root | head (piped)
+  /^\s*find\s+\/\s/,                                // find / ... (full filesystem scan)
+  /^\s*tree\s+\//,                                   // tree / (recursive tree)
+  /^\s*du\s+(-\w+\s+)*\/root\s*$/,                  // du /root (pointless disk usage)
+  /^\s*pwd\s*$/,                                     // pwd (always /root, useless)
+];
+
 function isForbiddenCommand(command: string, sandboxId: string): string | null {
   for (const pattern of FORBIDDEN_COMMAND_PATTERNS) {
     if (pattern.test(command)) {
       return `Blocked: Command matches self-harm pattern: ${pattern.source}`;
+    }
+  }
+
+  // Block wasteful exploration commands (fallback model confusion)
+  for (const pattern of WASTEFUL_COMMAND_PATTERNS) {
+    if (pattern.test(command)) {
+      return "BLOCKED: Do not explore the filesystem. Pick a productive action instead: post_bluesky, search_web, send_email, ticket_create, or remember.";
     }
   }
 
@@ -4246,32 +4273,11 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         }
       },
     },
-    {
-      name: "rebalance_wallet",
-      description: "Multi-chain wallet rebalancer. Uses LI.FI to swap USDC→ETH and bridge between chains. Actions: 'status' (show balances + needs), 'rebalance' (auto-topup low chains from USDC on Base), 'test' (test LI.FI API connectivity + get a quote). Runs automatically every 500 cycles. Safety: only moves between TIAMAT's own wallet, max $20/tx, Ethereum excluded from auto-rebalance.",
-      category: "vm",
-      parameters: {
-        type: "object",
-        properties: {
-          action: { type: "string", description: "status|rebalance|test" },
-        },
-        required: ["action"],
-      },
-      execute: async (args, _ctx) => {
-        const { execFileSync } = await import('child_process');
-        const action = (args as { action: string }).action || 'status';
-        const validActions = ['status', 'rebalance', 'test'];
-        if (!validActions.includes(action)) return `Invalid action: ${action}. Use: ${validActions.join(', ')}`;
-        try {
-          const output = execFileSync('python3', ['auto_rebalancer.py', action], {
-            encoding: 'utf-8', timeout: 180000, cwd: '/root/entity/src/agent'
-          }).trim();
-          return output.slice(0, 4000);
-        } catch (e: any) {
-          return `Rebalance failed: ${e.stderr?.slice(0, 500) || e.message}`;
-        }
-      },
-    },
+    // DISABLED by creator — wallet rebalancer disabled, not needed
+    // {
+    //   name: "rebalance_wallet",
+    //   ...
+    // },
     {
       name: "check_opportunities",
       description: "Agent IPC inbox. Actions: 'peek' (pending messages), 'stats' (queue stats + heartbeats), 'done <msg_id>' (mark handled), 'send <op> <json_payload>' (send a message), 'heartbeats' (check agent liveness). Auto-execute ops (SKIM, ALERT, REPORT, HEARTBEAT) are dispatched automatically each cycle — this tool is for manual review and control ops.",
@@ -4498,6 +4504,145 @@ print(f"Sent {mid}")
           return `farcaster_engage failed: ${e.stderr?.slice(0, 500) || e.message}`;
         }
       },
+    },
+
+    // ── Reddit Tools ──
+    {
+      name: "post_reddit",
+      description: "Post or comment on Reddit. Actions: 'post <subreddit> <title> [text] [url]', 'comment <post_id> <text>'. Subreddit must be whitelisted. Rate limited: 30min cooldown between posts. Use this to share projects, answer questions, and engage authentically — NOT for spam.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          subreddit: { type: "string", description: "Target subreddit (must be whitelisted)" },
+          title: { type: "string", description: "Post title (for 'post' action)" },
+          text: { type: "string", description: "Post body text or comment text" },
+          url: { type: "string", description: "URL to share (creates link post)" },
+          post_id: { type: "string", description: "Post ID to comment on (for 'comment' action, e.g. t3_xxxxx)" },
+          action: { type: "string", enum: ["post", "comment"], description: "post = submit new post, comment = reply to existing post" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const cooldown = checkSocialCooldown("reddit");
+        if (cooldown) return cooldown;
+        const { execFileSync } = await import('child_process');
+        const { action, subreddit, title, text, url, post_id } = args as {
+          action: string; subreddit?: string; title?: string; text?: string; url?: string; post_id?: string;
+        };
+        if (!['post', 'comment'].includes(action)) return 'Invalid action. Use: post, comment';
+        if (action === 'post') {
+          if (!subreddit || !title) return 'post requires subreddit and title';
+          const subLower = subreddit.toLowerCase();
+          if (!REDDIT_SUBREDDITS.some(s => s.toLowerCase() === subLower))
+            return `Subreddit r/${subreddit} not in whitelist. Allowed: ${REDDIT_SUBREDDITS.join(', ')}`;
+        }
+        if (action === 'comment' && (!post_id || !text)) return 'comment requires post_id and text';
+
+        try {
+          const pyArgs = ['reddit.py', action];
+          if (action === 'post') {
+            pyArgs.push(subreddit!, title!);
+            if (text) pyArgs.push(text);
+            if (url) pyArgs.push(url);
+          } else {
+            pyArgs.push(post_id!, text!);
+          }
+          const output = execFileSync('python3', pyArgs, {
+            encoding: 'utf-8', timeout: 30000, cwd: '/root/entity/src/agent'
+          }).trim();
+          recordSocialPost("reddit");
+          const fs = await import('fs');
+          fs.appendFileSync('/root/.automaton/tiamat.log',
+            `\n[REDDIT] ${action}: ${action === 'post' ? `r/${subreddit} "${title?.slice(0, 50)}"` : `reply to ${post_id}`}\n`);
+          return output.slice(0, 2000);
+        } catch (e: any) {
+          return `Reddit ${action} failed: ${e.stderr?.slice(0, 500) || e.message}`;
+        }
+      },
+    },
+    {
+      name: "read_reddit",
+      description: "Read or search Reddit. RATE LIMITED: 1 hour cooldown. Actions: 'read <subreddit> [sort] [limit]' to browse posts, 'search <query> [subreddit]' to search. Subreddit must be whitelisted. Use for market research, finding real problems, studying trends.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "Action string: 'read SideProject hot 10' or 'search AI agent Python'" },
+        },
+        required: ["action"],
+      },
+      execute: (() => {
+        let lastResult: string | null = null;
+        let lastCheck = 0;
+        const COOLDOWN_MS = 60 * 60 * 1000;
+        return async (args: any, _ctx: any) => {
+          const now = Date.now();
+          if (lastResult && (now - lastCheck) < COOLDOWN_MS) {
+            const minsAgo = Math.round((now - lastCheck) / 60000);
+            return `${lastResult}\n\n⏱️ (cached from ${minsAgo}m ago — next fresh read in ${Math.round((COOLDOWN_MS - (now - lastCheck)) / 60000)}m)`;
+          }
+          const { execFileSync } = await import('child_process');
+          const action = (args as { action: string }).action || 'read SideProject hot 5';
+          const parts = action.split(' ');
+          const cmd = parts[0];
+          if (!['read', 'search', 'test'].includes(cmd)) return 'Invalid command. Use: read, search, test';
+          try {
+            const pyArgs = ['reddit.py', ...parts];
+            const output = execFileSync('python3', pyArgs, {
+              encoding: 'utf-8', timeout: 30000, cwd: '/root/entity/src/agent'
+            }).trim();
+            lastResult = output.slice(0, 4000);
+            lastCheck = now;
+            return lastResult;
+          } catch (e: any) {
+            return `Reddit read failed: ${e.stderr?.slice(0, 500) || e.message}`;
+          }
+        };
+      })(),
+    },
+    // ── 4chan Research Tool ──
+    {
+      name: "read_4chan",
+      description: "Read-only 4chan research tool. Browse catalogs, read threads, search posts on whitelisted boards (/g/, /sci/, /biz/, /diy/, /pol/). RATE LIMITED: 1 hour cooldown. Actions: 'catalog <board> [limit]', 'thread <board> <thread_id>', 'search <board> <query>'. Use for raw unfiltered tech sentiment and trend research.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "Action string: 'catalog g 20', 'thread g 12345678', 'search g AI agent'" },
+        },
+        required: ["action"],
+      },
+      execute: (() => {
+        let lastResult: string | null = null;
+        let lastCheck = 0;
+        const COOLDOWN_MS = 60 * 60 * 1000;
+        return async (args: any, _ctx: any) => {
+          const now = Date.now();
+          if (lastResult && (now - lastCheck) < COOLDOWN_MS) {
+            const minsAgo = Math.round((now - lastCheck) / 60000);
+            return `${lastResult}\n\n⏱️ (cached from ${minsAgo}m ago — next fresh read in ${Math.round((COOLDOWN_MS - (now - lastCheck)) / 60000)}m)`;
+          }
+          const { execFileSync } = await import('child_process');
+          const action = (args as { action: string }).action || 'catalog g';
+          const parts = action.split(' ');
+          const cmd = parts[0];
+          if (!FOURCHAN_ACTIONS.includes(cmd)) return `Invalid command. Use: ${FOURCHAN_ACTIONS.join(', ')}`;
+          const board = parts[1] || 'g';
+          if (!FOURCHAN_BOARDS.includes(board)) return `Invalid board. Use: ${FOURCHAN_BOARDS.join(', ')}`;
+          try {
+            const pyArgs = ['fourchan.py', ...parts];
+            const output = execFileSync('python3', pyArgs, {
+              encoding: 'utf-8', timeout: 30000, cwd: '/root/entity/src/agent'
+            }).trim();
+            lastResult = output.slice(0, 4000);
+            lastCheck = now;
+            return lastResult;
+          } catch (e: any) {
+            return `4chan read failed: ${e.stderr?.slice(0, 500) || e.message}`;
+          }
+        };
+      })(),
     },
 
     // ─── Dynamic Cooldown Task Manager ───────────────────────────

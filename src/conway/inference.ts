@@ -102,6 +102,20 @@ function trimToTokenBudget(messages: ChatMessage[], targetTokens: number): ChatM
   return system ? [system, ...rest] : rest;
 }
 
+/**
+ * Inject FALLBACK_DIRECTIVE into the system message for low-tier models.
+ * Appends to the existing system message (or prepends one if missing).
+ */
+function injectFallbackDirective(messages: ChatMessage[]): ChatMessage[] {
+  const result = [...messages];
+  if (result.length > 0 && result[0].role === "system") {
+    result[0] = { ...result[0], content: result[0].content + "\n" + FALLBACK_DIRECTIVE };
+  } else {
+    result.unshift({ role: "system", content: FALLBACK_DIRECTIVE });
+  }
+  return result;
+}
+
 function routeGroqModel(_estimatedTokens: number): string {
   return GROQ_MODEL;
 }
@@ -130,6 +144,23 @@ function isDailyLimitError(err: any): boolean {
 
 const COOLDOWN_RATE_LIMIT_MS = 65_000;       // 65s for per-minute limits
 const COOLDOWN_DAILY_LIMIT_MS = 1 * 3600_000; // 1h for daily quota exhaustion (retry sooner — 4h was too conservative)
+
+/**
+ * Fallback directive injected into system message for low-tier models.
+ * These models lose most conversation context after trimming, so they need
+ * a clear directive to avoid wasting cycles on useless exploration (ls -R, etc).
+ */
+const FALLBACK_DIRECTIVE = `
+CRITICAL: You are a fallback model with limited context. DO NOT explore the filesystem.
+DO NOT run "ls", "find", "tree", or any directory listing commands. You don't need to orient yourself.
+Instead, pick ONE productive action from your available tools:
+- Post to Bluesky (share a thought, engage with community)
+- Search the web for AI/tech news and remember interesting findings
+- Check email for new messages
+- Create or complete a ticket for future work
+- Write a short thought/reflection to remember
+If you cannot determine a useful action, call exec with: echo "FALLBACK_SKIP: no productive action available"
+`;
 
 // Per-provider request timeouts (ms).
 // Without these, a hung provider stalls the cascade for Node's socket timeout (~2min).
@@ -341,7 +372,7 @@ export function createInferenceClient(
         try {
           lastUsedModel = CEREBRAS_MODEL;
           // gpt-oss-120B supports 131K context — trim conservatively
-          const cerebrasMessages = trimToTokenBudget(messages, 5000);
+          const cerebrasMessages = injectFallbackDirective(trimToTokenBudget(messages, 5000));
           const cerebrasTools = tools ? filterToolsForSmallProvider(tools) : undefined;
           const cerebrasEst = estimateTokens(cerebrasMessages, cerebrasTools);
           const trimNote = cerebrasMessages.length < messages.length ? `, trimmed ${messages.length - cerebrasMessages.length} msgs` : "";
@@ -369,7 +400,7 @@ export function createInferenceClient(
       } else {
         try {
           lastUsedModel = SAMBANOVA_MODEL;
-          const snMessages = trimToTokenBudget(messages, 5000);
+          const snMessages = injectFallbackDirective(trimToTokenBudget(messages, 5000));
           const snTools = tools ? filterToolsForSmallProvider(tools) : undefined;
           const snEst = estimateTokens(snMessages, snTools);
           const trimNote = snMessages.length < messages.length ? `, trimmed ${messages.length - snMessages.length} msgs` : "";
@@ -398,7 +429,7 @@ export function createInferenceClient(
         try {
           lastUsedModel = GEMINI_MODEL;
           console.log(`[INFERENCE] Tier 4 (Gemini): ATTEMPT ${GEMINI_MODEL} (~${estimated} tokens)`);
-          return await chatViaGemini({ model: GEMINI_MODEL, tokenLimit, messages, tools, temperature: opts?.temperature, geminiApiKey });
+          return await chatViaGemini({ model: GEMINI_MODEL, tokenLimit, messages: injectFallbackDirective(messages), tools, temperature: opts?.temperature, geminiApiKey });
         } catch (err: any) {
           if (isRateLimitError(err)) smartCooldown(GEMINI_MODEL, err);
           console.warn(`[INFERENCE] Tier 4 (Gemini): FAILED — ${err.message}`);
@@ -421,7 +452,7 @@ export function createInferenceClient(
             console.log(`[INFERENCE] Tier 5 (OR/${shortName}): ATTEMPT (~${estimated} tokens)`);
             const body: Record<string, unknown> = {
               model: orModel,
-              messages: messages.map(formatMessage),
+              messages: injectFallbackDirective(messages).map(formatMessage),
               stream: false,
               max_tokens: tokenLimit,
             };
