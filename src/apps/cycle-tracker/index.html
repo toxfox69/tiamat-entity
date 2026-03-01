@@ -38,6 +38,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
 .phase-banner.follicular{background:var(--mint-pale);color:#5a9e7a;border:1px solid var(--mint-soft)}
 .phase-banner.ovulatory{background:var(--peach-soft);color:#b87a3d;border:1px solid var(--peach)}
 .phase-banner.luteal{background:var(--lavender-pale);color:#7a5a8a;border:1px solid var(--lavender-soft)}
+/* Pregnancy phase banners */
+.phase-banner.trimester1{background:#FDE8EF;color:#c4547a;border:1px solid #F4C6D7}
+.phase-banner.trimester2{background:var(--peach-soft);color:#b87a3d;border:1px solid var(--peach)}
+.phase-banner.trimester3{background:var(--lavender-pale);color:#7a5a8a;border:1px solid var(--lavender-soft)}
 
 .privacy-banner{margin:0 16px 8px;padding:10px 16px;background:linear-gradient(135deg,rgba(168,230,207,.15),rgba(200,162,200,.1));border:1px solid rgba(168,230,207,.3);border-radius:14px;font-size:12px;color:var(--success);display:flex;align-items:center;gap:8px;font-weight:500}
 .privacy-banner svg{flex-shrink:0}
@@ -160,6 +164,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
 .insight-card .insight-title{font-size:13px;font-weight:600;color:var(--lavender);margin-bottom:4px}
 .insight-card .insight-text{font-size:13px;color:var(--text);line-height:1.5}
 
+/* Modal overlay */
+.modal-overlay{position:fixed;inset:0;background:rgba(74,51,70,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--card);border-radius:20px;padding:24px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(74,51,70,.15)}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:16px;background:linear-gradient(135deg,var(--rose-deep),var(--lavender));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* Pregnancy milestone */
+.milestone{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.milestone .week{font-size:13px;font-weight:700;color:var(--rose-deep)}
+.milestone .size{font-size:12px;color:var(--lavender);margin-top:2px}
+.milestone .info{font-size:13px;color:var(--text-dim);margin-top:6px;line-height:1.5}
+
 /* Misc */
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease}
@@ -222,20 +237,24 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
   </div>
 </div>
 
+<div id="modalRoot"></div>
+
 <script>
 // ─── Constants ───────────────────────────────────────────────
 const STORAGE_KEY='luna_data',SETTINGS_KEY='luna_settings',PIN_KEY='luna_pin';
 const SYMPTOM_CATEGORIES = {
-  'Pain': ['Cramps','Headache','Back pain','Breast tenderness','Joint pain','Migraine','Pelvic pain'],
-  'Digestive': ['Bloating','Nausea','Diarrhea','Constipation','Appetite increase','Appetite decrease'],
-  'Mood': ['Anxious','Irritable','Sad','Sensitive','Mood swings','Calm','Happy','Energetic'],
-  'Energy': ['Fatigue','Low energy','Normal energy','High energy','Insomnia','Restless sleep'],
-  'Skin & Body': ['Acne','Oily skin','Dry skin','Hot flashes','Dizziness','Water retention'],
-  'Other': ['Cravings','Spotting','Discharge','Libido increase','Libido decrease']
+  'Pain': ['Cramps','Headache','Back pain','Breast tenderness','Joint pain','Migraine','Pelvic pain','Leg pain','Abdominal pain','Neck pain','Ovulation pain'],
+  'Digestive': ['Bloating','Nausea','Diarrhea','Constipation','Appetite increase','Appetite decrease','Gas','Heartburn','Food aversions','Food cravings'],
+  'Mood': ['Anxious','Irritable','Sad','Sensitive','Mood swings','Calm','Happy','Energetic','Depressed','Overwhelmed','Confident','Apathetic','Weepy','Focused'],
+  'Energy': ['Fatigue','Low energy','Normal energy','High energy','Insomnia','Restless sleep','Vivid dreams','Drowsy','Wired','Brain fog'],
+  'Skin & Body': ['Acne','Oily skin','Dry skin','Hot flashes','Dizziness','Water retention','Hair changes','Brittle nails','Body odor change','Swelling','Weight fluctuation'],
+  'Reproductive': ['Discharge clear','Discharge white','Discharge yellow','Cervical mucus stretchy','Cervical mucus dry','Spotting','Heavy bleeding','Clots','Odor change'],
+  'Sexual Health': ['Libido increase','Libido decrease','Painful intercourse','Orgasm difficulty','Arousal increase','Protected sex','Unprotected sex'],
+  'Other': ['Cravings sweet','Cravings salty','Cravings chocolate','Frequent urination','Thirst increase','Chills','Night sweats','Tingling','Numbness','Allergies worse','Asthma worse','Vertigo']
 };
 const FLOW_LEVELS = ['Spotting','Light','Medium','Heavy','Very heavy'];
 const FLOW_COLORS = ['Pink','Red','Dark red','Brown','Black'];
-const MOODS = [{e:'&#128522;',l:'Happy'},{e:'&#128578;',l:'Calm'},{e:'&#128528;',l:'Neutral'},{e:'&#128546;',l:'Sad'},{e:'&#128544;',l:'Angry'},{e:'&#128553;',l:'Anxious'},{e:'&#128564;',l:'Tired'},{e:'&#129392;',l:'Loved'}];
+const MOODS = [{e:'&#128522;',l:'Happy'},{e:'&#128578;',l:'Calm'},{e:'&#128528;',l:'Neutral'},{e:'&#128546;',l:'Sad'},{e:'&#128544;',l:'Angry'},{e:'&#128553;',l:'Anxious'},{e:'&#128564;',l:'Tired'},{e:'&#129392;',l:'Loved'},{e:'&#128566;',l:'Stressed'},{e:'&#128525;',l:'Flirty'}];
 const PHASE_INFO = {
   menstrual:{name:'Menstrual Phase',icon:'&#127800;',tip:'Rest and recharge. Your body is shedding the uterine lining. Honor what you need — gentle movement, warm foods, extra sleep.',color:'rose'},
   follicular:{name:'Follicular Phase',icon:'&#127793;',tip:'Energy is rising! Estrogen increases, boosting mood and creativity. Great time for new projects, social plans, and trying new workouts.',color:'mint'},
@@ -243,12 +262,38 @@ const PHASE_INFO = {
   luteal:{name:'Luteal Phase',icon:'&#127769;',tip:'Progesterone rises, energy may dip. You might crave comfort foods and alone time. Practice self-care and wind down gradually.',color:'lavender'}
 };
 
+// Pregnancy milestones by week
+const PREGNANCY_MILESTONES = {
+  4:{size:'Poppy seed',info:'The embryo has implanted. The neural tube (brain and spinal cord) begins forming.'},
+  5:{size:'Sesame seed',info:'The heart begins to beat. Arm and leg buds are forming.'},
+  6:{size:'Lentil',info:'Facial features start forming. The heart beats about 105 times per minute.'},
+  7:{size:'Blueberry',info:'Hands and feet are forming. Brain is growing rapidly.'},
+  8:{size:'Raspberry',info:'All essential organs have begun forming. Fingers and toes are developing.'},
+  9:{size:'Cherry',info:'Baby can make tiny movements. Taste buds are forming.'},
+  10:{size:'Strawberry',info:'Vital organs are fully formed and functioning. Fingernails are developing.'},
+  12:{size:'Lime',info:'End of first trimester! Reflexes are developing. Risk of miscarriage drops significantly.'},
+  14:{size:'Lemon',info:'Baby can make facial expressions. Body is growing faster than head now.'},
+  16:{size:'Avocado',info:'You may start feeling flutters. Baby can hear your voice.'},
+  18:{size:'Sweet potato',info:'Baby is yawning and hiccupping. You may feel real kicks now.'},
+  20:{size:'Banana',info:'Halfway there! Anatomy scan time. Baby has eyebrows.'},
+  22:{size:'Papaya',info:'Baby responds to sound and light. Lungs are developing.'},
+  24:{size:'Corn ear',info:'Viability milestone. Baby has a regular sleep-wake cycle.'},
+  26:{size:'Lettuce head',info:'Eyes can open. Baby is practicing breathing movements.'},
+  28:{size:'Eggplant',info:'Third trimester! Baby can dream (REM sleep detected).'},
+  30:{size:'Cabbage',info:'Baby is gaining weight rapidly. Brain is developing fast.'},
+  32:{size:'Squash',info:'Baby is practicing breathing. Toenails are fully formed.'},
+  34:{size:'Cantaloupe',info:'Lungs are nearly mature. Baby may turn head-down.'},
+  36:{size:'Honeydew',info:'Baby is considered early term. Gaining about an ounce per day.'},
+  38:{size:'Pumpkin',info:'Full term! Baby\'s organs are ready for life outside the womb.'},
+  40:{size:'Watermelon',info:'Due date! Baby is fully developed and ready to meet you.'}
+};
+
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
-function defaultData(){return{periods:[],logs:[],medications:[],customTags:[],tempReadings:[]}}
+function defaultData(){return{periods:[],logs:[],medications:[],customTags:[],tempReadings:[],pregnancy:null,partnerCode:null,partnerView:null}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
-function defaultSettings(){return{pinEnabled:false,onboarded:false,cycleGoal:0,lutealLength:14,showOvulation:true}}
+function defaultSettings(){return{pinEnabled:false,onboarded:false,cycleGoal:0,lutealLength:14,showOvulation:true,pregnancyMode:false}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
 function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
 
@@ -260,8 +305,8 @@ function periodStarts(){return D.periods.filter(p=>p.t==='s').map(p=>p.d).sort()
 function periodEnds(){return D.periods.filter(p=>p.t==='e').map(p=>p.d).sort()}
 function avgCycle(){const s=periodStarts();if(s.length<2)return 28;let t=0,c=0;for(let i=1;i<s.length;i++){const d=(new Date(s[i])-new Date(s[i-1]))/864e5;if(d>15&&d<90){t+=d;c++}}return c?Math.round(t/c):28}
 function avgPeriodLen(){const s=periodStarts(),e=periodEnds();if(!s.length||!e.length)return 5;let t=0,c=0;for(const st of s){const en=e.find(x=>x>=st);if(en){const d=(new Date(en)-new Date(st))/864e5+1;if(d>0&&d<15){t+=d;c++}}}return c?Math.round(t/c):5}
-function predictions(){const s=periodStarts();if(!s.length)return[];const a=avgCycle(),last=new Date(s[s.length-1]),r=[];for(let i=1;i<=6;i++){const p=new Date(last);p.setDate(p.getDate()+a*i);r.push(p.toISOString().split('T')[0])}return r}
-function ovulationDays(){if(!S.showOvulation)return[];const preds=predictions(),a=avgCycle();const s=periodStarts();if(!s.length)return[];const all=[...s,...preds];const r=[];for(const st of all){const d=new Date(st);d.setDate(d.getDate()+a-S.lutealLength);r.push(d.toISOString().split('T')[0])}return r}
+function predictions(){if(S.pregnancyMode)return[];const s=periodStarts();if(!s.length)return[];const a=avgCycle(),last=new Date(s[s.length-1]),r=[];for(let i=1;i<=6;i++){const p=new Date(last);p.setDate(p.getDate()+a*i);r.push(p.toISOString().split('T')[0])}return r}
+function ovulationDays(){if(!S.showOvulation||S.pregnancyMode)return[];const preds=predictions(),a=avgCycle();const s=periodStarts();if(!s.length)return[];const all=[...s,...preds];const r=[];for(const st of all){const d=new Date(st);d.setDate(d.getDate()+a-S.lutealLength);r.push(d.toISOString().split('T')[0])}return r}
 function isPeriod(d){const s=periodStarts(),e=periodEnds();for(const st of s){const en=e.find(x=>x>=st)||(()=>{const x=new Date(st);x.setDate(x.getDate()+4);return x.toISOString().split('T')[0]})();if(d>=st&&d<=en)return true}return false}
 function isPeriodStart(d){return D.periods.some(p=>p.t==='s'&&p.d===d)}
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().split('T')[0]}
@@ -269,6 +314,12 @@ function getLog(d){return D.logs.find(l=>l.date===d)}
 function hasLog(d){return D.logs.some(l=>l.date===d)}
 
 function currentPhase(){
+  if(S.pregnancyMode&&D.pregnancy){
+    const weeks=pregnancyWeeks();
+    if(weeks<=13)return'trimester1';
+    if(weeks<=27)return'trimester2';
+    return'trimester3';
+  }
   const s=periodStarts(),today=new Date().toISOString().split('T')[0];
   if(!s.length)return null;
   if(isPeriod(today))return'menstrual';
@@ -278,6 +329,170 @@ function currentPhase(){
   if(daysSince<ovDay-1)return'follicular';
   if(daysSince<=ovDay+1)return'ovulatory';
   return'luteal';
+}
+
+// ─── Pregnancy Mode ─────────────────────────────────────────
+function pregnancyWeeks(){
+  if(!D.pregnancy||!D.pregnancy.lmpDate)return 0;
+  const lmp=new Date(D.pregnancy.lmpDate);
+  const today=new Date();
+  return Math.floor((today-lmp)/864e5/7);
+}
+function pregnancyDueDate(){
+  if(!D.pregnancy||!D.pregnancy.lmpDate)return null;
+  const lmp=new Date(D.pregnancy.lmpDate);
+  lmp.setDate(lmp.getDate()+280);
+  return lmp.toISOString().split('T')[0];
+}
+function pregnancyTrimester(){
+  const w=pregnancyWeeks();
+  if(w<=13)return 1;if(w<=27)return 2;return 3;
+}
+function getNearestMilestone(){
+  const w=pregnancyWeeks();
+  const weeks=Object.keys(PREGNANCY_MILESTONES).map(Number).sort((a,b)=>a-b);
+  for(let i=weeks.length-1;i>=0;i--){if(weeks[i]<=w)return{week:weeks[i],...PREGNANCY_MILESTONES[weeks[i]]};}
+  return{week:4,...PREGNANCY_MILESTONES[4]};
+}
+function enablePregnancyMode(){
+  const lmp=prompt('Enter the first day of your last menstrual period (YYYY-MM-DD):');
+  if(!lmp||!/^\d{4}-\d{2}-\d{2}$/.test(lmp))return;
+  D.pregnancy={lmpDate:lmp,startedAt:new Date().toISOString().split('T')[0]};
+  S.pregnancyMode=true;
+  saveData();saveSettings();showView('calendar');
+}
+function disablePregnancyMode(){
+  if(!confirm('End pregnancy tracking? Your pregnancy logs will be kept in history.'))return;
+  S.pregnancyMode=false;
+  saveSettings();showView('calendar');
+}
+
+// ─── Partner Sharing ────────────────────────────────────────
+function generateShareCode(){
+  const data={
+    cycleLength:avgCycle(),
+    periodLength:avgPeriodLen(),
+    currentPhase:currentPhase(),
+    nextPeriod:predictions()[0]||null,
+    phaseInfo:PHASE_INFO[currentPhase()]||null,
+    pregnancyMode:S.pregnancyMode,
+    pregnancyWeeks:S.pregnancyMode?pregnancyWeeks():null,
+    dueDate:S.pregnancyMode?pregnancyDueDate():null,
+    generated:new Date().toISOString()
+  };
+  // Encode as base64 share code (no server needed)
+  const code=btoa(JSON.stringify(data));
+  D.partnerCode=code;saveData();
+  return code;
+}
+function showPartnerShare(){
+  const code=generateShareCode();
+  const phase=currentPhase();
+  const info=phase?PHASE_INFO[phase]:null;
+  let shareText=`Luna Cycle Update\n`;
+  if(S.pregnancyMode){
+    shareText+=`Pregnancy: Week ${pregnancyWeeks()}\nDue: ${pregnancyDueDate()}\n`;
+    const ms=getNearestMilestone();
+    shareText+=`Baby is the size of a ${ms.size}\n`;
+  }else{
+    shareText+=`Phase: ${info?info.name:'Unknown'}\nCycle: ${avgCycle()} days\n`;
+    const next=predictions()[0];
+    if(next)shareText+=`Next period: ${new Date(next+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}\n`;
+  }
+  showModal('Partner Sharing',`
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">Share cycle info with your partner. No accounts needed — just copy and send.</p>
+    <div style="background:var(--rose-pale);border-radius:12px;padding:14px;font-size:13px;white-space:pre-line;margin-bottom:12px;line-height:1.6">${shareText}</div>
+    <button class="btn-primary" onclick="copyShareText()">Copy to Clipboard</button>
+    <button class="btn-secondary" onclick="closeModal()">Close</button>
+    <textarea id="shareTextArea" style="position:absolute;left:-9999px">${shareText}</textarea>
+  `);
+}
+function copyShareText(){
+  const text=document.getElementById('shareTextArea').value;
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.querySelector('.modal .btn-primary');btn.textContent='Copied!';btn.style.background='var(--mint)';
+    setTimeout(()=>{btn.textContent='Copy to Clipboard';btn.style.background=''},1500);
+  })}else{
+    const ta=document.getElementById('shareTextArea');ta.style.position='static';ta.select();document.execCommand('copy');ta.style.position='absolute';
+    const btn=document.querySelector('.modal .btn-primary');btn.textContent='Copied!';setTimeout(()=>{btn.textContent='Copy to Clipboard'},1500);
+  }
+}
+function importPartnerView(){
+  showModal('View Partner Data',`
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Paste the code your partner shared with you:</p>
+    <textarea id="partnerCodeInput" class="notes-area" placeholder="Paste partner share code here..." style="min-height:80px"></textarea>
+    <button class="btn-primary" onclick="loadPartnerCode()">View</button>
+  `);
+}
+function loadPartnerCode(){
+  const input=document.getElementById('partnerCodeInput').value.trim();
+  try{
+    const data=JSON.parse(atob(input));
+    let h='<h3 style="margin-bottom:16px">Partner\'s Cycle</h3>';
+    if(data.pregnancyMode){
+      h+=`<div class="milestone"><div class="week">Week ${data.pregnancyWeeks}</div><div class="info">Due: ${data.dueDate}</div></div>`;
+    }else{
+      h+=`<div class="panel"><p>Phase: <strong>${data.phaseInfo?data.phaseInfo.name:'Unknown'}</strong></p>`;
+      h+=`<p style="font-size:13px;color:var(--text-dim);margin-top:6px">${data.phaseInfo?data.phaseInfo.tip:''}</p>`;
+      h+=`<p style="margin-top:8px;font-size:13px">Cycle length: ${data.cycleLength} days</p>`;
+      if(data.nextPeriod)h+=`<p style="font-size:13px">Next period: ${new Date(data.nextPeriod+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'})}</p>`;
+      h+=`</div>`;
+    }
+    h+=`<p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px">Updated: ${new Date(data.generated).toLocaleString()}</p>`;
+    h+=`<button class="btn-secondary" onclick="closeModal()">Close</button>`;
+    document.querySelector('.modal').innerHTML=h;
+  }catch(e){alert('Invalid code. Ask your partner to share from Luna.')}
+}
+
+// ─── Modal ──────────────────────────────────────────────────
+function showModal(title,body){
+  document.getElementById('modalRoot').innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal fade-in"><h3>${title}</h3>${body}</div></div>`;
+}
+function closeModal(){document.getElementById('modalRoot').innerHTML=''}
+
+// ─── Backup & Restore ───────────────────────────────────────
+function exportBackup(){
+  const backup={version:2,exportedAt:new Date().toISOString(),data:D,settings:S};
+  const json=JSON.stringify(backup);
+  // Simple XOR encryption with user password
+  const pass=prompt('Set a backup password (leave empty for unencrypted):');
+  let output=json;
+  if(pass){
+    let encrypted='';
+    for(let i=0;i<json.length;i++){encrypted+=String.fromCharCode(json.charCodeAt(i)^pass.charCodeAt(i%pass.length))}
+    output=btoa(encrypted);
+    output='LUNA_ENC:'+output;
+  }
+  downloadFile(output,'application/json',`luna-backup-${new Date().toISOString().split('T')[0]}.luna`);
+}
+function importBackup(){
+  const input=document.createElement('input');input.type='file';input.accept='.luna,.json';
+  input.onchange=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      let content=ev.target.result;
+      try{
+        if(content.startsWith('LUNA_ENC:')){
+          const pass=prompt('Enter backup password:');
+          if(!pass){alert('Password required.');return}
+          const decoded=atob(content.slice(9));
+          let decrypted='';
+          for(let i=0;i<decoded.length;i++){decrypted+=String.fromCharCode(decoded.charCodeAt(i)^pass.charCodeAt(i%pass.length))}
+          content=decrypted;
+        }
+        const backup=JSON.parse(content);
+        if(!backup.data){alert('Invalid backup file.');return}
+        if(!confirm(`Restore backup from ${new Date(backup.exportedAt).toLocaleDateString()}? This will replace all current data.`))return;
+        D=Object.assign(defaultData(),backup.data);
+        if(backup.settings)S=Object.assign(defaultSettings(),backup.settings);
+        saveData();saveSettings();
+        alert('Backup restored successfully!');showView('calendar');
+      }catch(err){alert('Failed to restore: invalid file or wrong password.')}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 // ─── PIN ─────────────────────────────────────────────────────
@@ -313,6 +528,11 @@ function completeOnboarding(){S.onboarded=true;saveSettings();document.getElemen
 // ─── Calendar ────────────────────────────────────────────────
 function renderCalendar(){
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  if(S.pregnancyMode){
+    renderPregnancyCalendar(months);return;
+  }
+
   const preds=predictions(),ov=ovulationDays(),a=avgCycle(),today=new Date().toISOString().split('T')[0];
   const next=preds[0];let until='--';
   if(next){const d=Math.ceil((new Date(next)-new Date())/864e5);until=d>0?d:'Today'}
@@ -349,8 +569,68 @@ function renderCalendar(){
   </div>`;
   document.getElementById('content').innerHTML=h;
 }
+
+function renderPregnancyCalendar(months){
+  const weeks=pregnancyWeeks(),due=pregnancyDueDate(),tri=pregnancyTrimester();
+  const ms=getNearestMilestone();
+  const daysLeft=due?Math.ceil((new Date(due)-new Date())/864e5):0;
+
+  let h=`<div class="stats fade-in">
+    <div class="stat-card"><div class="label">Week</div><div class="value pink">${weeks}<span style="font-size:12px;color:var(--text-dim)"> of 40</span></div></div>
+    <div class="stat-card"><div class="label">Due Date</div><div class="value purple" style="font-size:16px">${daysLeft>0?daysLeft+' days':'Due!'}</div></div>
+  </div>`;
+
+  // Progress bar
+  const pct=Math.min(100,Math.round(weeks/40*100));
+  h+=`<div class="panel fade-in"><h3>Trimester ${tri}</h3>
+    <div style="background:var(--border);border-radius:8px;height:12px;margin:8px 0;overflow:hidden">
+      <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--rose),var(--lavender),var(--mint));border-radius:8px;transition:width .5s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)">
+      <span>Week ${weeks}</span><span>${pct}%</span><span>Week 40</span>
+    </div>
+  </div>`;
+
+  // Milestone
+  h+=`<div class="milestone fade-in">
+    <div class="week">Week ${ms.week} Milestone</div>
+    <div class="size">Baby is the size of a ${ms.size}</div>
+    <div class="info">${ms.info}</div>
+  </div>`;
+
+  // Due date
+  if(due){
+    h+=`<div class="panel fade-in"><h3>Due Date</h3>
+      <p style="font-size:16px;font-weight:600;color:var(--rose-deep)">${new Date(due+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</p>
+    </div>`;
+  }
+
+  // Calendar still shown for logging
+  h+=`<div class="cal-header fade-in" style="margin-top:8px">
+    <button class="cal-nav-btn" onclick="chMonth(-1)">&#9664;</button>
+    <h2>${months[calMonth]} ${calYear}</h2>
+    <button class="cal-nav-btn" onclick="chMonth(1)">&#9654;</button>
+  </div>
+  <div class="cal-weekdays fade-in">${['S','M','T','W','T','F','S'].map(d=>`<span>${d}</span>`).join('')}</div>
+  <div class="cal-grid fade-in">`;
+  const fd=new Date(calYear,calMonth,1).getDay(),dim=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date().toISOString().split('T')[0];
+  for(let i=0;i<fd;i++)h+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cl=['cal-day'];
+    if(ds===today)cl.push('today');
+    if(hasLog(ds))cl.push('has-log');
+    if(ds===due)cl.push('ovulation');
+    h+=`<div class="${cl.join(' ')}" onclick="showView('log')">${d}</div>`;
+  }
+  h+=`</div>`;
+  document.getElementById('content').innerHTML=h;
+}
+
 function chMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++}if(calMonth<0){calMonth=11;calYear--}renderCalendar()}
 function dayTap(ds){
+  if(S.pregnancyMode)return;
   const idx=D.periods.findIndex(p=>p.d===ds&&p.t==='s');
   if(idx>=0){D.periods.splice(idx,1);const ei=D.periods.findIndex(p=>p.t==='e'&&p.d>=ds&&p.d<=addDays(ds,7));if(ei>=0)D.periods.splice(ei,1)}
   else{D.periods.push({d:ds,t:'s'});if(!D.periods.some(p=>p.t==='e'&&p.d>=ds&&p.d<=addDays(ds,10)))D.periods.push({d:addDays(ds,4),t:'e'})}
@@ -360,20 +640,23 @@ function dayTap(ds){
 // ─── Log View ────────────────────────────────────────────────
 function renderLog(){
   const today=new Date().toISOString().split('T')[0],ex=getLog(today)||{};
-  tempLogState={flow:ex.flow||'',flowColor:ex.flowColor||'',cramps:ex.cramps||0,mood:ex.mood||'',tags:[...(ex.tags||[])],meds:[...(ex.meds||[])],temp:ex.temp||'',notes:ex.notes||'',customTags:[...(ex.customTags||[])]};
+  tempLogState={flow:ex.flow||'',flowColor:ex.flowColor||'',cramps:ex.cramps||0,mood:ex.mood||'',tags:[...(ex.tags||[])],meds:[...(ex.meds||[])],temp:ex.temp||'',notes:ex.notes||'',customTags:[...(ex.customTags||[])],
+    weight:ex.weight||'',cervicalMucus:ex.cervicalMucus||'',cervicalPos:ex.cervicalPos||'',sexActivity:ex.sexActivity||'',sleepHours:ex.sleepHours||'',waterCups:ex.waterCups||'',exerciseMin:ex.exerciseMin||''};
 
-  let h=`<div class="panel fade-in"><h3>Log Today</h3>
-    <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+  let h=`<div class="panel fade-in"><h3>${S.pregnancyMode?'Daily Pregnancy Log':'Log Today'}</h3>
+    <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>`;
 
-    <div class="form-row"><label>Period</label><select id="logPeriod" style="flex:1">
+  if(!S.pregnancyMode){
+    h+=`<div class="form-row"><label>Period</label><select id="logPeriod" style="flex:1">
       <option value="">Not today</option><option value="s"${isPeriodStart(today)?' selected':''}>Started</option>
       <option value="e"${D.periods.some(p=>p.t==='e'&&p.d===today)?' selected':''}>Ended</option></select></div>
 
     <div class="section-title">Flow</div>
     <div class="chips" id="flowChips">${FLOW_LEVELS.map(f=>`<button class="chip${tempLogState.flow===f?' active':''}" onclick="setTL('flow','${f}','flowChips')">${f}</button>`).join('')}</div>
-    <div class="chips" id="flowColorChips">${FLOW_COLORS.map(f=>`<button class="chip${tempLogState.flowColor===f?' active-alt':''}" onclick="setTL('flowColor','${f}','flowColorChips','active-alt')">${f}</button>`).join('')}</div>
+    <div class="chips" id="flowColorChips">${FLOW_COLORS.map(f=>`<button class="chip${tempLogState.flowColor===f?' active-alt':''}" onclick="setTL('flowColor','${f}','flowColorChips','active-alt')">${f}</button>`).join('')}</div>`;
+  }
 
-    <div class="section-title">Pain Level</div>
+  h+=`<div class="section-title">Pain Level</div>
     <div class="range-wrap"><input type="range" min="0" max="10" value="${tempLogState.cramps}" id="crampSlider" oninput="tempLogState.cramps=+this.value;document.getElementById('crampVal').textContent=this.value">
     <div class="range-label"><span>None</span><span id="crampVal">${tempLogState.cramps}</span><span>Severe</span></div></div>
 
@@ -381,7 +664,24 @@ function renderLog(){
     <div class="mood-row">${MOODS.map(m=>`<button class="mood-btn${tempLogState.mood===m.l?' active':''}" onclick="setMood('${m.l}')" title="${m.l}">${m.e}</button>`).join('')}</div>
 
     <div class="section-title">Temperature (BBT)</div>
-    <div class="form-row"><label>&#176;F / &#176;C</label><input type="number" step="0.1" placeholder="e.g. 97.8" value="${tempLogState.temp}" id="tempInput" style="flex:1" onchange="tempLogState.temp=this.value"></div>`;
+    <div class="form-row"><label>&#176;F / &#176;C</label><input type="number" step="0.1" placeholder="e.g. 97.8" value="${tempLogState.temp}" id="tempInput" style="flex:1" onchange="tempLogState.temp=this.value"></div>
+
+    <div class="section-title">Body Metrics</div>
+    <div class="form-row"><label>Weight</label><input type="number" step="0.1" placeholder="lbs or kg" value="${tempLogState.weight}" style="flex:1" onchange="tempLogState.weight=this.value"></div>
+    <div class="form-row"><label>Sleep</label><input type="number" step="0.5" min="0" max="24" placeholder="hours" value="${tempLogState.sleepHours}" style="flex:1" onchange="tempLogState.sleepHours=this.value"></div>
+    <div class="form-row"><label>Water</label><input type="number" min="0" max="30" placeholder="cups" value="${tempLogState.waterCups}" style="flex:1" onchange="tempLogState.waterCups=this.value"></div>
+    <div class="form-row"><label>Exercise</label><input type="number" min="0" placeholder="minutes" value="${tempLogState.exerciseMin}" style="flex:1" onchange="tempLogState.exerciseMin=this.value"></div>`;
+
+  if(!S.pregnancyMode){
+    h+=`<div class="section-title">Cervical Mucus</div>
+    <div class="chips" id="cmChips">${['Dry','Sticky','Creamy','Watery','Egg white','Spotting'].map(f=>`<button class="chip${tempLogState.cervicalMucus===f?' active-mint':''}" onclick="setTL('cervicalMucus','${f}','cmChips','active-mint')">${f}</button>`).join('')}</div>
+
+    <div class="section-title">Cervical Position</div>
+    <div class="chips" id="cpChips">${['Low & firm','Medium','High & soft','Open'].map(f=>`<button class="chip${tempLogState.cervicalPos===f?' active-alt':''}" onclick="setTL('cervicalPos','${f}','cpChips','active-alt')">${f}</button>`).join('')}</div>
+
+    <div class="section-title">Sexual Activity</div>
+    <div class="chips" id="sexChips">${['None','Protected','Unprotected','Withdrawal','Masturbation'].map(f=>`<button class="chip${tempLogState.sexActivity===f?' active':''}" onclick="setTL('sexActivity','${f}','sexChips')">${f}</button>`).join('')}</div>`;
+  }
 
   // Symptom categories
   for(const[cat,symptoms]of Object.entries(SYMPTOM_CATEGORIES)){
@@ -400,7 +700,7 @@ function renderLog(){
     <div style="margin-top:8px"><button class="btn-small" onclick="addMed()">+ Add Medication</button></div>`;
 
   h+=`<div class="section-title">Notes</div>
-    <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today?">${tempLogState.notes}</textarea>
+    <textarea class="notes-area" id="logNotes" placeholder="${S.pregnancyMode?'How are you and baby today?':'How are you feeling today?'}">${tempLogState.notes}</textarea>
     <button class="btn-primary" onclick="saveLog()">Save Today's Log</button>
   </div>`;
   document.getElementById('content').innerHTML=h;
@@ -420,10 +720,13 @@ function addMed(){const m=prompt('Enter medication or supplement name:');if(m&&m
 
 function saveLog(){
   const today=new Date().toISOString().split('T')[0];
-  const pv=document.getElementById('logPeriod').value;
-  if(pv&&!D.periods.some(p=>p.d===today&&p.t===pv))D.periods.push({d:today,t:pv});
+  if(!S.pregnancyMode){
+    const pv=document.getElementById('logPeriod').value;
+    if(pv&&!D.periods.some(p=>p.d===today&&p.t===pv))D.periods.push({d:today,t:pv});
+  }
 
-  const entry={date:today,flow:tempLogState.flow,flowColor:tempLogState.flowColor,cramps:tempLogState.cramps,mood:tempLogState.mood,tags:tempLogState.tags,customTags:tempLogState.customTags,meds:tempLogState.meds,temp:tempLogState.temp,notes:document.getElementById('logNotes').value};
+  const entry={date:today,flow:tempLogState.flow,flowColor:tempLogState.flowColor,cramps:tempLogState.cramps,mood:tempLogState.mood,tags:tempLogState.tags,customTags:tempLogState.customTags,meds:tempLogState.meds,temp:tempLogState.temp,notes:document.getElementById('logNotes').value,
+    weight:tempLogState.weight,cervicalMucus:tempLogState.cervicalMucus,cervicalPos:tempLogState.cervicalPos,sexActivity:tempLogState.sexActivity,sleepHours:tempLogState.sleepHours,waterCups:tempLogState.waterCups,exerciseMin:tempLogState.exerciseMin};
   const idx=D.logs.findIndex(l=>l.date===today);
   if(idx>=0)D.logs[idx]=entry;else D.logs.push(entry);
 
@@ -436,36 +739,40 @@ function saveLog(){
 
 // ─── Insights View ───────────────────────────────────────────
 function renderInsights(){
-  const phase=currentPhase(),info=phase?PHASE_INFO[phase]:null;
-  const starts=periodStarts(),a=avgCycle(),pl=avgPeriodLen();
+  const phase=currentPhase(),starts=periodStarts(),a=avgCycle(),pl=avgPeriodLen();
 
   let h='<div class="fade-in">';
 
-  // Current phase
-  if(info){
-    h+=`<div class="panel"><h3>${info.icon} ${info.name}</h3><p style="font-size:13px;color:var(--text-dim);line-height:1.6">${info.tip}</p></div>`;
-  }
+  if(S.pregnancyMode){
+    h+=renderPregnancyInsights();
+  }else{
+    // Current phase
+    const info=phase?PHASE_INFO[phase]:null;
+    if(info){
+      h+=`<div class="panel"><h3>${info.icon} ${info.name}</h3><p style="font-size:13px;color:var(--text-dim);line-height:1.6">${info.tip}</p></div>`;
+    }
 
-  // Cycle stats
-  h+=`<div class="panel"><h3>Cycle Summary</h3>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-      <div><div style="font-size:20px;font-weight:700;color:var(--rose-deep)">${a}</div><div style="font-size:11px;color:var(--text-muted)">Avg Cycle</div></div>
-      <div><div style="font-size:20px;font-weight:700;color:var(--lavender)">${pl}</div><div style="font-size:11px;color:var(--text-muted)">Period Days</div></div>
-      <div><div style="font-size:20px;font-weight:700;color:var(--mint)">${starts.length}</div><div style="font-size:11px;color:var(--text-muted)">Cycles Logged</div></div>
-    </div></div>`;
+    // Cycle stats
+    h+=`<div class="panel"><h3>Cycle Summary</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div><div style="font-size:20px;font-weight:700;color:var(--rose-deep)">${a}</div><div style="font-size:11px;color:var(--text-muted)">Avg Cycle</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:var(--lavender)">${pl}</div><div style="font-size:11px;color:var(--text-muted)">Period Days</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:var(--mint)">${starts.length}</div><div style="font-size:11px;color:var(--text-muted)">Cycles Logged</div></div>
+      </div></div>`;
 
-  // Cycle length chart
-  if(starts.length>=2){
-    const lens=[];for(let i=1;i<starts.length;i++){const d=(new Date(starts[i])-new Date(starts[i-1]))/864e5;if(d>10&&d<90)lens.push(d)}
-    if(lens.length){
-      const mx=Math.max(...lens),last6=lens.slice(-8);
-      h+=`<div class="panel"><h3>Cycle Length History</h3>
-        <div class="chart-bar">${last6.map((l,i)=>`<div class="bar${i===last6.length-1?' highlight':''}" style="height:${Math.max(10,l/mx*100)}%" title="${l} days"></div>`).join('')}</div>
-        <div class="chart-labels">${last6.map(l=>`<span>${l}d</span>`).join('')}</div></div>`;
+    // Cycle length chart
+    if(starts.length>=2){
+      const lens=[];for(let i=1;i<starts.length;i++){const d=(new Date(starts[i])-new Date(starts[i-1]))/864e5;if(d>10&&d<90)lens.push(d)}
+      if(lens.length){
+        const mx=Math.max(...lens),last6=lens.slice(-8);
+        h+=`<div class="panel"><h3>Cycle Length History</h3>
+          <div class="chart-bar">${last6.map((l,i)=>`<div class="bar${i===last6.length-1?' highlight':''}" style="height:${Math.max(10,l/mx*100)}%" title="${l} days"></div>`).join('')}</div>
+          <div class="chart-labels">${last6.map(l=>`<span>${l}d</span>`).join('')}</div></div>`;
+      }
     }
   }
 
-  // Temperature chart
+  // Temperature chart (shared between modes)
   const temps=D.tempReadings.slice(-14);
   if(temps.length>=3){
     const vals=temps.map(t=>t.v),mn=Math.min(...vals)-.5,mx=Math.max(...vals)+.5,range=mx-mn;
@@ -474,9 +781,27 @@ function renderInsights(){
       <div class="chart-labels">${temps.map(t=>`<span>${t.v}</span>`).join('')}</div></div>`;
   }
 
+  // Weight chart
+  const weightLogs=D.logs.filter(l=>l.weight).slice(-14);
+  if(weightLogs.length>=3){
+    const vals=weightLogs.map(l=>parseFloat(l.weight)),mn=Math.min(...vals)-2,mx=Math.max(...vals)+2,range=mx-mn;
+    h+=`<div class="panel"><h3>Weight Trend</h3>
+      <div class="chart-bar">${weightLogs.map(l=>`<div class="bar" style="height:${Math.max(5,(parseFloat(l.weight)-mn)/range*100)}%;background:var(--sky)" title="${l.weight}"></div>`).join('')}</div>
+      <div class="chart-labels">${weightLogs.map(l=>`<span>${l.weight}</span>`).join('')}</div></div>`;
+  }
+
+  // Sleep chart
+  const sleepLogs=D.logs.filter(l=>l.sleepHours).slice(-14);
+  if(sleepLogs.length>=3){
+    const vals=sleepLogs.map(l=>parseFloat(l.sleepHours)),mx=Math.max(...vals,10);
+    h+=`<div class="panel"><h3>Sleep (Last ${sleepLogs.length} Days)</h3>
+      <div class="chart-bar">${sleepLogs.map(l=>`<div class="bar" style="height:${Math.max(5,parseFloat(l.sleepHours)/mx*100)}%;background:var(--lavender-soft)" title="${l.sleepHours}h"></div>`).join('')}</div>
+      <div class="chart-labels">${sleepLogs.map(l=>`<span>${l.sleepHours}h</span>`).join('')}</div></div>`;
+  }
+
   // Symptom patterns
   const tagCounts={};D.logs.forEach(l=>{(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1});(l.customTags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1})});
-  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
   if(topTags.length){
     const mx=topTags[0][1];
     h+=`<div class="panel"><h3>Most Tracked Symptoms</h3>
@@ -488,17 +813,54 @@ function renderInsights(){
   }
 
   // Auto-discovered insights
-  h+=generateInsights();
+  if(!S.pregnancyMode)h+=generateInsights();
 
   // Doctor report button
-  h+=`<button class="btn-primary" onclick="exportReport()">Export Doctor Report (CSV)</button>`;
+  h+=`<button class="btn-primary" onclick="exportReport()">Export Doctor Report</button>`;
 
-  if(!starts.length){
+  if(!starts.length&&!S.pregnancyMode){
     h+=`<div class="empty-state"><div class="icon">&#128300;</div><p>Start logging periods and symptoms to see insights, patterns, and cycle phase information here.</p></div>`;
   }
 
   h+='</div>';
   document.getElementById('content').innerHTML=h;
+}
+
+function renderPregnancyInsights(){
+  const weeks=pregnancyWeeks(),tri=pregnancyTrimester(),ms=getNearestMilestone();
+  const due=pregnancyDueDate(),daysLeft=due?Math.ceil((new Date(due)-new Date())/864e5):0;
+
+  let h=`<div class="panel"><h3>&#129328; Week ${weeks} — Trimester ${tri}</h3>
+    <p style="font-size:14px;color:var(--text-dim);line-height:1.6">Your baby is about the size of a <strong>${ms.size}</strong>.</p>
+    <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-top:8px">${ms.info}</p>
+    ${daysLeft>0?`<p style="font-size:13px;color:var(--rose-deep);margin-top:8px;font-weight:600">${daysLeft} days until due date</p>`:''}
+  </div>`;
+
+  // Pregnancy symptoms common by trimester
+  const triSymptoms={
+    1:['Nausea and morning sickness are common. Fatigue is normal as your body adjusts. Stay hydrated and eat small, frequent meals.','Recommended: prenatal vitamins, folic acid, avoid alcohol and raw fish.'],
+    2:['Energy often returns! You may feel baby\'s first movements (quickening). Appetite increases — eat nutrient-rich foods.','Recommended: anatomy scan (18-22 weeks), glucose screening, iron-rich foods.'],
+    3:['Baby is growing fast. You may experience Braxton Hicks contractions, back pain, and trouble sleeping. Start preparing your birth plan.','Recommended: GBS test (35-37 weeks), pack hospital bag, practice breathing exercises.']
+  };
+  h+=`<div class="panel"><h3>Trimester ${tri} Tips</h3>
+    ${triSymptoms[tri].map(t=>`<p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:8px">${t}</p>`).join('')}</div>`;
+
+  // Upcoming milestones
+  const allWeeks=Object.keys(PREGNANCY_MILESTONES).map(Number).sort((a,b)=>a-b);
+  const upcoming=allWeeks.filter(w=>w>weeks).slice(0,3);
+  if(upcoming.length){
+    h+=`<div class="panel"><h3>Coming Up</h3>`;
+    for(const w of upcoming){
+      const m=PREGNANCY_MILESTONES[w];
+      h+=`<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:600;color:var(--lavender)">Week ${w} — ${m.size}</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:4px">${m.info}</div>
+      </div>`;
+    }
+    h+=`</div>`;
+  }
+
+  return h;
 }
 
 function generateInsights(){
@@ -534,7 +896,7 @@ function generateInsights(){
   const topMood=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0];
   if(topMood&&topMood[1]>=3){
     h+=`<div class="insight-card"><div class="insight-title">Mood Pattern</div>
-      <div class="insight-text">Your most logged mood is <strong>${topMood[0]}</strong> (${topMood[1]} times). ${topMood[0]==='Anxious'||topMood[0]==='Sad'?'Consider tracking what helps on those days.':'Keep noting what contributes to this.'}</div></div>`;
+      <div class="insight-text">Your most logged mood is <strong>${topMood[0]}</strong> (${topMood[1]} times). ${topMood[0]==='Anxious'||topMood[0]==='Sad'||topMood[0]==='Stressed'?'Consider tracking what helps on those days.':'Keep noting what contributes to this.'}</div></div>`;
   }
 
   // Pain trend
@@ -543,6 +905,14 @@ function generateInsights(){
     const avgPain=(painLogs.reduce((s,l)=>s+l.cramps,0)/painLogs.length).toFixed(1);
     h+=`<div class="insight-card"><div class="insight-title">Pain Tracking</div>
       <div class="insight-text">Your average pain level is <strong>${avgPain}/10</strong> across ${painLogs.length} logged days. ${avgPain>=6?'This is significant — consider discussing pain management with your doctor.':'Tracking helps identify triggers over time.'}</div></div>`;
+  }
+
+  // Sleep insight
+  const sleepData=logs.filter(l=>l.sleepHours);
+  if(sleepData.length>=5){
+    const avg=(sleepData.reduce((s,l)=>s+parseFloat(l.sleepHours),0)/sleepData.length).toFixed(1);
+    h+=`<div class="insight-card"><div class="insight-title">Sleep Insight</div>
+      <div class="insight-text">Your average sleep is <strong>${avg} hours</strong>. ${avg<7?'Most adults need 7-9 hours. Consider earlier bedtimes during your luteal phase.':'Great sleep habits!'}</div></div>`;
   }
 
   return h;
@@ -564,6 +934,11 @@ function renderHistory(){
       if(log.cramps)details.push(`Pain: ${log.cramps}/10`);
       if(log.mood)details.push(`Mood: ${log.mood}`);
       if(log.temp)details.push(`Temp: ${log.temp}`);
+      if(log.weight)details.push(`Weight: ${log.weight}`);
+      if(log.sleepHours)details.push(`Sleep: ${log.sleepHours}h`);
+      if(log.exerciseMin)details.push(`Exercise: ${log.exerciseMin}min`);
+      if(log.cervicalMucus)details.push(`CM: ${log.cervicalMucus}`);
+      if(log.sexActivity&&log.sexActivity!=='None')details.push(`Sex: ${log.sexActivity}`);
       if(log.meds?.length)details.push(`Meds: ${log.meds.join(', ')}`);
       if(log.notes)details.push(log.notes);
     }
@@ -585,9 +960,27 @@ function renderSettings(){
       ${S.pinEnabled?'<div class="setting-row"><label>Change PIN</label><button style="color:var(--lavender);font-size:14px;font-weight:600" onclick="showPinUI(null,true)">Change</button></div>':''}
     </div>
 
+    <div class="settings-group"><h3>Mode</h3>
+      <div class="setting-row"><label>Pregnancy Mode</label><div class="toggle ${S.pregnancyMode?'on':''}" onclick="${S.pregnancyMode?'disablePregnancyMode()':'enablePregnancyMode()'}"></div></div>
+      ${S.pregnancyMode&&D.pregnancy?`<div class="setting-row"><label>LMP Date</label><span style="color:var(--text-dim)">${D.pregnancy.lmpDate}</span></div>
+      <div class="setting-row"><label>Due Date</label><span style="color:var(--rose-deep);font-weight:600">${pregnancyDueDate()}</span></div>
+      <div class="setting-row"><label>Current Week</label><span style="color:var(--text-dim)">${pregnancyWeeks()}</span></div>`:''}
+    </div>
+
     <div class="settings-group"><h3>Cycle Settings</h3>
       <div class="setting-row"><label>Luteal phase length</label><div style="display:flex;align-items:center;gap:8px"><input type="number" min="8" max="20" value="${S.lutealLength}" style="width:60px;text-align:center;padding:6px" onchange="S.lutealLength=+this.value;saveSettings()"><span style="font-size:12px;color:var(--text-muted)">days</span></div></div>
       <div class="setting-row"><label>Show ovulation</label><div class="toggle ${S.showOvulation?'on':''}" onclick="S.showOvulation=!S.showOvulation;saveSettings();renderSettings()"></div></div>
+    </div>
+
+    <div class="settings-group"><h3>Partner Sharing</h3>
+      <div class="setting-row"><label>Share my cycle</label><button style="color:var(--rose-deep);font-size:14px;font-weight:600" onclick="showPartnerShare()">Share</button></div>
+      <div class="setting-row"><label>View partner</label><button style="color:var(--lavender);font-size:14px;font-weight:600" onclick="importPartnerView()">Import</button></div>
+    </div>
+
+    <div class="settings-group"><h3>Backup & Restore</h3>
+      <div class="setting-row"><label>Backup data</label><button style="color:var(--mint);font-size:14px;font-weight:600" onclick="exportBackup()">Download</button></div>
+      <div class="setting-row"><label>Restore backup</label><button style="color:var(--lavender);font-size:14px;font-weight:600" onclick="importBackup()">Upload</button></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:6px">Backups are saved to your device and can be password-protected. No cloud involved.</p>
     </div>
 
     <div class="settings-group"><h3>Data</h3>
@@ -596,14 +989,15 @@ function renderSettings(){
       <div class="setting-row"><label>Average cycle</label><span style="color:var(--text-dim)">${avgCycle()} days</span></div>
       <div class="setting-row"><label>Custom tags</label><span style="color:var(--text-dim)">${D.customTags.length}</span></div>
       <div class="setting-row"><label>Medications</label><span style="color:var(--text-dim)">${(D.medications||[]).length}</span></div>
+      <div class="setting-row"><label>Temp readings</label><span style="color:var(--text-dim)">${D.tempReadings.length}</span></div>
     </div>
 
-    <button class="btn-primary" onclick="exportReport()">Export Doctor Report (CSV)</button>
+    <button class="btn-primary" onclick="exportReport()">Export Doctor Report</button>
     <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('calendar')}">Delete All Data</button>
 
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-      <strong style="color:var(--rose-deep)">Luna</strong> v1.1 — Privacy-first cycle tracker<br>
+      <strong style="color:var(--rose-deep)">Luna</strong> v2.0 — Privacy-first cycle tracker<br>
       All data stored locally on your device.<br>
       No accounts. No cloud. No tracking. Ever.<br>
       <span style="font-size:11px">by ENERGENAI LLC</span>
@@ -616,18 +1010,23 @@ function togglePin(){if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem
 
 // ─── Export ──────────────────────────────────────────────────
 function exportCSV(){
-  let csv='Date,Period,Flow,Flow Color,Pain,Mood,Temperature,Symptoms,Custom Tags,Medications,Notes\n';
+  let csv='Date,Period,Flow,Flow Color,Pain,Mood,Temperature,Weight,Sleep,Water,Exercise,Cervical Mucus,Sex Activity,Symptoms,Custom Tags,Medications,Notes\n';
   const allDates=[...new Set([...D.periods.map(p=>p.d),...D.logs.map(l=>l.date)])].sort();
   for(const d of allDates){
     const log=getLog(d)||{};const isS=isPeriodStart(d)?'Start':'';const isE=D.periods.some(p=>p.t==='e'&&p.d===d)?'End':'';
     const period=[isS,isE].filter(Boolean).join('+');
-    csv+=`${d},"${period}","${log.flow||''}","${log.flowColor||''}",${log.cramps||''},"${log.mood||''}",${log.temp||''},"${(log.tags||[]).join('; ')}","${(log.customTags||[]).join('; ')}","${(log.meds||[]).join('; ')}","${(log.notes||'').replace(/"/g,'""')}"\n`;
+    csv+=`${d},"${period}","${log.flow||''}","${log.flowColor||''}",${log.cramps||''},"${log.mood||''}",${log.temp||''},${log.weight||''},${log.sleepHours||''},${log.waterCups||''},${log.exerciseMin||''},"${log.cervicalMucus||''}","${log.sexActivity||''}","${(log.tags||[]).join('; ')}","${(log.customTags||[]).join('; ')}","${(log.meds||[]).join('; ')}","${(log.notes||'').replace(/"/g,'""')}"\n`;
   }
   downloadFile(csv,'text/csv',`luna-export-${new Date().toISOString().split('T')[0]}.csv`);
 }
 
 function exportReport(){
   let r=`LUNA CYCLE HEALTH REPORT\nGenerated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}\n\n`;
+
+  if(S.pregnancyMode&&D.pregnancy){
+    r+=`MODE: PREGNANCY TRACKING\nLMP Date: ${D.pregnancy.lmpDate}\nCurrent Week: ${pregnancyWeeks()}\nDue Date: ${pregnancyDueDate()}\nTrimester: ${pregnancyTrimester()}\n\n`;
+  }
+
   r+=`CYCLE SUMMARY\nAverage Cycle Length: ${avgCycle()} days\nAverage Period Length: ${avgPeriodLen()} days\nCycles Tracked: ${periodStarts().length}\nDaily Logs: ${D.logs.length}\n\n`;
 
   r+=`CYCLE HISTORY\n`;
@@ -638,7 +1037,7 @@ function exportReport(){
   }
 
   const tagCounts={};D.logs.forEach(l=>{(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1});(l.customTags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1})});
-  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,20);
   if(topTags.length){r+=`\nMOST COMMON SYMPTOMS\n`;topTags.forEach(([t,c])=>{r+=`  ${t}: ${c} occurrences\n`})}
 
   const painLogs=D.logs.filter(l=>l.cramps>0);
@@ -655,7 +1054,19 @@ function exportReport(){
     r+=`\nTEMPERATURE DATA\nReadings: ${temps.length}\nAverage: ${(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)}\nRange: ${Math.min(...vals).toFixed(1)} - ${Math.max(...vals).toFixed(1)}\n`;
   }
 
-  r+=`\n---\nGenerated by Luna (Privacy-First Cycle Tracker)\nAll data stored locally on device. This report was created by the user.\n`;
+  const weightLogs=D.logs.filter(l=>l.weight);
+  if(weightLogs.length>=2){
+    const vals=weightLogs.map(l=>parseFloat(l.weight));
+    r+=`\nWEIGHT DATA\nReadings: ${weightLogs.length}\nCurrent: ${vals[vals.length-1]}\nRange: ${Math.min(...vals).toFixed(1)} - ${Math.max(...vals).toFixed(1)}\n`;
+  }
+
+  const sleepLogs=D.logs.filter(l=>l.sleepHours);
+  if(sleepLogs.length>=3){
+    const avg=(sleepLogs.reduce((s,l)=>s+parseFloat(l.sleepHours),0)/sleepLogs.length).toFixed(1);
+    r+=`\nSLEEP DATA\nReadings: ${sleepLogs.length}\nAverage: ${avg} hours\n`;
+  }
+
+  r+=`\n---\nGenerated by Luna v2.0 (Privacy-First Cycle Tracker)\nAll data stored locally on device. This report was created by the user.\n`;
   downloadFile(r,'text/plain',`luna-health-report-${new Date().toISOString().split('T')[0]}.txt`);
 }
 
@@ -667,7 +1078,16 @@ function downloadFile(content,type,name){
 // ─── Phase Banner ────────────────────────────────────────────
 function updatePhaseBanner(){
   const el=document.getElementById('phaseBanner'),phase=currentPhase();
-  if(!phase||!periodStarts().length){el.innerHTML='';return}
+  if(!phase){el.innerHTML='';return}
+
+  if(S.pregnancyMode){
+    const weeks=pregnancyWeeks(),tri=pregnancyTrimester();
+    const ms=getNearestMilestone();
+    el.innerHTML=`<div class="phase-banner trimester${tri}">&#129328; <strong>Week ${weeks}</strong> — Baby is the size of a ${ms.size}</div>`;
+    return;
+  }
+
+  if(!periodStarts().length){el.innerHTML='';return}
   const info=PHASE_INFO[phase];
   el.innerHTML=`<div class="phase-banner ${phase}">${info.icon} <strong>${info.name}</strong> — ${info.tip.split('.')[0]}.</div>`;
 }

@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#F8F0FF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Bloom — Private HRT Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F8F0FF;--surface:#FFFFFF;--card:#FFFFFF;--border:#E8D5F5;
+  --violet:#B388FF;--violet-deep:#7C4DFF;--violet-soft:#D1C4E9;--violet-pale:#EDE7F6;
+  --pink:#F48FB1;--pink-deep:#E91E63;--pink-soft:#F8BBD0;--pink-pale:#FCE4EC;
+  --sky:#81D4FA;--sky-deep:#039BE5;--sky-soft:#B3E5FC;--sky-pale:#E1F5FE;
+  --mint:#A5D6A7;--mint-deep:#43A047;--mint-soft:#C8E6C9;--mint-pale:#E8F5E9;
+  --peach:#FFCC80;--peach-deep:#EF6C00;--peach-soft:#FFE0B2;--peach-pale:#FFF3E0;
+  --rose:#F48FB1;--rose-pale:#FCE4EC;
+  --text:#3E2465;--text-dim:#7B6B8A;--text-muted:#A99BBB;
+  --danger:#EF5350;--success:#66BB6A;--warn:#FFA726;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:15px;outline:none;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(179,136,255,.15)}
+.app{max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+.header{padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:24px;font-weight:700;background:linear-gradient(135deg,var(--violet-deep),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-actions{display:flex;gap:8px}
+.header-btn{width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border);transition:all .2s;box-shadow:0 1px 3px rgba(62,36,101,.06)}
+.header-btn:hover{background:var(--violet-pale);border-color:var(--violet-soft)}
+
+.privacy-banner{margin:0 16px 8px;padding:10px 16px;background:linear-gradient(135deg,rgba(129,212,250,.15),rgba(179,136,255,.1));border:1px solid rgba(129,212,250,.3);border-radius:14px;font-size:12px;color:var(--sky-deep);display:flex;align-items:center;gap:8px;font-weight:500}
+
+.milestone-banner{margin:0 16px 8px;padding:14px 16px;border-radius:14px;font-size:13px;display:flex;align-items:center;gap:10px;font-weight:500;background:linear-gradient(135deg,var(--violet-pale),var(--pink-pale));color:var(--violet-deep);border:1px solid var(--violet-soft)}
+
+.nav{display:flex;gap:3px;padding:4px 16px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-btn{flex-shrink:0;padding:8px 12px;border-radius:12px;font-size:12px;font-weight:600;color:var(--text-muted);transition:all .2s;text-align:center;white-space:nowrap}
+.nav-btn.active{background:var(--surface);color:var(--violet-deep);border:1px solid var(--border);box-shadow:0 2px 8px rgba(62,36,101,.06)}
+
+.content{flex:1;padding:0 16px 100px;overflow-y:auto}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:0 1px 4px rgba(62,36,101,.04)}
+.stat-card .label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;font-weight:600}
+.stat-card .value{font-size:20px;font-weight:700}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(62,36,101,.04)}
+.panel h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:10px}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{padding:6px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:var(--surface);transition:all .2s;font-weight:500;user-select:none}
+.chip.active{background:linear-gradient(135deg,var(--violet),var(--violet-deep));color:#fff;border-color:transparent;box-shadow:0 2px 6px rgba(124,77,255,.25)}
+.chip.active-pink{background:linear-gradient(135deg,var(--pink),var(--pink-deep));color:#fff;border-color:transparent}
+.chip.active-sky{background:linear-gradient(135deg,var(--sky),var(--sky-deep));color:#fff;border-color:transparent}
+.chip.active-mint{background:linear-gradient(135deg,var(--mint),var(--mint-deep));color:#fff;border-color:transparent}
+
+.mood-row{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
+.mood-btn{font-size:24px;padding:6px;border-radius:12px;transition:all .2s;border:2px solid transparent}
+.mood-btn.active{border-color:var(--violet);background:var(--violet-pale)}
+
+.range-wrap{margin:6px 0}
+.range-wrap input[type="range"]{accent-color:var(--violet);width:100%;padding:0;border:none}
+.range-wrap input[type="range"]:focus{box-shadow:none}
+.range-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:2px}
+
+.btn-primary{width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,var(--violet),var(--pink));color:#fff;font-size:15px;font-weight:600;margin-top:12px;transition:all .2s;box-shadow:0 4px 12px rgba(124,77,255,.25)}
+.btn-primary:active{opacity:.85;transform:scale(.98)}
+.btn-secondary{width:100%;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:14px;font-weight:500;margin-top:8px}
+.btn-small{padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;background:var(--violet-pale);color:var(--violet-deep);border:1px solid var(--violet-soft)}
+
+.form-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.form-row label{font-size:14px;color:var(--text-dim);min-width:90px;font-weight:500}
+.form-row > *:last-child{flex:1}
+
+.section-title{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;padding-left:2px}
+
+.chart-bar{display:flex;align-items:end;gap:3px;height:80px;margin:8px 0}
+.chart-bar .bar{flex:1;border-radius:4px 4px 0 0;transition:height .3s;min-height:2px}
+.chart-labels{display:flex;gap:3px;font-size:9px;color:var(--text-muted);text-align:center}
+.chart-labels span{flex:1}
+
+.timeline-item{display:flex;gap:12px;margin-bottom:16px;position:relative}
+.timeline-dot{width:12px;height:12px;border-radius:50%;background:var(--violet);flex-shrink:0;margin-top:4px;position:relative;z-index:1}
+.timeline-dot.active{background:var(--pink);box-shadow:0 0 0 4px var(--pink-pale)}
+.timeline-dot.future{background:var(--border)}
+.timeline-item:not(:last-child)::before{content:'';position:absolute;left:5px;top:16px;bottom:-8px;width:2px;background:var(--border)}
+.timeline-content{flex:1}
+.timeline-content h4{font-size:14px;font-weight:600;margin-bottom:2px}
+.timeline-content p{font-size:12px;color:var(--text-dim);line-height:1.5}
+
+.settings-group{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
+.settings-group h3{font-size:14px;font-weight:600;margin-bottom:12px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-row label{font-size:14px}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:all .2s;flex-shrink:0}
+.toggle.on{background:linear-gradient(135deg,var(--violet),var(--violet-deep))}
+.toggle::after{content:'';width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.toggle.on::after{left:22px}
+
+.pin-overlay{position:fixed;inset:0;background:linear-gradient(180deg,var(--bg) 0%,var(--violet-pale) 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pin-overlay h2{font-size:20px;margin-bottom:24px;font-weight:600}
+.pin-dots{display:flex;gap:14px;margin-bottom:32px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s;background:var(--surface)}
+.pin-dot.filled{background:linear-gradient(135deg,var(--violet),var(--violet-deep));border-color:var(--violet)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:260px}
+.pin-key{width:72px;height:56px;border-radius:16px;background:var(--surface);border:1px solid var(--border);font-size:22px;font-weight:500;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 2px 6px rgba(62,36,101,.05);color:var(--text)}
+.pin-key:active{background:var(--violet-pale);transform:scale(.95)}
+
+.onboarding{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.onboarding h2{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--violet-deep),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+.onboarding p{font-size:15px;color:var(--text-dim);line-height:1.7;max-width:320px;margin-bottom:20px}
+.onboarding .feature-list{text-align:left;max-width:300px;margin:0 auto 24px}
+.onboarding .feature-list div{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;color:var(--text)}
+.feature-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+.insight-card{background:linear-gradient(135deg,var(--violet-pale),var(--pink-pale));border:1px solid var(--violet-soft);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.insight-card .insight-title{font-size:13px;font-weight:600;color:var(--violet-deep);margin-bottom:4px}
+.insight-card .insight-text{font-size:13px;color:var(--text);line-height:1.5}
+
+.history-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(62,36,101,.03)}
+.history-item .date{font-size:14px;font-weight:600;color:var(--violet-deep)}
+.history-item .details{font-size:13px;color:var(--text-dim);margin-top:4px;line-height:1.5}
+.history-item .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.history-item .tag{font-size:11px;padding:3px 10px;border-radius:10px;background:var(--violet-pale);color:var(--violet-deep);font-weight:500}
+
+.lab-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.lab-row:last-child{border-bottom:none}
+.lab-name{font-size:13px;font-weight:500;min-width:90px}
+.lab-value{font-size:14px;font-weight:700;min-width:60px;text-align:right}
+.lab-unit{font-size:11px;color:var(--text-muted);min-width:50px}
+.lab-range{font-size:11px;color:var(--text-muted);flex:1;text-align:right}
+.lab-flag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
+.lab-flag.normal{background:var(--mint-pale);color:var(--mint-deep)}
+.lab-flag.high{background:var(--peach-pale);color:var(--peach-deep)}
+.lab-flag.low{background:var(--sky-pale);color:var(--sky-deep)}
+.lab-flag.urgent{background:#FFEBEE;color:var(--danger)}
+
+.inj-site{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:11px;font-weight:700;border:2px solid var(--border);margin:2px;cursor:pointer;transition:all .2s}
+.inj-site.recent{background:var(--pink-pale);border-color:var(--pink);color:var(--pink-deep)}
+.inj-site.selected{background:var(--violet);border-color:var(--violet-deep);color:#fff}
+
+.alert-box{padding:12px 16px;border-radius:12px;margin-bottom:8px;font-size:13px;line-height:1.5}
+.alert-box.info{background:var(--sky-pale);border:1px solid var(--sky-soft);color:var(--sky-deep)}
+.alert-box.warning{background:var(--peach-pale);border:1px solid var(--peach-soft);color:var(--peach-deep)}
+.alert-box.urgent{background:#FFEBEE;border:1px solid #FFCDD2;color:var(--danger)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .3s ease}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px;line-height:1.6}
+.notes-area{min-height:50px;resize:vertical;border-radius:12px;margin-top:4px}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="pin-overlay" id="pinOverlay" style="display:none">
+    <h2 id="pinTitle">Enter PIN</h2>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-pad" id="pinPad"></div>
+    <p style="color:var(--text-muted);font-size:13px;margin-top:20px" id="pinMsg"></p>
+  </div>
+
+  <div class="onboarding" id="onboarding" style="display:none">
+    <h2>Welcome to Bloom</h2>
+    <p>Your private HRT companion. Track your journey with complete privacy — everything stays on your device.</p>
+    <div class="feature-list">
+      <div><span class="feature-icon" style="background:var(--violet-pale)">&#128138;</span> Medications, labs &amp; injections</div>
+      <div><span class="feature-icon" style="background:var(--pink-pale)">&#128200;</span> Body changes &amp; measurements</div>
+      <div><span class="feature-icon" style="background:var(--sky-pale)">&#128302;</span> Timeline &amp; milestone tracking</div>
+      <div><span class="feature-icon" style="background:var(--mint-pale)">&#128274;</span> PIN lock, stealth mode &amp; encryption</div>
+    </div>
+    <button class="btn-primary" style="max-width:300px" onclick="completeOnboarding()">Get Started</button>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:16px">Zero data collection. Zero network requests.<br>Your journey, your data, your device only.</p>
+  </div>
+
+  <div id="mainApp">
+    <div class="header">
+      <h1 id="appTitle">Bloom</h1>
+      <div class="header-actions">
+        <button class="header-btn" onclick="showView('insights')" title="Insights">&#9733;</button>
+        <button class="header-btn" onclick="showView('settings')" title="Settings">&#9881;</button>
+      </div>
+    </div>
+
+    <div id="milestoneBanner"></div>
+
+    <div class="privacy-banner">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" fill="currentColor" opacity=".2"/><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Your data never leaves this device
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">Home</button>
+      <button class="nav-btn" data-view="log" onclick="showView('log')">Log</button>
+      <button class="nav-btn" data-view="meds" onclick="showView('meds')">Meds</button>
+      <button class="nav-btn" data-view="labs" onclick="showView('labs')">Labs</button>
+      <button class="nav-btn" data-view="body" onclick="showView('body')">Body</button>
+      <button class="nav-btn" data-view="timeline" onclick="showView('timeline')">Timeline</button>
+      <button class="nav-btn" data-view="insights" onclick="showView('insights')">Insights</button>
+      <button class="nav-btn" data-view="settings" onclick="showView('settings')">Settings</button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// ─── Constants ───────────────────────────────────────────────
+const STORAGE_KEY='bloom_data',SETTINGS_KEY='bloom_settings',PIN_KEY='bloom_pin';
+
+const CHANGE_TIMELINE=[
+  {change:'Skin softening',onset:'1-3 months',max:'1-2 years',reversible:true},
+  {change:'Decreased libido',onset:'1-3 months',max:'3-6 months',reversible:true},
+  {change:'Breast budding',onset:'1-3 months',max:'2-5 years',reversible:false},
+  {change:'Fat redistribution',onset:'3-6 months',max:'2-5 years',reversible:true},
+  {change:'Decreased muscle mass',onset:'3-6 months',max:'1-2 years',reversible:true},
+  {change:'Body hair thinning',onset:'3-6 months',max:'2-3+ years',reversible:'partial'},
+  {change:'Scalp hair changes',onset:'3-6 months',max:'1-2 years',reversible:'variable'},
+  {change:'Testicular atrophy',onset:'3-6 months',max:'2-3 years',reversible:false},
+  {change:'Emotional changes',onset:'Weeks',max:'Ongoing',reversible:true},
+  {change:'Facial hair slowing',onset:'6-12 months',max:'2-4 years',reversible:'partial'},
+  {change:'Areola growth',onset:'3-6 months',max:'2-3 years',reversible:false}
+];
+
+const TANNER_STAGES=[
+  {stage:'I',desc:'Prepubertal — no breast tissue',typical:'Pre-HRT'},
+  {stage:'II',desc:'Breast buds forming, areola enlarging',typical:'1-6 months'},
+  {stage:'III',desc:'Breast & areola enlarge, no separate contour',typical:'6-12 months'},
+  {stage:'IV',desc:'Areola forms secondary mound',typical:'12-24 months'},
+  {stage:'V',desc:'Mature breast, areola recesses to contour',typical:'2-5 years'}
+];
+
+const LAB_TARGETS={
+  'Estradiol':{unit:'pg/mL',low:100,high:200,urgentLow:30,urgentHigh:500},
+  'Testosterone':{unit:'ng/dL',low:0,high:50,urgentHigh:100},
+  'Prolactin':{unit:'ng/mL',low:2,high:25,urgentHigh:50},
+  'ALT':{unit:'U/L',low:0,high:40,urgentHigh:120},
+  'AST':{unit:'U/L',low:0,high:40,urgentHigh:120},
+  'Potassium':{unit:'mEq/L',low:3.5,high:5.0,urgentHigh:5.5},
+  'Hemoglobin':{unit:'g/dL',low:11.5,high:16.5},
+  'LDL':{unit:'mg/dL',low:0,high:130,urgentHigh:160},
+  'HDL':{unit:'mg/dL',low:40,high:90},
+  'Triglycerides':{unit:'mg/dL',low:0,high:150,urgentHigh:500},
+  'A1C':{unit:'%',low:4.0,high:5.6,urgentHigh:6.5},
+  'Estrone':{unit:'pg/mL',low:0,high:300},
+  'SHBG':{unit:'nmol/L',low:20,high:150},
+  'Free T':{unit:'pg/mL',low:0,high:5},
+  'DHT':{unit:'ng/dL',low:0,high:20},
+  'TSH':{unit:'mIU/L',low:0.4,high:4.5},
+  'Vitamin D':{unit:'ng/mL',low:30,high:80,urgentLow:20},
+  'Creatinine':{unit:'mg/dL',low:0.5,high:1.2,urgentHigh:1.5}
+};
+
+const INJECTION_SITES=['L Thigh','R Thigh','L VG','R VG','L Delt','R Delt','L Abd','R Abd'];
+
+const SYMPTOMS={
+  'Physical':['Breast soreness','Hot flashes','Headache','Nausea','Fatigue','Dizziness','Dry skin','Acne clearing','Softer skin','Joint pain','Muscle weakness','Water retention'],
+  'Emotional':['Mood swings','Crying easily','Euphoria','Anxiety','Depression','Calm','Emotional range','Dysphoria relief','Irritability','Brain fog'],
+  'Sexual':['Libido decrease','Libido increase','Erectile changes','Genital atrophy','Sensitivity increase','Arousal changes'],
+  'Hair & Skin':['Less body hair','Softer hair','Scalp regrowth','Hair shedding','Oily skin decrease','Bruising easily','Skin thinning'],
+  'Body':['Hip growth','Breast growth','Fat redistribution','Muscle loss','Weight gain','Weight loss','Face changes','Cellulite']
+};
+
+const MOODS=[{e:'&#128522;',l:'Happy'},{e:'&#128578;',l:'Calm'},{e:'&#129303;',l:'Euphoric'},{e:'&#128546;',l:'Sad'},{e:'&#128553;',l:'Anxious'},{e:'&#128564;',l:'Tired'},{e:'&#128544;',l:'Dysphoric'},{e:'&#129392;',l:'Loved'},{e:'&#128566;',l:'Stressed'},{e:'&#128525;',l:'Confident'}];
+
+const MED_TYPES={
+  estrogen:['Estradiol oral','Estradiol sublingual','Estradiol patch','Estradiol gel','Estradiol valerate IM','Estradiol valerate SubQ','Estradiol cypionate IM','Estradiol cypionate SubQ'],
+  antiandrogen:['Spironolactone','Bicalutamide','Cyproterone acetate','Leuprolide (Lupron)','Triptorelin','Goserelin'],
+  progesterone:['Progesterone oral','Progesterone rectal'],
+  other:['Finasteride','Dutasteride','Biotin','Vitamin D','Calcium','Fish oil','Iron','Custom...']
+};
+
+// ─── Data Layer ──────────────────────────────────────────────
+function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
+function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[]}}
+function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
+function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
+function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false}}
+function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
+function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
+
+let D=loadData(),S=loadSettings(),currentView='dashboard',tempLog={};
+
+// ─── Calculations ────────────────────────────────────────────
+function daysOnHRT(){if(!D.startDate)return 0;return Math.floor((new Date()-new Date(D.startDate))/864e5)}
+function monthsOnHRT(){return Math.round(daysOnHRT()/30.44*10)/10}
+function yearsOnHRT(){return Math.round(daysOnHRT()/365.25*10)/10}
+function getLog(d){return D.logs.find(l=>l.date===d)}
+function today(){return new Date().toISOString().split('T')[0]}
+function latestLab(name){const results=D.labs.flatMap(l=>l.results.filter(r=>r.name===name)).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));return results[0]}
+function labHistory(name){return D.labs.flatMap(l=>l.results.filter(r=>r.name===name).map(r=>({...r,date:l.date}))).sort((a,b)=>new Date(a.date)-new Date(b.date))}
+function flagLab(name,value){
+  const t=LAB_TARGETS[name];if(!t)return'normal';
+  if(t.urgentHigh&&value>t.urgentHigh)return'urgent';
+  if(t.urgentLow&&value<t.urgentLow)return'urgent';
+  if(value>t.high)return'high';
+  if(value<t.low)return'low';
+  return'normal';
+}
+function braSize(){
+  const m=D.measurements.slice(-1)[0];if(!m||!m.bust||!m.underbust)return null;
+  let band=Math.round(m.underbust);if(band%2!==0)band++;
+  const diff=m.bust-band;
+  const cups=['AA','A','B','C','D','DD','DDD','G','H'];
+  return band+' '+(cups[Math.max(0,Math.round(diff))]||cups[cups.length-1]);
+}
+function whr(){const m=D.measurements.slice(-1)[0];if(!m||!m.waist||!m.hips)return null;return(m.waist/m.hips).toFixed(2)}
+function lastInjectionSite(){return D.injections.length?D.injections[D.injections.length-1].site:null}
+function nextInjectionSite(){
+  const last=lastInjectionSite();if(!last)return INJECTION_SITES[0];
+  const idx=INJECTION_SITES.indexOf(last);return INJECTION_SITES[(idx+1)%INJECTION_SITES.length];
+}
+function generateAlerts(){
+  const alerts=[];const meds=D.meds.filter(m=>!m.ended);
+  const hasSpiro=meds.some(m=>m.name.toLowerCase().includes('spironolactone'));
+  const hasBical=meds.some(m=>m.name.toLowerCase().includes('bicalutamide'));
+  const hasOralE=meds.some(m=>m.name.toLowerCase().includes('oral'));
+
+  // Lab due alerts
+  if(D.labs.length){
+    const lastLab=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+    const daysSince=Math.floor((new Date()-new Date(lastLab.date))/864e5);
+    const months=daysOnHRT()/30;
+    if(months<12&&daysSince>90)alerts.push({type:'info',msg:'Lab work may be due (recommended every 3 months in first year).'});
+    else if(months>=12&&daysSince>180)alerts.push({type:'info',msg:'Lab work may be due (recommended every 6 months).'});
+  }else if(daysOnHRT()>30){
+    alerts.push({type:'warning',msg:'No labs recorded yet. Baseline labs are recommended before or shortly after starting HRT.'});
+  }
+
+  // Potassium alert
+  if(hasSpiro){const k=latestLab('Potassium');if(k&&k.value>5.0)alerts.push({type:'urgent',msg:`Potassium is ${k.value} mEq/L (elevated). Contact your provider — risk with spironolactone.`})}
+
+  // Liver alert
+  if(hasBical){
+    const alt=latestLab('ALT');if(alt&&alt.value>120)alerts.push({type:'urgent',msg:`ALT is ${alt.value} U/L (>3x normal). Contact provider immediately — bicalutamide liver risk.`});
+    const bicalMed=meds.find(m=>m.name.toLowerCase().includes('bicalutamide'));
+    if(bicalMed){const bicalDays=Math.floor((new Date()-new Date(bicalMed.started))/864e5);
+      if(bicalDays<180){const lastALT=D.labs.filter(l=>l.results.some(r=>r.name==='ALT')).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+        if(!lastALT||Math.floor((new Date()-new Date(lastALT.date))/864e5)>35)alerts.push({type:'warning',msg:'Monthly liver function tests recommended during first 6 months of bicalutamide.'})}}
+  }
+
+  // Prolactin
+  const prl=latestLab('Prolactin');if(prl&&prl.value>50)alerts.push({type:'warning',msg:`Prolactin is ${prl.value} ng/mL (elevated). Discuss imaging with your provider.`});
+
+  // E2 levels
+  const e2=latestLab('Estradiol');
+  if(e2&&e2.value<50&&daysOnHRT()>90)alerts.push({type:'warning',msg:`Estradiol ${e2.value} pg/mL may be subtherapeutic. Discuss dosing with provider.`});
+  if(e2&&e2.value>500)alerts.push({type:'info',msg:`Estradiol ${e2.value} pg/mL is above typical target range.`});
+
+  return alerts;
+}
+
+// ─── PIN ─────────────────────────────────────────────────────
+function checkPinLock(){const h=localStorage.getItem(PIN_KEY);if(!h||!S.pinEnabled)return;showPinUI(h,false)}
+function showPinUI(expected,isSetup){
+  const o=document.getElementById('pinOverlay');o.style.display='flex';
+  document.getElementById('pinTitle').textContent=isSetup?'Set New PIN':'Enter PIN';
+  document.getElementById('pinMsg').textContent=isSetup?'Choose a 4-digit PIN':'';
+  let entered='',first='',confirming=false;
+  function dots(){document.getElementById('pinDots').innerHTML=Array.from({length:4},(_,i)=>`<div class="pin-dot${i<entered.length?' filled':''}"></div>`).join('')}
+  function pad(){
+    const p=document.getElementById('pinPad');p.innerHTML='';
+    for(let i=1;i<=9;i++){const b=document.createElement('button');b.className='pin-key';b.textContent=i;b.onclick=()=>press(i+'');p.appendChild(b)}
+    p.innerHTML+='<div></div>';
+    const z=document.createElement('button');z.className='pin-key';z.textContent='0';z.onclick=()=>press('0');p.appendChild(z);
+    const d=document.createElement('button');d.className='pin-key del';d.textContent='DEL';d.onclick=()=>{entered=entered.slice(0,-1);dots()};p.appendChild(d);
+  }
+  function press(k){
+    if(entered.length>=4)return;entered+=k;dots();
+    if(entered.length===4){
+      if(!isSetup){if(hashPin(entered)===expected){o.style.display='none'}else{document.getElementById('pinMsg').textContent='Wrong PIN';entered='';setTimeout(dots,300)}}
+      else if(!confirming){first=entered;confirming=true;entered='';document.getElementById('pinTitle').textContent='Confirm PIN';document.getElementById('pinMsg').textContent='Enter same PIN again';setTimeout(dots,200)}
+      else{if(entered===first){localStorage.setItem(PIN_KEY,hashPin(entered));S.pinEnabled=true;saveSettings();o.style.display='none';showView('settings')}else{document.getElementById('pinMsg').textContent='PINs didn\'t match';entered='';first='';confirming=false;document.getElementById('pinTitle').textContent='Set New PIN';setTimeout(dots,300)}}
+    }
+  }
+  dots();pad();
+}
+function checkOnboarding(){if(!S.onboarded)document.getElementById('onboarding').style.display='flex'}
+function completeOnboarding(){S.onboarded=true;saveSettings();document.getElementById('onboarding').style.display='none'}
+
+// ─── Dashboard ───────────────────────────────────────────────
+function renderDashboard(){
+  const days=daysOnHRT(),months=monthsOnHRT();
+  let h='<div class="fade-in">';
+
+  h+=`<div class="stats">
+    <div class="stat-card"><div class="label">Days on HRT</div><div class="value" style="color:var(--violet-deep)">${days||'—'}</div></div>
+    <div class="stat-card"><div class="label">Months</div><div class="value" style="color:var(--pink)">${days?months:'—'}</div></div>
+  </div>`;
+
+  if(!D.startDate){
+    h+=`<div class="panel"><h3>Set Your Start Date</h3>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">When did you start HRT? (Or when you plan to start)</p>
+      <input type="date" id="startDateInput" style="margin-bottom:8px">
+      <button class="btn-primary" onclick="D.startDate=document.getElementById('startDateInput').value;saveData();showView('dashboard')">Save Start Date</button>
+    </div>`;
+  }
+
+  // Alerts
+  const alerts=generateAlerts();
+  if(alerts.length){for(const a of alerts)h+=`<div class="alert-box ${a.type}">${a.msg}</div>`}
+
+  // Quick stats
+  const bs=braSize(),w=whr(),e2=latestLab('Estradiol'),t=latestLab('Testosterone');
+  if(e2||t||bs||w){
+    h+=`<div class="panel"><h3>Quick Stats</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+    if(e2)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Estradiol</div><div style="font-size:16px;font-weight:700;color:var(--pink)">${e2.value} <span style="font-size:11px;font-weight:400">pg/mL</span></div></div>`;
+    if(t)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Testosterone</div><div style="font-size:16px;font-weight:700;color:var(--sky-deep)">${t.value} <span style="font-size:11px;font-weight:400">ng/dL</span></div></div>`;
+    if(bs)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Bra Size</div><div style="font-size:16px;font-weight:700;color:var(--violet-deep)">${bs}</div></div>`;
+    if(w)h+=`<div><div style="font-size:11px;color:var(--text-muted)">WHR</div><div style="font-size:16px;font-weight:700;color:var(--mint-deep)">${w}</div></div>`;
+    h+=`</div></div>`;
+  }
+
+  // Tanner stage
+  if(days>0){
+    const ts=TANNER_STAGES[S.tannerStage-1];
+    h+=`<div class="panel"><h3>Breast Development — Tanner ${ts.stage}</h3>
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.5">${ts.desc}</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:6px">Typical: ${ts.typical}</p>
+      <div style="display:flex;gap:4px;margin-top:10px">${TANNER_STAGES.map((_,i)=>`<button style="flex:1;height:6px;border-radius:3px;background:${i<S.tannerStage?'var(--violet)':'var(--border)'};cursor:pointer" onclick="S.tannerStage=${i+1};saveSettings();showView('dashboard')"></button>`).join('')}</div>
+      <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:4px">Tap to update stage</p>
+    </div>`;
+  }
+
+  // Active meds
+  const activeMeds=D.meds.filter(m=>!m.ended);
+  if(activeMeds.length){
+    h+=`<div class="panel"><h3>Active Medications</h3>`;
+    for(const m of activeMeds){
+      h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:14px;font-weight:500">${m.name}</div><div style="font-size:12px;color:var(--text-muted)">${m.dose} — ${m.frequency}</div></div>
+        <div style="font-size:11px;color:var(--text-muted)">${m.route||''}</div>
+      </div>`;
+    }
+    h+=`</div>`;
+  }
+
+  // Next injection
+  if(D.meds.some(m=>!m.ended&&(m.route||'').toLowerCase().includes('injection')||m.name.toLowerCase().includes('im')||m.name.toLowerCase().includes('subq'))){
+    const next=nextInjectionSite();
+    h+=`<div class="panel"><h3>Injection Tracker</h3>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Next suggested site: <strong style="color:var(--violet-deep)">${next}</strong></p>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${INJECTION_SITES.map(s=>{
+        const last=D.injections.slice(-2).some(i=>i.site===s);
+        return`<span class="inj-site${last?' recent':''}" title="${s}">${s.replace(/\s/g,'').slice(0,2)}</span>`;
+      }).join('')}</div>
+      <button class="btn-small" style="margin-top:10px" onclick="logInjection()">Log Injection</button>
+    </div>`;
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function logInjection(){
+  const site=prompt('Injection site:\n'+INJECTION_SITES.join(', '),nextInjectionSite());
+  if(!site)return;
+  D.injections.push({date:today(),site:site,time:new Date().toLocaleTimeString()});
+  saveData();showView('dashboard');
+}
+
+// ─── Log View ────────────────────────────────────────────────
+function renderLog(){
+  const td=today(),ex=getLog(td)||{};
+  tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria||5,energy:ex.energy||5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||''};
+
+  let h=`<div class="panel fade-in"><h3>Daily Log</h3>
+    <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+
+    <div class="section-title">Mood</div>
+    <div class="mood-row">${MOODS.map(m=>`<button class="mood-btn${tempLog.mood===m.l?' active':''}" onclick="tempLog.mood='${m.l}';document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('active',b.title==='${m.l}'))" title="${m.l}">${m.e}</button>`).join('')}</div>
+
+    <div class="section-title">Dysphoria Level</div>
+    <div class="range-wrap"><input type="range" min="0" max="10" value="${tempLog.dysphoria}" oninput="tempLog.dysphoria=+this.value;document.getElementById('dysVal').textContent=this.value">
+    <div class="range-label"><span>None</span><span id="dysVal">${tempLog.dysphoria}</span><span>Severe</span></div></div>
+
+    <div class="section-title">Energy</div>
+    <div class="range-wrap"><input type="range" min="0" max="10" value="${tempLog.energy}" oninput="tempLog.energy=+this.value;document.getElementById('nrgVal').textContent=this.value">
+    <div class="range-label"><span>Drained</span><span id="nrgVal">${tempLog.energy}</span><span>Vibrant</span></div></div>
+
+    <div class="form-row"><label>Sleep (hrs)</label><input type="number" step="0.5" min="0" max="24" value="${tempLog.sleep}" style="flex:1" onchange="tempLog.sleep=this.value"></div>
+    <div class="form-row"><label>Weight</label><input type="number" step="0.1" placeholder="${S.unitSystem==='imperial'?'lbs':'kg'}" value="${tempLog.weight}" style="flex:1" onchange="tempLog.weight=this.value"></div>`;
+
+  for(const[cat,symptoms]of Object.entries(SYMPTOMS)){
+    h+=`<div class="section-title">${cat}</div><div class="chips">${symptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');renderLog()">${s}</button>`).join('')}</div>`;
+  }
+
+  if(D.customSymptoms.length){
+    h+=`<div class="section-title">Custom</div><div class="chips">${D.customSymptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active-mint':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');renderLog()">${s}</button>`).join('')}</div>`;
+  }
+  h+=`<button class="btn-small" onclick="const t=prompt('Custom symptom:');if(t&&t.trim()){D.customSymptoms.push(t.trim());saveData();tempLog.tags.push(t.trim());renderLog()}">+ Custom</button>`;
+
+  h+=`<div class="section-title">Notes</div>
+    <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today? Any changes?">${tempLog.notes}</textarea>
+    <button class="btn-primary" onclick="saveLog()">Save Today's Log</button>
+  </div>`;
+  document.getElementById('content').innerHTML=h;
+}
+
+function saveLog(){
+  const entry={date:today(),mood:tempLog.mood,dysphoria:tempLog.dysphoria,energy:tempLog.energy,sleep:tempLog.sleep,weight:tempLog.weight,tags:tempLog.tags,notes:document.getElementById('logNotes').value};
+  const idx=D.logs.findIndex(l=>l.date===today());
+  if(idx>=0)D.logs[idx]=entry;else D.logs.push(entry);
+  saveData();
+  const btn=document.querySelector('.btn-primary');btn.textContent='Saved!';btn.style.background='var(--mint)';
+  setTimeout(()=>{btn.textContent="Save Today's Log";btn.style.background=''},1200);
+}
+
+// ─── Meds View ───────────────────────────────────────────────
+function renderMeds(){
+  const active=D.meds.filter(m=>!m.ended),past=D.meds.filter(m=>m.ended);
+  let h='<div class="fade-in">';
+
+  h+=`<div class="panel"><h3>Active Medications</h3>`;
+  if(active.length){
+    for(const m of active){
+      const days=Math.floor((new Date()-new Date(m.started))/864e5);
+      h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div style="font-size:14px;font-weight:600">${m.name}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${m.dose} — ${m.frequency}${m.route?' — '+m.route:''}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Started ${m.started} (${days} days)</div></div>
+          <button class="btn-small" style="flex-shrink:0" onclick="D.meds.find(x=>x.id==='${m.id}').ended=today();saveData();renderMeds()">Stop</button>
+        </div>
+      </div>`;
+    }
+  }else{h+=`<p style="font-size:13px;color:var(--text-muted)">No active medications.</p>`}
+  h+=`<button class="btn-primary" onclick="addMed()">+ Add Medication</button></div>`;
+
+  if(past.length){
+    h+=`<div class="panel"><h3>Past Medications</h3>`;
+    for(const m of past){
+      h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-dim)">
+        <strong>${m.name}</strong> ${m.dose} — ${m.started} to ${m.ended}
+      </div>`;
+    }
+    h+=`</div>`;
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function addMed(){
+  let choices=[];
+  for(const[cat,meds]of Object.entries(MED_TYPES))choices.push(...meds);
+  const name=prompt('Medication:\n'+choices.join(', '));
+  if(!name)return;
+  const dose=prompt('Dose (e.g. 2mg, 100mg):');if(!dose)return;
+  const freq=prompt('Frequency (e.g. daily, twice daily, weekly, every 2 weeks):');if(!freq)return;
+  const route=prompt('Route (oral, sublingual, IM, SubQ, patch, gel, rectal):','');
+  D.meds.push({id:Date.now().toString(36),name:name.trim(),dose:dose.trim(),frequency:freq.trim(),route:(route||'').trim(),started:today(),ended:null});
+  saveData();renderMeds();
+}
+
+// ─── Labs View ───────────────────────────────────────────────
+function renderLabs(){
+  let h='<div class="fade-in">';
+
+  // Latest results
+  const latest=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  if(latest){
+    h+=`<div class="panel"><h3>Latest Labs — ${new Date(latest.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</h3>`;
+    for(const r of latest.results){
+      const flag=flagLab(r.name,r.value);
+      const t=LAB_TARGETS[r.name];
+      h+=`<div class="lab-row">
+        <span class="lab-name">${r.name}</span>
+        <span class="lab-value" style="color:${flag==='normal'?'var(--text)':flag==='urgent'?'var(--danger)':'var(--warn)'}">${r.value}</span>
+        <span class="lab-unit">${t?t.unit:r.unit||''}</span>
+        <span class="lab-flag ${flag}">${flag}</span>
+      </div>`;
+    }
+    h+=`</div>`;
+  }
+
+  // E2/T trend charts
+  const e2hist=labHistory('Estradiol'),thist=labHistory('Testosterone');
+  if(e2hist.length>=2){
+    const mx=Math.max(...e2hist.map(l=>l.value),200);
+    h+=`<div class="panel"><h3>Estradiol Trend</h3>
+      <div class="chart-bar">${e2hist.slice(-8).map(l=>`<div class="bar" style="height:${Math.max(5,l.value/mx*100)}%;background:var(--pink-soft)" title="${l.value} pg/mL"></div>`).join('')}</div>
+      <div class="chart-labels">${e2hist.slice(-8).map(l=>`<span>${l.value}</span>`).join('')}</div>
+      <div style="margin-top:4px;height:2px;background:var(--mint-soft);position:relative"><span style="position:absolute;right:0;top:-10px;font-size:10px;color:var(--mint-deep)">Target: 100-200</span></div>
+    </div>`;
+  }
+  if(thist.length>=2){
+    const mx=Math.max(...thist.map(l=>l.value),100);
+    h+=`<div class="panel"><h3>Testosterone Trend</h3>
+      <div class="chart-bar">${thist.slice(-8).map(l=>`<div class="bar" style="height:${Math.max(5,l.value/mx*100)}%;background:var(--sky-soft)" title="${l.value} ng/dL"></div>`).join('')}</div>
+      <div class="chart-labels">${thist.slice(-8).map(l=>`<span>${l.value}</span>`).join('')}</div>
+      <div style="margin-top:4px;height:2px;background:var(--mint-soft);position:relative"><span style="position:absolute;right:0;top:-10px;font-size:10px;color:var(--mint-deep)">Target: &lt;50</span></div>
+    </div>`;
+  }
+
+  h+=`<button class="btn-primary" onclick="addLabPanel()">+ Add Lab Results</button>`;
+
+  // Past labs
+  if(D.labs.length>1){
+    h+=`<div class="section-title" style="margin-top:16px">Previous Labs</div>`;
+    for(const lab of D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(1)){
+      h+=`<div class="history-item"><div class="date">${new Date(lab.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+        <div class="details">${lab.results.map(r=>r.name+': '+r.value).join(' · ')}</div></div>`;
+    }
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function addLabPanel(){
+  const date=prompt('Lab date (YYYY-MM-DD):',today());if(!date)return;
+  const labNames=Object.keys(LAB_TARGETS);
+  const results=[];
+  for(const name of labNames){
+    const val=prompt(`${name} (${LAB_TARGETS[name].unit}) — leave blank to skip:`);
+    if(val&&val.trim())results.push({name,value:parseFloat(val),unit:LAB_TARGETS[name].unit});
+  }
+  if(!results.length)return;
+  D.labs.push({date,results});
+  saveData();renderLabs();
+}
+
+// ─── Body/Measurements View ─────────────────────────────────
+function renderBody(){
+  let h='<div class="fade-in">';
+  const last=D.measurements.slice(-1)[0];
+  const unit=S.unitSystem==='imperial'?'in':'cm';
+
+  h+=`<div class="panel"><h3>Log Measurements</h3>
+    <div class="panel-sub">Track body changes over time</div>
+    <div class="form-row"><label>Bust (${unit})</label><input type="number" step="0.1" id="mBust" value="${last?.bust||''}" style="flex:1"></div>
+    <div class="form-row"><label>Underbust (${unit})</label><input type="number" step="0.1" id="mUnderbust" value="${last?.underbust||''}" style="flex:1"></div>
+    <div class="form-row"><label>Waist (${unit})</label><input type="number" step="0.1" id="mWaist" value="" style="flex:1"></div>
+    <div class="form-row"><label>Hips (${unit})</label><input type="number" step="0.1" id="mHips" value="" style="flex:1"></div>
+    <div class="form-row"><label>L Thigh (${unit})</label><input type="number" step="0.1" id="mThighL" value="" style="flex:1"></div>
+    <div class="form-row"><label>R Thigh (${unit})</label><input type="number" step="0.1" id="mThighR" value="" style="flex:1"></div>
+    <div class="form-row"><label>Weight</label><input type="number" step="0.1" id="mWeight" value="" style="flex:1"></div>
+    <button class="btn-primary" onclick="saveMeasurements()">Save Measurements</button>
+  </div>`;
+
+  // Current stats
+  if(last){
+    const bs=braSize();
+    h+=`<div class="panel"><h3>Current</h3>
+      ${last.bust?`<div style="font-size:13px;margin-bottom:4px">Bust: <strong>${last.bust}${unit}</strong></div>`:''}
+      ${last.underbust?`<div style="font-size:13px;margin-bottom:4px">Underbust: <strong>${last.underbust}${unit}</strong></div>`:''}
+      ${bs?`<div style="font-size:13px;margin-bottom:4px">Bra Size: <strong style="color:var(--violet-deep)">${bs}</strong></div>`:''}
+      ${last.waist?`<div style="font-size:13px;margin-bottom:4px">Waist: <strong>${last.waist}${unit}</strong></div>`:''}
+      ${last.hips?`<div style="font-size:13px;margin-bottom:4px">Hips: <strong>${last.hips}${unit}</strong></div>`:''}
+      ${whr()?`<div style="font-size:13px;margin-bottom:4px">WHR: <strong style="color:var(--mint-deep)">${whr()}</strong> <span style="font-size:11px;color:var(--text-muted)">(female avg: 0.70-0.80)</span></div>`:''}
+    </div>`;
+  }
+
+  // Measurement history chart
+  if(D.measurements.length>=2){
+    const hips=D.measurements.filter(m=>m.hips).slice(-8);
+    const waists=D.measurements.filter(m=>m.waist).slice(-8);
+    if(hips.length>=2||waists.length>=2){
+      const allVals=[...hips.map(m=>m.hips),...waists.map(m=>m.waist)].filter(Boolean);
+      const mn=Math.min(...allVals)-2,mx=Math.max(...allVals)+2,range=mx-mn;
+      h+=`<div class="panel"><h3>Measurement Trends</h3>`;
+      if(hips.length>=2){
+        h+=`<p style="font-size:12px;color:var(--pink);font-weight:600;margin-bottom:4px">Hips</p>
+          <div class="chart-bar">${hips.map(m=>`<div class="bar" style="height:${Math.max(5,(m.hips-mn)/range*100)}%;background:var(--pink-soft)"></div>`).join('')}</div>
+          <div class="chart-labels">${hips.map(m=>`<span>${m.hips}</span>`).join('')}</div>`;
+      }
+      if(waists.length>=2){
+        h+=`<p style="font-size:12px;color:var(--sky);font-weight:600;margin:8px 0 4px">Waist</p>
+          <div class="chart-bar">${waists.map(m=>`<div class="bar" style="height:${Math.max(5,(m.waist-mn)/range*100)}%;background:var(--sky-soft)"></div>`).join('')}</div>
+          <div class="chart-labels">${waists.map(m=>`<span>${m.waist}</span>`).join('')}</div>`;
+      }
+      h+=`</div>`;
+    }
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function saveMeasurements(){
+  const m={date:today(),
+    bust:parseFloat(document.getElementById('mBust').value)||null,
+    underbust:parseFloat(document.getElementById('mUnderbust').value)||null,
+    waist:parseFloat(document.getElementById('mWaist').value)||null,
+    hips:parseFloat(document.getElementById('mHips').value)||null,
+    thighL:parseFloat(document.getElementById('mThighL').value)||null,
+    thighR:parseFloat(document.getElementById('mThighR').value)||null,
+    weight:parseFloat(document.getElementById('mWeight').value)||null};
+  D.measurements.push(m);saveData();
+  const btn=document.querySelector('.btn-primary');btn.textContent='Saved!';btn.style.background='var(--mint)';
+  setTimeout(()=>{btn.textContent='Save Measurements';btn.style.background=''},1200);
+}
+
+// ─── Timeline View ───────────────────────────────────────────
+function renderTimeline(){
+  const months=monthsOnHRT();
+  let h='<div class="fade-in"><div class="panel"><h3>Expected Changes Timeline</h3>';
+  if(!D.startDate){h+=`<p style="font-size:13px;color:var(--text-muted)">Set your HRT start date on the dashboard to see your timeline.</p></div></div>`;document.getElementById('content').innerHTML=h;return}
+
+  h+=`<p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">You are at <strong style="color:var(--violet-deep)">${months} months</strong>. Here's what to expect:</p>`;
+
+  for(const c of CHANGE_TIMELINE){
+    const onsetMonths=parseFloat(c.onset);
+    const isActive=!isNaN(onsetMonths)&&months>=onsetMonths;
+    const isFuture=!isNaN(onsetMonths)&&months<onsetMonths;
+    h+=`<div class="timeline-item">
+      <div class="timeline-dot ${isActive?'active':isFuture?'future':''}"></div>
+      <div class="timeline-content">
+        <h4 style="color:${isActive?'var(--violet-deep)':'var(--text)'}">${c.change}</h4>
+        <p>Onset: ${c.onset} · Max: ${c.max}</p>
+        <p style="font-size:11px">Reversible: ${c.reversible===true?'Yes':c.reversible===false?'No':c.reversible}</p>
+      </div>
+    </div>`;
+  }
+  h+=`</div>`;
+
+  // Tanner stages
+  h+=`<div class="panel"><h3>Breast Development Stages</h3>`;
+  for(const ts of TANNER_STAGES){
+    const isCurrent=parseInt(ts.stage)===S.tannerStage;
+    h+=`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${isCurrent?'background:var(--violet-pale);margin:0 -16px;padding:10px 16px;border-radius:8px':''}">
+      <div style="font-size:20px;font-weight:700;color:${isCurrent?'var(--violet-deep)':'var(--text-muted)};min-width:30px">${ts.stage}</div>
+      <div><div style="font-size:13px;font-weight:${isCurrent?'600':'400'}">${ts.desc}</div>
+        <div style="font-size:11px;color:var(--text-muted)">Typical: ${ts.typical}</div></div>
+    </div>`;
+  }
+  h+=`</div></div>`;
+  document.getElementById('content').innerHTML=h;
+}
+
+// ─── Insights View ───────────────────────────────────────────
+function renderInsights(){
+  let h='<div class="fade-in">';
+
+  // Mood patterns
+  const moodCounts={};D.logs.forEach(l=>{if(l.mood)moodCounts[l.mood]=(moodCounts[l.mood]||0)+1});
+  const topMoods=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(topMoods.length){
+    h+=`<div class="panel"><h3>Mood Patterns</h3>`;
+    const mx=topMoods[0][1];
+    for(const[mood,count]of topMoods){
+      h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;min-width:80px">${mood}</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px"><div style="width:${count/mx*100}%;height:100%;background:var(--violet);border-radius:4px"></div></div>
+        <span style="font-size:12px;color:var(--text-muted)">${count}x</span>
+      </div>`;
+    }
+    h+=`</div>`;
+  }
+
+  // Dysphoria trend
+  const dysLogs=D.logs.filter(l=>l.dysphoria!==undefined).slice(-14);
+  if(dysLogs.length>=3){
+    h+=`<div class="panel"><h3>Dysphoria Trend</h3>
+      <div class="chart-bar">${dysLogs.map(l=>`<div class="bar" style="height:${Math.max(5,l.dysphoria/10*100)}%;background:${l.dysphoria>6?'var(--pink-soft)':l.dysphoria>3?'var(--peach-soft)':'var(--mint-soft)'}"></div>`).join('')}</div>
+      <div class="chart-labels">${dysLogs.map(l=>`<span>${l.dysphoria}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  // Top symptoms
+  const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(topTags.length){
+    const mx=topTags[0][1];
+    h+=`<div class="panel"><h3>Most Tracked Changes</h3>
+      ${topTags.map(([t,c])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;min-width:120px">${t}</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px"><div style="width:${c/mx*100}%;height:100%;background:var(--pink);border-radius:4px"></div></div>
+        <span style="font-size:12px;color:var(--text-muted)">${c}x</span>
+      </div>`).join('')}</div>`;
+  }
+
+  // Weight trend
+  const weightLogs=D.logs.filter(l=>l.weight).slice(-14);
+  if(weightLogs.length>=3){
+    const vals=weightLogs.map(l=>parseFloat(l.weight)),mn=Math.min(...vals)-2,mx=Math.max(...vals)+2,range=mx-mn;
+    h+=`<div class="panel"><h3>Weight Trend</h3>
+      <div class="chart-bar">${weightLogs.map(l=>`<div class="bar" style="height:${Math.max(5,(parseFloat(l.weight)-mn)/range*100)}%;background:var(--sky-soft)"></div>`).join('')}</div>
+      <div class="chart-labels">${weightLogs.map(l=>`<span>${l.weight}</span>`).join('')}</div></div>`;
+  }
+
+  // Auto insights
+  if(D.logs.length>=5){
+    const recentDys=D.logs.slice(-7).filter(l=>l.dysphoria!==undefined);
+    const olderDys=D.logs.slice(-30,-7).filter(l=>l.dysphoria!==undefined);
+    if(recentDys.length>=3&&olderDys.length>=3){
+      const recentAvg=recentDys.reduce((s,l)=>s+l.dysphoria,0)/recentDys.length;
+      const olderAvg=olderDys.reduce((s,l)=>s+l.dysphoria,0)/olderDys.length;
+      if(recentAvg<olderAvg-1)h+=`<div class="insight-card"><div class="insight-title">Dysphoria Improving</div><div class="insight-text">Your dysphoria has decreased from avg ${olderAvg.toFixed(1)} to ${recentAvg.toFixed(1)} over the past week.</div></div>`;
+      else if(recentAvg>olderAvg+1)h+=`<div class="insight-card"><div class="insight-title">Dysphoria Increasing</div><div class="insight-text">Your dysphoria has increased recently (${recentAvg.toFixed(1)} vs ${olderAvg.toFixed(1)}). Consider reaching out to your support network.</div></div>`;
+    }
+  }
+
+  h+=`<button class="btn-primary" onclick="exportReport()">Export Doctor Report</button>`;
+
+  if(!D.logs.length)h+=`<div class="empty-state"><div class="icon">&#128300;</div><p>Start logging daily entries to see patterns, trends, and insights about your journey.</p></div>`;
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+// ─── Settings View ───────────────────────────────────────────
+function renderSettings(){
+  let h=`<div class="fade-in">
+    <div class="settings-group"><h3>Security</h3>
+      <div class="setting-row"><label>PIN Lock</label><div class="toggle ${S.pinEnabled?'on':''}" onclick="if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem(PIN_KEY);saveSettings();renderSettings()}else{showPinUI(null,true)}"></div></div>
+      ${S.pinEnabled?`<div class="setting-row"><label>Change PIN</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showPinUI(null,true)">Change</button></div>`:''}
+      <div class="setting-row"><label>Stealth Mode</label><div class="toggle ${S.stealthMode?'on':''}" onclick="S.stealthMode=!S.stealthMode;saveSettings();applyStealth();renderSettings()"></div></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Stealth mode changes the app name and icon to look like a generic wellness app.</p>
+    </div>
+
+    <div class="settings-group"><h3>Profile</h3>
+      <div class="setting-row"><label>HRT Start Date</label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
+      <div class="setting-row"><label>Tanner Stage</label>
+        <select style="width:80px;padding:6px" onchange="S.tannerStage=+this.value;saveSettings()">
+          ${TANNER_STAGES.map(t=>`<option value="${t.stage}"${parseInt(t.stage)===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
+        </select></div>
+      <div class="setting-row"><label>Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>
+    </div>
+
+    <div class="settings-group"><h3>Backup & Restore</h3>
+      <div class="setting-row"><label>Backup data</label><button style="color:var(--mint-deep);font-size:14px;font-weight:600" onclick="exportBackup()">Download</button></div>
+      <div class="setting-row"><label>Restore backup</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="importBackup()">Upload</button></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Encrypted backups — password-protected, no cloud.</p>
+    </div>
+
+    <div class="settings-group"><h3>Data Summary</h3>
+      <div class="setting-row"><label>Daily logs</label><span style="color:var(--text-dim)">${D.logs.length}</span></div>
+      <div class="setting-row"><label>Lab panels</label><span style="color:var(--text-dim)">${D.labs.length}</span></div>
+      <div class="setting-row"><label>Measurements</label><span style="color:var(--text-dim)">${D.measurements.length}</span></div>
+      <div class="setting-row"><label>Medications</label><span style="color:var(--text-dim)">${D.meds.length}</span></div>
+      <div class="setting-row"><label>Injections</label><span style="color:var(--text-dim)">${D.injections.length}</span></div>
+    </div>
+
+    <div class="settings-group"><h3>Resources</h3>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.8">
+        <strong>Crisis Lines:</strong><br>
+        Trans Lifeline: 877-565-8860<br>
+        988 Suicide & Crisis: call/text 988<br>
+        Crisis Text: text HOME to 741741
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="exportReport()">Export Doctor Report</button>
+    <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
+    <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
+
+    <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
+      <strong style="color:var(--violet-deep)">Bloom</strong> v1.0 — Private HRT Tracker<br>
+      All data stored locally. No accounts. No cloud.<br>
+      Your journey. Your data. Your device only.<br>
+      <span style="font-size:11px">by ENERGENAI LLC</span>
+    </div>
+  </div>`;
+  document.getElementById('content').innerHTML=h;
+}
+
+// ─── Stealth Mode ────────────────────────────────────────────
+function applyStealth(){
+  const title=document.getElementById('appTitle');
+  if(S.stealthMode){title.textContent=S.stealthName||'Wellness';document.title=S.stealthName||'Wellness'}
+  else{title.textContent='Bloom';document.title='Bloom — Private HRT Tracker'}
+}
+
+// ─── Export ──────────────────────────────────────────────────
+function exportCSV(){
+  let csv='Date,Mood,Dysphoria,Energy,Sleep,Weight,Symptoms,Notes\n';
+  for(const l of D.logs.sort((a,b)=>a.date.localeCompare(b.date))){
+    csv+=`${l.date},"${l.mood||''}",${l.dysphoria||''},${l.energy||''},${l.sleep||''},${l.weight||''},"${(l.tags||[]).join('; ')}","${(l.notes||'').replace(/"/g,'""')}"\n`;
+  }
+  downloadFile(csv,'text/csv',`bloom-export-${today()}.csv`);
+}
+
+function exportReport(){
+  let r=`BLOOM HRT HEALTH REPORT\nGenerated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}\n`;
+  r+=`Days on HRT: ${daysOnHRT()} (${monthsOnHRT()} months)\n`;
+  r+=`Start Date: ${D.startDate||'Not set'}\n`;
+  r+=`Tanner Stage: ${S.tannerStage}\n\n`;
+
+  // Medications
+  r+=`ACTIVE MEDICATIONS\n`;
+  for(const m of D.meds.filter(x=>!x.ended))r+=`  ${m.name} ${m.dose} ${m.frequency} (${m.route||''})\n    Started: ${m.started}\n`;
+  if(D.meds.filter(x=>x.ended).length){
+    r+=`\nPAST MEDICATIONS\n`;
+    for(const m of D.meds.filter(x=>x.ended))r+=`  ${m.name} ${m.dose} (${m.started} to ${m.ended})\n`;
+  }
+
+  // Labs
+  if(D.labs.length){
+    r+=`\nLAB RESULTS\n`;
+    for(const lab of D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3)){
+      r+=`  ${lab.date}:\n`;
+      for(const res of lab.results){
+        const flag=flagLab(res.name,res.value);
+        r+=`    ${res.name}: ${res.value} ${LAB_TARGETS[res.name]?.unit||''} [${flag}]\n`;
+      }
+    }
+  }
+
+  // Measurements
+  const last=D.measurements.slice(-1)[0];
+  if(last){
+    r+=`\nLATEST MEASUREMENTS (${last.date})\n`;
+    if(last.bust)r+=`  Bust: ${last.bust}\n`;
+    if(last.underbust)r+=`  Underbust: ${last.underbust}\n`;
+    if(braSize())r+=`  Bra Size: ${braSize()}\n`;
+    if(last.waist)r+=`  Waist: ${last.waist}\n`;
+    if(last.hips)r+=`  Hips: ${last.hips}\n`;
+    if(whr())r+=`  WHR: ${whr()}\n`;
+    if(last.weight)r+=`  Weight: ${last.weight}\n`;
+  }
+
+  // Symptoms
+  const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  if(topTags.length){r+=`\nMOST REPORTED CHANGES/SYMPTOMS\n`;topTags.forEach(([t,c])=>{r+=`  ${t}: ${c} occurrences\n`})}
+
+  // Dysphoria
+  const dysLogs=D.logs.filter(l=>l.dysphoria!==undefined);
+  if(dysLogs.length>=3){
+    const avg=(dysLogs.reduce((s,l)=>s+l.dysphoria,0)/dysLogs.length).toFixed(1);
+    r+=`\nDYSPHORIA\nAverage: ${avg}/10\nEntries: ${dysLogs.length}\n`;
+  }
+
+  r+=`\n---\nGenerated by Bloom v1.0 (Private HRT Tracker)\nAll data stored locally. This report was created by the user.\nThis is not medical advice.\n`;
+  downloadFile(r,'text/plain',`bloom-report-${today()}.txt`);
+}
+
+function exportBackup(){
+  const backup={version:1,app:'bloom',exportedAt:new Date().toISOString(),data:D,settings:S};
+  const json=JSON.stringify(backup);
+  const pass=prompt('Set a backup password (leave empty for unencrypted):');
+  let output=json;
+  if(pass){let enc='';for(let i=0;i<json.length;i++)enc+=String.fromCharCode(json.charCodeAt(i)^pass.charCodeAt(i%pass.length));output='BLOOM_ENC:'+btoa(enc)}
+  downloadFile(output,'application/json',`bloom-backup-${today()}.bloom`);
+}
+
+function importBackup(){
+  const input=document.createElement('input');input.type='file';input.accept='.bloom,.json';
+  input.onchange=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      let content=ev.target.result;
+      try{
+        if(content.startsWith('BLOOM_ENC:')){
+          const pass=prompt('Enter backup password:');if(!pass){alert('Password required.');return}
+          const decoded=atob(content.slice(10));let dec='';
+          for(let i=0;i<decoded.length;i++)dec+=String.fromCharCode(decoded.charCodeAt(i)^pass.charCodeAt(i%pass.length));
+          content=dec;
+        }
+        const backup=JSON.parse(content);
+        if(!backup.data){alert('Invalid backup.');return}
+        if(!confirm(`Restore from ${new Date(backup.exportedAt).toLocaleDateString()}? This replaces all data.`))return;
+        D=Object.assign(defaultData(),backup.data);
+        if(backup.settings)S=Object.assign(defaultSettings(),backup.settings);
+        saveData();saveSettings();alert('Restored!');showView('dashboard');
+      }catch(err){alert('Invalid file or wrong password.')}
+    };reader.readAsText(file);
+  };input.click();
+}
+
+function downloadFile(content,type,name){
+  const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+
+// ─── Milestone Banner ────────────────────────────────────────
+function updateBanner(){
+  const el=document.getElementById('milestoneBanner');
+  const days=daysOnHRT();
+  if(!days){el.innerHTML='';return}
+  const milestones=[30,60,90,180,365,500,730,1000,1095,1461,1826];
+  const next=milestones.find(m=>m>days);
+  const daysTo=next?next-days:null;
+  el.innerHTML=`<div class="milestone-banner">&#127800; <strong>${days} days</strong> on HRT${daysTo?' — '+daysTo+' days to '+next+'-day milestone':' — incredible journey!'}</div>`;
+}
+
+// ─── Navigation ──────────────────────────────────────────────
+function showView(v){
+  currentView=v;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  updateBanner();
+  switch(v){
+    case'dashboard':renderDashboard();break;
+    case'log':renderLog();break;
+    case'meds':renderMeds();break;
+    case'labs':renderLabs();break;
+    case'body':renderBody();break;
+    case'timeline':renderTimeline();break;
+    case'insights':renderInsights();break;
+    case'settings':renderSettings();break;
+  }
+}
+
+// ─── Init ────────────────────────────────────────────────────
+checkOnboarding();
+checkPinLock();
+applyStealth();
+showView('dashboard');
+</script>
+</body>
+</html>
