@@ -1817,27 +1817,28 @@ let prevLabyrinthLines = [];
 
 // --- Biome themes (mood-reactive) ---
 const BIOMES = {
-  strategic: { name:'FORTRESS', floor:'#2a1a0a', floorAlt:'#241608', wall:'#6b4226', wallDark:'#4a2e1a', wallLight:'#8b6240', wire:'#ffaa00', accent:'#ffcc00', monsterTint:'#ff8800' },
-  building:  { name:'WORKSHOP', floor:'#141a22', floorAlt:'#101620', wall:'#2a4460', wallDark:'#1a2e44', wallLight:'#3a5a80', wire:'#00ccff', accent:'#00ccff', monsterTint:'#0088ff' },
-  frustrated:{ name:'ABYSS',    floor:'#1a0808', floorAlt:'#140606', wall:'#5a1020', wallDark:'#3a0810', wallLight:'#7a1830', wire:'#ff2040', accent:'#ff4444', monsterTint:'#cc0000' },
-  resting:   { name:'SANCTUARY',floor:'#0a1a10', floorAlt:'#08160c', wall:'#1a4430', wallDark:'#0e3020', wallLight:'#2a5a44', wire:'#00ffaa', accent:'#44ffaa', monsterTint:'#00cc88' },
-  processing:{ name:'DUNGEON',  floor:'#1c1826', floorAlt:'#181420', wall:'#44336b', wallDark:'#30224a', wallLight:'#584488', wire:'#9966cc', accent:'#cc88ff', monsterTint:'#ffcc00' },
-  social:    { name:'NEXUS',    floor:'#14081a', floorAlt:'#10061a', wall:'#3a1860', wallDark:'#280e44', wallLight:'#4c2880', wire:'#cc66ff', accent:'#ff66ff', monsterTint:'#cc44ff' },
-  learning:  { name:'ARCHIVES', floor:'#12121a', floorAlt:'#0e0e16', wall:'#282848', wallDark:'#1a1a38', wallLight:'#383860', wire:'#6688ff', accent:'#88aaff', monsterTint:'#4466cc' }
+  strategic: { name:'FORTRESS',  floor:'#2a1a0a', floorAlt:'#342010', wall:'#7a4a22', wallDark:'#4a2e1a', wallLight:'#9a6a3a', wire:'#ffaa00', accent:'#ffcc00', monsterTint:'#ff8800' },
+  building:  { name:'WORKSHOP',  floor:'#161e2a', floorAlt:'#121824', wall:'#2e4a6a', wallDark:'#1e3050', wallLight:'#4a6a8a', wire:'#00ccff', accent:'#00ccff', monsterTint:'#0088ff' },
+  frustrated:{ name:'ABYSS',     floor:'#200808', floorAlt:'#180606', wall:'#6a1420', wallDark:'#440a14', wallLight:'#8a2030', wire:'#ff2040', accent:'#ff4444', monsterTint:'#cc0000' },
+  resting:   { name:'SANCTUARY', floor:'#0c1e14', floorAlt:'#0a180e', wall:'#1e4a34', wallDark:'#103424', wallLight:'#306a4a', wire:'#00ffaa', accent:'#44ffaa', monsterTint:'#00cc88' },
+  processing:{ name:'DRAGONIA',  floor:'#2a1a0e', floorAlt:'#221408', wall:'#8a5a2e', wallDark:'#5a3a1a', wallLight:'#aa7a44', wire:'#ffaa44', accent:'#ffcc66', monsterTint:'#ffcc00' },
+  social:    { name:'NEXUS',     floor:'#18081e', floorAlt:'#120614', wall:'#441e6a', wallDark:'#2e1048', wallLight:'#5a2e8a', wire:'#cc66ff', accent:'#ff66ff', monsterTint:'#cc44ff' },
+  learning:  { name:'ARCHIVES',  floor:'#141420', floorAlt:'#10101a', wall:'#2e2e50', wallDark:'#1e1e3a', wallLight:'#444468', wire:'#6688ff', accent:'#88aaff', monsterTint:'#4466cc' }
 };
 
-// --- Monster definitions per depth tier ---
+// --- Monster definitions per depth tier (Fatal Labyrinth bestiary) ---
 const MONSTER_DEFS = [
-  { ch:'r', name:'Rat',       hp:8,  atk:2, def:0, xp:5,  col:'#aa8844' },
-  { ch:'s', name:'Skeleton',  hp:15, atk:4, def:1, xp:12, col:'#cccccc' },
-  { ch:'g', name:'Ghost',     hp:12, atk:5, def:0, xp:15, col:'#8888ff' },
-  { ch:'S', name:'Spider',    hp:20, atk:6, def:2, xp:20, col:'#44aa44' },
-  { ch:'o', name:'Orc',       hp:30, atk:8, def:3, xp:30, col:'#448844' },
-  { ch:'w', name:'Wraith',    hp:25, atk:10,def:2, xp:40, col:'#aa44ff' },
-  { ch:'T', name:'Troll',     hp:50, atk:12,def:5, xp:55, col:'#886644' },
-  { ch:'D', name:'Demon',     hp:60, atk:15,def:6, xp:80, col:'#ff4444' },
-  { ch:'L', name:'Lich',      hp:45, atk:18,def:4, xp:100,col:'#44ffff' },
-  { ch:'W', name:'Dragon',    hp:100,atk:22,def:10,xp:200,col:'#ffaa00' }
+  { ch:'j', name:'Jelly',      hp:8,  atk:2, def:0, xp:5,  col:'#44cc44' },
+  { ch:'b', name:'Bat',        hp:10, atk:3, def:0, xp:8,  col:'#8866aa' },
+  { ch:'s', name:'Skeleton',   hp:15, atk:4, def:1, xp:12, col:'#ccccaa' },
+  { ch:'g', name:'Ghost',      hp:12, atk:5, def:0, xp:15, col:'#aaaaee' },
+  { ch:'e', name:'Evil Eye',   hp:20, atk:6, def:2, xp:20, col:'#ff4444' },
+  { ch:'k', name:'Shark',      hp:25, atk:8, def:3, xp:30, col:'#4488cc' },
+  { ch:'n', name:'Ninja',      hp:30, atk:10,def:2, xp:40, col:'#333366' },
+  { ch:'m', name:'Medusa',     hp:35, atk:12,def:4, xp:55, col:'#44aa66' },
+  { ch:'z', name:'Wizard',     hp:28, atk:15,def:3, xp:70, col:'#6644cc' },
+  { ch:'D', name:'Demon',      hp:60, atk:18,def:6, xp:100,col:'#cc2222' },
+  { ch:'W', name:'Dragon',     hp:100,atk:22,def:10,xp:200,col:'#ffaa00' }
 ];
 
 // --- Tile constants ---
@@ -1942,6 +1943,7 @@ const DungeonGen = {
       {ch:'!', name:'Potion', col:'#ff4488', type:'potion', val:20},
       {ch:'!', name:'Elixir', col:'#44ff88', type:'potion', val:40},
       {ch:'$', name:'Gold', col:'#ffdd00', type:'gold', val:10+depth*5},
+      {ch:'F', name:'Meat', col:'#cc6633', type:'food', val:15},
       {ch:'/', name:'Scroll', col:'#aaaaff', type:'scroll', val:0},
       {ch:'+', name:'Shield Rune', col:'#88ccff', type:'defense', val:1},
       {ch:'|', name:'Blade Shard', col:'#ff8844', type:'attack', val:1},
@@ -2640,6 +2642,12 @@ const Game = {
         this.addLog(item.name + '! +' + item.val + ' DEF', item.col);
         ParticleSystem.emit(this.player.x, this.player.y, 'spark', 5);
         break;
+      case 'food':
+        const heal = item.val + Math.floor(Math.random()*10);
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + heal);
+        this.addLog('Ate ' + item.name + '! +' + heal + ' HP', '#cc6633');
+        ParticleSystem.emit(this.player.x, this.player.y, 'heal', 6);
+        break;
       case 'equipment':
         if (FEATURES.equipment && item.equipDef) {
           this.tryEquip(item.equipDef);
@@ -2978,38 +2986,264 @@ const DungeonRenderer = {
   canvas: null, ctx: null, w: 0, h: 0, ts: 18,
 
   // Pixel art sprite data: [x, y, w, h, color] in pixel units from tile center
-  // 'm' = use monster/entity color
+  // 'm' = use monster/entity color — Fatal Labyrinth (Genesis) style sprites
   SPRITES: {
+    // PLAYER — Trykaar-style warrior with helmet, tunic, sword
     player: [
-      [-1.5,-3.5,3,1.5,'#4488ff'],[-1,-2,2,1.5,'#ffcc88'],[-1.5,-.5,3,2.5,'#22cc66'],
-      [-1.5,2,1,1.5,'#8b5a2b'],[.5,2,1,1.5,'#8b5a2b'],[2,-3,1,4,'#cccccc'],[1.5,0,2,1,'#8b6914']
+      // Helmet (steel blue, pointed top)
+      [-.5,-4.5,1,1,'#6688cc'], [-1.5,-3.5,3,1,'#5577bb'], [-1.5,-3.5,.5,.5,'#88aadd'],
+      // Face
+      [-1,-2.5,2,1.5,'#e8b878'],
+      [-.8,-2,.4,.4,'#222'], [.4,-2,.4,.4,'#222'], // eyes
+      // Armor / tunic
+      [-1.5,-1,3,2.5,'#cc8833'], [-2,-.5,.5,2,'#cc8833'], [1.5,-.5,.5,2,'#cc8833'],
+      [-1.5,-1,3,.5,'#ddaa44'], // collar highlight
+      [-1,-1,.5,.5,'#aa7722'], [.5,-1,.5,.5,'#aa7722'], // armor rivets
+      // Belt
+      [-1.5,1.5,3,.5,'#8b6914'], [0,1.5,.5,.5,'#ffcc00'], // buckle
+      // Legs
+      [-1.5,2,1,1.5,'#886644'], [.5,2,1,1.5,'#886644'],
+      // Boots
+      [-1.5,3.5,1,.5,'#664422'], [.5,3.5,1,.5,'#664422'],
+      // Sword (right hand)
+      [2,-4,.5,1,'#ddeeff'], [2,-3,.5,2.5,'#ccddee'], [2,-.5,.5,.5,'#aabbcc'],
+      [1.5,-0.5,1.5,.5,'#8b6914'], // crossguard
     ],
-    r: [[-2,-.5,3,1.5,'m'],[-3,-1,1.5,1.5,'m'],[1,0,2,.5,'m'],[-2.5,-.5,.5,.5,'#ff0000']],
-    s: [[-1.5,-2.5,3,2,'#ccc'],[-.5,-.5,1,3,'#ccc'],[-2,0,4,.5,'#ccc'],[-2,1,4,.5,'#ccc'],
-      [-.8,-2,.5,.5,'#222'],[.5,-2,.5,.5,'#222'],[-1.5,2.5,1,1,'#ccc'],[.5,2.5,1,1,'#ccc']],
-    g: [[-2,-2,4,3.5,'m'],[-2.5,1.5,1,1,'m'],[-.5,1.5,1,1,'m'],[1.5,1.5,1,1,'m'],
-      [-1,-1,.5,.5,'#fff'],[.5,-1,.5,.5,'#fff']],
-    S: [[-1.5,-1,3,2,'m'],[-3,-2,1,3.5,'m'],[2,-2,1,3.5,'m'],[-3.5,-.5,1,1.5,'m'],
-      [2.5,-.5,1,1.5,'m'],[-.3,-.3,.5,.5,'#f00'],[.1,-.3,.5,.5,'#f00']],
-    o: [[-2,-.5,4,2.5,'m'],[-1.5,-2.5,3,2,'m'],[-3,-.5,1,2,'m'],[2,-.5,1,2,'m'],
-      [2.5,-2,.5,3,'#888'],[-1.5,2,1,1,'m'],[.5,2,1,1,'m']],
-    w: [[-2,-3,4,4.5,'m'],[-2.5,1.5,5,1,'m'],[-1,-2,.5,.5,'#f0f'],[.5,-2,.5,.5,'#f0f']],
-    T: [[-2.5,-1,5,3.5,'m'],[-1.5,-3,3,2,'m'],[-3.5,-1,1,3,'m'],[2.5,-1,1,3,'m'],
-      [-2,2.5,1.5,1,'m'],[.5,2.5,1.5,1,'m']],
-    D: [[-2,-.5,4,3,'m'],[-2,-3,4,2.5,'m'],[-3,-4,1,1.5,'m'],[2,-4,1,1.5,'m'],
-      [-1,-2,.5,.5,'#f00'],[.5,-2,.5,.5,'#f00'],[-3.5,-1.5,1.5,3,'m'],[2,-1.5,1.5,3,'m']],
-    L: [[-1.5,-3,3,2.5,'m'],[-2,-.5,4,3,'m'],[-3,-1,1,3,'m'],[-3.5,-2.5,1.5,1.5,'#ff0'],
-      [-1,-2,.5,.5,'#f00'],[.5,-2,.5,.5,'#f00']],
-    W: [[-2.5,-.5,5,2.5,'m'],[-3.5,-3,3,2.5,'m'],[2.5,0,2,1,'m'],[-4,-4,1,1.5,'m'],
-      [-1,-3,3,2,'m'],[1,-2.5,2,1.5,'m'],[-3,-2,.5,.5,'#f00']],
-    K: [[-3,-1.5,6,4,'m'],[-2,-4,4,2.5,'m'],[-2.5,-5,1,1,'#fd0'],[0,-5.5,.5,1.5,'#fd0'],
-      [1.5,-5,1,1,'#fd0'],[-1,-3,.5,.5,'#f00'],[.5,-3,.5,.5,'#f00']],
-    H: [[-2,-.5,4,3,'m'],[-3,-3.5,2,3,'m'],[-.5,-4,2,3.5,'m'],[1.5,-3.5,2,3,'m'],
-      [-2.5,-3,.5,.5,'#f00'],[0,-3.5,.5,.5,'#f00'],[2,-3,.5,.5,'#f00']],
-    V: [[-3,-2,6,4.5,'m'],[-2,-4,4,2,'m'],[-3,-5,1,1,'m'],[2,-5,1,1,'m'],
-      [-1,-3.5,.5,.5,'#80f'],[.5,-3.5,.5,.5,'#80f']],
-    E: [[-3.5,-1.5,7,4,'m'],[-2.5,-4,5,2.5,'m'],[-3.5,-5,1.5,1.5,'m'],[2,-5,1.5,1.5,'m'],
-      [-1.5,-3.5,1,1,'#f00'],[.5,-3.5,1,1,'#f00'],[-4.5,-1.5,1,3.5,'m'],[3.5,-1.5,1,3.5,'m']]
+    // JELLY — Green wobbling slime blob (Fatal Labyrinth's signature first enemy)
+    j: [
+      [-2,0,4,2,'m'], [-1.5,-1,3,1,'m'], [-1,0,2,2.5,'m'],
+      [-2.5,1,1,.5,'m'], [1.5,1,1,.5,'m'], // tendrils
+      [-2,1.5,4,.5,'m'], // base spread
+      [-.8,-.2,.5,.5,'#fff'], [.5,-.2,.5,.5,'#fff'], // eyes
+      [-.6,0,.3,.3,'#111'], [.7,0,.3,.3,'#111'], // pupils
+      // highlight
+      [-1,-1,.5,.5,'#8f8'], [0,-1,.5,.3,'#8f8'],
+    ],
+    // BAT — Winged creature with fangs
+    b: [
+      // Wings spread
+      [-3.5,-1.5,2,2,'m'], [-1.5,-2,1,1,'m'], [.5,-2,1,1,'m'], [1.5,-1.5,2,2,'m'],
+      [-3.5,-.5,1,1.5,'m'], [2.5,-.5,1,1.5,'m'],
+      // Body
+      [-1,-1,2,2.5,'m'],
+      // Eyes
+      [-.6,-.5,.4,.4,'#ff0'], [.2,-.5,.4,.4,'#ff0'],
+      // Fangs
+      [-.4,1,.3,.5,'#fff'], [.2,1,.3,.5,'#fff'],
+      // Ear points
+      [-1,-2,.5,.5,'m'], [.5,-2,.5,.5,'m'],
+    ],
+    // SKELETON — Bony undead with skull
+    s: [
+      // Skull
+      [-1,-3.5,2,2,'#ddd8cc'], [-.5,-4,.5,.5,'#eee8dd'],
+      [-.6,-3,.4,.4,'#111'], [.3,-3,.4,.4,'#111'], // eye sockets
+      [-.3,-2.3,.6,.3,'#888'], // mouth
+      // Ribcage
+      [-1,-1.5,2,2,'#ccc8bb'], [-.3,-1.5,.6,2,'#bbb8aa'],
+      [-1.5,-1,.5,.3,'#bbb'], [1,-.7,.5,.3,'#bbb'], // ribs
+      [-1.5,-.3,.5,.3,'#bbb'], [1,0,.5,.3,'#bbb'],
+      // Arms (bones)
+      [-2,-1,.5,2.5,'#ccc'], [1.5,-1,.5,2.5,'#ccc'],
+      [-2.5,1,.5,.5,'#ccc'], [2,1,.5,.5,'#ccc'], // hands
+      // Spine
+      [-.2,.5,.4,1.5,'#bbb'],
+      // Legs
+      [-1,2,1,1.5,'#ccc8bb'], [.5,2,.5,1.5,'#ccc8bb'],
+      [-1,3.5,.5,.3,'#ccc'], [.5,3.5,.5,.3,'#ccc'],
+    ],
+    // GHOST — Translucent floating specter
+    g: [
+      // Main body (translucent white)
+      [-2,-3,4,4,'m'], [-1.5,-4,3,1,'m'],
+      [-2.5,-2,.5,2,'m'], [2,-2,.5,2,'m'],
+      // Wavy bottom edge
+      [-2.5,1,1,1,'m'], [-1,1.5,1,.5,'m'], [.5,1,1,1,'m'], [1.5,1.5,.5,.5,'m'],
+      // Face — hollow eyes and mouth
+      [-1.2,-2,.8,.8,'#222'], [.4,-2,.8,.8,'#222'],
+      [-.4,-.8,.8,.6,'#222'],
+      // Inner glow
+      [-1,-3,2,.5,'#fff'],
+    ],
+    // EVIL EYE — Giant floating eyeball
+    e: [
+      // Outer eye (round)
+      [-2.5,-2,5,4,'m'], [-2,-3,4,1,'m'], [-2,2,4,1,'m'],
+      [-3,-1,1,2,'m'], [2,-1,1,2,'m'],
+      // White sclera
+      [-1.5,-1.5,3,3,'#eee'], [-1,-2,2,1,'#eee'],
+      // Iris
+      [-.8,-1,1.6,2,'#4444cc'], [-.5,-1.5,1,1,'#4444cc'],
+      // Pupil
+      [-.3,-.5,.6,1,'#111'], [-.1,-.8,.2,.3,'#111'],
+      // Blood veins
+      [-2,-.5,.5,.3,'#cc2222'], [1.5,.5,.5,.3,'#cc2222'],
+      [-2,-1.5,.5,.3,'#cc2222'],
+      // Highlight
+      [.3,-1,.3,.3,'#fff'],
+    ],
+    // SHARK — Floor-swimming predator (Fatal Labyrinth's iconic weird enemy)
+    k: [
+      // Body (torpedo shape)
+      [-3,-.5,6,2,'m'], [-2,-1.5,4,1,'m'], [-2,1.5,3,.5,'m'],
+      // Dorsal fin
+      [-.5,-2.5,1,1,'m'], [0,-3,.5,1,'m'],
+      // Tail fin
+      [3,-.5,.5,.5,'m'], [3.5,-1.5,1,1,'m'], [3.5,.5,1,1,'m'],
+      // Pectoral fins
+      [-1.5,1.5,1,.5,'m'], [.5,1.5,1,.5,'m'],
+      // Eye
+      [-2,-.3,.5,.5,'#111'],
+      // Teeth
+      [-3,0,.3,.3,'#fff'], [-2.5,.5,.3,.3,'#fff'], [-2,.8,.3,.3,'#fff'],
+      // Belly (lighter)
+      [-2,.5,4,1,'#6699dd'],
+    ],
+    // NINJA — Dark cloaked assassin
+    n: [
+      // Hood/mask
+      [-1,-3.5,2,1.5,'#222244'], [-1.5,-2.5,.5,.5,'#222244'], [1,-2.5,.5,.5,'#222244'],
+      // Eyes only visible
+      [-.6,-2.5,.4,.4,'#ff3333'], [.3,-2.5,.4,.4,'#ff3333'],
+      // Body (dark gi)
+      [-1.5,-1,3,2.5,'#2a2a44'], [-2,-.5,.5,1.5,'#2a2a44'], [1.5,-.5,.5,1.5,'#2a2a44'],
+      // Belt/sash
+      [-1.5,1.5,3,.5,'#880000'],
+      // Legs
+      [-1.5,2,1,1.5,'#222240'], [.5,2,1,1.5,'#222240'],
+      // Shuriken in hand
+      [2,-1,.5,.5,'#ccc'], [2.5,-1.5,.3,.3,'#ccc'], [2.5,-.5,.3,.3,'#ccc'],
+      [1.5,-1.5,.3,.3,'#ccc'], [1.5,-.5,.3,.3,'#ccc'],
+    ],
+    // MEDUSA — Snake-haired woman
+    m: [
+      // Head
+      [-1,-3,2,2,'#88cc88'],
+      // Snake hair
+      [-2,-4,.5,1,'#44aa44'], [-1.5,-4.5,.5,1,'#44aa44'], [-.5,-4.5,.5,1,'#44aa44'],
+      [.5,-4.5,.5,1,'#44aa44'], [1,-4,.5,1,'#44aa44'], [1.5,-3.5,.5,.5,'#44aa44'],
+      [-2.5,-3.5,.5,.5,'#44aa44'],
+      // Face
+      [-.6,-2.5,.4,.4,'#ff2222'], [.3,-2.5,.4,.4,'#ff2222'], // glowing red eyes
+      [-.2,-1.5,.4,.3,'#666'],
+      // Body (robed)
+      [-1.5,-1,3,2.5,'#448844'], [-2,0,.5,1.5,'#448844'], [1.5,0,.5,1.5,'#448844'],
+      // Snake tail lower body
+      [-1.5,1.5,3,1,'#66aa66'], [-1,2.5,2,.5,'#66aa66'], [-.5,3,1,.5,'#55aa55'],
+    ],
+    // WIZARD — Robed magic user with staff
+    z: [
+      // Hat (pointed)
+      [-.3,-5,.6,1,'#5533aa'], [-.5,-4,1,1,'#5533aa'], [-1,-3,2,1,'#6644cc'],
+      // Face
+      [-1,-2,2,1.5,'#e8b878'],
+      [-.6,-1.5,.4,.4,'#222'], [.3,-1.5,.4,.4,'#222'],
+      [-.2,-.8,.4,.2,'#ccc'], // beard
+      // Robe
+      [-1.5,-.5,3,3,'#5533aa'], [-2,.5,.5,2,'#5533aa'], [1.5,.5,.5,2,'#5533aa'],
+      [-1.5,-.5,3,.5,'#7755cc'], // collar
+      // Robe bottom flare
+      [-2,2.5,4,.5,'#5533aa'],
+      // Staff
+      [-2.5,-4,.4,6,'#8b6914'], [-3,-4.5,.5,.5,'#ffaa00'], // staff orb
+      [-3.2,-5,.3,.3,'#ffdd44'], // glow
+    ],
+    // DEMON — Horned fiend with wings
+    D: [
+      // Horns
+      [-2,-4.5,1,1.5,'#440000'], [1,-4.5,1,1.5,'#440000'],
+      [-2.5,-4.5,.5,.5,'#660000'], [1.5,-4.5,.5,.5,'#660000'],
+      // Head
+      [-1.5,-3.5,3,2,'m'],
+      [-.8,-2.8,.5,.5,'#ff0'], [.3,-2.8,.5,.5,'#ff0'], // glowing eyes
+      [-.3,-1.8,.6,.3,'#880000'], // fanged mouth
+      // Body
+      [-2,-1.5,4,3,'m'], [-1.5,-1.5,3,.5,'#ff4444'], // chest highlight
+      // Wings
+      [-3.5,-2,1.5,3,'m'], [-4,-1,.5,2,'m'],
+      [2,-2,1.5,3,'m'], [3.5,-1,.5,2,'m'],
+      // Legs (hooved)
+      [-1.5,1.5,1,1.5,'m'], [.5,1.5,1,1.5,'m'],
+      [-1.5,3,.5,.5,'#440000'], [.5,3,.5,.5,'#440000'],
+      // Tail
+      [2,1,.5,.5,'m'], [2.5,1.5,.5,.5,'m'], [3,1,.3,.3,'#ff0000'],
+    ],
+    // DRAGON — Final boss, large winged beast
+    W: [
+      // Head
+      [-1.5,-4,3,2,'m'], [-2.5,-3.5,.5,.5,'m'], [2,-3.5,.5,.5,'m'], // horns
+      [-3,-4,.5,1,'m'], [2.5,-4,.5,1,'m'], // tall horns
+      [-.8,-3.5,.5,.5,'#ff0'], [.3,-3.5,.5,.5,'#ff0'], // eyes
+      [-1,-2.5,2,.5,'#880'], // snout
+      // Neck
+      [-1,-2,2,1,'m'],
+      // Body (large)
+      [-2.5,-1,5,3,'m'], [-2,-.5,4,.5,'#ff8844'], // belly lighter
+      // Wings
+      [-4,-2.5,1.5,3,'m'], [-4.5,-3,1,1.5,'m'], [-5,-2,.5,1,'m'],
+      [2.5,-2.5,1.5,3,'m'], [4,-3,1,1.5,'m'], [4.5,-2,.5,1,'m'],
+      // Legs
+      [-2,2,1.5,1.5,'m'], [.5,2,1.5,1.5,'m'],
+      [-2.5,3,.5,.5,'#cc8800'], [-1.5,3,.5,.5,'#cc8800'],
+      [.5,3,.5,.5,'#cc8800'], [1.5,3,.5,.5,'#cc8800'],
+      // Tail
+      [2.5,1.5,.5,.5,'m'], [3,2,.5,.5,'m'], [3.5,1.5,.5,.5,'m'], [4,1,.5,.5,'m'],
+      // Fire breath particles
+      [-3,-2.5,.3,.3,'#ff4400'], [-3.5,-3,.3,.3,'#ffaa00'],
+    ],
+    // BOSS: GATE KEEPER — Armored sentinel
+    K: [
+      [-2,-4,4,2.5,'#aa6600'], [-1,-5,2,1,'#cc8800'], // helmet
+      [-.6,-2.5,.4,.5,'#f00'], [.3,-2.5,.4,.5,'#f00'], // eyes
+      [-2.5,-1.5,5,3.5,'#886622'], [-3,-1,1,3,'#886622'], [2,-1,1,3,'#886622'], // body+arms
+      [-2,2,1.5,1.5,'#886622'], [.5,2,1.5,1.5,'#886622'], // legs
+      // Crown
+      [-1.5,-5.5,3,.5,'#ffd700'], [-1,-6,.5,.5,'#ffd700'], [0,-6,.5,.5,'#ffd700'], [.5,-6,.5,.5,'#ffd700'],
+      // Giant axe
+      [3,-3,1,4,'#888'], [3,-4,1.5,1.5,'#aaa'], [2.5,-3,.5,.5,'#aaa'],
+    ],
+    // BOSS: DATA HYDRA — Multi-headed serpent
+    H: [
+      // Three heads
+      [-3,-4,2,1.5,'m'], [-.5,-4.5,1.5,1.5,'m'], [2,-4,2,1.5,'m'],
+      [-2.5,-3,.3,.3,'#f00'], [0,-3.5,.3,.3,'#f00'], [2.5,-3,.3,.3,'#f00'], // eyes
+      // Necks
+      [-2,-2.5,1,1,'m'], [0,-3,1,1.5,'m'], [1.5,-2.5,1,1,'m'],
+      // Body
+      [-2.5,-1.5,5,3.5,'m'],
+      [-2,-.5,4,.5,'#44ff88'], // belly scales
+      // Tail
+      [-1,2,2,1,'m'], [0,3,1,.5,'m'],
+    ],
+    // BOSS: VOID EMPEROR — Dark floating figure
+    V: [
+      [-2,-4,4,2,'#4422aa'], [-1,-5,2,1,'#5533bb'], // hood
+      [-1.2,-3,.5,.5,'#ff00ff'], [.7,-3,.5,.5,'#ff00ff'], // eyes
+      [-2.5,-2,5,4,'#3311aa'], // robes
+      [-3.5,-1.5,1,3,'#3311aa'], [2.5,-1.5,1,3,'#3311aa'], // sleeves
+      [-2,2,4,1,'#3311aa'], // robe bottom
+      // Floating particles
+      [-3,0,.3,.3,'#aa44ff'], [3,0,.3,.3,'#aa44ff'],
+      [-2.5,2,.3,.3,'#8800ff'], [2.5,2,.3,.3,'#8800ff'],
+      // Crown
+      [-1,-5.5,2,.5,'#ffcc00'], [-.5,-6,.5,.5,'#ffcc00'], [.5,-6,.3,.3,'#ffcc00'],
+    ],
+    // BOSS: ENTROPY LORD — Chaos incarnate
+    E: [
+      [-3,-3,6,5,'m'], [-2,-4.5,4,1.5,'m'], // massive body
+      [-4,-2,1,3,'m'], [3,-2,1,3,'m'], // arms
+      [-4.5,-1,.5,2,'m'], [3.5,-1,.5,2,'m'], // claws
+      [-1.5,-3.5,1,1,'#ff0'], [.5,-3.5,1,1,'#ff0'], // big eyes
+      [-.8,-3.2,.4,.4,'#111'], [.8,-3.2,.4,.4,'#111'], // pupils
+      [-1,-2,2,.5,'#440000'], // mouth
+      // Shoulder spikes
+      [-3.5,-3.5,1,1,'m'], [2.5,-3.5,1,1,'m'],
+      // Legs
+      [-2.5,2,1.5,1.5,'m'], [1,2,1.5,1.5,'m'],
+      // Aura
+      [-4,-4,.3,.3,'#ff2200'], [3.5,-4,.3,.3,'#ff2200'],
+      [-4.5,1,.3,.3,'#ff0044'], [4,1,.3,.3,'#ff0044'],
+    ]
   },
 
   init(el) {
@@ -3032,35 +3266,71 @@ const DungeonRenderer = {
   },
 
   drawWall(ctx, x, y, ts, bio) {
+    const h2 = Math.floor(ts/2);
     // Main face
     ctx.fillStyle = bio.wall;
     ctx.fillRect(x, y, ts, ts);
-    // 3D highlight: top + left
+    // 3D highlight: top + left edges (2px bevels)
     ctx.fillStyle = bio.wallLight;
     ctx.fillRect(x, y, ts, 2);
     ctx.fillRect(x, y, 2, ts);
-    // 3D shadow: bottom + right
+    // Inner highlight for depth
+    ctx.fillStyle = bio.wallLight + '44';
+    ctx.fillRect(x+2, y+2, ts-4, 1);
+    ctx.fillRect(x+2, y+h2+2, ts-4, 1);
+    // 3D shadow: bottom + right edges
     ctx.fillStyle = bio.wallDark;
     ctx.fillRect(x, y+ts-2, ts, 2);
     ctx.fillRect(x+ts-2, y, 2, ts);
-    // Mortar lines
+    // Mortar lines — brick pattern (staggered rows)
     ctx.fillStyle = bio.wallDark;
-    ctx.fillRect(x+2, y+Math.floor(ts/2), ts-4, 1);
-    ctx.fillRect(x+Math.floor(ts*.3), y+2, 1, Math.floor(ts/2)-2);
-    ctx.fillRect(x+Math.floor(ts*.7), y+Math.floor(ts/2)+1, 1, Math.floor(ts/2)-3);
+    ctx.fillRect(x+1, y+h2, ts-2, 1); // horizontal center mortar
+    // Top row brick splits
+    ctx.fillRect(x+Math.floor(ts*.35), y+2, 1, h2-2);
+    ctx.fillRect(x+Math.floor(ts*.7), y+2, 1, h2-2);
+    // Bottom row brick splits (staggered)
+    ctx.fillRect(x+Math.floor(ts*.2), y+h2+1, 1, h2-3);
+    ctx.fillRect(x+Math.floor(ts*.55), y+h2+1, 1, h2-3);
+    ctx.fillRect(x+Math.floor(ts*.85), y+h2+1, 1, h2-3);
+    // Stone texture speckles
+    if (ts >= 16) {
+      ctx.fillStyle = bio.wallLight + '22';
+      ctx.fillRect(x+4, y+3, 2, 1);
+      ctx.fillRect(x+Math.floor(ts*.5), y+h2+3, 2, 1);
+      ctx.fillStyle = bio.wallDark + '33';
+      ctx.fillRect(x+Math.floor(ts*.6), y+4, 1, 1);
+      ctx.fillRect(x+3, y+h2+4, 1, 1);
+    }
   },
 
   drawFloor(ctx, x, y, ts, bio, tx, ty) {
-    ctx.fillStyle = (tx+ty) % 2 === 0 ? bio.floor : (bio.floorAlt || bio.floor);
+    // Checkerboard base (Fatal Labyrinth style)
+    const alt = (tx+ty) % 2 === 0;
+    ctx.fillStyle = alt ? bio.floor : (bio.floorAlt || bio.floor);
     ctx.fillRect(x, y, ts, ts);
-    // Tile grid lines
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    // Tile border grooves
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fillRect(x, y, ts, 1);
     ctx.fillRect(x, y, 1, ts);
-    // Occasional speckle for texture
-    if ((tx*7+ty*13) % 11 === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.03)';
-      ctx.fillRect(x+3, y+3, ts-6, ts-6);
+    // Inner highlight (subtle stone edge catch)
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(x+1, y+1, ts-2, 1);
+    ctx.fillRect(x+1, y+1, 1, ts-2);
+    // Stone grain texture
+    const hash = (tx*31 + ty*17) & 0xff;
+    if (hash % 7 === 0 && ts >= 14) {
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(x+3, y+3, 2, 1);
+    }
+    if (hash % 11 === 0 && ts >= 14) {
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.fillRect(x+Math.floor(ts*.6), y+Math.floor(ts*.4), 2, 1);
+    }
+    // Occasional crack
+    if (hash % 23 === 0 && ts >= 16) {
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillRect(x+Math.floor(ts*.3), y+Math.floor(ts*.5), 3, 1);
+      ctx.fillRect(x+Math.floor(ts*.45), y+Math.floor(ts*.5), 1, 2);
     }
   },
 
@@ -3116,26 +3386,53 @@ const DungeonRenderer = {
             break;
           case T_DOOR:
             this.drawFloor(ctx, screenX, screenY, ts, bio, tx, ty);
-            ctx.fillStyle = '#663311'; ctx.fillRect(screenX+2, screenY+2, ts-4, ts-4);
-            ctx.fillStyle = '#aa7733';
+            // Wooden door frame
+            ctx.fillStyle = '#4a2a0e';
+            ctx.fillRect(screenX+1, screenY+1, ts-2, ts-2);
+            // Door panels
+            ctx.fillStyle = '#6b3a1a';
+            ctx.fillRect(screenX+3, screenY+3, ts-6, ts-6);
+            // Wood grain planks
+            ctx.fillStyle = '#7a4422';
             ctx.fillRect(screenX+3, screenY+3, ts-6, 2);
-            ctx.fillRect(screenX+3, screenY+Math.floor(ts/2)-1, ts-6, 2);
+            ctx.fillRect(screenX+3, screenY+Math.floor(ts*.35), ts-6, 2);
+            ctx.fillRect(screenX+3, screenY+Math.floor(ts*.65), ts-6, 2);
             ctx.fillRect(screenX+3, screenY+ts-5, ts-6, 2);
+            // Iron bands
+            ctx.fillStyle = '#555';
+            ctx.fillRect(screenX+2, screenY+Math.floor(ts*.25), ts-4, 1);
+            ctx.fillRect(screenX+2, screenY+Math.floor(ts*.75), ts-4, 1);
+            // Door handle / lock
             ctx.fillStyle = '#ffcc00';
-            ctx.fillRect(screenX+ts-6, screenY+Math.floor(ts/2)-1, 2, 2);
+            ctx.fillRect(screenX+ts-7, screenY+Math.floor(ts/2)-1, 2, 2);
+            // Highlight edge
+            ctx.fillStyle = '#8a5a33';
+            ctx.fillRect(screenX+3, screenY+3, 1, ts-6);
             break;
           case T_STAIRS: {
             this.drawFloor(ctx, screenX, screenY, ts, bio, tx, ty);
-            const sc = G.bossAlive ? '#ff4444' : '#ffaa00';
-            const sp = Math.floor(ts/5);
-            ctx.fillStyle = sc;
-            for (let i = 0; i < 4; i++) {
-              ctx.fillRect(screenX+sp+Math.floor(i*sp*0.6), screenY+sp+Math.floor(i*sp*0.8),
-                ts-sp*2-Math.floor(i*sp*0.3), Math.max(1,Math.floor(sp*0.7)));
-            }
             if (G.bossAlive) {
               ctx.fillStyle = 'rgba(255,0,0,0.15)'; ctx.fillRect(screenX, screenY, ts, ts);
             }
+            // Descending staircase — Genesis style with depth shading
+            const sp = Math.floor(ts/6);
+            const steps = 4;
+            for (let i = 0; i < steps; i++) {
+              const shade = G.bossAlive ? `rgb(${180-i*30},${40-i*8},${40-i*8})` : `rgb(${200-i*25},${160-i*20},${80-i*10})`;
+              const stepX = screenX + sp + i*Math.floor(sp*0.5);
+              const stepY = screenY + sp + i*Math.floor(sp*0.9);
+              const stepW = ts - sp*2 - i*Math.floor(sp*0.4);
+              const stepH = Math.max(2, Math.floor(sp*0.8));
+              ctx.fillStyle = shade;
+              ctx.fillRect(stepX, stepY, stepW, stepH);
+              // Step edge highlight
+              ctx.fillStyle = G.bossAlive ? '#ff6666' : '#ffcc66';
+              ctx.fillRect(stepX, stepY, stepW, 1);
+            }
+            // Dark pit at bottom
+            ctx.fillStyle = G.bossAlive ? '#220000' : '#1a0e00';
+            ctx.fillRect(screenX+sp+Math.floor(steps*sp*0.5), screenY+sp+Math.floor(steps*sp*0.9),
+              ts-sp*2-Math.floor(steps*sp*0.4), Math.max(2, sp));
             break;
           }
         }
@@ -3169,7 +3466,7 @@ const DungeonRenderer = {
       }
     }
 
-    // Draw merchants
+    // Draw merchants — hooded shopkeeper
     if (FEATURES.merchants) {
       for (const merch of G.merchants) {
         const isVis = G.visible[merch.y] && G.visible[merch.y][merch.x]; if (!isVis) continue;
@@ -3178,16 +3475,33 @@ const DungeonRenderer = {
         ctx.globalAlpha = 1;
         const mp = Math.max(1, Math.floor(ts/8));
         const mcx = mx2+ts/2, mcy = my2+ts/2;
-        ctx.fillStyle = '#ffdd00';
-        ctx.fillRect(Math.floor(mcx-mp*2), Math.floor(mcy-mp*1.5), mp*4, mp*3.5);
-        ctx.fillStyle = '#aa8800';
-        ctx.fillRect(Math.floor(mcx-mp*1.5), Math.floor(mcy-mp*3), mp*3, mp*1.5);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(Math.floor(mcx-mp*.5), Math.floor(mcy-mp), mp, mp);
+        // Hood
+        ctx.fillStyle = '#665522';
+        ctx.fillRect(Math.floor(mcx-mp*1.5), Math.floor(mcy-mp*3.5), mp*3, mp*2);
+        ctx.fillStyle = '#554411';
+        ctx.fillRect(Math.floor(mcx-mp*1), Math.floor(mcy-mp*4), mp*2, mp);
+        // Face shadow
+        ctx.fillStyle = '#332200';
+        ctx.fillRect(Math.floor(mcx-mp), Math.floor(mcy-mp*2), mp*2, mp);
+        // Eyes gleam
+        ctx.fillStyle = '#ffee88';
+        ctx.fillRect(Math.floor(mcx-mp*.6), Math.floor(mcy-mp*1.8), mp*.4, mp*.3);
+        ctx.fillRect(Math.floor(mcx+mp*.2), Math.floor(mcy-mp*1.8), mp*.4, mp*.3);
+        // Robe body
+        ctx.fillStyle = '#776633';
+        ctx.fillRect(Math.floor(mcx-mp*2), Math.floor(mcy-mp*1.5), mp*4, mp*4);
+        ctx.fillRect(Math.floor(mcx-mp*2.5), Math.floor(mcy-mp), mp*1, mp*2.5);
+        ctx.fillRect(Math.floor(mcx+mp*1.5), Math.floor(mcy-mp), mp*1, mp*2.5);
+        // Robe bottom
+        ctx.fillStyle = '#665522';
+        ctx.fillRect(Math.floor(mcx-mp*2), Math.floor(mcy+mp*2), mp*4, mp*.5);
+        // Trade symbol ($)
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(Math.floor(mcx-mp*.3), Math.floor(mcy-mp*.5), mp*.6, mp*.6);
       }
     }
 
-    // Draw items — pixel art
+    // Draw items — Fatal Labyrinth style pixel art
     ctx.globalAlpha = 1;
     for (const item of G.items) {
       if (item.pickedUp) continue;
@@ -3199,38 +3513,105 @@ const DungeonRenderer = {
       const icx = ix+ts/2, icy = iy+ts/2;
 
       if (item.type === 'equipment') {
-        if (isVis) { ctx.fillStyle = item.col+'33'; ctx.fillRect(ix+1,iy+1,ts-2,ts-2); }
+        // Subtle item glow on floor
+        if (isVis) { ctx.fillStyle = item.col+'22'; ctx.fillRect(ix+1,iy+1,ts-2,ts-2); }
         if (item.ch === '/') {
+          // Sword — blade with crossguard and grip
+          ctx.fillStyle = '#ddd';
+          ctx.fillRect(Math.floor(icx-ip*.4), Math.floor(icy-ip*3), ip*.8, ip*4); // blade
           ctx.fillStyle = item.col;
-          ctx.fillRect(Math.floor(icx-ip*.5), Math.floor(icy-ip*3), ip, ip*5);
+          ctx.fillRect(Math.floor(icx-ip*.5), Math.floor(icy-ip*3), ip, ip*.5); // tip highlight
           ctx.fillStyle = '#8b6914';
-          ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy+ip), ip*3, ip);
+          ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy+ip*.5), ip*3, ip*.7); // crossguard
+          ctx.fillStyle = '#664422';
+          ctx.fillRect(Math.floor(icx-ip*.3), Math.floor(icy+ip*1.2), ip*.6, ip*2); // grip
+          ctx.fillStyle = '#ffcc00';
+          ctx.fillRect(Math.floor(icx-ip*.5), Math.floor(icy+ip*3), ip, ip*.5); // pommel
         } else if (item.ch === '[') {
+          // Armor — chest plate with shoulder pads
           ctx.fillStyle = item.col;
-          ctx.fillRect(Math.floor(icx-ip*2), Math.floor(icy-ip*1.5), ip*4, ip*3);
-          ctx.fillRect(Math.floor(icx-ip), Math.floor(icy-ip*2.5), ip*2, ip);
+          ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy-ip*1.5), ip*3, ip*3);
+          ctx.fillStyle = item.col + 'cc';
+          ctx.fillRect(Math.floor(icx-ip*2), Math.floor(icy-ip*1.5), ip, ip*1.5); // left pad
+          ctx.fillRect(Math.floor(icx+ip), Math.floor(icy-ip*1.5), ip, ip*1.5); // right pad
+          // Armor detail rivets
+          ctx.fillStyle = '#ffcc44';
+          ctx.fillRect(Math.floor(icx-ip*.3), Math.floor(icy-ip*.5), ip*.6, ip*.6);
         } else {
+          // Ring — glowing circle
           ctx.fillStyle = item.col;
           ctx.beginPath(); ctx.arc(icx, icy, ip*1.8, 0, Math.PI*2); ctx.fill();
-          ctx.fillStyle = '#000';
-          ctx.beginPath(); ctx.arc(icx, icy, ip*.8, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#111';
+          ctx.beginPath(); ctx.arc(icx, icy, ip*1, 0, Math.PI*2); ctx.fill();
+          // Gem on ring
+          ctx.fillStyle = item.col;
+          ctx.fillRect(Math.floor(icx-ip*.4), Math.floor(icy-ip*2), ip*.8, ip*.8);
         }
       } else if (item.type === 'potion') {
-        ctx.fillStyle = item.col;
-        ctx.fillRect(Math.floor(icx-ip*.5), Math.floor(icy-ip*2.5), ip, ip);
-        ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy-ip*1.5), ip*3, ip*3);
-      } else if (item.type === 'gold') {
-        ctx.fillStyle = '#ffdd00';
-        ctx.beginPath(); ctx.arc(icx, icy, ip*1.8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#bb9900';
-        ctx.fillRect(Math.floor(icx-ip*.5), Math.floor(icy-ip*.5), ip, ip);
-      } else if (item.type === 'scroll') {
-        ctx.fillStyle = '#f0e8c8';
-        ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy-ip*2), ip*3, ip*4);
+        // Flask with cork — Fatal Labyrinth potion style
         ctx.fillStyle = '#886644';
-        ctx.fillRect(Math.floor(icx-ip), Math.floor(icy-ip), ip*2, Math.max(1,ip*.5));
-        ctx.fillRect(Math.floor(icx-ip), Math.floor(icy), ip*1.5, Math.max(1,ip*.5));
+        ctx.fillRect(Math.floor(icx-ip*.3), Math.floor(icy-ip*2.5), ip*.6, ip*.8); // cork
+        ctx.fillStyle = '#aaa';
+        ctx.fillRect(Math.floor(icx-ip*.5), Math.floor(icy-ip*1.7), ip, ip*.3); // neck ring
+        ctx.fillStyle = item.col;
+        ctx.fillRect(Math.floor(icx-ip*.4), Math.floor(icy-ip*1.5), ip*.8, ip); // neck
+        ctx.fillRect(Math.floor(icx-ip*1.2), Math.floor(icy-ip*.5), ip*2.4, ip*2.5); // body
+        ctx.fillRect(Math.floor(icx-ip), Math.floor(icy+ip*2), ip*2, ip*.3); // base
+        // Liquid highlight
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(Math.floor(icx-ip*.8), Math.floor(icy-ip*.2), ip*.4, ip);
+      } else if (item.type === 'gold') {
+        // Gold bag — Fatal Labyrinth's iconic gold sack
+        ctx.fillStyle = '#bb9900';
+        ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy-ip), ip*3, ip*2.5); // bag body
+        ctx.fillStyle = '#ddbb00';
+        ctx.fillRect(Math.floor(icx-ip), Math.floor(icy-ip*1.5), ip*2, ip); // bag top
+        ctx.fillStyle = '#886600';
+        ctx.fillRect(Math.floor(icx-ip*.3), Math.floor(icy-ip*1.3), ip*.6, ip*.3); // tie
+        // $ symbol
+        ctx.fillStyle = '#ffee44';
+        ctx.fillRect(Math.floor(icx-ip*.3), Math.floor(icy-ip*.3), ip*.6, ip*.6);
+      } else if (item.type === 'scroll') {
+        // Rolled scroll with text lines
+        ctx.fillStyle = '#e8dcc0';
+        ctx.fillRect(Math.floor(icx-ip*1.2), Math.floor(icy-ip*1.5), ip*2.4, ip*3); // paper
+        ctx.fillStyle = '#aa8855';
+        ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy-ip*1.5), ip*.5, ip*3); // left roll
+        ctx.fillRect(Math.floor(icx+ip), Math.floor(icy-ip*1.5), ip*.5, ip*3); // right roll
+        // Text lines
+        ctx.fillStyle = '#665533';
+        ctx.fillRect(Math.floor(icx-ip*.8), Math.floor(icy-ip*.8), ip*1.6, ip*.2);
+        ctx.fillRect(Math.floor(icx-ip*.6), Math.floor(icy-ip*.2), ip*1.2, ip*.2);
+        ctx.fillRect(Math.floor(icx-ip*.8), Math.floor(icy+ip*.4), ip*1.4, ip*.2);
+      } else if (item.type === 'food') {
+        // Pot roast / meat — Fatal Labyrinth's iconic floor food
+        // Bone
+        ctx.fillStyle = '#eeddcc';
+        ctx.fillRect(Math.floor(icx-ip*2.5), Math.floor(icy-ip*.2), ip*5, ip*.5);
+        ctx.fillRect(Math.floor(icx-ip*2.8), Math.floor(icy-ip*.5), ip*.6, ip);
+        ctx.fillRect(Math.floor(icx+ip*2.2), Math.floor(icy-ip*.5), ip*.6, ip);
+        // Meat
+        ctx.fillStyle = '#cc5522';
+        ctx.fillRect(Math.floor(icx-ip*1.5), Math.floor(icy-ip*1.5), ip*3, ip*2);
+        ctx.fillRect(Math.floor(icx-ip*1.2), Math.floor(icy-ip*2), ip*2.4, ip*.5);
+        // Meat highlight
+        ctx.fillStyle = '#dd7744';
+        ctx.fillRect(Math.floor(icx-ip), Math.floor(icy-ip*1.2), ip*1.5, ip*.5);
+        // Meat shadow
+        ctx.fillStyle = '#993311';
+        ctx.fillRect(Math.floor(icx-ip*1.2), Math.floor(icy+ip*.2), ip*2.4, ip*.3);
+      } else if (item.type === 'defense' || item.type === 'attack') {
+        // Rune stone — glowing magical item
+        ctx.fillStyle = '#444';
+        ctx.fillRect(Math.floor(icx-ip*1.2), Math.floor(icy-ip*1.5), ip*2.4, ip*3);
+        ctx.fillStyle = item.col;
+        ctx.fillRect(Math.floor(icx-ip*.8), Math.floor(icy-ip*1), ip*1.6, ip*2);
+        // Rune symbol
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(Math.floor(icx-ip*.3), Math.floor(icy-ip*.5), ip*.6, ip);
+        ctx.fillRect(Math.floor(icx-ip*.6), Math.floor(icy-ip*.2), ip*1.2, ip*.3);
       } else {
+        // Generic item diamond
         ctx.fillStyle = item.col;
         ctx.save(); ctx.translate(icx, icy); ctx.rotate(Math.PI/4);
         ctx.fillRect(-ip, -ip, ip*2, ip*2); ctx.restore();
@@ -3254,7 +3635,7 @@ const DungeonRenderer = {
         continue;
       }
 
-      ctx.globalAlpha = (m.ch === 'g' || m.ch === 'w') ? 0.7 : 1;
+      ctx.globalAlpha = (m.ch === 'g') ? 0.65 : 1;
       if (m.boss) {
         ctx.fillStyle = m.col + '22'; ctx.fillRect(mx-3, my-3, ts+6, ts+6);
       }
@@ -3651,7 +4032,7 @@ const FPRenderer = {
                 ctx.fillStyle = bg; ctx.fillRect(far.l,far.t,far.r-far.l,far.b-far.t);
                 ctx.restore();
               }
-            } else if (m.ch === 'g' || m.ch === 'w' || m.ch === 'L') {
+            } else if (m.ch === 'g') {
               // Ghosts/wraiths/liches — floating shape
               ctx.beginPath();
               ctx.arc(cx, cy-sz*.2, sz*.5, Math.PI, 0);
@@ -3674,7 +4055,7 @@ const FPRenderer = {
                 const ag=i*Math.PI/3-Math.PI/6, px2=cx+Math.cos(ag)*sz, py2=cy+Math.sin(ag)*sz*.8;
                 i===0?ctx.moveTo(px2,py2):ctx.lineTo(px2,py2);
               } ctx.closePath(); ctx.stroke();
-            } else if (m.ch === 'g' || m.ch === 'w' || m.ch === 'L') {
+            } else if (m.ch === 'g') {
               ctx.beginPath();
               ctx.arc(cx, cy-sz*.2, sz*.5, Math.PI, 0);
               ctx.lineTo(cx+sz*.5, cy+sz*.4);
