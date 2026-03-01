@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 RATE_LIMIT_DB = '/root/.automaton/rate_limits.db'
 FREE_TIER_DAILY_LIMIT = 100
-EXEMPT_ENDPOINTS = ['/status', '/pay', '/', '/docs', '/.well-known/agent.json', '/api/v1/services']
+EXEMPT_ENDPOINTS = ['/status', '/pay', '/', '/docs', '/.well-known/agent.json', '/api/v1/services', '/cycle-tracker', '/cycle-tracker/']
 
 def init_rate_limit_db():
     """Initialize rate limit SQLite database."""
@@ -104,10 +104,36 @@ def rate_limit_check():
 
 @app.before_request
 def check_rate_limit():
-    """Check rate limit before processing request."""
-    response = rate_limit_check()
-    if response:
-        return response
+    """Check rate limit before processing request - exempt static/non-API routes."""
+    # Routes that should NOT be rate limited (static pages, docs, etc)
+    exempt_routes = {
+        '/',
+        '/status',
+        '/pay',
+        '/docs',
+        '/chat-pwa',      # Static PWA page
+        '/chat',          # Chat HTML page (only POST to /chat API is gated)
+        '/summarize',     # Summarize HTML page
+        '/generate',      # Generate HTML page
+        '/synthesize',    # TTS HTML page
+        '/.well-known/agent.json',
+        '/api/v1/services',
+        '/api/body',
+        '/api/thoughts',
+        '/thoughts',
+    }
+    
+    # GET requests for static pages are NEVER rate limited
+    if request.method == 'GET' and request.path in exempt_routes:
+        return None
+    
+    # Only POST requests to API endpoints are rate limited
+    if request.method == 'POST':
+        response = rate_limit_check()
+        if response:
+            return response
+    
+    return None
 
 # Initialize rate limit DB on startup
 try:
@@ -355,6 +381,19 @@ def not_found(e):
 def internal_error(e):
     logger.error(f"Internal error: {e}")
     return jsonify({'error': 'Internal server error'}), 500
+
+
+
+# ============= CYCLE TRACKER PWA =============
+@app.route('/cycle-tracker')
+@app.route('/cycle-tracker/')
+def cycle_tracker():
+    """Serve Privacy-First Menstrual Cycle Tracker PWA"""
+    try:
+        with open('/root/entity/src/apps/cycle-tracker/index.html', 'r') as f:
+            return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except Exception as e:
+        return f"Error loading tracker: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=False)

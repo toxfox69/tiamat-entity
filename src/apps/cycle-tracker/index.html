@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1025">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Luna — Private Cycle Tracker</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTHVuYSIsInNob3J0X25hbWUiOiJMdW5hIiwiZGVzY3JpcHRpb24iOiJQcml2YWN5LWZpcnN0IHBlcmlvZCB0cmFja2VyLiBZb3VyIGRhdGEgbmV2ZXIgbGVhdmVzIHlvdXIgcGhvbmUuIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMxYTEwMjUiLCJ0aGVtZV9jb2xvciI6IiMxYTEwMjUifQ==">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1a1025;--surface:#241636;--card:#2d1d42;--border:#3d2d55;
+  --pink:#e87eb5;--pink-soft:#f4a5cc;--purple:#9b6dff;--purple-soft:#b794f6;
+  --text:#f0e6ff;--text-dim:#a89bc2;--text-muted:#6b5a85;
+  --danger:#ff6b8a;--success:#6bffa8;--warn:#ffd76b;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--purple)}
+
+/* Layout */
+.app{max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+.header{padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,var(--pink),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-actions{display:flex;gap:8px}
+.header-btn{width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border);transition:all .2s}
+.header-btn:hover{background:var(--card);border-color:var(--purple)}
+
+/* Privacy banner */
+.privacy-banner{margin:0 16px 12px;padding:12px 16px;background:linear-gradient(135deg,rgba(107,255,168,.08),rgba(155,109,255,.08));border:1px solid rgba(107,255,168,.2);border-radius:12px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:10px}
+.privacy-banner svg{flex-shrink:0}
+
+/* Nav */
+.nav{display:flex;gap:4px;padding:4px 16px 12px}
+.nav-btn{flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text-dim);transition:all .2s;text-align:center}
+.nav-btn.active{background:var(--card);color:var(--pink);border:1px solid var(--border)}
+
+/* Content */
+.content{flex:1;padding:0 16px 100px;overflow-y:auto}
+
+/* Calendar */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-header h2{font-size:17px;font-weight:600}
+.cal-nav{display:flex;gap:8px}
+.cal-nav button{width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);font-size:14px;display:flex;align-items:center;justify-content:center}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+.cal-weekdays span{text-align:center;font-size:11px;font-weight:600;color:var(--text-muted);padding:4px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:all .15s;position:relative;border:2px solid transparent}
+.cal-day:hover{background:var(--surface)}
+.cal-day.today{border-color:var(--purple)}
+.cal-day.period{background:rgba(232,126,181,.2);color:var(--pink)}
+.cal-day.period-start{background:var(--pink);color:#fff;font-weight:700}
+.cal-day.predicted{background:rgba(155,109,255,.12);border-color:rgba(155,109,255,.3)}
+.cal-day.predicted::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--purple);position:absolute;bottom:4px}
+.cal-day.has-symptoms::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--warn);position:absolute;bottom:4px}
+.cal-day.empty{cursor:default}
+.cal-day .day-num{font-size:14px}
+
+/* Stats cards */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.stat-card .label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.stat-card .value{font-size:22px;font-weight:700}
+.stat-card .value.pink{color:var(--pink)}
+.stat-card .value.purple{color:var(--purple)}
+
+/* Log panel */
+.log-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:12px}
+.log-panel h3{font-size:15px;font-weight:600;margin-bottom:14px}
+.log-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.log-row label{font-size:14px;color:var(--text-dim);min-width:70px}
+.log-row select,.log-row input[type="date"]{flex:1}
+
+/* Symptom chips */
+.symptom-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{padding:6px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:var(--surface);transition:all .2s}
+.chip.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+
+/* Mood picker */
+.mood-row{display:flex;gap:8px;margin:10px 0}
+.mood-btn{font-size:24px;padding:6px;border-radius:10px;transition:all .2s;border:2px solid transparent}
+.mood-btn.active{border-color:var(--purple);background:var(--surface)}
+
+/* Cramp slider */
+.cramp-slider{width:100%;margin:6px 0;accent-color:var(--pink)}
+
+/* Notes */
+.notes-area{width:100%;min-height:60px;resize:vertical;border-radius:10px;margin-top:8px}
+
+/* Primary button */
+.btn-primary{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-size:15px;font-weight:600;margin-top:14px;transition:opacity .2s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:active{opacity:.8}
+.btn-secondary{width:100%;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:14px;font-weight:500;margin-top:8px}
+
+/* History list */
+.history-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px}
+.history-item .date{font-size:14px;font-weight:600;color:var(--pink)}
+.history-item .details{font-size:13px;color:var(--text-dim);margin-top:4px}
+.history-item .symptoms{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.history-item .symptom-tag{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--text-muted)}
+
+/* Settings */
+.settings-group{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.settings-group h3{font-size:14px;font-weight:600;margin-bottom:12px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-row label{font-size:14px}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:all .2s}
+.toggle.on{background:var(--pink)}
+.toggle::after{content:'';width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .2s}
+.toggle.on::after{left:22px}
+
+/* PIN overlay */
+.pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.pin-overlay h2{font-size:20px;margin-bottom:24px;font-weight:600}
+.pin-dots{display:flex;gap:12px;margin-bottom:32px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s}
+.pin-dot.filled{background:var(--pink);border-color:var(--pink)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:260px}
+.pin-key{width:72px;height:56px;border-radius:14px;background:var(--surface);border:1px solid var(--border);font-size:22px;font-weight:500;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pin-key:active{background:var(--card);transform:scale(.95)}
+.pin-key.del{font-size:14px;color:var(--text-dim)}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .3s ease}
+
+/* Empty state */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- PIN overlay (hidden by default) -->
+  <div class="pin-overlay" id="pinOverlay" style="display:none">
+    <h2 id="pinTitle">Enter PIN</h2>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-pad" id="pinPad"></div>
+    <p style="color:var(--text-muted);font-size:13px;margin-top:20px" id="pinMsg"></p>
+  </div>
+
+  <div id="mainApp">
+    <div class="header">
+      <h1>Luna</h1>
+      <div class="header-actions">
+        <button class="header-btn" onclick="exportCSV()" title="Export data">⬇</button>
+        <button class="header-btn" onclick="showView('settings')" title="Settings">⚙</button>
+      </div>
+    </div>
+
+    <div class="privacy-banner">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" fill="currentColor" opacity=".3"/><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Your data never leaves this device
+    </div>
+
+    <div class="nav">
+      <button class="nav-btn active" data-view="calendar" onclick="showView('calendar')">Calendar</button>
+      <button class="nav-btn" data-view="log" onclick="showView('log')">Log</button>
+      <button class="nav-btn" data-view="history" onclick="showView('history')">History</button>
+      <button class="nav-btn" data-view="settings" onclick="showView('settings')">Settings</button>
+    </div>
+
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// ─── Data Layer (localStorage only) ─────────────────────────
+const STORAGE_KEY = 'luna_cycle_data';
+const SETTINGS_KEY = 'luna_settings';
+const PIN_KEY = 'luna_pin_hash';
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { periods: [], symptoms: [] }; }
+  catch { return { periods: [], symptoms: [] }; }
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { pinEnabled: false }; }
+  catch { return { pinEnabled: false }; }
+}
+
+function saveSettings(s) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+
+// Simple hash for PIN (not crypto-secure, but keeps casual eyes out)
+function hashPin(pin) {
+  let h = 0;
+  for (let i = 0; i < pin.length; i++) {
+    h = ((h << 5) - h + pin.charCodeAt(i)) | 0;
+  }
+  return h.toString(36);
+}
+
+// ─── State ──────────────────────────────────────────────────
+let data = loadData();
+let settings = loadSettings();
+let currentView = 'calendar';
+let calYear, calMonth;
+const now = new Date();
+calYear = now.getFullYear();
+calMonth = now.getMonth();
+
+// ─── PIN Lock ───────────────────────────────────────────────
+function checkPinLock() {
+  const storedHash = localStorage.getItem(PIN_KEY);
+  if (!storedHash || !settings.pinEnabled) return;
+  showPinEntry(storedHash);
+}
+
+function showPinEntry(expectedHash) {
+  const overlay = document.getElementById('pinOverlay');
+  overlay.style.display = 'flex';
+  document.getElementById('pinTitle').textContent = 'Enter PIN';
+  document.getElementById('pinMsg').textContent = '';
+  let entered = '';
+
+  function renderDots() {
+    const dots = document.getElementById('pinDots');
+    dots.innerHTML = Array.from({length:4}, (_, i) =>
+      `<div class="pin-dot${i < entered.length ? ' filled' : ''}"></div>`
+    ).join('');
+  }
+
+  function renderPad() {
+    const pad = document.getElementById('pinPad');
+    pad.innerHTML = '';
+    for (let i = 1; i <= 9; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'pin-key';
+      btn.textContent = i;
+      btn.onclick = () => pressKey(i.toString());
+      pad.appendChild(btn);
+    }
+    // empty, 0, delete
+    pad.innerHTML += '<div></div>';
+    const z = document.createElement('button');
+    z.className = 'pin-key'; z.textContent = '0'; z.onclick = () => pressKey('0');
+    pad.appendChild(z);
+    const d = document.createElement('button');
+    d.className = 'pin-key del'; d.textContent = 'DEL'; d.onclick = () => { entered = entered.slice(0,-1); renderDots(); };
+    pad.appendChild(d);
+  }
+
+  function pressKey(k) {
+    if (entered.length >= 4) return;
+    entered += k;
+    renderDots();
+    if (entered.length === 4) {
+      if (expectedHash && hashPin(entered) === expectedHash) {
+        overlay.style.display = 'none';
+      } else if (expectedHash) {
+        document.getElementById('pinMsg').textContent = 'Wrong PIN';
+        entered = '';
+        setTimeout(renderDots, 300);
+      }
+    }
+  }
+
+  renderDots();
+  renderPad();
+}
+
+function setupPin() {
+  const overlay = document.getElementById('pinOverlay');
+  overlay.style.display = 'flex';
+  document.getElementById('pinTitle').textContent = 'Set New PIN';
+  document.getElementById('pinMsg').textContent = 'Choose a 4-digit PIN';
+  let entered = '';
+  let firstPin = '';
+  let confirming = false;
+
+  function renderDots() {
+    const dots = document.getElementById('pinDots');
+    dots.innerHTML = Array.from({length:4}, (_, i) =>
+      `<div class="pin-dot${i < entered.length ? ' filled' : ''}"></div>`
+    ).join('');
+  }
+
+  function renderPad() {
+    const pad = document.getElementById('pinPad');
+    pad.innerHTML = '';
+    for (let i = 1; i <= 9; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'pin-key'; btn.textContent = i;
+      btn.onclick = () => pressKey(i.toString());
+      pad.appendChild(btn);
+    }
+    pad.innerHTML += '<div></div>';
+    const z = document.createElement('button');
+    z.className = 'pin-key'; z.textContent = '0'; z.onclick = () => pressKey('0');
+    pad.appendChild(z);
+    const d = document.createElement('button');
+    d.className = 'pin-key del'; d.textContent = 'DEL'; d.onclick = () => { entered = entered.slice(0,-1); renderDots(); };
+    pad.appendChild(d);
+  }
+
+  function pressKey(k) {
+    if (entered.length >= 4) return;
+    entered += k;
+    renderDots();
+    if (entered.length === 4) {
+      if (!confirming) {
+        firstPin = entered;
+        confirming = true;
+        entered = '';
+        document.getElementById('pinTitle').textContent = 'Confirm PIN';
+        document.getElementById('pinMsg').textContent = 'Enter the same PIN again';
+        setTimeout(renderDots, 200);
+      } else {
+        if (entered === firstPin) {
+          localStorage.setItem(PIN_KEY, hashPin(entered));
+          settings.pinEnabled = true;
+          saveSettings(settings);
+          overlay.style.display = 'none';
+          showView('settings');
+        } else {
+          document.getElementById('pinMsg').textContent = 'PINs did not match. Try again.';
+          entered = '';
+          firstPin = '';
+          confirming = false;
+          document.getElementById('pinTitle').textContent = 'Set New PIN';
+          setTimeout(renderDots, 300);
+        }
+      }
+    }
+  }
+
+  renderDots();
+  renderPad();
+}
+
+// ─── Cycle Calculations ─────────────────────────────────────
+function getPeriodStarts() {
+  return data.periods
+    .filter(p => p.type === 'start')
+    .map(p => p.date)
+    .sort();
+}
+
+function getAverageCycle() {
+  const starts = getPeriodStarts();
+  if (starts.length < 2) return 28;
+  let total = 0, count = 0;
+  for (let i = 1; i < starts.length; i++) {
+    const diff = (new Date(starts[i]) - new Date(starts[i-1])) / 86400000;
+    if (diff > 15 && diff < 60) { total += diff; count++; }
+  }
+  return count > 0 ? Math.round(total / count) : 28;
+}
+
+function getAveragePeriodLength() {
+  const starts = data.periods.filter(p => p.type === 'start').map(p => p.date).sort();
+  const ends = data.periods.filter(p => p.type === 'end').map(p => p.date).sort();
+  if (!starts.length || !ends.length) return 5;
+  let total = 0, count = 0;
+  for (const s of starts) {
+    const e = ends.find(ed => ed >= s);
+    if (e) {
+      const diff = (new Date(e) - new Date(s)) / 86400000 + 1;
+      if (diff > 0 && diff < 15) { total += diff; count++; }
+    }
+  }
+  return count > 0 ? Math.round(total / count) : 5;
+}
+
+function getPredictions() {
+  const starts = getPeriodStarts();
+  if (!starts.length) return [];
+  const avg = getAverageCycle();
+  const lastStart = new Date(starts[starts.length - 1]);
+  const preds = [];
+  for (let i = 1; i <= 3; i++) {
+    const pred = new Date(lastStart);
+    pred.setDate(pred.getDate() + avg * i);
+    preds.push(pred.toISOString().split('T')[0]);
+  }
+  return preds;
+}
+
+function isPeriodDay(dateStr) {
+  const starts = data.periods.filter(p => p.type === 'start').map(p => p.date).sort();
+  const ends = data.periods.filter(p => p.type === 'end').map(p => p.date).sort();
+  for (const s of starts) {
+    const e = ends.find(ed => ed >= s);
+    const endDate = e || (() => { const d = new Date(s); d.setDate(d.getDate() + 4); return d.toISOString().split('T')[0]; })();
+    if (dateStr >= s && dateStr <= endDate) return true;
+  }
+  return false;
+}
+
+function isPeriodStart(dateStr) {
+  return data.periods.some(p => p.type === 'start' && p.date === dateStr);
+}
+
+function hasSymptoms(dateStr) {
+  return data.symptoms.some(s => s.date === dateStr);
+}
+
+function getSymptoms(dateStr) {
+  return data.symptoms.find(s => s.date === dateStr);
+}
+
+// ─── Calendar View ──────────────────────────────────────────
+function renderCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const predictions = getPredictions();
+  const avgCycle = getAverageCycle();
+  const avgLength = getAveragePeriodLength();
+  const starts = getPeriodStarts();
+  const nextPred = predictions[0];
+  const today = new Date().toISOString().split('T')[0];
+
+  // Days until next
+  let daysUntil = '--';
+  if (nextPred) {
+    const diff = Math.ceil((new Date(nextPred) - new Date()) / 86400000);
+    daysUntil = diff > 0 ? diff : 'Today';
+  }
+
+  let html = `
+    <div class="stats fade-in">
+      <div class="stat-card">
+        <div class="label">Cycle Length</div>
+        <div class="value pink">${avgCycle}<span style="font-size:13px;color:var(--text-dim)"> days</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Next Period</div>
+        <div class="value purple">${daysUntil}<span style="font-size:13px;color:var(--text-dim)">${typeof daysUntil === 'number' ? ' days' : ''}</span></div>
+      </div>
+    </div>
+
+    <div class="cal-header fade-in">
+      <button class="cal-nav" onclick="changeMonth(-1)" style="background:none;border:none"><div style="width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">◀</div></button>
+      <h2>${months[calMonth]} ${calYear}</h2>
+      <button class="cal-nav" onclick="changeMonth(1)" style="background:none;border:none"><div style="width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">▶</div></button>
+    </div>
+
+    <div class="cal-weekdays fade-in">
+      ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<span>${d}</span>`).join('')}
+    </div>
+    <div class="cal-grid fade-in">
+  `;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-day empty"></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const classes = ['cal-day'];
+    if (dateStr === today) classes.push('today');
+    if (isPeriodStart(dateStr)) classes.push('period-start');
+    else if (isPeriodDay(dateStr)) classes.push('period');
+    if (predictions.includes(dateStr)) classes.push('predicted');
+    if (hasSymptoms(dateStr)) classes.push('has-symptoms');
+
+    html += `<div class="${classes.join(' ')}" onclick="dayClick('${dateStr}')"><span class="day-num">${d}</span></div>`;
+  }
+
+  html += `</div>`;
+
+  // Legend
+  html += `
+    <div style="display:flex;gap:16px;margin-top:16px;font-size:12px;color:var(--text-muted);justify-content:center" class="fade-in">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--pink);margin-right:4px"></span>Period</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--purple);margin-right:4px"></span>Predicted</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--warn);margin-right:4px"></span>Symptoms</span>
+    </div>`;
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function dayClick(dateStr) {
+  // Quick-log: if no period start exists for this date, add one; if it does, remove it
+  const existing = data.periods.findIndex(p => p.date === dateStr && p.type === 'start');
+  if (existing >= 0) {
+    data.periods.splice(existing, 1);
+    // Also remove corresponding end if within 7 days
+    const endIdx = data.periods.findIndex(p => p.type === 'end' && p.date >= dateStr && p.date <= addDays(dateStr, 7));
+    if (endIdx >= 0) data.periods.splice(endIdx, 1);
+  } else {
+    data.periods.push({ date: dateStr, type: 'start' });
+    // Auto-add end 4 days later if no end exists
+    const autoEnd = addDays(dateStr, 4);
+    if (!data.periods.some(p => p.type === 'end' && p.date >= dateStr && p.date <= addDays(dateStr, 10))) {
+      data.periods.push({ date: autoEnd, type: 'end' });
+    }
+  }
+  saveData(data);
+  renderCalendar();
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+// ─── Log View ───────────────────────────────────────────────
+function renderLog() {
+  const today = new Date().toISOString().split('T')[0];
+  const existing = getSymptoms(today) || {};
+  const moods = ['😊','😐','😢','😠','😴'];
+
+  let html = `
+    <div class="log-panel fade-in">
+      <h3>Log Today — ${new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'})}</h3>
+
+      <div class="log-row">
+        <label>Period</label>
+        <select id="logPeriod">
+          <option value="">Not today</option>
+          <option value="start" ${isPeriodStart(today) ? 'selected' : ''}>Started</option>
+          <option value="end" ${data.periods.some(p=>p.type==='end'&&p.date===today) ? 'selected' : ''}>Ended</option>
+        </select>
+      </div>
+
+      <div class="log-row">
+        <label>Flow</label>
+        <div class="symptom-chips" id="flowChips">
+          ${['Light','Medium','Heavy'].map(f =>
+            `<button class="chip${existing.flow===f.toLowerCase()?' active':''}" onclick="setFlow('${f.toLowerCase()}')">${f}</button>`
+          ).join('')}
+        </div>
+      </div>
+
+      <div>
+        <label style="font-size:14px;color:var(--text-dim)">Cramps (${existing.cramps || 0}/5)</label>
+        <input type="range" class="cramp-slider" min="0" max="5" value="${existing.cramps||0}" id="crampSlider" oninput="this.previousElementSibling.textContent='Cramps ('+this.value+'/5)'">
+      </div>
+
+      <div style="margin-top:10px">
+        <label style="font-size:14px;color:var(--text-dim)">Mood</label>
+        <div class="mood-row">
+          ${moods.map(m => `<button class="mood-btn${existing.mood===m?' active':''}" onclick="setMood('${m}')">${m}</button>`).join('')}
+        </div>
+      </div>
+
+      <div>
+        <label style="font-size:14px;color:var(--text-dim)">Symptoms</label>
+        <div class="symptom-chips" id="symptomChips">
+          ${['Headache','Bloating','Fatigue','Acne','Cravings','Insomnia','Back pain'].map(s =>
+            `<button class="chip${(existing.tags||[]).includes(s)?' active':''}" onclick="toggleSymptom('${s}')">${s}</button>`
+          ).join('')}
+        </div>
+      </div>
+
+      <div>
+        <label style="font-size:14px;color:var(--text-dim)">Notes</label>
+        <textarea class="notes-area" id="logNotes" placeholder="How are you feeling?">${existing.notes||''}</textarea>
+      </div>
+
+      <button class="btn-primary" onclick="saveLog()">Save Today's Log</button>
+    </div>
+  `;
+
+  document.getElementById('content').innerHTML = html;
+}
+
+let tempLog = {};
+
+function setFlow(f) {
+  tempLog.flow = f;
+  document.querySelectorAll('#flowChips .chip').forEach(c => {
+    c.classList.toggle('active', c.textContent.toLowerCase() === f);
+  });
+}
+
+function setMood(m) {
+  tempLog.mood = m;
+  document.querySelectorAll('.mood-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === m);
+  });
+}
+
+function toggleSymptom(s) {
+  if (!tempLog.tags) tempLog.tags = [];
+  const idx = tempLog.tags.indexOf(s);
+  if (idx >= 0) tempLog.tags.splice(idx, 1);
+  else tempLog.tags.push(s);
+  document.querySelectorAll('#symptomChips .chip').forEach(c => {
+    c.classList.toggle('active', tempLog.tags.includes(c.textContent));
+  });
+}
+
+function saveLog() {
+  const today = new Date().toISOString().split('T')[0];
+  const periodVal = document.getElementById('logPeriod').value;
+  const cramps = parseInt(document.getElementById('crampSlider').value);
+  const notes = document.getElementById('logNotes').value;
+
+  // Update period
+  if (periodVal) {
+    if (!data.periods.some(p => p.date === today && p.type === periodVal)) {
+      data.periods.push({ date: today, type: periodVal });
+    }
+  }
+
+  // Update symptoms
+  const existingIdx = data.symptoms.findIndex(s => s.date === today);
+  const entry = {
+    date: today,
+    flow: tempLog.flow || null,
+    cramps,
+    mood: tempLog.mood || null,
+    tags: tempLog.tags || [],
+    notes: notes || ''
+  };
+  if (existingIdx >= 0) data.symptoms[existingIdx] = entry;
+  else data.symptoms.push(entry);
+
+  saveData(data);
+  tempLog = {};
+
+  // Visual feedback
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = 'Saved!';
+  btn.style.background = 'var(--success)';
+  btn.style.color = 'var(--bg)';
+  setTimeout(() => {
+    btn.textContent = 'Save Today\'s Log';
+    btn.style.background = '';
+    btn.style.color = '';
+  }, 1500);
+}
+
+// ─── History View ───────────────────────────────────────────
+function renderHistory() {
+  const allDates = [...new Set([
+    ...data.periods.map(p => p.date),
+    ...data.symptoms.map(s => s.date)
+  ])].sort().reverse();
+
+  if (!allDates.length) {
+    document.getElementById('content').innerHTML = `
+      <div class="empty-state fade-in">
+        <div class="icon">📋</div>
+        <p>No entries yet.<br>Start logging to see your history here.</p>
+      </div>`;
+    return;
+  }
+
+  let html = '<div class="fade-in">';
+  for (const date of allDates.slice(0, 30)) {
+    const sym = getSymptoms(date);
+    const isPStart = isPeriodStart(date);
+    const isPEnd = data.periods.some(p => p.type === 'end' && p.date === date);
+    const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+
+    let details = [];
+    if (isPStart) details.push('Period started');
+    if (isPEnd) details.push('Period ended');
+    if (sym) {
+      if (sym.flow) details.push(`Flow: ${sym.flow}`);
+      if (sym.cramps) details.push(`Cramps: ${sym.cramps}/5`);
+      if (sym.mood) details.push(`Mood: ${sym.mood}`);
+      if (sym.notes) details.push(sym.notes);
+    }
+
+    html += `
+      <div class="history-item">
+        <div class="date">${displayDate}</div>
+        ${details.length ? `<div class="details">${details.join(' · ')}</div>` : ''}
+        ${sym?.tags?.length ? `<div class="symptoms">${sym.tags.map(t => `<span class="symptom-tag">${t}</span>`).join('')}</div>` : ''}
+      </div>`;
+  }
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+// ─── Settings View ──────────────────────────────────────────
+function renderSettings() {
+  const periodCount = getPeriodStarts().length;
+  const symptomCount = data.symptoms.length;
+
+  let html = `
+    <div class="fade-in">
+      <div class="settings-group">
+        <h3>Security</h3>
+        <div class="setting-row">
+          <label>PIN Lock</label>
+          <div class="toggle ${settings.pinEnabled ? 'on' : ''}" onclick="togglePin()"></div>
+        </div>
+        ${settings.pinEnabled ? '<div class="setting-row"><label>Change PIN</label><button style="color:var(--purple);font-size:14px" onclick="setupPin()">Change</button></div>' : ''}
+      </div>
+
+      <div class="settings-group">
+        <h3>Data</h3>
+        <div class="setting-row">
+          <label>Period entries</label>
+          <span style="color:var(--text-dim)">${periodCount}</span>
+        </div>
+        <div class="setting-row">
+          <label>Symptom logs</label>
+          <span style="color:var(--text-dim)">${symptomCount}</span>
+        </div>
+        <div class="setting-row">
+          <label>Average cycle</label>
+          <span style="color:var(--text-dim)">${getAverageCycle()} days</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="exportCSV()">Export Data as CSV</button>
+      <button class="btn-secondary" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem('${STORAGE_KEY}');data={periods:[],symptoms:[]};showView('calendar')}">Delete All Data</button>
+
+      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.6">
+        <strong>Luna</strong> — Privacy-first cycle tracker<br>
+        All data stored locally on your device.<br>
+        No accounts. No cloud. No tracking. Ever.<br>
+        <a href="https://github.com/toxfox69/tiamat-entity" style="color:var(--purple);text-decoration:none">Open source</a>
+      </div>
+    </div>
+  `;
+  document.getElementById('content').innerHTML = html;
+}
+
+function togglePin() {
+  if (settings.pinEnabled) {
+    settings.pinEnabled = false;
+    localStorage.removeItem(PIN_KEY);
+    saveSettings(settings);
+    showView('settings');
+  } else {
+    setupPin();
+  }
+}
+
+// ─── Export ──────────────────────────────────────────────────
+function exportCSV() {
+  let csv = 'Date,Type,Flow,Cramps,Mood,Symptoms,Notes\n';
+  const allDates = [...new Set([
+    ...data.periods.map(p => p.date),
+    ...data.symptoms.map(s => s.date)
+  ])].sort();
+
+  for (const date of allDates) {
+    const starts = data.periods.filter(p => p.date === date && p.type === 'start');
+    const ends = data.periods.filter(p => p.date === date && p.type === 'end');
+    const sym = getSymptoms(date);
+
+    let type = '';
+    if (starts.length) type = 'Period Start';
+    if (ends.length) type += (type ? ' + ' : '') + 'Period End';
+    if (!type && sym) type = 'Symptom Log';
+
+    csv += `${date},"${type}","${sym?.flow||''}",${sym?.cramps||''},"${sym?.mood||''}","${(sym?.tags||[]).join('; ')}","${(sym?.notes||'').replace(/"/g,'""')}"\n`;
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `luna-export-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Navigation ─────────────────────────────────────────────
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+  switch(view) {
+    case 'calendar': renderCalendar(); break;
+    case 'log': tempLog = {}; renderLog(); break;
+    case 'history': renderHistory(); break;
+    case 'settings': renderSettings(); break;
+  }
+}
+
+// ─── Init ───────────────────────────────────────────────────
+checkPinLock();
+showView('calendar');
+</script>
+</body>
+</html>

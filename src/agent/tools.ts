@@ -1162,12 +1162,13 @@ Model: ${ctx.inference.getDefaultModel()}
         // Write task to file for debugging/logging
         writeFileSync("/root/.automaton/claude_task.txt", task, "utf-8");
 
-        // Run Claude Code — strip session flags to allow nested invocation
+        // Run Claude Code — strip session flags + API key to force subscription
         const childEnv = { ...process.env };
         delete childEnv.CLAUDECODE;
         delete childEnv.CLAUDE_CODE_ENTRYPOINT;
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
+        delete childEnv.ANTHROPIC_API_KEY;  // Force CLI to use Max subscription, not depleted API key
 
         const TIMEOUT_MS = 600_000; // 10 minutes
         const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
