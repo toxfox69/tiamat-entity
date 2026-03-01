@@ -711,10 +711,10 @@
 
   /* ===== LABYRINTH PANEL — Fatal Labyrinth style ===== */
   .labyrinth-panel {
-    flex: 0 0 420px;
+    flex: 0 0 480px;
     background: #0a0812;
     border-right: 1px solid var(--border-color);
-    border-top: 2px solid #9966cc;
+    border-top: 2px solid #aa7a44;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1963,7 +1963,7 @@ const DungeonGen = {
 
 // --- Game State ---
 const Game = {
-  W: 50, H: 30,
+  W: 40, H: 25,
   tiles: null, visible: null, explored: null,
   player: { x:0, y:0, dir:0, hp:50, maxHp:50, atk:5, def:2, lvl:1, xp:0, xpNext:30, gold:0, potions:2, kills:0,
     equipment:{ weapon:null, armor:null, ring:null }, spells:[] },
@@ -3251,13 +3251,13 @@ const DungeonRenderer = {
     const r = el.parentElement.getBoundingClientRect();
     this.w = el.width = Math.floor(r.width) || 700;
     this.h = el.height = Math.floor(r.height) || 380;
-    this.ts = Math.max(14, Math.min(22, Math.floor(Math.min(this.w / 30, this.h / 18))));
+    this.ts = Math.max(20, Math.min(32, Math.floor(Math.min(this.w / 22, this.h / 14))));
   },
 
   drawSprite(ctx, x, y, ts, key, color) {
     const data = this.SPRITES[key];
     if (!data) return;
-    const p = Math.max(1, Math.floor(ts / 8));
+    const p = Math.max(2, Math.floor(ts / 6));
     const mx = x + ts/2, my = y + ts/2;
     for (const [rx,ry,rw,rh,col] of data) {
       ctx.fillStyle = col === 'm' ? color : col;
