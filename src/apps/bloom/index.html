@@ -209,27 +209,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
   </div>
 
   <div class="onboarding" id="onboarding" style="display:none">
-    <h2>Welcome to Bloom</h2>
-    <p>Your private transition &amp; wellness companion. Everything stays on your device.</p>
-    <div style="text-align:left;max-width:320px;margin:0 auto 16px">
-      <div style="font-size:13px;font-weight:600;color:var(--violet-deep);margin-bottom:8px">What's your journey?</div>
-      <select id="onboardJourney" style="width:100%;padding:12px;font-size:15px;margin-bottom:8px">
-        <option value="mtf">MTF (Male to Female)</option>
-        <option value="ftm">FTM (Female to Male)</option>
-        <option value="femboy">Femboy</option>
-        <option value="tomboy">Tomboy</option>
-        <option value="nonbinary">Non-Binary</option>
-        <option value="custom">Custom</option>
-      </select>
-    </div>
-    <div class="feature-list">
-      <div><span class="feature-icon" style="background:var(--violet-pale)">&#128138;</span> Meds, supplements &amp; lab tracking</div>
-      <div><span class="feature-icon" style="background:var(--pink-pale)">&#128247;</span> Photo timeline &amp; comparisons</div>
-      <div><span class="feature-icon" style="background:var(--sky-pale)">&#128200;</span> Body changes, stacks &amp; phases</div>
-      <div><span class="feature-icon" style="background:var(--mint-pale)">&#128274;</span> PIN lock, stealth mode &amp; encryption</div>
-    </div>
-    <button class="btn-primary" style="max-width:300px" onclick="S.journeyType=document.getElementById('onboardJourney').value;completeOnboarding()">Get Started</button>
-    <p style="font-size:11px;color:var(--text-muted);margin-top:16px">Zero data collection. Zero network requests.<br>Your journey, your data, your device only.</p>
+    <div id="obContent"></div>
   </div>
 
   <div id="mainApp">
@@ -251,15 +231,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
     <div class="nav">
       <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">Home</button>
       <button class="nav-btn" data-view="log" onclick="showView('log')">Log</button>
-      <button class="nav-btn" data-view="meds" onclick="showView('meds')">Meds</button>
-      <button class="nav-btn" data-view="labs" onclick="showView('labs')">Labs</button>
       <button class="nav-btn" data-view="body" onclick="showView('body')">Body</button>
       <button class="nav-btn" data-view="photos" onclick="showView('photos')">Photos</button>
-      <button class="nav-btn" data-view="supps" onclick="showView('supps')">Supps</button>
-      <button class="nav-btn" data-view="timeline" onclick="showView('timeline')">Timeline</button>
-      <button class="nav-btn" data-view="insights" onclick="showView('insights')">Insights</button>
-      <button class="nav-btn" data-view="resources" onclick="showView('resources')">Resources</button>
-      <button class="nav-btn" data-view="settings" onclick="showView('settings')">Settings</button>
+      <button class="nav-btn" data-view="stack" onclick="showView('stack')">Stack</button>
     </div>
     <div class="content" id="content"></div>
   </div>
@@ -381,6 +355,144 @@ const FEMBOY_TIMELINE=[
   {change:'Breast budding (if on E)',onset:'1-3 months',max:'2-5 years',reversible:false}
 ];
 
+// Supplement-only timelines (no HRT) — mapped to goals
+const SUPP_TIMELINE={
+  bigger_butt:{changes:[
+    {change:'Improved glute pump / blood flow',onset:'1-2 weeks',max:'Ongoing',reversible:true,method:'L-Citrulline + L-Arginine'},
+    {change:'Subtle fat deposition shift',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Pueraria mirifica + Evening Primrose Oil'},
+    {change:'Visible glute fullness (with training)',onset:'3-6 months',max:'1-2 years',reversible:true,method:'Phytoestrogens + progressive overload'}
+  ]},
+  bigger_thighs:{changes:[
+    {change:'Increased thigh circulation',onset:'1-2 weeks',max:'Ongoing',reversible:true,method:'L-Citrulline + Pine Bark'},
+    {change:'Subtle thigh softening',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Saw Palmetto + Pueraria mirifica'},
+    {change:'Visible fullness (with training)',onset:'3-6 months',max:'1-2 years',reversible:true,method:'Phytoestrogens + targeted training'}
+  ]},
+  softer_skin:{changes:[
+    {change:'Skin hydration improvement',onset:'1-2 weeks',max:'1-3 months',reversible:true,method:'Evening Primrose Oil + Vitamin E'},
+    {change:'Reduced skin oiliness',onset:'2-6 weeks',max:'3-6 months',reversible:true,method:'Saw Palmetto + Spearmint tea'},
+    {change:'Noticeably softer texture',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Collagen + phytoestrogens'}
+  ]},
+  bigger_nipples:{changes:[
+    {change:'Increased nipple sensitivity',onset:'2-4 weeks',max:'3-6 months',reversible:true,method:'Fenugreek + Fennel'},
+    {change:'Mild puffiness / areola color change',onset:'2-4 months',max:'6-12 months',reversible:'variable',method:'Pueraria mirifica + Red Clover'},
+    {change:'Subtle enlargement (individual response)',onset:'4-8 months',max:'12+ months',reversible:'variable',method:'Phytoestrogen stack — results vary significantly'}
+  ]},
+  bigger_penis:{changes:[
+    {change:'Improved erection quality / fullness',onset:'1-2 weeks',max:'1-3 months',reversible:true,method:'L-Citrulline + L-Arginine + Pycnogenol'},
+    {change:'Increased flaccid hang',onset:'2-6 weeks',max:'3-6 months',reversible:true,method:'Vasodilator stack + Ginkgo'},
+    {change:'Optimized tissue oxygenation',onset:'1-3 months',max:'Ongoing',reversible:true,method:'Nitric oxide pathway support'}
+  ]},
+  more_ejaculate:{changes:[
+    {change:'Increased fluid volume',onset:'3-7 days',max:'2-4 weeks',reversible:true,method:'Lecithin 1200mg + Pygeum 100mg'},
+    {change:'Consistent higher volume',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Lecithin + Pygeum + hydration (3L+/day)'},
+    {change:'Maximum volume (individual ceiling)',onset:'1-3 months',max:'Ongoing',reversible:true,method:'Full stack + zinc + adequate hydration'}
+  ]},
+  better_erections:{changes:[
+    {change:'Noticeable morning erection improvement',onset:'3-7 days',max:'2-4 weeks',reversible:true,method:'L-Citrulline + Pycnogenol'},
+    {change:'Stronger sustained erections',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Vasodilator stack'},
+    {change:'Improved pelvic blood flow baseline',onset:'1-3 months',max:'Ongoing',reversible:true,method:'Full vascular support'}
+  ]},
+  more_sensitivity:{changes:[
+    {change:'Increased genital sensitivity',onset:'1-3 weeks',max:'2-3 months',reversible:true,method:'Ginkgo + Maca + L-Arginine'},
+    {change:'Enhanced orgasm quality',onset:'2-6 weeks',max:'3-6 months',reversible:true,method:'Full sexual enhancement stack'}
+  ]},
+  less_body_hair:{changes:[
+    {change:'Slightly slower regrowth',onset:'1-3 months',max:'6-12 months',reversible:true,method:'Saw Palmetto + Spearmint tea'},
+    {change:'Finer hair texture',onset:'3-6 months',max:'1-2 years',reversible:'partial',method:'Anti-androgen supplements'},
+    {change:'Significant reduction unlikely without laser/IPL',onset:'—',max:'—',reversible:'N/A',method:'Supplements have limited effect — laser/IPL most effective'}
+  ]},
+  less_facial_hair:{changes:[
+    {change:'Mild slowing of growth',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Saw Palmetto + DIM'},
+    {change:'Major reduction requires physical removal',onset:'—',max:'—',reversible:'N/A',method:'Laser hair removal or electrolysis for permanent results'}
+  ]},
+  fat_redist:{changes:[
+    {change:'Subtle shift in fat storage pattern',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Phytoestrogen stack + caloric surplus'},
+    {change:'Gradual hip/thigh preference',onset:'4-8 months',max:'1-2 years',reversible:true,method:'Saw Palmetto + Pueraria mirifica + targeted training'}
+  ]},
+  libido_up:{changes:[
+    {change:'Increased arousal frequency',onset:'3-7 days',max:'2-4 weeks',reversible:true,method:'Maca + Tribulus + Epimedium'},
+    {change:'Sustained higher baseline libido',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Full sexual enhancement stack'}
+  ]},
+  more_energy:{changes:[
+    {change:'Reduced afternoon fatigue',onset:'3-7 days',max:'2-4 weeks',reversible:true,method:'B-Complex + CoQ10 + Magnesium'},
+    {change:'Sustained energy improvement',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Full energy stack + vitamin D'}
+  ]},
+  lactation:{changes:[
+    {change:'Nipple tingling / sensitivity',onset:'1-3 weeks',max:'1-2 months',reversible:true,method:'Fenugreek + Blessed Thistle'},
+    {change:'Possible minor secretion',onset:'4-8 weeks',max:'3-6 months',reversible:true,method:'Full galactagogue stack — requires adequate E2+progesterone priming'}
+  ]},
+  slimmer_waist:{changes:[
+    {change:'Reduced bloating / water retention',onset:'3-7 days',max:'2-4 weeks',reversible:true,method:'Magnesium + potassium + hydration'},
+    {change:'Improved core definition',onset:'4-8 weeks',max:'3-6 months',reversible:true,method:'Caloric deficit + progressive core training'},
+    {change:'Waist-to-hip ratio improvement',onset:'3-6 months',max:'6-12 months',reversible:true,method:'Fat redistribution support + body recomposition'}
+  ]},
+  fat_redist_masc:{changes:[
+    {change:'Increased metabolic rate',onset:'1-2 weeks',max:'1-3 months',reversible:true,method:'Ashwagandha + Zinc + Vitamin D'},
+    {change:'Shift toward abdominal/trunk fat storage',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Testosterone-supporting stack + resistance training'},
+    {change:'Reduced hip/thigh fat deposition',onset:'3-6 months',max:'1-2 years',reversible:true,method:'Fenugreek + D-Aspartic acid + progressive overload'}
+  ]},
+  muscle_growth:{changes:[
+    {change:'Improved workout recovery',onset:'1-2 weeks',max:'1-3 months',reversible:true,method:'Ashwagandha + Magnesium + protein'},
+    {change:'Noticeable strength gains',onset:'4-8 weeks',max:'3-6 months',reversible:true,method:'Creatine + D-Aspartic acid + progressive overload'},
+    {change:'Visible muscle hypertrophy',onset:'2-4 months',max:'1-2 years',reversible:true,method:'Full masculinization stack + structured training + caloric surplus'}
+  ]},
+  muscle_loss:{changes:[
+    {change:'Decreased muscle pump / hardness',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Saw Palmetto + Spearmint — reduce androgen drive'},
+    {change:'Gradual loss of upper body mass',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Anti-androgen supplements + cardio-focused training + caloric maintenance'},
+    {change:'Softer body contour',onset:'4-8 months',max:'1-2 years',reversible:true,method:'Phytoestrogen stack + avoiding resistance training'}
+  ]},
+  breast_dev:{changes:[
+    {change:'Nipple/areola sensitivity increase',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Fenugreek + Pueraria mirifica'},
+    {change:'Breast buds / tissue thickening',onset:'2-4 months',max:'6-12 months',reversible:'variable',method:'Full phytoestrogen stack (Pueraria mirifica + Red Clover + Fennel)'},
+    {change:'Gradual breast shape development',onset:'6-12 months',max:'2-3 years',reversible:'partial',method:'Sustained phytoestrogen exposure — results highly individual without prescription estradiol'}
+  ]},
+  chest_flat:{changes:[
+    {change:'Reduced chest fat with deficit',onset:'4-8 weeks',max:'3-6 months',reversible:true,method:'Caloric deficit + chest-focused cardio'},
+    {change:'Firmer chest appearance',onset:'2-4 months',max:'6-12 months',reversible:true,method:'Chest binding (safe practices) + upper body training'},
+    {change:'Flatter contour',onset:'4-8 months',max:'1-2 years',reversible:true,method:'Body recomposition + compression — surgical options for significant tissue'}
+  ]},
+  libido_down:{changes:[
+    {change:'Mild libido reduction',onset:'1-3 weeks',max:'1-3 months',reversible:true,method:'Spearmint tea 2x daily + Saw Palmetto'},
+    {change:'Decreased spontaneous arousal',onset:'1-3 months',max:'3-6 months',reversible:true,method:'Anti-androgen supplements — reduces free testosterone'},
+    {change:'Stabilized lower baseline',onset:'3-6 months',max:'Ongoing',reversible:true,method:'Consistent anti-androgen regimen + mindfulness practices'}
+  ]},
+  more_head_hair:{changes:[
+    {change:'Reduced daily hair shedding',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Biotin 5000mcg + Zinc + Saw Palmetto (DHT blocker)'},
+    {change:'New vellus hair at temples/crown',onset:'3-6 months',max:'6-12 months',reversible:true,method:'Saw Palmetto + Minoxidil (topical, OTC) + scalp massage'},
+    {change:'Visible thickening and regrowth',onset:'6-12 months',max:'1-2 years',reversible:'partial',method:'Full hair stack — Finasteride (Rx) dramatically more effective than supplements'}
+  ]},
+  more_facial_hair:{changes:[
+    {change:'Slightly faster growth rate',onset:'4-8 weeks',max:'3-6 months',reversible:true,method:'Zinc + Vitamin D + biotin'},
+    {change:'Increased vellus-to-terminal hair conversion',onset:'3-6 months',max:'1-2 years',reversible:'partial',method:'Minoxidil (topical) — most effective non-Rx option'},
+    {change:'Fuller beard pattern',onset:'6-12 months',max:'2-4 years',reversible:'partial',method:'Minoxidil + dermarolling + patience — genetics are the main limiter'}
+  ]},
+  better_sleep:{changes:[
+    {change:'Faster sleep onset',onset:'3-7 days',max:'2-4 weeks',reversible:true,method:'Magnesium glycinate 400mg + L-Theanine 200mg'},
+    {change:'Deeper sleep / fewer wake-ups',onset:'1-3 weeks',max:'1-3 months',reversible:true,method:'Magnesium + Ashwagandha + sleep hygiene'},
+    {change:'Consistent sleep architecture improvement',onset:'1-3 months',max:'Ongoing',reversible:true,method:'Full stack + fixed sleep schedule + blue light management'}
+  ]},
+  bone_health:{changes:[
+    {change:'Baseline vitamin D optimization',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Vitamin D3 2000IU + Calcium 600mg + K2 100mcg'},
+    {change:'Improved calcium absorption markers',onset:'2-3 months',max:'6-12 months',reversible:true,method:'Full bone stack — especially important if suppressing sex hormones'},
+    {change:'Maintained bone mineral density',onset:'6-12 months',max:'Ongoing',reversible:true,method:'Sustained supplementation + weight-bearing exercise — get DEXA scan as baseline'}
+  ]},
+  heart_health:{changes:[
+    {change:'Improved resting heart rate',onset:'2-4 weeks',max:'2-3 months',reversible:true,method:'Omega-3 2000mg + CoQ10 200mg + cardio'},
+    {change:'Better lipid panel markers',onset:'2-3 months',max:'6-12 months',reversible:true,method:'Omega-3 + Garlic extract + dietary changes'},
+    {change:'Sustained cardiovascular improvement',onset:'6-12 months',max:'Ongoing',reversible:true,method:'Full heart stack + consistent exercise — monitor with annual lipid panel'}
+  ]},
+  mood_stability:{changes:[
+    {change:'Reduced daily mood swings',onset:'1-2 weeks',max:'1-3 months',reversible:true,method:'Magnesium + B-Complex + Omega-3'},
+    {change:'More consistent emotional baseline',onset:'1-3 months',max:'3-6 months',reversible:true,method:'Ashwagandha 600mg + Vitamin D + regular exercise'},
+    {change:'Resilient mood architecture',onset:'3-6 months',max:'Ongoing',reversible:true,method:'Full stack + sleep optimization + stress management practices'}
+  ]},
+  recovery:{changes:[
+    {change:'Reduced swelling and bruising',onset:'1-3 days',max:'1-2 weeks',reversible:true,method:'Arnica + Bromelain 500mg + Vitamin C 2000mg'},
+    {change:'Accelerated tissue healing',onset:'1-2 weeks',max:'4-8 weeks',reversible:true,method:'Zinc 50mg + Protein 30g+ + Vitamin C'},
+    {change:'Full recovery support',onset:'2-6 weeks',max:'3-6 months',reversible:true,method:'Full recovery stack — taper down supplements as healing completes'}
+  ]}
+};
+
 const TOMBOY_TIMELINE=[
   {change:'Voice deepening (if on T)',onset:'1-3 months',max:'1-2 years',reversible:false},
   {change:'Increased energy',onset:'Weeks',max:'1-3 months',reversible:true},
@@ -493,6 +605,183 @@ const SUPPLEMENT_STACKS={
     items:['Maca Root (Lepidium meyenii) 1500mg','L-Arginine 1000mg','Epimedium/Icariin 1000mg','Ginkgo biloba 120mg','Damiana (Turnera diffusa) 800mg','Tribulus terrestris 750mg','DHEA 25mg','Ashwagandha (Withania somnifera) 600mg']
   }
 };
+
+// ─── Smart Supplement Name Deduplication ───────────────────────
+const SUPP_ALIASES={
+  'd-alpha-tocopherol':'vitamin e','tocopherol':'vitamin e','vit e':'vitamin e',
+  'zinc picolinate':'zinc','zinc citrate':'zinc','zinc gluconate':'zinc',
+  'trigonella foenum-graecum':'fenugreek',
+  'foeniculum vulgare':'fennel','fennel seed':'fennel',
+  'trifolium pratense':'red clover','red clover extract':'red clover',
+  'lepidium meyenii':'maca','maca root':'maca',
+  'withania somnifera':'ashwagandha',
+  'cnicus benedictus':'blessed thistle',
+  'galega officinalis':'goats rue',
+  'moringa oleifera':'moringa',
+  'asparagus racemosus':'shatavari',
+  'turnera diffusa':'damiana',
+  'dioscorea villosa':'wild yam',
+  'pygeum africanum':'pygeum',
+  'phosphatidylcholine':'lecithin',
+  'selenomethionine':'selenium',
+  'pycnogenol':'pine bark',
+  'horny goat weed':'epimedium','epimedium/icariin':'epimedium','icariin':'epimedium',
+  'vitamin b3':'niacin',
+  'collagen peptides':'collagen',
+  'spearmint tea':'spearmint',
+  'arnica montana':'arnica',
+  'brewers yeast':'brewers yeast',"brewer's yeast":'brewers yeast',
+  'fish oil':'omega-3','vitamin d':'vitamin d3',
+  'borage oil':'borage','gla':'borage',
+  'evening primrose oil':'evening primrose',
+  'pine bark extract':'pine bark'
+};
+
+function normalizeSuppName(raw){
+  let s=raw.toLowerCase().trim();
+  s=s.replace(/\s*\([^)]*\)/g,'').trim();
+  s=s.replace(/\s+\d[\d,.]*\s*(?:mg|mcg|iu|g|ml|tabs?|capsules?|x\s*daily).*$/i,'').trim();
+  s=s.replace(/\s+(?:seed|seeds|extract|root|oil|tea|leaf|bark|powder|capsules?|tabs?)$/i,'').trim();
+  if(SUPP_ALIASES[s])return SUPP_ALIASES[s];
+  return s;
+}
+
+function parseSuppItem(item){
+  const m=item.match(/^(.+?)\s+(\d[\d,.]*\s*(?:mg|mcg|iu|g|ml|tabs?|capsules?|x\s*daily).*)$/i);
+  return{raw:item,name:m?m[1]:item,dose:m?m[2]:'',canonical:normalizeSuppName(m?m[1]:item)};
+}
+
+function parseDose(str){
+  if(!str)return{value:0,unit:''};
+  const m=str.match(/([\d,.]+)\s*(mg|mcg|iu|g|ml|tabs?|capsules?)/i);
+  if(!m)return{value:0,unit:''};
+  return{value:parseFloat(m[1].replace(/,/g,'')),unit:m[2].toLowerCase().replace(/s$/,'')};
+}
+
+// ─── Auto-Generated Daily Schedule ────────────────────────────
+const SUPP_SCHEDULE={
+  'l-arginine':{time:'AM',context:'empty stomach',note:'30 min before breakfast for best absorption'},
+  'l-citrulline':{time:'AM',context:'empty stomach',note:'Pairs with L-Arginine for NO production'},
+  'l-carnitine':{time:'AM',context:'empty stomach',note:'Best absorbed on empty stomach'},
+  'd-aspartic acid':{time:'AM',context:'empty stomach',note:'Amino acid — best absorbed fasted'},
+  'b-complex':{time:'AM',context:'with breakfast',note:'B vitamins can energize — avoid PM'},
+  'iron':{time:'AM',context:'with breakfast',note:'Take with vitamin C; avoid with calcium/zinc'},
+  'coq10':{time:'AM',context:'with breakfast',note:'Fat-soluble — take with food containing fat'},
+  'dhea':{time:'AM',context:'with breakfast',note:'Mimics natural cortisol rhythm'},
+  'ashwagandha':{time:'AM',context:'with breakfast',note:'Adaptogen — supports stress response'},
+  'maca':{time:'AM',context:'with breakfast',note:'Energizing — avoid taking late in day'},
+  'tribulus terrestris':{time:'AM',context:'with breakfast',note:'Take with food to reduce GI upset'},
+  'dim':{time:'AM',context:'with breakfast',note:'Estrogen metabolizer — take with food'},
+  'niacin':{time:'AM',context:'with breakfast',note:'Take with food to minimize flushing'},
+  'ginkgo biloba':{time:'AM',context:'with breakfast',note:'Circulation support — energizing'},
+  'pine bark':{time:'AM',context:'with breakfast',note:'Antioxidant — morning for daytime benefit'},
+  'epimedium':{time:'AM',context:'with breakfast',note:'PDE5 herb — take with food'},
+  'vitamin d3':{time:'PM',context:'with dinner',note:'Fat-soluble — absorbs best with largest meal'},
+  'vitamin e':{time:'PM',context:'with dinner',note:'Fat-soluble — needs dietary fat for absorption'},
+  'vitamin k2':{time:'PM',context:'with dinner',note:'Fat-soluble — synergizes with D3'},
+  'omega-3':{time:'PM',context:'with dinner',note:'Fat-soluble — take with food to reduce reflux'},
+  'calcium':{time:'PM',context:'with dinner',note:'Separate from iron/zinc by 2+ hours'},
+  'zinc':{time:'PM',context:'with dinner',note:'Take with food; separate from calcium if possible'},
+  'saw palmetto':{time:'PM',context:'with dinner',note:'Fat-soluble anti-androgen'},
+  'evening primrose':{time:'PM',context:'with dinner',note:'GLA is fat-soluble'},
+  'borage':{time:'PM',context:'with dinner',note:'GLA source — take with fat'},
+  'pueraria mirifica':{time:'PM',context:'with dinner',note:'Phytoestrogen — consistent timing matters'},
+  'wild yam':{time:'PM',context:'with dinner',note:'Fat-soluble compounds'},
+  'red clover':{time:'PM',context:'with dinner',note:'Phytoestrogen — consistent PM timing'},
+  'damiana':{time:'PM',context:'with dinner',note:'Traditionally taken in evening'},
+  'pygeum':{time:'PM',context:'with dinner',note:'Take with food for absorption'},
+  'garlic':{time:'PM',context:'with dinner',note:'Enteric-coated preferred; take with food'},
+  'magnesium':{time:'Bedtime',context:'',note:'Promotes relaxation and sleep quality'},
+  'fenugreek':{time:'Split',context:'2-3x daily with meals',note:'Divide dose across meals for steady levels'},
+  'fennel':{time:'Split',context:'2-3x daily with meals',note:'Divide dose for consistent phytoestrogen effect'},
+  'blessed thistle':{time:'Split',context:'2-3x daily with meals',note:'Galactagogue — steady levels important'},
+  'goats rue':{time:'Split',context:'2-3x daily with meals',note:'Most effective galactagogue — split doses'},
+  'spearmint':{time:'Split',context:'2x daily',note:'Anti-androgen — morning and evening'},
+  'brewers yeast':{time:'Split',context:'with meals',note:'Spread across meals; can cause gas initially'},
+  'moringa':{time:'Split',context:'2x daily with meals',note:'Rich in nutrients — split for steady levels'},
+  'shatavari':{time:'Split',context:'2x daily',note:'Adaptogen — morning and evening'},
+  'biotin':{time:'Any',context:'',note:'Water-soluble — timing flexible'},
+  'collagen':{time:'Any',context:'',note:'Can take any time; some prefer AM on empty stomach'},
+  'msm':{time:'Any',context:'',note:'Flexible timing — some prefer with meals'},
+  'vitamin c':{time:'Any',context:'',note:'Water-soluble — split doses if >1000mg'},
+  'selenium':{time:'Any',context:'with food',note:'Take with food for absorption'},
+  'lecithin':{time:'Any',context:'with food',note:'Take with meals'},
+  'bromelain':{time:'Any',context:'between meals',note:'Between meals for anti-inflammatory effect'},
+  'protein':{time:'Any',context:'',note:'Flexible — post-workout or with meals'},
+  'arnica':{time:'Any',context:'',note:'Follow product directions'}
+};
+
+const SUPP_CYCLING={
+  phytoestrogens:{
+    label:'Phytoestrogen cycling',pattern:'5 days on / 2 days off',
+    reason:'Prevents estrogen receptor desensitization',
+    supps:['fenugreek','fennel','red clover','pueraria mirifica','wild yam','shatavari','maca']
+  },
+  adaptogens:{
+    label:'Adaptogen cycling',pattern:'6 weeks on / 2 weeks off',
+    reason:'Maintains HPA axis sensitivity',
+    supps:['ashwagandha','maca','shatavari','tribulus terrestris','damiana']
+  },
+  antiandrogens:{
+    label:'Anti-androgens',pattern:'Continuous (daily)',
+    reason:'Consistent levels needed for DHT suppression',
+    supps:['saw palmetto','spearmint','dim','pygeum']
+  },
+  galactagogues:{
+    label:'Galactagogue protocol',pattern:'Build 2 weeks, then continuous',
+    reason:'Start low, increase to full dose over 2 weeks, then maintain',
+    supps:['fenugreek','blessed thistle','goats rue','moringa','brewers yeast']
+  },
+  vasodilators:{
+    label:'Vasodilators / NO boosters',pattern:'Continuous (daily)',
+    reason:'Nitric oxide support requires consistent levels',
+    supps:['l-arginine','l-citrulline','ginkgo biloba','pine bark','epimedium','niacin']
+  }
+};
+
+function getScheduleTiming(canonical){
+  const sched=SUPP_SCHEDULE[canonical];
+  if(!sched)return 'Any time';
+  switch(sched.time){
+    case 'AM':return sched.context.includes('empty')?'Empty stomach':'Morning';
+    case 'PM':return 'Evening';
+    case 'Bedtime':return 'Evening';
+    case 'Split':return 'With food';
+    default:return 'Any time';
+  }
+}
+
+function generateSchedule(){
+  const active=D.supplements.filter(s=>!s.ended);
+  const groups={am_empty:[],am_food:[],pm:[],bedtime:[],split:[],anytime:[]};
+  for(const s of active){
+    const canonical=normalizeSuppName(s.name);
+    const sched=SUPP_SCHEDULE[canonical];
+    if(!sched){groups.anytime.push({supp:s,note:'',context:''});continue}
+    switch(sched.time){
+      case 'AM':
+        if(sched.context.includes('empty'))groups.am_empty.push({supp:s,note:sched.note,context:sched.context});
+        else groups.am_food.push({supp:s,note:sched.note,context:sched.context});
+        break;
+      case 'PM':groups.pm.push({supp:s,note:sched.note,context:sched.context});break;
+      case 'Bedtime':groups.bedtime.push({supp:s,note:sched.note,context:sched.context});break;
+      case 'Split':groups.split.push({supp:s,note:sched.note,context:sched.context});break;
+      default:groups.anytime.push({supp:s,note:sched.note,context:sched.context});
+    }
+  }
+  return groups;
+}
+
+function getActiveCycling(){
+  const active=D.supplements.filter(s=>!s.ended);
+  const canonicals=active.map(s=>normalizeSuppName(s.name));
+  const matched=[];
+  for(const[key,cycle]of Object.entries(SUPP_CYCLING)){
+    const hits=cycle.supps.filter(s=>canonicals.includes(s));
+    if(hits.length)matched.push({...cycle,active:hits});
+  }
+  return matched;
+}
 
 const TANNER_STAGES=[
   {stage:'I',desc:'Prepubertal — no breast tissue',typical:'Pre-HRT'},
@@ -744,41 +1033,202 @@ function showPinUI(expected,isSetup){
   }
   dots();pad();
 }
-function checkOnboarding(){if(!S.onboarded)document.getElementById('onboarding').style.display='flex'}
-function completeOnboarding(){S.onboarded=true;saveSettings();document.getElementById('onboarding').style.display='none'}
+let obStep=0;
+const obData={journey:'',onHRT:null,goals:[],weight:'',height:'',units:'imperial'};
+
+function checkOnboarding(){if(!S.onboarded){document.getElementById('onboarding').style.display='flex';obStep=0;renderOB()}}
+function completeOnboarding(){
+  S.journeyType=obData.journey;
+  S.onHRT=obData.onHRT===true;
+  S.goals=[...obData.goals];
+  S.unitSystem=obData.units;
+  S.onboarded=true;
+  saveSettings();
+  if(obData.weight){
+    const m={date:today(),bust:null,underbust:null,waist:null,hips:null,thighL:null,thighR:null,weight:parseFloat(obData.weight)};
+    D.measurements.push(m);saveData();
+  }
+  document.getElementById('onboarding').style.display='none';
+  showView('dashboard');
+}
+
+function renderOB(){
+  const el=document.getElementById('obContent');
+  const dots=`<div style="display:flex;gap:6px;justify-content:center;margin-bottom:20px">${[0,1,2,3,4].map(i=>`<div style="width:${i===obStep?24:8}px;height:8px;border-radius:4px;background:${i===obStep?'var(--violet)':i<obStep?'var(--mint)':'var(--border)'};transition:all .3s"></div>`).join('')}</div>`;
+
+  if(obStep===0){
+    // Welcome
+    el.innerHTML=`${dots}
+      <h2>Welcome to Bloom</h2>
+      <p>Your private body &amp; wellness tracker. Everything stays on your device — zero data collection, zero network requests.</p>
+      <div class="feature-list">
+        <div><span class="feature-icon" style="background:var(--violet-pale)">&#128138;</span> Supplements, meds &amp; lab tracking</div>
+        <div><span class="feature-icon" style="background:var(--pink-pale)">&#128200;</span> Body measurements &amp; vitals</div>
+        <div><span class="feature-icon" style="background:var(--sky-pale)">&#128247;</span> Photo timeline &amp; comparisons</div>
+        <div><span class="feature-icon" style="background:var(--mint-pale)">&#128274;</span> PIN lock, stealth mode &amp; encryption</div>
+      </div>
+      <button class="btn-primary" style="max-width:300px" onclick="obStep=1;renderOB()">Let's Go</button>`;
+
+  }else if(obStep===1){
+    // Journey type
+    el.innerHTML=`${dots}
+      <h2>Your Journey</h2>
+      <p>How would you describe your path? This personalizes your tracking, labs, and recommendations.</p>
+      <div style="max-width:340px;margin:0 auto;text-align:left">
+        ${Object.entries(JOURNEY_TYPES).map(([k,v])=>`
+          <div onclick="obData.journey='${k}';document.querySelectorAll('.ob-journey').forEach(b=>b.style.borderColor='var(--border)');this.style.borderColor='var(--violet)'" class="ob-journey" style="padding:14px 16px;margin-bottom:8px;border-radius:14px;border:2px solid ${obData.journey===k?'var(--violet)':'var(--border)'};background:var(--surface);cursor:pointer;transition:all .2s">
+            <div style="font-size:14px;font-weight:600;color:var(--text)">${v.label}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${v.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:8px;max-width:300px;margin:12px auto 0">
+        <button class="btn-secondary" style="flex:1" onclick="obStep=0;renderOB()">Back</button>
+        <button class="btn-primary" style="flex:2" onclick="if(!obData.journey){obData.journey='custom'}obStep=2;renderOB()">Next</button>
+      </div>`;
+
+  }else if(obStep===2){
+    // HRT status
+    el.innerHTML=`${dots}
+      <h2>HRT Status</h2>
+      <p>Are you currently on hormone replacement therapy?</p>
+      <div style="max-width:300px;margin:0 auto">
+        <div onclick="obData.onHRT=true;document.querySelectorAll('.ob-hrt').forEach(b=>b.style.borderColor='var(--border)');this.style.borderColor='var(--violet)'" class="ob-hrt" style="padding:16px;margin-bottom:8px;border-radius:14px;border:2px solid ${obData.onHRT===true?'var(--violet)':'var(--border)'};background:var(--surface);cursor:pointer;text-align:center">
+          <div style="font-size:15px;font-weight:600">Yes, I'm on HRT</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Prescription hormone therapy</div>
+        </div>
+        <div onclick="obData.onHRT=false;document.querySelectorAll('.ob-hrt').forEach(b=>b.style.borderColor='var(--border)');this.style.borderColor='var(--violet)'" class="ob-hrt" style="padding:16px;margin-bottom:8px;border-radius:14px;border:2px solid ${obData.onHRT===false?'var(--violet)':'var(--border)'};background:var(--surface);cursor:pointer;text-align:center">
+          <div style="font-size:15px;font-weight:600">No — supplements &amp; lifestyle only</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Body optimization without prescription HRT</div>
+        </div>
+        <div onclick="obData.onHRT=false;document.querySelectorAll('.ob-hrt').forEach(b=>b.style.borderColor='var(--border)');this.style.borderColor='var(--violet)'" class="ob-hrt" style="padding:16px;margin-bottom:8px;border-radius:14px;border:2px solid var(--border);background:var(--surface);cursor:pointer;text-align:center">
+          <div style="font-size:15px;font-weight:600">Exploring / not sure yet</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Just want to track and learn</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;max-width:300px;margin:12px auto 0">
+        <button class="btn-secondary" style="flex:1" onclick="obStep=1;renderOB()">Back</button>
+        <button class="btn-primary" style="flex:2" onclick="if(obData.onHRT===null)obData.onHRT=false;obStep=3;renderOB()">Next</button>
+      </div>`;
+
+  }else if(obStep===3){
+    // Goals
+    el.innerHTML=`${dots}
+      <h2>Your Goals</h2>
+      <p>What are you working toward? Select all that apply — you can change these anytime in Settings.</p>
+      <div style="max-width:360px;margin:0 auto;text-align:left;max-height:50vh;overflow-y:auto;padding:4px">
+        ${Object.entries(BODY_GOALS).map(([cat,goals])=>`
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px">${cat}</div>
+          <div class="chips">${goals.map(g=>`<button class="chip${obData.goals.includes(g.id)?' active':''}" onclick="const i=obData.goals.indexOf('${g.id}');if(i>=0)obData.goals.splice(i,1);else obData.goals.push('${g.id}');this.classList.toggle('active')">${g.label}</button>`).join('')}</div>
+        `).join('')}
+      </div>
+      <div style="display:flex;gap:8px;max-width:300px;margin:16px auto 0">
+        <button class="btn-secondary" style="flex:1" onclick="obStep=2;renderOB()">Back</button>
+        <button class="btn-primary" style="flex:2" onclick="obStep=4;renderOB()">Next</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${obData.goals.length} goal${obData.goals.length!==1?'s':''} selected</div>`;
+
+  }else if(obStep===4){
+    // Stats
+    el.innerHTML=`${dots}
+      <h2>Starting Stats</h2>
+      <p>Optional — sets your baseline. You can always add these later.</p>
+      <div style="max-width:300px;margin:0 auto;text-align:left">
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">UNITS</div>
+          <div style="display:flex;gap:6px">
+            <button class="chip${obData.units==='imperial'?' active':''}" onclick="obData.units='imperial';renderOB()">Imperial (lbs/in)</button>
+            <button class="chip${obData.units==='metric'?' active':''}" onclick="obData.units='metric';renderOB()">Metric (kg/cm)</button>
+          </div>
+        </div>
+        <div class="form-row"><label>Weight</label><input type="number" step="0.1" placeholder="${obData.units==='imperial'?'lbs':'kg'}" value="${obData.weight}" style="flex:1" onchange="obData.weight=this.value"></div>
+        <div class="form-row"><label>Height</label><input type="number" step="0.1" placeholder="${obData.units==='imperial'?'inches':'cm'}" value="${obData.height}" style="flex:1" onchange="obData.height=this.value"></div>
+      </div>
+      <div style="display:flex;gap:8px;max-width:300px;margin:16px auto 0">
+        <button class="btn-secondary" style="flex:1" onclick="obStep=3;renderOB()">Back</button>
+        <button class="btn-primary" style="flex:2" onclick="completeOnboarding()">Start Tracking</button>
+      </div>
+      <button style="font-size:13px;color:var(--text-muted);margin-top:12px;background:none;border:none;text-decoration:underline;cursor:pointer" onclick="obData.weight='';obData.height='';completeOnboarding()">Skip — I'll fill in later</button>`;
+  }
+}
 
 // ─── Dashboard ───────────────────────────────────────────────
 function renderDashboard(){
-  const days=daysOnHRT(),months=monthsOnHRT();
+  const onHRT=S.onHRT!==false;
+  const days=onHRT?daysOnHRT():0;
+  const months=onHRT?monthsOnHRT():0;
+  const jLabel=JOURNEY_TYPES[S.journeyType]?.label||'Custom';
   let h='<div class="fade-in">';
 
-  h+=`<div class="stats">
-    <div class="stat-card"><div class="label">Days on HRT</div><div class="value" style="color:var(--violet-deep)">${days||'—'}</div></div>
-    <div class="stat-card"><div class="label">Months</div><div class="value" style="color:var(--pink)">${days?months:'—'}</div></div>
-  </div>`;
+  // Top stats row — context-aware
+  const todayLog=getLog(today());
+  const lastM=D.measurements.slice(-1)[0];
+  const waterToday=getTodayWater();
+  const waterGoal=getWaterGoal();
+  const waterPct=Math.min(100,Math.round(waterToday/waterGoal.ml*100));
 
-  if(!D.startDate){
-    h+=`<div class="panel"><h3>Set Your Start Date</h3>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">When did you start HRT? (Or when you plan to start)</p>
-      <input type="date" id="startDateInput" style="margin-bottom:8px">
-      <button class="btn-primary" onclick="D.startDate=document.getElementById('startDateInput').value;saveData();showView('dashboard')">Save Start Date</button>
-    </div>`;
+  h+=`<div class="stats">`;
+  if(onHRT&&days>0){
+    h+=`<div class="stat-card"><div class="label">Days on HRT</div><div class="value" style="color:var(--violet-deep)">${days}</div></div>`;
   }
+  h+=`<div class="stat-card"><div class="label">Logs</div><div class="value" style="color:var(--pink)">${D.logs.length}</div></div>`;
+  h+=`<div class="stat-card"><div class="label">Water</div><div class="value" style="color:var(--sky-deep)">${waterPct}%</div></div>`;
+  if(todayLog){
+    h+=`<div class="stat-card"><div class="label">Today</div><div class="value" style="color:var(--mint-deep);font-size:14px">${todayLog.mood||'Logged'}</div></div>`;
+  }else{
+    h+=`<div class="stat-card" style="cursor:pointer" onclick="showView('log')"><div class="label">Today</div><div class="value" style="color:var(--text-muted);font-size:13px">Not logged</div></div>`;
+  }
+  h+=`</div>`;
 
+  // Alerts
   const alerts=generateAlerts();
   if(alerts.length){for(const a of alerts)h+=`<div class="alert-box ${a.type}">${a.msg}</div>`}
 
+  // My Goals panel
+  const goals=S.goals||[];
+  if(goals.length){
+    h+=`<div class="panel"><h3>My Goals</h3><div style="display:flex;flex-wrap:wrap;gap:4px">`;
+    for(const[cat,items]of Object.entries(BODY_GOALS)){
+      for(const g of items){
+        if(goals.includes(g.id))h+=`<span style="display:inline-block;padding:4px 10px;border-radius:10px;font-size:12px;font-weight:500;background:var(--violet-pale);color:var(--violet-deep)">${g.label}</span>`;
+      }
+    }
+    h+=`</div>`;
+    const stacks=getGoalStacks();
+    if(stacks.length){
+      h+=`<div style="margin-top:8px;font-size:11px;color:var(--text-muted)">Suggested stacks: ${stacks.map(s=>`<span style="color:var(--violet-deep);font-weight:500">${s}</span>`).join(' · ')}</div>`;
+    }
+    h+=`</div>`;
+  }else{
+    h+=`<div class="panel" style="cursor:pointer" onclick="showView('settings')"><h3>Set Your Goals</h3>
+      <p style="font-size:13px;color:var(--text-dim)">Tap to choose what you're working toward — personalizes tracking, supplements, and AI prompts.</p></div>`;
+  }
+
+  // Quick stats — labs, measurements, vitals
   const bs=braSize(),w=whr(),e2=latestLab('Estradiol'),t=latestLab('Testosterone');
-  if(e2||t||bs||w){
+  const hasLabStats=e2||t||bs||w;
+  const hasVitals=todayLog&&(todayLog.heartRate||todayLog.bpSys);
+  const hasWeight=lastM?.weight||todayLog?.weight;
+
+  if(hasLabStats||hasVitals||hasWeight){
     h+=`<div class="panel"><h3>Quick Stats</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+    if(hasWeight){
+      const wt=todayLog?.weight||lastM?.weight;
+      h+=`<div><div style="font-size:11px;color:var(--text-muted)">Weight</div><div style="font-size:16px;font-weight:700">${wt} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`;
+    }
+    if(todayLog?.heartRate)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Resting HR</div><div style="font-size:16px;font-weight:700">${todayLog.heartRate} bpm</div></div>`;
+    if(todayLog?.bpSys)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Blood Pressure</div><div style="font-size:16px;font-weight:700">${todayLog.bpSys}/${todayLog.bpDia}</div></div>`;
     if(e2)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Estradiol</div><div style="font-size:16px;font-weight:700;color:var(--pink)">${e2.value} <span style="font-size:11px;font-weight:400">pg/mL</span></div></div>`;
     if(t)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Testosterone</div><div style="font-size:16px;font-weight:700;color:var(--sky-deep)">${t.value} <span style="font-size:11px;font-weight:400">ng/dL</span></div></div>`;
     if(bs)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Bra Size</div><div style="font-size:16px;font-weight:700;color:var(--violet-deep)">${bs}</div></div>`;
     if(w)h+=`<div><div style="font-size:11px;color:var(--text-muted)">WHR</div><div style="font-size:16px;font-weight:700;color:var(--mint-deep)">${w}</div></div>`;
+    if(todayLog?.libido!==undefined)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Libido</div><div style="font-size:16px;font-weight:700">${todayLog.libido}/10</div></div>`;
+    if(todayLog?.skinScore!==undefined)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Skin</div><div style="font-size:16px;font-weight:700">${todayLog.skinScore}/10</div></div>`;
     h+=`</div></div>`;
   }
 
-  if(days>0&&(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')){
+  // Tanner stage — only if on HRT and relevant journey
+  if(onHRT&&days>0&&(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')){
     const ts=TANNER_STAGES[S.tannerStage-1];
     h+=`<div class="panel"><h3>Breast Development — Tanner ${ts.stage}</h3>
       <p style="font-size:13px;color:var(--text-dim);line-height:1.5">${ts.desc}</p>
@@ -788,6 +1238,7 @@ function renderDashboard(){
     </div>`;
   }
 
+  // Active medications — only if they have any
   const activeMeds=D.meds.filter(m=>!m.ended);
   if(activeMeds.length){
     h+=`<div class="panel"><h3>Active Medications</h3>`;
@@ -800,6 +1251,15 @@ function renderDashboard(){
     h+=`</div>`;
   }
 
+  // Active supplements
+  const activeSups=D.supplements.filter(s=>s.active!==false);
+  if(activeSups.length){
+    h+=`<div class="panel"><h3>Active Supplements (${activeSups.length})</h3>`;
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:4px">${activeSups.map(s=>`<span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:12px;background:var(--mint-pale);color:var(--mint-deep)">${s.name}</span>`).join('')}</div>`;
+    h+=`</div>`;
+  }
+
+  // Injection tracker — only if on injectable meds
   if(D.meds.some(m=>!m.ended&&((m.route||'').toLowerCase().includes('injection')||m.name.toLowerCase().includes('im')||m.name.toLowerCase().includes('subq')))){
     const next=nextInjectionSite();
     h+=`<div class="panel"><h3>Injection Tracker</h3>
@@ -820,6 +1280,67 @@ function renderDashboard(){
       <button class="btn-small" style="margin-top:8px" onclick="showView('photos')">View All Photos</button>
     </div>`;
   }
+
+  // Insights — inline
+  const moodCounts={};D.logs.forEach(l=>{if(l.mood)moodCounts[l.mood]=(moodCounts[l.mood]||0)+1});
+  const topMoods=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const weightLogs=D.logs.filter(l=>l.weight).slice(-14);
+
+  if(topMoods.length||topTags.length||weightLogs.length>=3){
+    h+=`<div class="panel"><h3>Insights</h3>`;
+    if(topMoods.length){
+      const mx=topMoods[0][1];
+      h+=`<div class="section-title">Mood Patterns</div>`;
+      for(const[mood,count]of topMoods){
+        h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:12px;min-width:70px">${mood}</span>
+          <div style="flex:1;height:6px;background:var(--border);border-radius:3px"><div style="width:${count/mx*100}%;height:100%;background:var(--violet);border-radius:3px"></div></div>
+          <span style="font-size:11px;color:var(--text-muted)">${count}x</span>
+        </div>`;
+      }
+    }
+    if(topTags.length){
+      const mx=topTags[0][1];
+      h+=`<div class="section-title" style="margin-top:8px">Top Changes</div>`;
+      for(const[t,c]of topTags){
+        h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:12px;min-width:100px">${t}</span>
+          <div style="flex:1;height:6px;background:var(--border);border-radius:3px"><div style="width:${c/mx*100}%;height:100%;background:var(--pink);border-radius:3px"></div></div>
+          <span style="font-size:11px;color:var(--text-muted)">${c}x</span>
+        </div>`;
+      }
+    }
+    if(weightLogs.length>=3){
+      const vals=weightLogs.map(l=>parseFloat(l.weight)),mn=Math.min(...vals)-2,mx=Math.max(...vals)+2,range=mx-mn;
+      h+=`<div class="section-title" style="margin-top:8px">Weight Trend</div>
+        <div class="chart-bar">${weightLogs.map(l=>`<div class="bar" style="height:${Math.max(5,(parseFloat(l.weight)-mn)/range*100)}%;background:var(--sky-soft)"></div>`).join('')}</div>
+        <div class="chart-labels">${weightLogs.map(l=>`<span>${l.weight}</span>`).join('')}</div>`;
+    }
+    // Dysphoria trend insight
+    if(D.logs.length>=5){
+      const recentDys=D.logs.slice(-7).filter(l=>l.dysphoria!==undefined);
+      const olderDys=D.logs.slice(-30,-7).filter(l=>l.dysphoria!==undefined);
+      if(recentDys.length>=3&&olderDys.length>=3){
+        const recentAvg=recentDys.reduce((s,l)=>s+l.dysphoria,0)/recentDys.length;
+        const olderAvg=olderDys.reduce((s,l)=>s+l.dysphoria,0)/olderDys.length;
+        if(recentAvg<olderAvg-1)h+=`<div class="insight-card"><div class="insight-title">Dysphoria Improving</div><div class="insight-text">Decreased from avg ${olderAvg.toFixed(1)} to ${recentAvg.toFixed(1)} this week.</div></div>`;
+        else if(recentAvg>olderAvg+1)h+=`<div class="insight-card"><div class="insight-title">Dysphoria Increasing</div><div class="insight-text">Increased recently (${recentAvg.toFixed(1)} vs ${olderAvg.toFixed(1)}). Consider reaching out to support.</div></div>`;
+      }
+    }
+    h+=`</div>`;
+  }
+
+  // Export buttons + footer
+  h+=`<div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn-small" style="flex:1" onclick="exportDoctorReport()">Doctor Report</button>
+    <button class="btn-small" style="flex:1" onclick="exportCSV()">Export CSV</button>
+  </div>`;
+
+  h+=`<div style="text-align:center;padding:12px;font-size:11px;color:var(--text-muted)">
+    ${jLabel}${onHRT?' · On HRT':' · No HRT'}${goals.length?' · '+goals.length+' goals':''} · <span style="cursor:pointer;color:var(--violet-deep)" onclick="showView('settings')">Edit</span>
+  </div>`;
 
   h+='</div>';
   document.getElementById('content').innerHTML=h;
@@ -884,7 +1405,7 @@ function renderLog(){
 
     <div class="section-title">Morning Erections</div>
     <div class="chips">
-      ${['None','Weak','Partial','Full'].map(v=>`<button class="chip${tempLog.morningE===v?' active':''}" onclick="tempLog.morningE=tempLog.morningE==='${v}'?'':'${v}';document.querySelectorAll('.me-chip').forEach(b=>b.classList.remove('active'));if(tempLog.morningE)this.classList.add('active')" class="me-chip">${v}</button>`).join('')}
+      ${['None','Weak','Partial','Full'].map(v=>`<button class="chip me-chip${tempLog.morningE===v?' active':''}" onclick="tempLog.morningE=tempLog.morningE==='${v}'?'':'${v}';document.querySelectorAll('.me-chip').forEach(b=>b.classList.remove('active'));if(tempLog.morningE)this.classList.add('active')">${v}</button>`).join('')}
     </div>
     <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Tracks hormonal response — skip if not relevant to your goals</div>`;
 
@@ -917,6 +1438,17 @@ function saveLog(){
   setTimeout(()=>{btn.textContent="Save Today's Log";btn.style.background='';btn.style.transform=''},2000);
 }
 
+// ─── Stack Hub (Meds + Supplements) ─────────────────────────
+let stackSubView='supplements';
+function renderStack(){
+  const tabs=`<div style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface);border-radius:12px;padding:3px;border:1px solid var(--border)">
+    ${['supplements','medications'].map(v=>`<button style="flex:1;padding:8px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .2s;${stackSubView===v?'background:var(--violet);color:#fff':'background:transparent;color:var(--text-dim)'}" onclick="stackSubView='${v}';renderStack()">${v==='supplements'?'Supplements':'Meds'}</button>`).join('')}
+  </div>`;
+  if(stackSubView==='supplements')renderSupps();
+  else renderMeds();
+  document.getElementById('content').insertAdjacentHTML('afterbegin',tabs);
+}
+
 // ─── Meds View ───────────────────────────────────────────────
 function renderMeds(){
   const active=D.meds.filter(m=>!m.ended),past=D.meds.filter(m=>m.ended);
@@ -931,7 +1463,7 @@ function renderMeds(){
           <div><div style="font-size:14px;font-weight:600">${m.name}</div>
             <div style="font-size:12px;color:var(--text-muted)">${m.dose} — ${m.frequency}${m.route?' — '+m.route:''}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Started ${m.started} (${days} days)</div></div>
-          <button class="btn-small" style="flex-shrink:0" onclick="D.meds.find(x=>x.id==='${m.id}').ended=today();saveData();renderMeds()">Stop</button>
+          <button class="btn-small" style="flex-shrink:0" onclick="D.meds.find(x=>x.id==='${m.id}').ended=today();saveData();renderStack()">Stop</button>
         </div>
       </div>`;
     }
@@ -961,7 +1493,7 @@ function addMed(){
   const freq=prompt('Frequency (e.g. daily, twice daily, weekly, every 2 weeks):');if(!freq)return;
   const route=prompt('Route (oral, sublingual, IM, SubQ, patch, gel, rectal):','');
   D.meds.push({id:Date.now().toString(36),name:name.trim(),dose:dose.trim(),frequency:freq.trim(),route:(route||'').trim(),started:today(),ended:null});
-  saveData();renderMeds();
+  saveData();renderStack();
 }
 
 // ─── Labs View ───────────────────────────────────────────────
@@ -1148,6 +1680,19 @@ function saveLabEntry(){
   if(!results.length){const btn=document.getElementById('saveLabBtn');btn.textContent='Enter at least one value';btn.style.background='var(--warn)';setTimeout(()=>{btn.textContent='Save Lab Results';btn.style.background=''},2000);return;}
   D.labs.push({date,results});
   saveData();renderLabs();
+}
+
+// ─── Body Hub (Measurements + Labs + Timeline) ──────────────
+let bodySubView='measurements';
+function renderBodyHub(){
+  const tabs=`<div style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface);border-radius:12px;padding:3px;border:1px solid var(--border)">
+    ${['measurements','labs','timeline'].map(v=>`<button style="flex:1;padding:8px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .2s;${bodySubView===v?'background:var(--violet);color:#fff':'background:transparent;color:var(--text-dim)'}" onclick="bodySubView='${v}';renderBodyHub()">${v==='measurements'?'Measures':v==='labs'?'Labs':'Timeline'}</button>`).join('')}
+  </div>`;
+  // Render the sub-view first, then prepend tabs
+  if(bodySubView==='measurements')renderBody();
+  else if(bodySubView==='labs')renderLabs();
+  else if(bodySubView==='timeline')renderTimeline();
+  document.getElementById('content').insertAdjacentHTML('afterbegin',tabs);
 }
 
 // ─── Body/Measurements View ─────────────────────────────────
@@ -1539,13 +2084,59 @@ function renderSupps(){
           <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?"var(--mint)":"var(--border)"};background:${taken?"var(--mint-pale)":"transparent"};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center" onclick="toggleSupp('${s.id}')">${taken?"&#10003;":""}</button>
           <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
             <div style="font-size:11px;color:var(--text-muted)">${s.dose||""} ${s.timing||""}</div></div>
-          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderSupps()">Stop</button>
+          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderStack()">Stop</button>
         </div>
         ${doseCard?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--violet-deep);cursor:pointer;font-weight:600;padding:4px 0">View personalized dosing</summary>${doseCard}</details>`:""}
       </div>`;
     }
     const taken=todayLog.taken.length,total=D.supplements.filter(s=>!s.ended).length;
     h+=`<div style="margin-top:10px;font-size:12px;color:var(--text-muted)">${taken}/${total} taken today</div></div>`;
+  }
+
+  // Daily Schedule
+  if(D.supplements.filter(s=>!s.ended).length){
+    const schedule=generateSchedule();
+    const hasItems=Object.values(schedule).some(g=>g.length>0);
+    if(hasItems){
+      const timeGroups=[
+        {key:'am_empty',label:'AM \u2014 Empty Stomach',color:'#FFB74D',time:'30 min before breakfast'},
+        {key:'am_food',label:'AM \u2014 With Breakfast',color:'#FF8A65',time:'With your first meal'},
+        {key:'pm',label:'PM \u2014 With Dinner',color:'#7E57C2',time:'With your evening meal'},
+        {key:'bedtime',label:'Bedtime',color:'#5C6BC0',time:'30 min before sleep'},
+        {key:'split',label:'Split Throughout Day',color:'#26A69A',time:'Divide across meals'},
+        {key:'anytime',label:'Flexible Timing',color:'#78909C',time:'Take when convenient'}
+      ];
+      h+=`<div class="panel"><h3>Your Daily Schedule</h3>
+        <div class="panel-sub">Optimized timing based on absorption and interactions</div>`;
+      for(const tg of timeGroups){
+        const items=schedule[tg.key];
+        if(!items.length)continue;
+        h+=`<div style="margin:8px 0;padding:10px 12px;background:${tg.color}11;border-left:3px solid ${tg.color};border-radius:0 10px 10px 0">
+          <div style="font-size:13px;font-weight:600;color:${tg.color};margin-bottom:3px">${tg.label}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">${tg.time}</div>`;
+        for(const item of items){
+          h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:13px">
+            <span>${item.supp.name} <span style="color:var(--text-muted);font-size:11px">${item.supp.dose||''}</span></span>
+            ${item.note?`<span style="font-size:10px;color:var(--text-dim);max-width:50%;text-align:right">${item.note}</span>`:''}
+          </div>`;
+        }
+        h+=`</div>`;
+      }
+      const cycling=getActiveCycling();
+      if(cycling.length){
+        h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">Cycling Recommendations</div>`;
+        for(const c of cycling){
+          h+=`<div style="margin:6px 0;padding:8px 10px;background:rgba(255,167,38,.06);border-radius:8px;font-size:12px">
+            <div style="font-weight:600;color:var(--peach-deep)">${c.label}: ${c.pattern}</div>
+            <div style="color:var(--text-dim);margin-top:2px">${c.reason}</div>
+            <div style="color:var(--text-muted);margin-top:2px;font-size:11px">Applies to: ${c.active.join(', ')}</div>
+          </div>`;
+        }
+        h+=`</div>`;
+      }
+      h+=`</div>`;
+    }
   }
 
   // Add supplement
@@ -1560,9 +2151,14 @@ function renderSupps(){
   h+=`<div class="panel"><h3>Recommended Stacks</h3>
     <div class="panel-sub">Pre-built supplement plans for common goals. Tap to add all items.</div>`;
   const j=S.journeyType||'mtf';
+  const activeCanonicals=D.supplements.filter(s=>!s.ended).map(s=>normalizeSuppName(s.name));
+  let stackCount=0;
   for(const[name,stack]of Object.entries(SUPPLEMENT_STACKS)){
     if(name==='Feminization Support'&&(j==='ftm'||j==='tomboy'))continue;
     if(name==='Masculinization Support'&&(j==='mtf'||j==='femboy'))continue;
+    const allAdded=stack.items.every(item=>{const parsed=parseSuppItem(item);return activeCanonicals.includes(parsed.canonical)});
+    if(allAdded)continue;
+    stackCount++;
     h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div><div style="font-size:14px;font-weight:600">${name}</div>
@@ -1572,6 +2168,7 @@ function renderSupps(){
       </div>
     </div>`;
   }
+  if(!stackCount)h+=`<p style="font-size:13px;color:var(--text-muted);padding:8px 0">All recommended stacks added!</p>`;
   h+=`</div>`;
 
   // Phases
@@ -1586,7 +2183,7 @@ function renderSupps(){
             <div style="font-size:12px;color:var(--text-dim)">${p.goal||''}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.startDate}${p.endDate?' to '+p.endDate:' — ongoing'}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Supps: ${p.supplements.join(', ')||'None assigned'}</div></div>
-          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.phases=D.phases.filter(x=>x.id!=='${p.id}');saveData();renderSupps()">&#10005;</button>
+          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.phases=D.phases.filter(x=>x.id!=='${p.id}');saveData();renderStack()">&#10005;</button>
         </div>
       </div>`;
     }
@@ -1613,7 +2210,7 @@ function addSupplement(){
   const dose=document.getElementById('suppDose').value.trim();
   const timing=document.getElementById('suppTiming').value;
   D.supplements.push({id:Date.now().toString(36),name,dose,timing,started:today(),ended:null});
-  saveData();renderSupps();
+  saveData();renderStack();
 }
 
 function toggleSupp(id){
@@ -1622,17 +2219,40 @@ function toggleSupp(id){
   if(!log){log={date:td,taken:[]};D.supplementLog.push(log)}
   const idx=log.taken.indexOf(id);
   if(idx>=0)log.taken.splice(idx,1);else log.taken.push(id);
-  saveData();renderSupps();
+  saveData();renderStack();
 }
 
 function addStack(name){
   const stack=SUPPLEMENT_STACKS[name];if(!stack)return;
-  if(!confirm(`Add all ${stack.items.length} supplements from "${name}" stack?`))return;
+  const active=D.supplements.filter(s=>!s.ended);
+  const activeMap={};
+  for(const s of active)activeMap[normalizeSuppName(s.name)]={ref:s,dose:parseDose(s.dose)};
+  const newItems=[],upgrades=[];
   for(const item of stack.items){
-    const parts=item.match(/^(.+?)\s+(\d.+)$/);
-    D.supplements.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:parts?parts[1]:item,dose:parts?parts[2]:'',timing:'Any time',started:today(),ended:null});
+    const parsed=parseSuppItem(item);
+    const existing=activeMap[parsed.canonical];
+    if(existing){
+      const nd=parseDose(parsed.dose);
+      if(nd.value>existing.dose.value&&nd.unit&&nd.unit===existing.dose.unit)
+        upgrades.push({ref:existing.ref,newDose:parsed.dose,label:existing.ref.name});
+      continue;
+    }
+    newItems.push(parsed);
   }
-  saveData();renderSupps();
+  if(!newItems.length&&!upgrades.length){alert('All supplements from this stack are already active!');return}
+  const skipped=stack.items.length-newItems.length-upgrades.length;
+  let msg='';
+  if(newItems.length)msg+=`Add ${newItems.length} new supplement${newItems.length>1?'s':''}`;
+  if(upgrades.length)msg+=(msg?' and u':'U')+`pgrade ${upgrades.length} dose${upgrades.length>1?'s':''}`;
+  msg+=` from "${name}"?`;
+  if(skipped>0)msg+=` (${skipped} already active, skipped)`;
+  if(upgrades.length)msg+='\n\nDose upgrades:\n'+upgrades.map(u=>`  ${u.label}: ${u.ref.dose} \u2192 ${u.newDose}`).join('\n');
+  if(!confirm(msg))return;
+  for(const u of upgrades)u.ref.dose=u.newDose;
+  for(const parsed of newItems){
+    D.supplements.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:parsed.name,dose:parsed.dose,timing:getScheduleTiming(parsed.canonical),started:today(),ended:null});
+  }
+  saveData();renderStack();
 }
 
 function addPhase(){
@@ -1643,34 +2263,73 @@ function addPhase(){
   const suppNames=D.supplements.filter(s=>!s.ended).map(s=>s.name);
   const selected=prompt('Supplements for this phase (comma-separated):\nAvailable: '+suppNames.join(', '));
   D.phases.push({id:Date.now().toString(36),name:name.trim(),goal:(goal||'').trim(),startDate,endDate:endDate||null,supplements:selected?selected.split(',').map(s=>s.trim()):[]});
-  saveData();renderSupps();
+  saveData();renderStack();
 }
 
 // ─── Timeline View ───────────────────────────────────────────
 function renderTimeline(){
-  const months=monthsOnHRT();
-  let h='<div class="fade-in"><div class="panel"><h3>Expected Changes Timeline</h3>';
-  if(!D.startDate){h+=`<p style="font-size:13px;color:var(--text-muted)">Set your HRT start date on the dashboard to see your timeline.</p></div></div>`;document.getElementById('content').innerHTML=h;return}
-
-  h+=`<p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">You are at <strong style="color:var(--violet-deep)">${months} months</strong>. Here's what to expect:</p>`;
-
-  for(const c of getTimeline()){
-    const onsetMonths=parseFloat(c.onset);
-    const isActive=!isNaN(onsetMonths)&&months>=onsetMonths;
-    const isFuture=!isNaN(onsetMonths)&&months<onsetMonths;
-    h+=`<div class="timeline-item">
-      <div class="timeline-dot ${isActive?'active':isFuture?'future':''}"></div>
-      <div class="timeline-content">
-        <h4 style="color:${isActive?'var(--violet-deep)':'var(--text)'}">${c.change}</h4>
-        <p>Onset: ${c.onset} · Max: ${c.max}</p>
-        <p style="font-size:11px">Reversible: ${c.reversible===true?'Yes':c.reversible===false?'No':c.reversible}</p>
-      </div>
-    </div>`;
-  }
-  h+=`</div>`;
-
+  const onHRT=S.onHRT!==false;
+  const months=onHRT?monthsOnHRT():0;
+  const goals=S.goals||[];
   const j=S.journeyType||'mtf';
-  if(j==='mtf'||j==='femboy'||j==='nonbinary'){
+  let h='<div class="fade-in">';
+
+  // HRT timeline — only if on HRT
+  if(onHRT){
+    h+=`<div class="panel"><h3>HRT Changes Timeline</h3>`;
+    if(!D.startDate){
+      h+=`<p style="font-size:13px;color:var(--text-muted)">Set your HRT start date in Settings to see your timeline progress.</p>`;
+    }else{
+      h+=`<p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">You are at <strong style="color:var(--violet-deep)">${months} months</strong>. Here's what to expect:</p>`;
+      for(const c of getTimeline()){
+        const onsetMonths=parseFloat(c.onset);
+        const isActive=!isNaN(onsetMonths)&&months>=onsetMonths;
+        const isFuture=!isNaN(onsetMonths)&&months<onsetMonths;
+        h+=`<div class="timeline-item">
+          <div class="timeline-dot ${isActive?'active':isFuture?'future':''}"></div>
+          <div class="timeline-content">
+            <h4 style="color:${isActive?'var(--violet-deep)':'var(--text)'}">${c.change}</h4>
+            <p>Onset: ${c.onset} · Max: ${c.max}</p>
+            <p style="font-size:11px">Reversible: ${c.reversible===true?'Yes':c.reversible===false?'No':c.reversible}</p>
+          </div>
+        </div>`;
+      }
+    }
+    h+=`</div>`;
+  }
+
+  // Supplement-based timeline — based on goals
+  const suppGoals=goals.filter(g=>SUPP_TIMELINE[g]);
+  if(suppGoals.length){
+    h+=`<div class="panel"><h3>${onHRT?'Supplement':'Expected'} Changes by Goal</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">${onHRT?'Additional changes from your supplement stacks':'What to expect from supplements and lifestyle — based on your selected goals'}</p>`;
+
+    for(const gid of suppGoals){
+      const st=SUPP_TIMELINE[gid];
+      const goalLabel=Object.values(BODY_GOALS).flat().find(g=>g.id===gid)?.label||gid;
+      h+=`<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:var(--violet-deep);margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--violet-pale)">${goalLabel}</div>`;
+      for(const c of st.changes){
+        h+=`<div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <h4>${c.change}</h4>
+            <p>Onset: ${c.onset} · Max: ${c.max}</p>
+            <p style="font-size:11px;color:var(--mint-deep)">Via: ${c.method}</p>
+            <p style="font-size:11px">Reversible: ${c.reversible===true?'Yes':c.reversible===false?'No':c.reversible}</p>
+          </div>
+        </div>`;
+      }
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  }else if(!onHRT){
+    h+=`<div class="panel"><h3>Your Timeline</h3>
+      <p style="font-size:13px;color:var(--text-muted)">Select goals in <span style="color:var(--violet-deep);cursor:pointer;font-weight:600" onclick="showView('settings')">Settings → My Goals</span> to see what changes to expect and when.</p></div>`;
+  }
+
+  // Tanner stages — only if on HRT and relevant journey
+  if(onHRT&&(j==='mtf'||j==='femboy'||j==='nonbinary')){
     h+=`<div class="panel"><h3>Breast Development Stages</h3>`;
     for(const ts of TANNER_STAGES){
       const isCurrent=parseInt(ts.stage)===S.tannerStage;
@@ -1682,7 +2341,23 @@ function renderTimeline(){
     }
     h+=`</div>`;
   }
-  h+=`</div>`;
+
+  // Reality check panel
+  if(!onHRT&&suppGoals.length){
+    h+=`<div class="panel" style="background:linear-gradient(135deg,var(--peach-pale,#FFF3E0),var(--pink-pale))">
+      <h3>Setting Expectations</h3>
+      <div style="font-size:12px;line-height:1.6;color:var(--text-dim)">
+        Supplements work through <strong>mild hormonal modulation</strong> — not direct hormone replacement. Results will be:<br>
+        • <strong>Slower</strong> than prescription HRT<br>
+        • <strong>More subtle</strong> — individual response varies greatly<br>
+        • <strong>Reversible</strong> in most cases<br>
+        • <strong>Enhanced by</strong> proper training, nutrition, and hydration<br><br>
+        Track consistently so you can see what's actually working vs. placebo. Your logs and measurements are your evidence.
+      </div>
+    </div>`;
+  }
+
+  h+='</div>';
   document.getElementById('content').innerHTML=h;
 }
 
@@ -1901,6 +2576,8 @@ function renderSettings(){
 
     <div class="settings-group"><h3>AI Health Assistant</h3>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.5">Generate an anonymous prompt with your medical context to paste into any AI chatbot (ChatGPT, Claude, etc.). <strong>No personal info is included</strong> — no name, no dates, no location.</p>
+      <div class="section-title">What do you want to ask?</div>
+      <textarea id="aiQuestion" placeholder="e.g. Are my supplement stacks conflicting? What labs should I get? What should I expect at my current stage? How can I optimize my goals?" style="width:100%;min-height:70px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical;margin-bottom:8px"></textarea>
       <button class="btn-primary" style="background:linear-gradient(135deg,var(--violet),var(--sky))" onclick="generateAIPrompt()">Generate AI Prompt</button>
       <div id="aiPromptResult" style="display:none;margin-top:12px">
         <textarea id="aiPromptText" readonly style="width:100%;min-height:200px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical"></textarea>
@@ -1916,8 +2593,39 @@ function renderSettings(){
     <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
 
+    <div class="settings-group">
+      <details><summary style="font-size:16px;font-weight:700;cursor:pointer;color:var(--text);padding:4px 0">Resources & Support</summary>
+      <div style="margin-top:12px">
+        <div style="padding:12px 16px;background:linear-gradient(135deg,rgba(239,83,80,.12),rgba(255,167,38,.08));border:1px solid rgba(239,83,80,.25);border-radius:14px;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px">Crisis Support</div>
+          <div style="font-size:13px;line-height:2"><a href="tel:8775658860" style="color:var(--violet-deep);text-decoration:none;font-weight:600">Trans Lifeline — 877-565-8860</a><br>
+          <a href="tel:988" style="color:var(--violet-deep);text-decoration:none;font-weight:600">988 Suicide & Crisis — Call/Text 988</a><br>
+          <span style="font-weight:600">Crisis Text Line</span> — Text HOME to 741741<br>
+          <a href="tel:18664887386" style="color:var(--violet-deep);text-decoration:none;font-weight:600">Trevor Project — 1-866-488-7386</a></div>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Communities</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://reddit.com/r/MtF" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/MtF</a> · <a href="https://reddit.com/r/FtM" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/FtM</a> · <a href="https://reddit.com/r/NonBinary" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/NonBinary</a> · <a href="https://reddit.com/r/TransDIY" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/TransDIY</a> · <a href="https://reddit.com/r/feminineboys" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/feminineboys</a>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">HRT Information</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://transfemscience.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Transfem Science</a> · <a href="https://diyhrt.wiki" target="_blank" rel="noopener" style="color:var(--violet-deep)">DIY HRT Directory</a> · <a href="https://transcare.ucsf.edu/guidelines" target="_blank" rel="noopener" style="color:var(--violet-deep)">UCSF Trans Care</a> · <a href="https://genderdysphoria.fyi" target="_blank" rel="noopener" style="color:var(--violet-deep)">Gender Dysphoria Bible</a>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Finding Providers</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://www.wpath.org/provider/search" target="_blank" rel="noopener" style="color:var(--violet-deep)">WPATH Provider Search</a> · <a href="https://getplume.co" target="_blank" rel="noopener" style="color:var(--violet-deep)">Plume</a> · <a href="https://www.folxhealth.com" target="_blank" rel="noopener" style="color:var(--violet-deep)">FOLX Health</a> · <a href="https://www.plannedparenthood.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Planned Parenthood</a>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Legal & Mutual Aid</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://transequality.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Trans Equality</a> · <a href="https://www.lambdalegal.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Lambda Legal</a> · <a href="https://pointofpride.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Point of Pride</a> · <a href="https://jimcollinsfoundation.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Jim Collins Foundation</a>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">All links open in your browser. Bloom does not track which links you visit.<br>You are valid. You are loved. You belong.</div>
+      </div>
+      </details>
+    </div>
+
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-      <strong style="color:var(--violet-deep)">Bloom</strong> v2.0 — Private HRT Tracker<br>
+      <strong style="color:var(--violet-deep)">Bloom</strong> v2.3 — Private HRT Tracker<br>
       All data stored locally. No accounts. No cloud.<br>
       Your journey. Your data. Your device only.<br>
       <span style="font-size:11px">by ENERGENAI LLC</span>
@@ -2085,9 +2793,10 @@ function generateAIPrompt(){
     p+=`• Recent sites: ${last5.map(i=>i.site).join(' → ')}\n`;
   }
 
+  const userQ=(document.getElementById('aiQuestion')?.value||'').trim();
   p+=`\n=== WHAT I NEED HELP WITH ===\n`;
-  if(onHRT)p+=`[Describe your question here — e.g., "Are my estradiol levels optimal?", "Should I be concerned about my liver enzymes?", "What changes should I expect at my current stage?"]\n`;
-  else p+=`[Describe your question here — e.g., "What do my lab values mean?", "Are my supplements interacting?", "What should I track for my goals?"]\n`;
+  if(userQ)p+=`${userQ}\n`;
+  else p+=`[No specific question provided — give a general health overview based on the data above]\n`;
 
   p+=`\n=== GUIDELINES FOR THE AI ===\n`;
   if(onHRT){
@@ -2346,14 +3055,9 @@ function showView(v){
   switch(v){
     case'dashboard':renderDashboard();break;
     case'log':renderLog();break;
-    case'meds':renderMeds();break;
-    case'labs':renderLabs();break;
-    case'body':renderBody();break;
+    case'body':renderBodyHub();break;
     case'photos':renderPhotos();break;
-    case'supps':renderSupps();break;
-    case'timeline':renderTimeline();break;
-    case'insights':renderInsights();break;
-    case'resources':renderResources();break;
+    case'stack':renderStack();break;
     case'settings':renderSettings();break;
   }
 }
