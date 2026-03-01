@@ -1447,6 +1447,62 @@ export async function runAgentLoop(
         const progressLine = `[${turn.timestamp}] Turn ${db.getTurnCount()} | Model: ${modelUsed} | Tools: ${toolNames} | Tokens: ${turn.tokenUsage.totalTokens}\n`;
         fs.appendFileSync(progressPath, progressLine);
       } catch {}
+      // ── Retrain Trigger: every 500 persistent cycles (if last training >7 days ago) ──
+      if (persistentCycleCount > 0 && persistentCycleCount % 500 === 0) {
+        try {
+          const lastRetrainPath = "/root/.automaton/training_data/last_retrain.json";
+          let shouldRetrain = true;
+          try {
+            const lastRetrain = JSON.parse(fs.readFileSync(lastRetrainPath, "utf-8"));
+            const lastTime = new Date(lastRetrain.timestamp).getTime();
+            const daysSince = (Date.now() - lastTime) / (1000 * 60 * 60 * 24);
+            if (daysSince < 7) {
+              shouldRetrain = false;
+              console.log(`[RETRAIN] Skip — last retrain ${daysSince.toFixed(1)} days ago (< 7 day threshold)`);
+            }
+          } catch {
+            // No last_retrain.json — first time, proceed
+          }
+
+          if (shouldRetrain && process.env.TIAMAT_LOCAL_ENDPOINT) {
+            console.log(`[RETRAIN] Cycle ${persistentCycleCount} — triggering retrain pipeline (async)`);
+            const { spawn } = await import("child_process");
+            const retrain = spawn("bash", ["/root/entity/src/training/retrain.sh"], {
+              detached: true,
+              stdio: ["ignore", "pipe", "pipe"],
+              env: { ...process.env },
+            });
+            retrain.unref(); // Non-blocking, non-critical
+            retrain.stdout?.on("data", (d: Buffer) => console.log(`[RETRAIN] ${d.toString().trim()}`));
+            retrain.stderr?.on("data", (d: Buffer) => console.warn(`[RETRAIN] ${d.toString().trim()}`));
+          }
+        } catch (e: any) {
+          console.log(`[RETRAIN] Trigger failed (non-critical): ${e.message?.slice(0, 100)}`);
+        }
+      }
+
+      // ── Quality Gate: check tiamat-local model every 50 cycles ──
+      if (persistentCycleCount > 0 && persistentCycleCount % 50 === 0 && process.env.TIAMAT_LOCAL_ENDPOINT) {
+        try {
+          const gateResult = execFileSync("python3", [
+            "/root/entity/src/training/eval_tiamat.py", "--check"
+          ], { encoding: "utf-8", timeout: 10_000 });
+          if (gateResult.includes("FAILED")) {
+            console.warn(`[QUALITY-GATE] tiamat-local FAILED quality gate — disabling`);
+            log(config, `[QUALITY-GATE] tiamat-local disabled — tool accuracy below 60%`);
+            // Remove endpoint to disable — will be re-enabled next restart
+            delete process.env.TIAMAT_LOCAL_ENDPOINT;
+            try {
+              await executeTool("send_telegram", {
+                message: "⚠️ Quality gate: tiamat-local disabled — tool accuracy dropped below 60%. Will re-evaluate after retrain."
+              }, tools, toolContext);
+            } catch {}
+          }
+        } catch {
+          // eval script not available or no data — skip silently
+        }
+      }
+
       // ── Hardcoded MARKET actions after strategic phase 3 ──
       // Runs regardless of what the agent decided to do with its tokens.
       if (burstPhase === 3) {

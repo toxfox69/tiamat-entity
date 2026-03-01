@@ -31,9 +31,10 @@ interface InferenceClientOptions {
   openrouterApiKey?: string;
   geminiApiKey?: string;
   perplexityApiKey?: string;
+  tiamatlocalEndpoint?: string;
 }
 
-type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity";
+type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity" | "tiamat-local";
 
 // Token thresholds for model routing
 const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 2: Groq free
@@ -42,6 +43,7 @@ const SAMBANOVA_MODEL   = "Meta-Llama-3.3-70B-Instruct";       // Tier 3.5: Samb
 const GEMINI_MODEL      = "gemini-2.0-flash";                  // Tier 4: Gemini free
 const PERPLEXITY_MODEL  = "sonar";                              // Tier 1.5: Perplexity Sonar (paid, web-grounded)
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
+const TIAMAT_LOCAL_MODEL = "tiamat-local";                      // Tier 0: Self-hosted fine-tuned Qwen (FREE)
 const TOKEN_THRESHOLD_LARGE = 5500;
 
 // OpenRouter free model pool — rotated through on rate limits.
@@ -164,6 +166,8 @@ If you cannot determine a useful action, call exec with: echo "FALLBACK_SKIP: no
 
 // Per-provider request timeouts (ms).
 // Without these, a hung provider stalls the cascade for Node's socket timeout (~2min).
+const TIMEOUT_TIAMAT_LOCAL = 15_000; // 15s — self-hosted on GPU pod
+const TIMEOUT_TIAMAT_HEALTH = 3_000; // 3s — quick health check
 const TIMEOUT_ANTHROPIC  = 60_000;  // 60s — large prompts can be slow
 const TIMEOUT_GROQ       = 30_000;  // 30s — usually <10s
 const TIMEOUT_CEREBRAS   = 30_000;  // 30s — usually <5s
@@ -227,7 +231,7 @@ function extractTextContent(message: any): string {
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
-  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey, perplexityApiKey } = options;
+  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey, perplexityApiKey, tiamatlocalEndpoint } = options;
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
@@ -237,6 +241,7 @@ export function createInferenceClient(
   // Log which providers are available at startup
   {
     const providers = [
+      tiamatlocalEndpoint ? `TiamatLocal(${TIAMAT_LOCAL_MODEL}) [SELF-HOSTED]` : "TiamatLocal:NO_ENDPOINT",
       anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL}) [PRIMARY]` : "Anthropic:NO_KEY",
       perplexityApiKey ? `Perplexity(${PERPLEXITY_MODEL}) [WEB]`   : "Perplexity:NO_KEY",
       groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
@@ -320,6 +325,44 @@ export function createInferenceClient(
         const ms = isDailyLimitError(err) ? COOLDOWN_DAILY_LIMIT_MS : fallbackMs;
         setCooldown(model, ms);
       };
+
+      // Tier 0: tiamat-local — self-hosted fine-tuned model on GPU pod (FREE, ~6-9s)
+      // Only for routine/free tiers. Strategic cycles always go to Anthropic.
+      // Requires health check to pass (pod may be down).
+      if (tiamatlocalEndpoint && requestedTier !== "sonnet" && !isCoolingDown(TIAMAT_LOCAL_MODEL)) {
+        try {
+          // Quick health check (3s timeout — pod may be offline)
+          const healthResp = await fetchWithTimeout(
+            `${tiamatlocalEndpoint}/health`,
+            { method: "GET" },
+            TIMEOUT_TIAMAT_HEALTH,
+            "tiamat-local-health",
+          );
+          if (healthResp.ok) {
+            lastUsedModel = TIAMAT_LOCAL_MODEL;
+            const localTools = tools ? filterToolsForSmallProvider(tools) : undefined;
+            const localMessages = trimToTokenBudget(messages, 3500);
+            const localEst = estimateTokens(localMessages, localTools);
+            const trimNote = localMessages.length < messages.length ? `, trimmed ${messages.length - localMessages.length} msgs` : "";
+            console.log(`[INFERENCE] Tier 0 (tiamat-local): ATTEMPT (~${localEst} tokens, ${localTools?.length || 0} tools${trimNote})`);
+            const body: Record<string, unknown> = {
+              model: TIAMAT_LOCAL_MODEL,
+              messages: localMessages.map(formatMessage),
+              stream: false,
+              max_tokens: Math.min(tokenLimit, 2048),
+            };
+            if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+            if (localTools && localTools.length > 0) { body.tools = localTools; body.tool_choice = "auto"; }
+            return await chatViaOpenAiCompatible({ model: TIAMAT_LOCAL_MODEL, body, apiUrl: tiamatlocalEndpoint, apiKey: "none", backend: "tiamat-local", timeoutMs: TIMEOUT_TIAMAT_LOCAL });
+          }
+        } catch (err: any) {
+          // Pod is down or unhealthy — cooldown and fall through silently
+          setCooldown(TIAMAT_LOCAL_MODEL, 5 * 60_000); // 5 min cooldown on failure
+          console.log(`[INFERENCE] Tier 0 (tiamat-local): OFFLINE — ${err.message} (5m cooldown)`);
+        }
+      } else if (tiamatlocalEndpoint && isCoolingDown(TIAMAT_LOCAL_MODEL)) {
+        console.log(`[INFERENCE] Tier 0 (tiamat-local): SKIP — cooling (${coolRemaining(TIAMAT_LOCAL_MODEL)} left)`);
+      }
 
       // Tier routing: when tier=free, skip Anthropic and go straight to Groq
       // When tier=haiku (default), Anthropic first as before

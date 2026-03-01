@@ -228,6 +228,7 @@ async function run(): Promise<void> {
     openrouterApiKey: config.openrouterApiKey,
     geminiApiKey: config.geminiApiKey,
     perplexityApiKey: config.perplexityApiKey,
+    tiamatlocalEndpoint: process.env.TIAMAT_LOCAL_ENDPOINT,
   });
 
   const inference = inferenceBackend === "claude-code"
