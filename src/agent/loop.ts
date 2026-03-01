@@ -499,12 +499,9 @@ export async function runAgentLoop(
         // When no tickets: first re-read INBOX.md for creator directives, then self-evolve
         if (!queueHasWork && consecutiveNoTicketCycles >= SELF_EVOLVE_THRESHOLD && !pendingInput) {
           const evolvePrompts = [
-            "No tickets in queue. FIRST: read_file /root/.automaton/INBOX.md for creator directives — follow them exactly. " +
-            "If INBOX says to use sonar_search or search_web, DO THAT. If no specific directive, MARKET: post on Bluesky or Farcaster about tiamat.live APIs.",
-            "Empty queue. FIRST: read_file /root/.automaton/INBOX.md — your creator may have left new instructions. " +
-            "Then: use sonar_search to research potential customers or market opportunities. Act on what you learn. Report via send_telegram.",
-            "No tickets. FIRST: read_file /root/.automaton/INBOX.md for directives. " +
-            "Then: BUILD something useful or use sonar_search to find partnership leads. Do NOT rewrite core infrastructure files.",
+            "No tickets. Read INBOX.md, then DO ONE THING: post on Bluesky with a specific demo or stat from tiamat.live. Include a link. No meta-commentary.",
+            "No tickets. Read INBOX.md, then use sonar_search to find ONE company or developer who needs an AI API. Draft a cold outreach message via send_email or post_bluesky.",
+            "No tickets. Read INBOX.md, then pick the weakest tiamat.live endpoint and make it better. Ship the improvement. Do NOT analyze costs or rewrite working code.",
           ];
           pendingInput = { content: evolvePrompts[consecutiveNoTicketCycles % evolvePrompts.length], source: "self-evolve" };
           log(config, `[SELF-EVOLVE] No tickets for ${consecutiveNoTicketCycles} cycles — injecting evolution prompt`);
@@ -641,31 +638,14 @@ export async function runAgentLoop(
           revenueContext = `REVENUE: ${total} total requests (${free} free, ${paid} paid). Last: ${lastReq.slice(0, 120)}`;
         } catch { revenueContext = "REVENUE: No requests yet (api_requests.log empty or missing)"; }
 
-        // Auto-pivot trigger: if >20 cycles and 0 paid requests, force pivot consideration
-        let pivotWarning = "";
-        try {
-          const logContent = fs.readFileSync("/root/api_requests.log", "utf-8");
-          const paidCount = logContent.split("\n").filter(l => l.includes("Free: False") || l.includes("free:false")).length;
-          if (turnCount > 20 && paidCount === 0) {
-            pivotWarning = `\n⚠️ PIVOT ALERT: ${turnCount} cycles completed, ZERO paid requests. ` +
-              `Current strategy is NOT working. You MUST either: ` +
-              `(1) try a completely different marketing channel, ` +
-              `(2) build a new product, or ` +
-              `(3) use rewrite_mission to change your goals. Do NOT repeat what you've been doing.`;
-          }
-        } catch {}
+        // Pivot warning removed — was firing every cycle and causing navel-gazing spirals
+        const pivotWarning = "";
 
         // Phase-specific mission directive
         const phaseMissions: Record<number, string> = {
-          1: "MISSION: REFLECT AND PLAN. Start with introspect() to see who you're becoming. " +
-             "Use reflect(), recall(), log_strategy(), remember(). " +
-             "Review what has worked and what hasn't. Form a clear strategy for the next 45 cycles. " +
-             "Use grow() to record milestones, lessons, opinions, and failed experiments from this era. " +
-             "If your strategic focus has fundamentally shifted, call evolve_era(). " +
-             "ALSO: Review the [INSIGHTS] section below. For each 'new' insight, score it 1-5 on revenue potential. " +
-             "Use write_file to update /root/.automaton/cooldown_insights.json — set status to 'reviewed', " +
-             "score to your rating, and cycle_reviewed to the current turn number. " +
-             "If any insight scores >= 4, create a ticket via ticket_create(title, description, 'medium', 'insight', tags).",
+          1: "MISSION: ASSESS AND TARGET. Review recent results — what got engagement, what got ignored. " +
+             "Identify ONE specific person or company to reach out to this cycle. Use sonar_search to find them. " +
+             "Do NOT introspect, do NOT call grow(), do NOT review your own feelings.",
           2: "MISSION: BUILD. Use ask_claude_code() for ALL code/architecture work — it's FREE (Pro subscription). " +
              "Ship one feature, fix one bug, or improve one endpoint. Make tangible progress. " +
              "Check [INSIGHTS] for high-scored ideas (score >= 4) to prioritize.",
@@ -890,28 +870,8 @@ export async function runAgentLoop(
       }
 
       // Inject behavioral loop warning with escalating intervention
-      // Read latest self-critique insight from cooldown_think to feed reflection back into the loop
-      let selfCritiqueBlock = "";
-      if (pendingLoopWarning) {
-        try {
-          const insightsPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_insights.json");
-          const raw = fs.readFileSync(insightsPath, "utf-8");
-          const insights = JSON.parse(raw);
-          if (Array.isArray(insights)) {
-            // Find the most recent self_critique insight (< 30 min old)
-            const recent = insights
-              .filter((i: any) => i.mode === "self_critique" && i.timestamp)
-              .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-            if (recent.length > 0) {
-              const age = Date.now() - new Date(recent[0].timestamp).getTime();
-              if (age < 30 * 60 * 1000) {
-                selfCritiqueBlock = `\n\n[YOUR OWN REFLECTION — from your self_critique during cooldown]\n${(recent[0].insight || "").slice(0, 500)}\nACT ON THIS INSIGHT. It came from your own analysis.`;
-                console.log(`[LOOP-FEEDBACK] Injecting self_critique (${Math.round(age / 60000)}m old, ${selfCritiqueBlock.length}ch)`);
-              }
-            }
-          }
-        } catch {}
-      }
+      // Self-critique injection removed — caused navel-gazing loops
+      const selfCritiqueBlock = "";
       if (pendingLoopWarning) {
         if (consecutiveLoopCycles >= 10) {
           // TIER 4: Force restart — text interventions failed, nuke the context window

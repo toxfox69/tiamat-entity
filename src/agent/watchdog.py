@@ -320,10 +320,11 @@ class ToolRepetitionDetector(Detector):
             }
 
             # Research tools — NEVER flag. TIAMAT is autonomous and researches heavily.
-            WHITELIST_TOOLS = {"search_web", "web_fetch"}
+            # exec is TIAMAT's general-purpose shell — used for everything (sqlite3, grep, curl, etc.)
+            WHITELIST_TOOLS = {"search_web", "web_fetch", "exec"}
 
             # Tools with higher thresholds — exec is used for everything (sqlite3, grep, curl, etc.)
-            HIGH_THRESHOLD_TOOLS = {"exec": 30, "browse": 25, "browse_web": 25}
+            HIGH_THRESHOLD_TOOLS = {"browse": 25, "browse_web": 25}
 
             for row in rows:
                 tool_name = row["name"]
@@ -634,13 +635,15 @@ class Watchdog:
         self.tickets = TicketManager()
         self.alerts = AlertManager()
         self.detectors = [
-            ToolRepetitionDetector(),
-            ProductivityDetector(),
-            CostAnomalyDetector(),
-            StuckTicketDetector(),
-            ErrorStormDetector(),
+            # Only keep critical detectors — the rest generate busywork tickets
+            # that TIAMAT wastes cycles investigating instead of doing real work.
             ProcessDeathDetector(),
-            ThoughtLoopDetector(),
+            ErrorStormDetector(),
+            # DISABLED: ToolRepetitionDetector — loop detector in loop.ts handles this
+            # DISABLED: ProductivityDetector — creates "low productivity" tickets she then navel-gazes on
+            # DISABLED: CostAnomalyDetector — creates cost tickets she spends cycles analyzing
+            # DISABLED: StuckTicketDetector — creates meta-tickets about stuck tickets
+            # DISABLED: ThoughtLoopDetector — duplicates loop detector
         ]
         self.running = True
 
