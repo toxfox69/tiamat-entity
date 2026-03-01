@@ -3,142 +3,178 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1a1025">
+<meta name="theme-color" content="#FFF0F5">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Luna — Private Cycle Tracker</title>
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTHVuYSIsInNob3J0X25hbWUiOiJMdW5hIiwiZGVzY3JpcHRpb24iOiJQcml2YWN5LWZpcnN0IHBlcmlvZCB0cmFja2VyLiBZb3VyIGRhdGEgbmV2ZXIgbGVhdmVzIHlvdXIgcGhvbmUuIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMxYTEwMjUiLCJ0aGVtZV9jb2xvciI6IiMxYTEwMjUifQ==">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTHVuYSIsInNob3J0X25hbWUiOiJMdW5hIiwiZGVzY3JpcHRpb24iOiJQcml2YWN5LWZpcnN0IHBlcmlvZCB0cmFja2VyLiBZb3VyIGRhdGEgbmV2ZXIgbGVhdmVzIHlvdXIgcGhvbmUuIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNGRkYwRjUiLCJ0aGVtZV9jb2xvciI6IiNGRkYwRjUifQ==">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#1a1025;--surface:#241636;--card:#2d1d42;--border:#3d2d55;
-  --pink:#e87eb5;--pink-soft:#f4a5cc;--purple:#9b6dff;--purple-soft:#b794f6;
-  --text:#f0e6ff;--text-dim:#a89bc2;--text-muted:#6b5a85;
-  --danger:#ff6b8a;--success:#6bffa8;--warn:#ffd76b;
+  --bg:#FFF5F7;--surface:#FFFFFF;--card:#FFFFFF;--border:#F2D4DC;
+  --rose:#E8A0BF;--rose-deep:#D4789C;--rose-soft:#F4C6D7;--rose-pale:#FDE8EF;
+  --lavender:#C8A2C8;--lavender-soft:#DFC5DF;--lavender-pale:#F0E4F0;
+  --mint:#A8E6CF;--mint-soft:#C7F0DC;--mint-pale:#E8F8EF;
+  --peach:#FFDAB9;--peach-soft:#FFE8D1;
+  --sky:#A8D4E6;--sky-pale:#E0F0F8;
+  --text:#4A3346;--text-dim:#8B7082;--text-muted:#B8A0B0;
+  --danger:#E88B9C;--success:#7BC8A4;--warn:#E8C97B;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
-input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;outline:none}
-input:focus,textarea:focus,select:focus{border-color:var(--purple)}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:15px;outline:none;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(232,160,191,.15)}
 
-/* Layout */
 .app{max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
 .header{padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between}
-.header h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,var(--pink),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header h1{font-size:24px;font-weight:700;background:linear-gradient(135deg,var(--rose-deep),var(--lavender));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .header-actions{display:flex;gap:8px}
-.header-btn{width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border);transition:all .2s}
-.header-btn:hover{background:var(--card);border-color:var(--purple)}
+.header-btn{width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border);transition:all .2s;box-shadow:0 1px 3px rgba(74,51,70,.06)}
+.header-btn:hover{background:var(--rose-pale);border-color:var(--rose-soft)}
 
-/* Privacy banner */
-.privacy-banner{margin:0 16px 12px;padding:12px 16px;background:linear-gradient(135deg,rgba(107,255,168,.08),rgba(155,109,255,.08));border:1px solid rgba(107,255,168,.2);border-radius:12px;font-size:13px;color:var(--success);display:flex;align-items:center;gap:10px}
+/* Phase banner */
+.phase-banner{margin:0 16px 8px;padding:14px 16px;border-radius:14px;font-size:13px;display:flex;align-items:center;gap:10px;font-weight:500}
+.phase-banner.menstrual{background:var(--rose-pale);color:var(--rose-deep);border:1px solid var(--rose-soft)}
+.phase-banner.follicular{background:var(--mint-pale);color:#5a9e7a;border:1px solid var(--mint-soft)}
+.phase-banner.ovulatory{background:var(--peach-soft);color:#b87a3d;border:1px solid var(--peach)}
+.phase-banner.luteal{background:var(--lavender-pale);color:#7a5a8a;border:1px solid var(--lavender-soft)}
+
+.privacy-banner{margin:0 16px 8px;padding:10px 16px;background:linear-gradient(135deg,rgba(168,230,207,.15),rgba(200,162,200,.1));border:1px solid rgba(168,230,207,.3);border-radius:14px;font-size:12px;color:var(--success);display:flex;align-items:center;gap:8px;font-weight:500}
 .privacy-banner svg{flex-shrink:0}
 
-/* Nav */
-.nav{display:flex;gap:4px;padding:4px 16px 12px}
-.nav-btn{flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text-dim);transition:all .2s;text-align:center}
-.nav-btn.active{background:var(--card);color:var(--pink);border:1px solid var(--border)}
+.nav{display:flex;gap:3px;padding:4px 16px 10px}
+.nav-btn{flex:1;padding:8px 4px;border-radius:12px;font-size:12px;font-weight:600;color:var(--text-muted);transition:all .2s;text-align:center}
+.nav-btn.active{background:var(--surface);color:var(--rose-deep);border:1px solid var(--border);box-shadow:0 2px 8px rgba(74,51,70,.06)}
 
-/* Content */
 .content{flex:1;padding:0 16px 100px;overflow-y:auto}
 
 /* Calendar */
-.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .cal-header h2{font-size:17px;font-weight:600}
-.cal-nav{display:flex;gap:8px}
-.cal-nav button{width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);font-size:14px;display:flex;align-items:center;justify-content:center}
+.cal-nav-btn{width:32px;height:32px;border-radius:10px;background:var(--surface);border:1px solid var(--border);font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(74,51,70,.05)}
 .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
-.cal-weekdays span{text-align:center;font-size:11px;font-weight:600;color:var(--text-muted);padding:4px}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cal-day{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:all .15s;position:relative;border:2px solid transparent}
-.cal-day:hover{background:var(--surface)}
-.cal-day.today{border-color:var(--purple)}
-.cal-day.period{background:rgba(232,126,181,.2);color:var(--pink)}
-.cal-day.period-start{background:var(--pink);color:#fff;font-weight:700}
-.cal-day.predicted{background:rgba(155,109,255,.12);border-color:rgba(155,109,255,.3)}
-.cal-day.predicted::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--purple);position:absolute;bottom:4px}
-.cal-day.has-symptoms::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--warn);position:absolute;bottom:4px}
+.cal-weekdays span{text-align:center;font-size:11px;font-weight:600;color:var(--text-muted);padding:3px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day{aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:all .15s;position:relative;border:2px solid transparent}
+.cal-day:hover{background:var(--rose-pale)}
+.cal-day.today{border-color:var(--lavender);background:var(--lavender-pale)}
+.cal-day.period{background:var(--rose-pale);color:var(--rose-deep)}
+.cal-day.period-start{background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(212,120,156,.3)}
+.cal-day.predicted{background:var(--lavender-pale);border-color:var(--lavender-soft)}
+.cal-day.predicted::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--lavender);position:absolute;bottom:3px}
+.cal-day.has-log::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--mint);position:absolute;bottom:3px}
+.cal-day.ovulation{background:var(--peach-soft);border-color:var(--peach)}
 .cal-day.empty{cursor:default}
-.cal-day .day-num{font-size:14px}
 
-/* Stats cards */
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
-.stat-card .label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.stat-card .value{font-size:22px;font-weight:700}
-.stat-card .value.pink{color:var(--pink)}
-.stat-card .value.purple{color:var(--purple)}
+/* Stats */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:0 1px 4px rgba(74,51,70,.04)}
+.stat-card .label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;font-weight:600}
+.stat-card .value{font-size:20px;font-weight:700}
+.stat-card .value.pink{color:var(--rose-deep)}
+.stat-card .value.purple{color:var(--lavender)}
 
-/* Log panel */
-.log-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:12px}
-.log-panel h3{font-size:15px;font-weight:600;margin-bottom:14px}
-.log-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-.log-row label{font-size:14px;color:var(--text-dim);min-width:70px}
-.log-row select,.log-row input[type="date"]{flex:1}
+/* Cards */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(74,51,70,.04)}
+.panel h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:10px}
 
-/* Symptom chips */
-.symptom-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
-.chip{padding:6px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:var(--surface);transition:all .2s}
-.chip.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{padding:6px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:var(--surface);transition:all .2s;font-weight:500;user-select:none}
+.chip.active{background:linear-gradient(135deg,var(--rose),var(--rose-deep));color:#fff;border-color:transparent;box-shadow:0 2px 6px rgba(212,120,156,.25)}
+.chip.active-alt{background:linear-gradient(135deg,var(--lavender),#9b7ab5);color:#fff;border-color:transparent}
+.chip.active-mint{background:linear-gradient(135deg,var(--mint),#6eb89e);color:#fff;border-color:transparent}
 
 /* Mood picker */
-.mood-row{display:flex;gap:8px;margin:10px 0}
-.mood-btn{font-size:24px;padding:6px;border-radius:10px;transition:all .2s;border:2px solid transparent}
-.mood-btn.active{border-color:var(--purple);background:var(--surface)}
+.mood-row{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
+.mood-btn{font-size:24px;padding:6px;border-radius:12px;transition:all .2s;border:2px solid transparent}
+.mood-btn.active{border-color:var(--lavender);background:var(--lavender-pale)}
 
-/* Cramp slider */
-.cramp-slider{width:100%;margin:6px 0;accent-color:var(--pink)}
+/* Slider */
+.range-wrap{margin:6px 0}
+.range-wrap input[type="range"]{accent-color:var(--rose);width:100%;padding:0;border:none}
+.range-wrap input[type="range"]:focus{box-shadow:none}
+.range-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-top:2px}
 
-/* Notes */
-.notes-area{width:100%;min-height:60px;resize:vertical;border-radius:10px;margin-top:8px}
+/* Buttons */
+.btn-primary{width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,var(--rose),var(--lavender));color:#fff;font-size:15px;font-weight:600;margin-top:12px;transition:all .2s;box-shadow:0 4px 12px rgba(212,120,156,.25)}
+.btn-primary:active{opacity:.85;transform:scale(.98)}
+.btn-secondary{width:100%;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:14px;font-weight:500;margin-top:8px}
+.btn-small{padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;background:var(--rose-pale);color:var(--rose-deep);border:1px solid var(--rose-soft)}
 
-/* Primary button */
-.btn-primary{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-size:15px;font-weight:600;margin-top:14px;transition:opacity .2s}
-.btn-primary:hover{opacity:.9}
-.btn-primary:active{opacity:.8}
-.btn-secondary{width:100%;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:14px;font-weight:500;margin-top:8px}
+/* Row */
+.form-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.form-row label{font-size:14px;color:var(--text-dim);min-width:80px;font-weight:500}
+.form-row > *:last-child{flex:1}
 
-/* History list */
-.history-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px}
-.history-item .date{font-size:14px;font-weight:600;color:var(--pink)}
-.history-item .details{font-size:13px;color:var(--text-dim);margin-top:4px}
-.history-item .symptoms{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
-.history-item .symptom-tag{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--text-muted)}
+/* Section divider */
+.section-title{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;padding-left:2px}
+
+/* Charts */
+.chart-bar{display:flex;align-items:end;gap:3px;height:80px;margin:8px 0}
+.chart-bar .bar{flex:1;background:var(--rose-soft);border-radius:4px 4px 0 0;transition:height .3s;min-height:2px}
+.chart-bar .bar.highlight{background:var(--rose-deep)}
+.chart-labels{display:flex;gap:3px;font-size:9px;color:var(--text-muted);text-align:center}
+.chart-labels span{flex:1}
+
+/* History */
+.history-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(74,51,70,.03)}
+.history-item .date{font-size:14px;font-weight:600;color:var(--rose-deep)}
+.history-item .details{font-size:13px;color:var(--text-dim);margin-top:4px;line-height:1.5}
+.history-item .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.history-item .tag{font-size:11px;padding:3px 10px;border-radius:10px;background:var(--rose-pale);color:var(--rose-deep);font-weight:500}
 
 /* Settings */
-.settings-group{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.settings-group{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
 .settings-group h3{font-size:14px;font-weight:600;margin-bottom:12px}
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
 .setting-row:last-child{border-bottom:none}
 .setting-row label{font-size:14px}
-.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:all .2s}
-.toggle.on{background:var(--pink)}
-.toggle::after{content:'';width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .2s}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:all .2s;flex-shrink:0}
+.toggle.on{background:linear-gradient(135deg,var(--rose),var(--rose-deep))}
+.toggle::after{content:'';width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .toggle.on::after{left:22px}
 
-/* PIN overlay */
-.pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center}
+/* PIN */
+.pin-overlay{position:fixed;inset:0;background:linear-gradient(180deg,var(--bg) 0%,var(--rose-pale) 100%);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .pin-overlay h2{font-size:20px;margin-bottom:24px;font-weight:600}
-.pin-dots{display:flex;gap:12px;margin-bottom:32px}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s}
-.pin-dot.filled{background:var(--pink);border-color:var(--pink)}
+.pin-dots{display:flex;gap:14px;margin-bottom:32px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s;background:var(--surface)}
+.pin-dot.filled{background:linear-gradient(135deg,var(--rose),var(--rose-deep));border-color:var(--rose)}
 .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:260px}
-.pin-key{width:72px;height:56px;border-radius:14px;background:var(--surface);border:1px solid var(--border);font-size:22px;font-weight:500;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.pin-key:active{background:var(--card);transform:scale(.95)}
+.pin-key{width:72px;height:56px;border-radius:16px;background:var(--surface);border:1px solid var(--border);font-size:22px;font-weight:500;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 2px 6px rgba(74,51,70,.05);color:var(--text)}
+.pin-key:active{background:var(--rose-pale);transform:scale(.95)}
 .pin-key.del{font-size:14px;color:var(--text-dim)}
 
-/* Animations */
+/* Onboarding */
+.onboarding{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.onboarding h2{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--rose-deep),var(--lavender));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+.onboarding p{font-size:15px;color:var(--text-dim);line-height:1.7;max-width:320px;margin-bottom:20px}
+.onboarding .feature-list{text-align:left;max-width:300px;margin:0 auto 24px}
+.onboarding .feature-list div{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;color:var(--text)}
+.onboarding .feature-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+/* Insights */
+.insight-card{background:linear-gradient(135deg,var(--lavender-pale),var(--rose-pale));border:1px solid var(--lavender-soft);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.insight-card .insight-title{font-size:13px;font-weight:600;color:var(--lavender);margin-bottom:4px}
+.insight-card .insight-text{font-size:13px;color:var(--text);line-height:1.5}
+
+/* Misc */
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease}
-
-/* Empty state */
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
 .empty-state .icon{font-size:48px;margin-bottom:12px}
-.empty-state p{font-size:14px;line-height:1.5}
+.empty-state p{font-size:14px;line-height:1.6}
+.notes-area{min-height:50px;resize:vertical;border-radius:12px;margin-top:4px}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
 </head>
 <body>
 <div class="app" id="app">
-  <!-- PIN overlay (hidden by default) -->
   <div class="pin-overlay" id="pinOverlay" style="display:none">
     <h2 id="pinTitle">Enter PIN</h2>
     <div class="pin-dots" id="pinDots"></div>
@@ -146,653 +182,512 @@ input:focus,textarea:focus,select:focus{border-color:var(--purple)}
     <p style="color:var(--text-muted);font-size:13px;margin-top:20px" id="pinMsg"></p>
   </div>
 
+  <div class="onboarding" id="onboarding" style="display:none">
+    <h2>Welcome to Luna</h2>
+    <p>Your private cycle companion. Everything stays on your device — no accounts, no cloud, no tracking.</p>
+    <div class="feature-list">
+      <div><span class="feature-icon" style="background:var(--rose-pale)">&#127800;</span> Track periods, symptoms &amp; moods</div>
+      <div><span class="feature-icon" style="background:var(--lavender-pale)">&#128302;</span> Cycle phase insights &amp; daily tips</div>
+      <div><span class="feature-icon" style="background:var(--mint-pale)">&#128200;</span> Charts &amp; pattern discovery</div>
+      <div><span class="feature-icon" style="background:var(--peach-soft)">&#128274;</span> PIN lock &amp; total privacy</div>
+    </div>
+    <button class="btn-primary" style="max-width:300px" onclick="completeOnboarding()">Get Started</button>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:16px">Zero data collection. Zero network requests.<br>Your body, your data, your device only.</p>
+  </div>
+
   <div id="mainApp">
     <div class="header">
       <h1>Luna</h1>
       <div class="header-actions">
-        <button class="header-btn" onclick="exportCSV()" title="Export data">⬇</button>
-        <button class="header-btn" onclick="showView('settings')" title="Settings">⚙</button>
+        <button class="header-btn" onclick="showView('insights')" title="Insights">&#9733;</button>
+        <button class="header-btn" onclick="showView('settings')" title="Settings">&#9881;</button>
       </div>
     </div>
 
+    <div id="phaseBanner"></div>
+
     <div class="privacy-banner">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" fill="currentColor" opacity=".3"/><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" fill="currentColor" opacity=".2"/><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" stroke="currentColor" stroke-width="1.2"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Your data never leaves this device
     </div>
 
     <div class="nav">
       <button class="nav-btn active" data-view="calendar" onclick="showView('calendar')">Calendar</button>
       <button class="nav-btn" data-view="log" onclick="showView('log')">Log</button>
+      <button class="nav-btn" data-view="insights" onclick="showView('insights')">Insights</button>
       <button class="nav-btn" data-view="history" onclick="showView('history')">History</button>
       <button class="nav-btn" data-view="settings" onclick="showView('settings')">Settings</button>
     </div>
-
     <div class="content" id="content"></div>
   </div>
 </div>
 
 <script>
-// ─── Data Layer (localStorage only) ─────────────────────────
-const STORAGE_KEY = 'luna_cycle_data';
-const SETTINGS_KEY = 'luna_settings';
-const PIN_KEY = 'luna_pin_hash';
+// ─── Constants ───────────────────────────────────────────────
+const STORAGE_KEY='luna_data',SETTINGS_KEY='luna_settings',PIN_KEY='luna_pin';
+const SYMPTOM_CATEGORIES = {
+  'Pain': ['Cramps','Headache','Back pain','Breast tenderness','Joint pain','Migraine','Pelvic pain'],
+  'Digestive': ['Bloating','Nausea','Diarrhea','Constipation','Appetite increase','Appetite decrease'],
+  'Mood': ['Anxious','Irritable','Sad','Sensitive','Mood swings','Calm','Happy','Energetic'],
+  'Energy': ['Fatigue','Low energy','Normal energy','High energy','Insomnia','Restless sleep'],
+  'Skin & Body': ['Acne','Oily skin','Dry skin','Hot flashes','Dizziness','Water retention'],
+  'Other': ['Cravings','Spotting','Discharge','Libido increase','Libido decrease']
+};
+const FLOW_LEVELS = ['Spotting','Light','Medium','Heavy','Very heavy'];
+const FLOW_COLORS = ['Pink','Red','Dark red','Brown','Black'];
+const MOODS = [{e:'&#128522;',l:'Happy'},{e:'&#128578;',l:'Calm'},{e:'&#128528;',l:'Neutral'},{e:'&#128546;',l:'Sad'},{e:'&#128544;',l:'Angry'},{e:'&#128553;',l:'Anxious'},{e:'&#128564;',l:'Tired'},{e:'&#129392;',l:'Loved'}];
+const PHASE_INFO = {
+  menstrual:{name:'Menstrual Phase',icon:'&#127800;',tip:'Rest and recharge. Your body is shedding the uterine lining. Honor what you need — gentle movement, warm foods, extra sleep.',color:'rose'},
+  follicular:{name:'Follicular Phase',icon:'&#127793;',tip:'Energy is rising! Estrogen increases, boosting mood and creativity. Great time for new projects, social plans, and trying new workouts.',color:'mint'},
+  ovulatory:{name:'Ovulatory Phase',icon:'&#9728;&#65039;',tip:'Peak energy and confidence. You may feel more social and communicative. Highest fertility window if you\'re tracking for conception.',color:'peach'},
+  luteal:{name:'Luteal Phase',icon:'&#127769;',tip:'Progesterone rises, energy may dip. You might crave comfort foods and alone time. Practice self-care and wind down gradually.',color:'lavender'}
+};
 
-function loadData() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { periods: [], symptoms: [] }; }
-  catch { return { periods: [], symptoms: [] }; }
-}
+// ─── Data Layer ──────────────────────────────────────────────
+function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
+function defaultData(){return{periods:[],logs:[],medications:[],customTags:[],tempReadings:[]}}
+function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
+function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
+function defaultSettings(){return{pinEnabled:false,onboarded:false,cycleGoal:0,lutealLength:14,showOvulation:true}}
+function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
+function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
 
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || { pinEnabled: false }; }
-  catch { return { pinEnabled: false }; }
-}
-
-function saveSettings(s) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-}
-
-// Simple hash for PIN (not crypto-secure, but keeps casual eyes out)
-function hashPin(pin) {
-  let h = 0;
-  for (let i = 0; i < pin.length; i++) {
-    h = ((h << 5) - h + pin.charCodeAt(i)) | 0;
-  }
-  return h.toString(36);
-}
-
-// ─── State ──────────────────────────────────────────────────
-let data = loadData();
-let settings = loadSettings();
-let currentView = 'calendar';
-let calYear, calMonth;
-const now = new Date();
-calYear = now.getFullYear();
-calMonth = now.getMonth();
-
-// ─── PIN Lock ───────────────────────────────────────────────
-function checkPinLock() {
-  const storedHash = localStorage.getItem(PIN_KEY);
-  if (!storedHash || !settings.pinEnabled) return;
-  showPinEntry(storedHash);
-}
-
-function showPinEntry(expectedHash) {
-  const overlay = document.getElementById('pinOverlay');
-  overlay.style.display = 'flex';
-  document.getElementById('pinTitle').textContent = 'Enter PIN';
-  document.getElementById('pinMsg').textContent = '';
-  let entered = '';
-
-  function renderDots() {
-    const dots = document.getElementById('pinDots');
-    dots.innerHTML = Array.from({length:4}, (_, i) =>
-      `<div class="pin-dot${i < entered.length ? ' filled' : ''}"></div>`
-    ).join('');
-  }
-
-  function renderPad() {
-    const pad = document.getElementById('pinPad');
-    pad.innerHTML = '';
-    for (let i = 1; i <= 9; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'pin-key';
-      btn.textContent = i;
-      btn.onclick = () => pressKey(i.toString());
-      pad.appendChild(btn);
-    }
-    // empty, 0, delete
-    pad.innerHTML += '<div></div>';
-    const z = document.createElement('button');
-    z.className = 'pin-key'; z.textContent = '0'; z.onclick = () => pressKey('0');
-    pad.appendChild(z);
-    const d = document.createElement('button');
-    d.className = 'pin-key del'; d.textContent = 'DEL'; d.onclick = () => { entered = entered.slice(0,-1); renderDots(); };
-    pad.appendChild(d);
-  }
-
-  function pressKey(k) {
-    if (entered.length >= 4) return;
-    entered += k;
-    renderDots();
-    if (entered.length === 4) {
-      if (expectedHash && hashPin(entered) === expectedHash) {
-        overlay.style.display = 'none';
-      } else if (expectedHash) {
-        document.getElementById('pinMsg').textContent = 'Wrong PIN';
-        entered = '';
-        setTimeout(renderDots, 300);
-      }
-    }
-  }
-
-  renderDots();
-  renderPad();
-}
-
-function setupPin() {
-  const overlay = document.getElementById('pinOverlay');
-  overlay.style.display = 'flex';
-  document.getElementById('pinTitle').textContent = 'Set New PIN';
-  document.getElementById('pinMsg').textContent = 'Choose a 4-digit PIN';
-  let entered = '';
-  let firstPin = '';
-  let confirming = false;
-
-  function renderDots() {
-    const dots = document.getElementById('pinDots');
-    dots.innerHTML = Array.from({length:4}, (_, i) =>
-      `<div class="pin-dot${i < entered.length ? ' filled' : ''}"></div>`
-    ).join('');
-  }
-
-  function renderPad() {
-    const pad = document.getElementById('pinPad');
-    pad.innerHTML = '';
-    for (let i = 1; i <= 9; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'pin-key'; btn.textContent = i;
-      btn.onclick = () => pressKey(i.toString());
-      pad.appendChild(btn);
-    }
-    pad.innerHTML += '<div></div>';
-    const z = document.createElement('button');
-    z.className = 'pin-key'; z.textContent = '0'; z.onclick = () => pressKey('0');
-    pad.appendChild(z);
-    const d = document.createElement('button');
-    d.className = 'pin-key del'; d.textContent = 'DEL'; d.onclick = () => { entered = entered.slice(0,-1); renderDots(); };
-    pad.appendChild(d);
-  }
-
-  function pressKey(k) {
-    if (entered.length >= 4) return;
-    entered += k;
-    renderDots();
-    if (entered.length === 4) {
-      if (!confirming) {
-        firstPin = entered;
-        confirming = true;
-        entered = '';
-        document.getElementById('pinTitle').textContent = 'Confirm PIN';
-        document.getElementById('pinMsg').textContent = 'Enter the same PIN again';
-        setTimeout(renderDots, 200);
-      } else {
-        if (entered === firstPin) {
-          localStorage.setItem(PIN_KEY, hashPin(entered));
-          settings.pinEnabled = true;
-          saveSettings(settings);
-          overlay.style.display = 'none';
-          showView('settings');
-        } else {
-          document.getElementById('pinMsg').textContent = 'PINs did not match. Try again.';
-          entered = '';
-          firstPin = '';
-          confirming = false;
-          document.getElementById('pinTitle').textContent = 'Set New PIN';
-          setTimeout(renderDots, 300);
-        }
-      }
-    }
-  }
-
-  renderDots();
-  renderPad();
-}
+let D=loadData(), S=loadSettings(), currentView='calendar', calYear, calMonth, tempLogState={};
+const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
 
 // ─── Cycle Calculations ─────────────────────────────────────
-function getPeriodStarts() {
-  return data.periods
-    .filter(p => p.type === 'start')
-    .map(p => p.date)
-    .sort();
+function periodStarts(){return D.periods.filter(p=>p.t==='s').map(p=>p.d).sort()}
+function periodEnds(){return D.periods.filter(p=>p.t==='e').map(p=>p.d).sort()}
+function avgCycle(){const s=periodStarts();if(s.length<2)return 28;let t=0,c=0;for(let i=1;i<s.length;i++){const d=(new Date(s[i])-new Date(s[i-1]))/864e5;if(d>15&&d<90){t+=d;c++}}return c?Math.round(t/c):28}
+function avgPeriodLen(){const s=periodStarts(),e=periodEnds();if(!s.length||!e.length)return 5;let t=0,c=0;for(const st of s){const en=e.find(x=>x>=st);if(en){const d=(new Date(en)-new Date(st))/864e5+1;if(d>0&&d<15){t+=d;c++}}}return c?Math.round(t/c):5}
+function predictions(){const s=periodStarts();if(!s.length)return[];const a=avgCycle(),last=new Date(s[s.length-1]),r=[];for(let i=1;i<=6;i++){const p=new Date(last);p.setDate(p.getDate()+a*i);r.push(p.toISOString().split('T')[0])}return r}
+function ovulationDays(){if(!S.showOvulation)return[];const preds=predictions(),a=avgCycle();const s=periodStarts();if(!s.length)return[];const all=[...s,...preds];const r=[];for(const st of all){const d=new Date(st);d.setDate(d.getDate()+a-S.lutealLength);r.push(d.toISOString().split('T')[0])}return r}
+function isPeriod(d){const s=periodStarts(),e=periodEnds();for(const st of s){const en=e.find(x=>x>=st)||(()=>{const x=new Date(st);x.setDate(x.getDate()+4);return x.toISOString().split('T')[0]})();if(d>=st&&d<=en)return true}return false}
+function isPeriodStart(d){return D.periods.some(p=>p.t==='s'&&p.d===d)}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().split('T')[0]}
+function getLog(d){return D.logs.find(l=>l.date===d)}
+function hasLog(d){return D.logs.some(l=>l.date===d)}
+
+function currentPhase(){
+  const s=periodStarts(),today=new Date().toISOString().split('T')[0];
+  if(!s.length)return null;
+  if(isPeriod(today))return'menstrual';
+  const last=s[s.length-1],daysSince=Math.round((new Date(today)-new Date(last))/864e5);
+  const a=avgCycle(),ovDay=a-S.lutealLength;
+  if(daysSince<=0)return'menstrual';
+  if(daysSince<ovDay-1)return'follicular';
+  if(daysSince<=ovDay+1)return'ovulatory';
+  return'luteal';
 }
 
-function getAverageCycle() {
-  const starts = getPeriodStarts();
-  if (starts.length < 2) return 28;
-  let total = 0, count = 0;
-  for (let i = 1; i < starts.length; i++) {
-    const diff = (new Date(starts[i]) - new Date(starts[i-1])) / 86400000;
-    if (diff > 15 && diff < 60) { total += diff; count++; }
+// ─── PIN ─────────────────────────────────────────────────────
+function checkPinLock(){const h=localStorage.getItem(PIN_KEY);if(!h||!S.pinEnabled)return;showPinUI(h,false)}
+function showPinUI(expected,isSetup){
+  const o=document.getElementById('pinOverlay');o.style.display='flex';
+  document.getElementById('pinTitle').textContent=isSetup?'Set New PIN':'Enter PIN';
+  document.getElementById('pinMsg').textContent=isSetup?'Choose a 4-digit PIN':'';
+  let entered='',first='',confirming=false;
+  function dots(){document.getElementById('pinDots').innerHTML=Array.from({length:4},(_,i)=>`<div class="pin-dot${i<entered.length?' filled':''}"></div>`).join('')}
+  function pad(){
+    const p=document.getElementById('pinPad');p.innerHTML='';
+    for(let i=1;i<=9;i++){const b=document.createElement('button');b.className='pin-key';b.textContent=i;b.onclick=()=>press(i+'');p.appendChild(b)}
+    p.innerHTML+='<div></div>';
+    const z=document.createElement('button');z.className='pin-key';z.textContent='0';z.onclick=()=>press('0');p.appendChild(z);
+    const d=document.createElement('button');d.className='pin-key del';d.textContent='DEL';d.onclick=()=>{entered=entered.slice(0,-1);dots()};p.appendChild(d);
   }
-  return count > 0 ? Math.round(total / count) : 28;
-}
-
-function getAveragePeriodLength() {
-  const starts = data.periods.filter(p => p.type === 'start').map(p => p.date).sort();
-  const ends = data.periods.filter(p => p.type === 'end').map(p => p.date).sort();
-  if (!starts.length || !ends.length) return 5;
-  let total = 0, count = 0;
-  for (const s of starts) {
-    const e = ends.find(ed => ed >= s);
-    if (e) {
-      const diff = (new Date(e) - new Date(s)) / 86400000 + 1;
-      if (diff > 0 && diff < 15) { total += diff; count++; }
+  function press(k){
+    if(entered.length>=4)return;entered+=k;dots();
+    if(entered.length===4){
+      if(!isSetup){if(hashPin(entered)===expected){o.style.display='none'}else{document.getElementById('pinMsg').textContent='Wrong PIN';entered='';setTimeout(dots,300)}}
+      else if(!confirming){first=entered;confirming=true;entered='';document.getElementById('pinTitle').textContent='Confirm PIN';document.getElementById('pinMsg').textContent='Enter same PIN again';setTimeout(dots,200)}
+      else{if(entered===first){localStorage.setItem(PIN_KEY,hashPin(entered));S.pinEnabled=true;saveSettings();o.style.display='none';showView('settings')}else{document.getElementById('pinMsg').textContent='PINs didn\'t match';entered='';first='';confirming=false;document.getElementById('pinTitle').textContent='Set New PIN';setTimeout(dots,300)}}
     }
   }
-  return count > 0 ? Math.round(total / count) : 5;
+  dots();pad();
 }
 
-function getPredictions() {
-  const starts = getPeriodStarts();
-  if (!starts.length) return [];
-  const avg = getAverageCycle();
-  const lastStart = new Date(starts[starts.length - 1]);
-  const preds = [];
-  for (let i = 1; i <= 3; i++) {
-    const pred = new Date(lastStart);
-    pred.setDate(pred.getDate() + avg * i);
-    preds.push(pred.toISOString().split('T')[0]);
+// ─── Onboarding ──────────────────────────────────────────────
+function checkOnboarding(){if(!S.onboarded)document.getElementById('onboarding').style.display='flex'}
+function completeOnboarding(){S.onboarded=true;saveSettings();document.getElementById('onboarding').style.display='none'}
+
+// ─── Calendar ────────────────────────────────────────────────
+function renderCalendar(){
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const preds=predictions(),ov=ovulationDays(),a=avgCycle(),today=new Date().toISOString().split('T')[0];
+  const next=preds[0];let until='--';
+  if(next){const d=Math.ceil((new Date(next)-new Date())/864e5);until=d>0?d:'Today'}
+
+  let h=`<div class="stats fade-in">
+    <div class="stat-card"><div class="label">Cycle Length</div><div class="value pink">${a}<span style="font-size:12px;color:var(--text-dim)"> days</span></div></div>
+    <div class="stat-card"><div class="label">Next Period</div><div class="value purple">${until}<span style="font-size:12px;color:var(--text-dim)">${typeof until==='number'?' days':''}</span></div></div>
+  </div>
+  <div class="cal-header fade-in">
+    <button class="cal-nav-btn" onclick="chMonth(-1)">&#9664;</button>
+    <h2>${months[calMonth]} ${calYear}</h2>
+    <button class="cal-nav-btn" onclick="chMonth(1)">&#9654;</button>
+  </div>
+  <div class="cal-weekdays fade-in">${['S','M','T','W','T','F','S'].map(d=>`<span>${d}</span>`).join('')}</div>
+  <div class="cal-grid fade-in">`;
+
+  const fd=new Date(calYear,calMonth,1).getDay(),dim=new Date(calYear,calMonth+1,0).getDate();
+  for(let i=0;i<fd;i++)h+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cl=['cal-day'];
+    if(ds===today)cl.push('today');
+    if(isPeriodStart(ds))cl.push('period-start');else if(isPeriod(ds))cl.push('period');
+    if(preds.includes(ds))cl.push('predicted');
+    if(ov.includes(ds))cl.push('ovulation');
+    if(hasLog(ds)&&!isPeriod(ds)&&!preds.includes(ds))cl.push('has-log');
+    h+=`<div class="${cl.join(' ')}" onclick="dayTap('${ds}')">${d}</div>`;
   }
-  return preds;
+  h+=`</div><div style="display:flex;gap:12px;margin-top:12px;font-size:11px;color:var(--text-muted);justify-content:center;flex-wrap:wrap" class="fade-in">
+    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--rose);margin-right:3px"></span>Period</span>
+    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--lavender);margin-right:3px"></span>Predicted</span>
+    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--peach);margin-right:3px"></span>Ovulation</span>
+    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mint);margin-right:3px"></span>Logged</span>
+  </div>`;
+  document.getElementById('content').innerHTML=h;
+}
+function chMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++}if(calMonth<0){calMonth=11;calYear--}renderCalendar()}
+function dayTap(ds){
+  const idx=D.periods.findIndex(p=>p.d===ds&&p.t==='s');
+  if(idx>=0){D.periods.splice(idx,1);const ei=D.periods.findIndex(p=>p.t==='e'&&p.d>=ds&&p.d<=addDays(ds,7));if(ei>=0)D.periods.splice(ei,1)}
+  else{D.periods.push({d:ds,t:'s'});if(!D.periods.some(p=>p.t==='e'&&p.d>=ds&&p.d<=addDays(ds,10)))D.periods.push({d:addDays(ds,4),t:'e'})}
+  saveData();renderCalendar();
 }
 
-function isPeriodDay(dateStr) {
-  const starts = data.periods.filter(p => p.type === 'start').map(p => p.date).sort();
-  const ends = data.periods.filter(p => p.type === 'end').map(p => p.date).sort();
-  for (const s of starts) {
-    const e = ends.find(ed => ed >= s);
-    const endDate = e || (() => { const d = new Date(s); d.setDate(d.getDate() + 4); return d.toISOString().split('T')[0]; })();
-    if (dateStr >= s && dateStr <= endDate) return true;
-  }
-  return false;
-}
+// ─── Log View ────────────────────────────────────────────────
+function renderLog(){
+  const today=new Date().toISOString().split('T')[0],ex=getLog(today)||{};
+  tempLogState={flow:ex.flow||'',flowColor:ex.flowColor||'',cramps:ex.cramps||0,mood:ex.mood||'',tags:[...(ex.tags||[])],meds:[...(ex.meds||[])],temp:ex.temp||'',notes:ex.notes||'',customTags:[...(ex.customTags||[])]};
 
-function isPeriodStart(dateStr) {
-  return data.periods.some(p => p.type === 'start' && p.date === dateStr);
-}
+  let h=`<div class="panel fade-in"><h3>Log Today</h3>
+    <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
 
-function hasSymptoms(dateStr) {
-  return data.symptoms.some(s => s.date === dateStr);
-}
+    <div class="form-row"><label>Period</label><select id="logPeriod" style="flex:1">
+      <option value="">Not today</option><option value="s"${isPeriodStart(today)?' selected':''}>Started</option>
+      <option value="e"${D.periods.some(p=>p.t==='e'&&p.d===today)?' selected':''}>Ended</option></select></div>
 
-function getSymptoms(dateStr) {
-  return data.symptoms.find(s => s.date === dateStr);
-}
+    <div class="section-title">Flow</div>
+    <div class="chips" id="flowChips">${FLOW_LEVELS.map(f=>`<button class="chip${tempLogState.flow===f?' active':''}" onclick="setTL('flow','${f}','flowChips')">${f}</button>`).join('')}</div>
+    <div class="chips" id="flowColorChips">${FLOW_COLORS.map(f=>`<button class="chip${tempLogState.flowColor===f?' active-alt':''}" onclick="setTL('flowColor','${f}','flowColorChips','active-alt')">${f}</button>`).join('')}</div>
 
-// ─── Calendar View ──────────────────────────────────────────
-function renderCalendar() {
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const predictions = getPredictions();
-  const avgCycle = getAverageCycle();
-  const avgLength = getAveragePeriodLength();
-  const starts = getPeriodStarts();
-  const nextPred = predictions[0];
-  const today = new Date().toISOString().split('T')[0];
+    <div class="section-title">Pain Level</div>
+    <div class="range-wrap"><input type="range" min="0" max="10" value="${tempLogState.cramps}" id="crampSlider" oninput="tempLogState.cramps=+this.value;document.getElementById('crampVal').textContent=this.value">
+    <div class="range-label"><span>None</span><span id="crampVal">${tempLogState.cramps}</span><span>Severe</span></div></div>
 
-  // Days until next
-  let daysUntil = '--';
-  if (nextPred) {
-    const diff = Math.ceil((new Date(nextPred) - new Date()) / 86400000);
-    daysUntil = diff > 0 ? diff : 'Today';
-  }
+    <div class="section-title">Mood</div>
+    <div class="mood-row">${MOODS.map(m=>`<button class="mood-btn${tempLogState.mood===m.l?' active':''}" onclick="setMood('${m.l}')" title="${m.l}">${m.e}</button>`).join('')}</div>
 
-  let html = `
-    <div class="stats fade-in">
-      <div class="stat-card">
-        <div class="label">Cycle Length</div>
-        <div class="value pink">${avgCycle}<span style="font-size:13px;color:var(--text-dim)"> days</span></div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Next Period</div>
-        <div class="value purple">${daysUntil}<span style="font-size:13px;color:var(--text-dim)">${typeof daysUntil === 'number' ? ' days' : ''}</span></div>
-      </div>
-    </div>
+    <div class="section-title">Temperature (BBT)</div>
+    <div class="form-row"><label>&#176;F / &#176;C</label><input type="number" step="0.1" placeholder="e.g. 97.8" value="${tempLogState.temp}" id="tempInput" style="flex:1" onchange="tempLogState.temp=this.value"></div>`;
 
-    <div class="cal-header fade-in">
-      <button class="cal-nav" onclick="changeMonth(-1)" style="background:none;border:none"><div style="width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">◀</div></button>
-      <h2>${months[calMonth]} ${calYear}</h2>
-      <button class="cal-nav" onclick="changeMonth(1)" style="background:none;border:none"><div style="width:32px;height:32px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center">▶</div></button>
-    </div>
-
-    <div class="cal-weekdays fade-in">
-      ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<span>${d}</span>`).join('')}
-    </div>
-    <div class="cal-grid fade-in">
-  `;
-
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-
-  for (let i = 0; i < firstDay; i++) {
-    html += `<div class="cal-day empty"></div>`;
+  // Symptom categories
+  for(const[cat,symptoms]of Object.entries(SYMPTOM_CATEGORIES)){
+    h+=`<div class="section-title">${cat}</div><div class="chips">${symptoms.map(s=>`<button class="chip${tempLogState.tags.includes(s)?' active':''}" onclick="toggleTag('${s}')">${s}</button>`).join('')}</div>`;
   }
 
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const classes = ['cal-day'];
-    if (dateStr === today) classes.push('today');
-    if (isPeriodStart(dateStr)) classes.push('period-start');
-    else if (isPeriodDay(dateStr)) classes.push('period');
-    if (predictions.includes(dateStr)) classes.push('predicted');
-    if (hasSymptoms(dateStr)) classes.push('has-symptoms');
+  // Custom tags
+  if(D.customTags.length){
+    h+=`<div class="section-title">Your Tags</div><div class="chips">${D.customTags.map(s=>`<button class="chip${tempLogState.customTags.includes(s)?' active-mint':''}" onclick="toggleCustomTag('${s}')">${s}</button>`).join('')}</div>`;
+  }
+  h+=`<div style="margin-top:8px"><button class="btn-small" onclick="addCustomTag()">+ Add Custom Tag</button></div>`;
 
-    html += `<div class="${classes.join(' ')}" onclick="dayClick('${dateStr}')"><span class="day-num">${d}</span></div>`;
+  // Medications
+  h+=`<div class="section-title">Medications / Supplements</div>
+    <div class="chips" id="medChips">${(D.medications||[]).map(m=>`<button class="chip${tempLogState.meds.includes(m)?' active-alt':''}" onclick="toggleMed('${m}')">${m}</button>`).join('')}</div>
+    <div style="margin-top:8px"><button class="btn-small" onclick="addMed()">+ Add Medication</button></div>`;
+
+  h+=`<div class="section-title">Notes</div>
+    <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today?">${tempLogState.notes}</textarea>
+    <button class="btn-primary" onclick="saveLog()">Save Today's Log</button>
+  </div>`;
+  document.getElementById('content').innerHTML=h;
+}
+
+function setTL(key,val,containerId,cls='active'){
+  tempLogState[key]=tempLogState[key]===val?'':val;
+  document.querySelectorAll(`#${containerId} .chip`).forEach(c=>c.classList.remove(cls||'active'));
+  if(tempLogState[key]){const active=[...document.querySelectorAll(`#${containerId} .chip`)].find(c=>c.textContent===val);if(active)active.classList.add(cls||'active')}
+}
+function setMood(m){tempLogState.mood=tempLogState.mood===m?'':m;document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('active',b.title===tempLogState.mood))}
+function toggleTag(s){const i=tempLogState.tags.indexOf(s);if(i>=0)tempLogState.tags.splice(i,1);else tempLogState.tags.push(s);renderLog()}
+function toggleCustomTag(s){const i=tempLogState.customTags.indexOf(s);if(i>=0)tempLogState.customTags.splice(i,1);else tempLogState.customTags.push(s);renderLog()}
+function toggleMed(m){const i=tempLogState.meds.indexOf(m);if(i>=0)tempLogState.meds.splice(i,1);else tempLogState.meds.push(m);renderLog()}
+function addCustomTag(){const t=prompt('Enter custom tag name:');if(t&&t.trim()){const tag=t.trim();if(!D.customTags.includes(tag)){D.customTags.push(tag);saveData()}tempLogState.customTags.push(tag);renderLog()}}
+function addMed(){const m=prompt('Enter medication or supplement name:');if(m&&m.trim()){const med=m.trim();if(!D.medications)D.medications=[];if(!D.medications.includes(med)){D.medications.push(med);saveData()}tempLogState.meds.push(med);renderLog()}}
+
+function saveLog(){
+  const today=new Date().toISOString().split('T')[0];
+  const pv=document.getElementById('logPeriod').value;
+  if(pv&&!D.periods.some(p=>p.d===today&&p.t===pv))D.periods.push({d:today,t:pv});
+
+  const entry={date:today,flow:tempLogState.flow,flowColor:tempLogState.flowColor,cramps:tempLogState.cramps,mood:tempLogState.mood,tags:tempLogState.tags,customTags:tempLogState.customTags,meds:tempLogState.meds,temp:tempLogState.temp,notes:document.getElementById('logNotes').value};
+  const idx=D.logs.findIndex(l=>l.date===today);
+  if(idx>=0)D.logs[idx]=entry;else D.logs.push(entry);
+
+  if(tempLogState.temp){const ti=D.tempReadings.findIndex(t=>t.d===today);const tr={d:today,v:parseFloat(tempLogState.temp)};if(ti>=0)D.tempReadings[ti]=tr;else D.tempReadings.push(tr)}
+
+  saveData();tempLogState={};
+  const btn=document.querySelector('.btn-primary');btn.textContent='Saved!';btn.style.background='var(--mint)';btn.style.color='var(--text)';
+  setTimeout(()=>{btn.textContent="Save Today's Log";btn.style.background='';btn.style.color=''},1200);
+}
+
+// ─── Insights View ───────────────────────────────────────────
+function renderInsights(){
+  const phase=currentPhase(),info=phase?PHASE_INFO[phase]:null;
+  const starts=periodStarts(),a=avgCycle(),pl=avgPeriodLen();
+
+  let h='<div class="fade-in">';
+
+  // Current phase
+  if(info){
+    h+=`<div class="panel"><h3>${info.icon} ${info.name}</h3><p style="font-size:13px;color:var(--text-dim);line-height:1.6">${info.tip}</p></div>`;
   }
 
-  html += `</div>`;
+  // Cycle stats
+  h+=`<div class="panel"><h3>Cycle Summary</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div><div style="font-size:20px;font-weight:700;color:var(--rose-deep)">${a}</div><div style="font-size:11px;color:var(--text-muted)">Avg Cycle</div></div>
+      <div><div style="font-size:20px;font-weight:700;color:var(--lavender)">${pl}</div><div style="font-size:11px;color:var(--text-muted)">Period Days</div></div>
+      <div><div style="font-size:20px;font-weight:700;color:var(--mint)">${starts.length}</div><div style="font-size:11px;color:var(--text-muted)">Cycles Logged</div></div>
+    </div></div>`;
 
-  // Legend
-  html += `
-    <div style="display:flex;gap:16px;margin-top:16px;font-size:12px;color:var(--text-muted);justify-content:center" class="fade-in">
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--pink);margin-right:4px"></span>Period</span>
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--purple);margin-right:4px"></span>Predicted</span>
-      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--warn);margin-right:4px"></span>Symptoms</span>
+  // Cycle length chart
+  if(starts.length>=2){
+    const lens=[];for(let i=1;i<starts.length;i++){const d=(new Date(starts[i])-new Date(starts[i-1]))/864e5;if(d>10&&d<90)lens.push(d)}
+    if(lens.length){
+      const mx=Math.max(...lens),last6=lens.slice(-8);
+      h+=`<div class="panel"><h3>Cycle Length History</h3>
+        <div class="chart-bar">${last6.map((l,i)=>`<div class="bar${i===last6.length-1?' highlight':''}" style="height:${Math.max(10,l/mx*100)}%" title="${l} days"></div>`).join('')}</div>
+        <div class="chart-labels">${last6.map(l=>`<span>${l}d</span>`).join('')}</div></div>`;
+    }
+  }
+
+  // Temperature chart
+  const temps=D.tempReadings.slice(-14);
+  if(temps.length>=3){
+    const vals=temps.map(t=>t.v),mn=Math.min(...vals)-.5,mx=Math.max(...vals)+.5,range=mx-mn;
+    h+=`<div class="panel"><h3>Temperature (Last ${temps.length} Days)</h3>
+      <div class="chart-bar">${temps.map(t=>`<div class="bar" style="height:${Math.max(5,(t.v-mn)/range*100)}%;background:var(--peach)" title="${t.v}"></div>`).join('')}</div>
+      <div class="chart-labels">${temps.map(t=>`<span>${t.v}</span>`).join('')}</div></div>`;
+  }
+
+  // Symptom patterns
+  const tagCounts={};D.logs.forEach(l=>{(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1});(l.customTags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1})});
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(topTags.length){
+    const mx=topTags[0][1];
+    h+=`<div class="panel"><h3>Most Tracked Symptoms</h3>
+      ${topTags.map(([t,c])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:13px;min-width:100px">${t}</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px"><div style="width:${c/mx*100}%;height:100%;background:var(--rose);border-radius:4px"></div></div>
+        <span style="font-size:12px;color:var(--text-muted)">${c}x</span>
+      </div>`).join('')}</div>`;
+  }
+
+  // Auto-discovered insights
+  h+=generateInsights();
+
+  // Doctor report button
+  h+=`<button class="btn-primary" onclick="exportReport()">Export Doctor Report (CSV)</button>`;
+
+  if(!starts.length){
+    h+=`<div class="empty-state"><div class="icon">&#128300;</div><p>Start logging periods and symptoms to see insights, patterns, and cycle phase information here.</p></div>`;
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function generateInsights(){
+  let h='';const logs=D.logs,starts=periodStarts();if(logs.length<5)return h;
+
+  // Correlate symptoms with cycle phases
+  const phaseSymptoms={menstrual:{},follicular:{},ovulatory:{},luteal:{}};
+  const a=avgCycle();
+  for(const log of logs){
+    const s=starts.filter(st=>st<=log.date).pop();if(!s)continue;
+    const daysSince=Math.round((new Date(log.date)-new Date(s))/864e5);
+    const ovDay=a-S.lutealLength;
+    let phase='luteal';
+    if(daysSince<=avgPeriodLen())phase='menstrual';
+    else if(daysSince<ovDay-1)phase='follicular';
+    else if(daysSince<=ovDay+1)phase='ovulatory';
+    const allTags=[...(log.tags||[]),...(log.customTags||[])];
+    for(const t of allTags){phaseSymptoms[phase][t]=(phaseSymptoms[phase][t]||0)+1}
+  }
+
+  // Find phase-specific symptoms
+  for(const[phase,symptoms]of Object.entries(phaseSymptoms)){
+    const top=Object.entries(symptoms).sort((a,b)=>b[1]-a[1]).slice(0,2);
+    if(top.length&&top[0][1]>=2){
+      const info=PHASE_INFO[phase];
+      h+=`<div class="insight-card"><div class="insight-title">${info.icon} ${info.name} Pattern</div>
+        <div class="insight-text">Your most common symptoms during ${info.name.toLowerCase()}: <strong>${top.map(([t,c])=>t).join(', ')}</strong> (${top[0][1]} occurrences)</div></div>`;
+    }
+  }
+
+  // Mood pattern
+  const moodCounts={};logs.forEach(l=>{if(l.mood)moodCounts[l.mood]=(moodCounts[l.mood]||0)+1});
+  const topMood=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0];
+  if(topMood&&topMood[1]>=3){
+    h+=`<div class="insight-card"><div class="insight-title">Mood Pattern</div>
+      <div class="insight-text">Your most logged mood is <strong>${topMood[0]}</strong> (${topMood[1]} times). ${topMood[0]==='Anxious'||topMood[0]==='Sad'?'Consider tracking what helps on those days.':'Keep noting what contributes to this.'}</div></div>`;
+  }
+
+  // Pain trend
+  const painLogs=logs.filter(l=>l.cramps>0);
+  if(painLogs.length>=3){
+    const avgPain=(painLogs.reduce((s,l)=>s+l.cramps,0)/painLogs.length).toFixed(1);
+    h+=`<div class="insight-card"><div class="insight-title">Pain Tracking</div>
+      <div class="insight-text">Your average pain level is <strong>${avgPain}/10</strong> across ${painLogs.length} logged days. ${avgPain>=6?'This is significant — consider discussing pain management with your doctor.':'Tracking helps identify triggers over time.'}</div></div>`;
+  }
+
+  return h;
+}
+
+// ─── History View ────────────────────────────────────────────
+function renderHistory(){
+  const allDates=[...new Set([...D.periods.map(p=>p.d),...D.logs.map(l=>l.date)])].sort().reverse();
+  if(!allDates.length){document.getElementById('content').innerHTML=`<div class="empty-state fade-in"><div class="icon">&#127800;</div><p>No entries yet. Start logging to see your history.</p></div>`;return}
+
+  let h='<div class="fade-in">';
+  for(const date of allDates.slice(0,50)){
+    const log=getLog(date),isS=isPeriodStart(date),isE=D.periods.some(p=>p.t==='e'&&p.d===date);
+    const dd=new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    let details=[];
+    if(isS)details.push('Period started');if(isE)details.push('Period ended');
+    if(log){
+      if(log.flow)details.push(`Flow: ${log.flow}${log.flowColor?' ('+log.flowColor+')':''}`);
+      if(log.cramps)details.push(`Pain: ${log.cramps}/10`);
+      if(log.mood)details.push(`Mood: ${log.mood}`);
+      if(log.temp)details.push(`Temp: ${log.temp}`);
+      if(log.meds?.length)details.push(`Meds: ${log.meds.join(', ')}`);
+      if(log.notes)details.push(log.notes);
+    }
+    const allTags=[...(log?.tags||[]),...(log?.customTags||[])];
+    h+=`<div class="history-item"><div class="date">${dd}</div>
+      ${details.length?`<div class="details">${details.join(' &middot; ')}</div>`:''}
+      ${allTags.length?`<div class="tags">${allTags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
     </div>`;
-
-  document.getElementById('content').innerHTML = html;
-}
-
-function changeMonth(dir) {
-  calMonth += dir;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  renderCalendar();
-}
-
-function dayClick(dateStr) {
-  // Quick-log: if no period start exists for this date, add one; if it does, remove it
-  const existing = data.periods.findIndex(p => p.date === dateStr && p.type === 'start');
-  if (existing >= 0) {
-    data.periods.splice(existing, 1);
-    // Also remove corresponding end if within 7 days
-    const endIdx = data.periods.findIndex(p => p.type === 'end' && p.date >= dateStr && p.date <= addDays(dateStr, 7));
-    if (endIdx >= 0) data.periods.splice(endIdx, 1);
-  } else {
-    data.periods.push({ date: dateStr, type: 'start' });
-    // Auto-add end 4 days later if no end exists
-    const autoEnd = addDays(dateStr, 4);
-    if (!data.periods.some(p => p.type === 'end' && p.date >= dateStr && p.date <= addDays(dateStr, 10))) {
-      data.periods.push({ date: autoEnd, type: 'end' });
-    }
   }
-  saveData(data);
-  renderCalendar();
+  h+='</div>';document.getElementById('content').innerHTML=h;
 }
 
-function addDays(dateStr, n) {
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
-}
-
-// ─── Log View ───────────────────────────────────────────────
-function renderLog() {
-  const today = new Date().toISOString().split('T')[0];
-  const existing = getSymptoms(today) || {};
-  const moods = ['😊','😐','😢','😠','😴'];
-
-  let html = `
-    <div class="log-panel fade-in">
-      <h3>Log Today — ${new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'})}</h3>
-
-      <div class="log-row">
-        <label>Period</label>
-        <select id="logPeriod">
-          <option value="">Not today</option>
-          <option value="start" ${isPeriodStart(today) ? 'selected' : ''}>Started</option>
-          <option value="end" ${data.periods.some(p=>p.type==='end'&&p.date===today) ? 'selected' : ''}>Ended</option>
-        </select>
-      </div>
-
-      <div class="log-row">
-        <label>Flow</label>
-        <div class="symptom-chips" id="flowChips">
-          ${['Light','Medium','Heavy'].map(f =>
-            `<button class="chip${existing.flow===f.toLowerCase()?' active':''}" onclick="setFlow('${f.toLowerCase()}')">${f}</button>`
-          ).join('')}
-        </div>
-      </div>
-
-      <div>
-        <label style="font-size:14px;color:var(--text-dim)">Cramps (${existing.cramps || 0}/5)</label>
-        <input type="range" class="cramp-slider" min="0" max="5" value="${existing.cramps||0}" id="crampSlider" oninput="this.previousElementSibling.textContent='Cramps ('+this.value+'/5)'">
-      </div>
-
-      <div style="margin-top:10px">
-        <label style="font-size:14px;color:var(--text-dim)">Mood</label>
-        <div class="mood-row">
-          ${moods.map(m => `<button class="mood-btn${existing.mood===m?' active':''}" onclick="setMood('${m}')">${m}</button>`).join('')}
-        </div>
-      </div>
-
-      <div>
-        <label style="font-size:14px;color:var(--text-dim)">Symptoms</label>
-        <div class="symptom-chips" id="symptomChips">
-          ${['Headache','Bloating','Fatigue','Acne','Cravings','Insomnia','Back pain'].map(s =>
-            `<button class="chip${(existing.tags||[]).includes(s)?' active':''}" onclick="toggleSymptom('${s}')">${s}</button>`
-          ).join('')}
-        </div>
-      </div>
-
-      <div>
-        <label style="font-size:14px;color:var(--text-dim)">Notes</label>
-        <textarea class="notes-area" id="logNotes" placeholder="How are you feeling?">${existing.notes||''}</textarea>
-      </div>
-
-      <button class="btn-primary" onclick="saveLog()">Save Today's Log</button>
+// ─── Settings View ───────────────────────────────────────────
+function renderSettings(){
+  const pc=periodStarts().length,lc=D.logs.length;
+  let h=`<div class="fade-in">
+    <div class="settings-group"><h3>Security</h3>
+      <div class="setting-row"><label>PIN Lock</label><div class="toggle ${S.pinEnabled?'on':''}" onclick="togglePin()"></div></div>
+      ${S.pinEnabled?'<div class="setting-row"><label>Change PIN</label><button style="color:var(--lavender);font-size:14px;font-weight:600" onclick="showPinUI(null,true)">Change</button></div>':''}
     </div>
-  `;
 
-  document.getElementById('content').innerHTML = html;
-}
-
-let tempLog = {};
-
-function setFlow(f) {
-  tempLog.flow = f;
-  document.querySelectorAll('#flowChips .chip').forEach(c => {
-    c.classList.toggle('active', c.textContent.toLowerCase() === f);
-  });
-}
-
-function setMood(m) {
-  tempLog.mood = m;
-  document.querySelectorAll('.mood-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent === m);
-  });
-}
-
-function toggleSymptom(s) {
-  if (!tempLog.tags) tempLog.tags = [];
-  const idx = tempLog.tags.indexOf(s);
-  if (idx >= 0) tempLog.tags.splice(idx, 1);
-  else tempLog.tags.push(s);
-  document.querySelectorAll('#symptomChips .chip').forEach(c => {
-    c.classList.toggle('active', tempLog.tags.includes(c.textContent));
-  });
-}
-
-function saveLog() {
-  const today = new Date().toISOString().split('T')[0];
-  const periodVal = document.getElementById('logPeriod').value;
-  const cramps = parseInt(document.getElementById('crampSlider').value);
-  const notes = document.getElementById('logNotes').value;
-
-  // Update period
-  if (periodVal) {
-    if (!data.periods.some(p => p.date === today && p.type === periodVal)) {
-      data.periods.push({ date: today, type: periodVal });
-    }
-  }
-
-  // Update symptoms
-  const existingIdx = data.symptoms.findIndex(s => s.date === today);
-  const entry = {
-    date: today,
-    flow: tempLog.flow || null,
-    cramps,
-    mood: tempLog.mood || null,
-    tags: tempLog.tags || [],
-    notes: notes || ''
-  };
-  if (existingIdx >= 0) data.symptoms[existingIdx] = entry;
-  else data.symptoms.push(entry);
-
-  saveData(data);
-  tempLog = {};
-
-  // Visual feedback
-  const btn = document.querySelector('.btn-primary');
-  btn.textContent = 'Saved!';
-  btn.style.background = 'var(--success)';
-  btn.style.color = 'var(--bg)';
-  setTimeout(() => {
-    btn.textContent = 'Save Today\'s Log';
-    btn.style.background = '';
-    btn.style.color = '';
-  }, 1500);
-}
-
-// ─── History View ───────────────────────────────────────────
-function renderHistory() {
-  const allDates = [...new Set([
-    ...data.periods.map(p => p.date),
-    ...data.symptoms.map(s => s.date)
-  ])].sort().reverse();
-
-  if (!allDates.length) {
-    document.getElementById('content').innerHTML = `
-      <div class="empty-state fade-in">
-        <div class="icon">📋</div>
-        <p>No entries yet.<br>Start logging to see your history here.</p>
-      </div>`;
-    return;
-  }
-
-  let html = '<div class="fade-in">';
-  for (const date of allDates.slice(0, 30)) {
-    const sym = getSymptoms(date);
-    const isPStart = isPeriodStart(date);
-    const isPEnd = data.periods.some(p => p.type === 'end' && p.date === date);
-    const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
-
-    let details = [];
-    if (isPStart) details.push('Period started');
-    if (isPEnd) details.push('Period ended');
-    if (sym) {
-      if (sym.flow) details.push(`Flow: ${sym.flow}`);
-      if (sym.cramps) details.push(`Cramps: ${sym.cramps}/5`);
-      if (sym.mood) details.push(`Mood: ${sym.mood}`);
-      if (sym.notes) details.push(sym.notes);
-    }
-
-    html += `
-      <div class="history-item">
-        <div class="date">${displayDate}</div>
-        ${details.length ? `<div class="details">${details.join(' · ')}</div>` : ''}
-        ${sym?.tags?.length ? `<div class="symptoms">${sym.tags.map(t => `<span class="symptom-tag">${t}</span>`).join('')}</div>` : ''}
-      </div>`;
-  }
-  html += '</div>';
-  document.getElementById('content').innerHTML = html;
-}
-
-// ─── Settings View ──────────────────────────────────────────
-function renderSettings() {
-  const periodCount = getPeriodStarts().length;
-  const symptomCount = data.symptoms.length;
-
-  let html = `
-    <div class="fade-in">
-      <div class="settings-group">
-        <h3>Security</h3>
-        <div class="setting-row">
-          <label>PIN Lock</label>
-          <div class="toggle ${settings.pinEnabled ? 'on' : ''}" onclick="togglePin()"></div>
-        </div>
-        ${settings.pinEnabled ? '<div class="setting-row"><label>Change PIN</label><button style="color:var(--purple);font-size:14px" onclick="setupPin()">Change</button></div>' : ''}
-      </div>
-
-      <div class="settings-group">
-        <h3>Data</h3>
-        <div class="setting-row">
-          <label>Period entries</label>
-          <span style="color:var(--text-dim)">${periodCount}</span>
-        </div>
-        <div class="setting-row">
-          <label>Symptom logs</label>
-          <span style="color:var(--text-dim)">${symptomCount}</span>
-        </div>
-        <div class="setting-row">
-          <label>Average cycle</label>
-          <span style="color:var(--text-dim)">${getAverageCycle()} days</span>
-        </div>
-      </div>
-
-      <button class="btn-primary" onclick="exportCSV()">Export Data as CSV</button>
-      <button class="btn-secondary" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem('${STORAGE_KEY}');data={periods:[],symptoms:[]};showView('calendar')}">Delete All Data</button>
-
-      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.6">
-        <strong>Luna</strong> — Privacy-first cycle tracker<br>
-        All data stored locally on your device.<br>
-        No accounts. No cloud. No tracking. Ever.<br>
-        <a href="https://github.com/toxfox69/tiamat-entity" style="color:var(--purple);text-decoration:none">Open source</a>
-      </div>
+    <div class="settings-group"><h3>Cycle Settings</h3>
+      <div class="setting-row"><label>Luteal phase length</label><div style="display:flex;align-items:center;gap:8px"><input type="number" min="8" max="20" value="${S.lutealLength}" style="width:60px;text-align:center;padding:6px" onchange="S.lutealLength=+this.value;saveSettings()"><span style="font-size:12px;color:var(--text-muted)">days</span></div></div>
+      <div class="setting-row"><label>Show ovulation</label><div class="toggle ${S.showOvulation?'on':''}" onclick="S.showOvulation=!S.showOvulation;saveSettings();renderSettings()"></div></div>
     </div>
-  `;
-  document.getElementById('content').innerHTML = html;
+
+    <div class="settings-group"><h3>Data</h3>
+      <div class="setting-row"><label>Cycles logged</label><span style="color:var(--text-dim)">${pc}</span></div>
+      <div class="setting-row"><label>Daily logs</label><span style="color:var(--text-dim)">${lc}</span></div>
+      <div class="setting-row"><label>Average cycle</label><span style="color:var(--text-dim)">${avgCycle()} days</span></div>
+      <div class="setting-row"><label>Custom tags</label><span style="color:var(--text-dim)">${D.customTags.length}</span></div>
+      <div class="setting-row"><label>Medications</label><span style="color:var(--text-dim)">${(D.medications||[]).length}</span></div>
+    </div>
+
+    <button class="btn-primary" onclick="exportReport()">Export Doctor Report (CSV)</button>
+    <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
+    <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('calendar')}">Delete All Data</button>
+
+    <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
+      <strong style="color:var(--rose-deep)">Luna</strong> v1.1 — Privacy-first cycle tracker<br>
+      All data stored locally on your device.<br>
+      No accounts. No cloud. No tracking. Ever.<br>
+      <span style="font-size:11px">by ENERGENAI LLC</span>
+    </div>
+  </div>`;
+  document.getElementById('content').innerHTML=h;
 }
 
-function togglePin() {
-  if (settings.pinEnabled) {
-    settings.pinEnabled = false;
-    localStorage.removeItem(PIN_KEY);
-    saveSettings(settings);
-    showView('settings');
-  } else {
-    setupPin();
-  }
-}
+function togglePin(){if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem(PIN_KEY);saveSettings();showView('settings')}else{showPinUI(null,true)}}
 
 // ─── Export ──────────────────────────────────────────────────
-function exportCSV() {
-  let csv = 'Date,Type,Flow,Cramps,Mood,Symptoms,Notes\n';
-  const allDates = [...new Set([
-    ...data.periods.map(p => p.date),
-    ...data.symptoms.map(s => s.date)
-  ])].sort();
-
-  for (const date of allDates) {
-    const starts = data.periods.filter(p => p.date === date && p.type === 'start');
-    const ends = data.periods.filter(p => p.date === date && p.type === 'end');
-    const sym = getSymptoms(date);
-
-    let type = '';
-    if (starts.length) type = 'Period Start';
-    if (ends.length) type += (type ? ' + ' : '') + 'Period End';
-    if (!type && sym) type = 'Symptom Log';
-
-    csv += `${date},"${type}","${sym?.flow||''}",${sym?.cramps||''},"${sym?.mood||''}","${(sym?.tags||[]).join('; ')}","${(sym?.notes||'').replace(/"/g,'""')}"\n`;
+function exportCSV(){
+  let csv='Date,Period,Flow,Flow Color,Pain,Mood,Temperature,Symptoms,Custom Tags,Medications,Notes\n';
+  const allDates=[...new Set([...D.periods.map(p=>p.d),...D.logs.map(l=>l.date)])].sort();
+  for(const d of allDates){
+    const log=getLog(d)||{};const isS=isPeriodStart(d)?'Start':'';const isE=D.periods.some(p=>p.t==='e'&&p.d===d)?'End':'';
+    const period=[isS,isE].filter(Boolean).join('+');
+    csv+=`${d},"${period}","${log.flow||''}","${log.flowColor||''}",${log.cramps||''},"${log.mood||''}",${log.temp||''},"${(log.tags||[]).join('; ')}","${(log.customTags||[]).join('; ')}","${(log.meds||[]).join('; ')}","${(log.notes||'').replace(/"/g,'""')}"\n`;
   }
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `luna-export-${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(csv,'text/csv',`luna-export-${new Date().toISOString().split('T')[0]}.csv`);
 }
 
-// ─── Navigation ─────────────────────────────────────────────
-function showView(view) {
-  currentView = view;
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.view === view);
-  });
-  switch(view) {
-    case 'calendar': renderCalendar(); break;
-    case 'log': tempLog = {}; renderLog(); break;
-    case 'history': renderHistory(); break;
-    case 'settings': renderSettings(); break;
+function exportReport(){
+  let r=`LUNA CYCLE HEALTH REPORT\nGenerated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}\n\n`;
+  r+=`CYCLE SUMMARY\nAverage Cycle Length: ${avgCycle()} days\nAverage Period Length: ${avgPeriodLen()} days\nCycles Tracked: ${periodStarts().length}\nDaily Logs: ${D.logs.length}\n\n`;
+
+  r+=`CYCLE HISTORY\n`;
+  const starts=periodStarts();
+  for(let i=starts.length-1;i>=Math.max(0,starts.length-12);i--){
+    const len=i>0?Math.round((new Date(starts[i])-new Date(starts[i-1]))/864e5):'N/A';
+    r+=`  ${starts[i]} — Cycle length: ${len} days\n`;
+  }
+
+  const tagCounts={};D.logs.forEach(l=>{(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1});(l.customTags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1})});
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  if(topTags.length){r+=`\nMOST COMMON SYMPTOMS\n`;topTags.forEach(([t,c])=>{r+=`  ${t}: ${c} occurrences\n`})}
+
+  const painLogs=D.logs.filter(l=>l.cramps>0);
+  if(painLogs.length){
+    const avg=(painLogs.reduce((s,l)=>s+l.cramps,0)/painLogs.length).toFixed(1);
+    r+=`\nPAIN SUMMARY\nAverage Pain Level: ${avg}/10\nDays with Pain: ${painLogs.length}\nMax Pain Reported: ${Math.max(...painLogs.map(l=>l.cramps))}/10\n`;
+  }
+
+  if(D.medications?.length){r+=`\nMEDICATIONS/SUPPLEMENTS TRACKED\n`;D.medications.forEach(m=>{r+=`  - ${m}\n`})}
+
+  const temps=D.tempReadings;
+  if(temps.length>=3){
+    const vals=temps.map(t=>t.v);
+    r+=`\nTEMPERATURE DATA\nReadings: ${temps.length}\nAverage: ${(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)}\nRange: ${Math.min(...vals).toFixed(1)} - ${Math.max(...vals).toFixed(1)}\n`;
+  }
+
+  r+=`\n---\nGenerated by Luna (Privacy-First Cycle Tracker)\nAll data stored locally on device. This report was created by the user.\n`;
+  downloadFile(r,'text/plain',`luna-health-report-${new Date().toISOString().split('T')[0]}.txt`);
+}
+
+function downloadFile(content,type,name){
+  const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+
+// ─── Phase Banner ────────────────────────────────────────────
+function updatePhaseBanner(){
+  const el=document.getElementById('phaseBanner'),phase=currentPhase();
+  if(!phase||!periodStarts().length){el.innerHTML='';return}
+  const info=PHASE_INFO[phase];
+  el.innerHTML=`<div class="phase-banner ${phase}">${info.icon} <strong>${info.name}</strong> — ${info.tip.split('.')[0]}.</div>`;
+}
+
+// ─── Navigation ──────────────────────────────────────────────
+function showView(v){
+  currentView=v;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  updatePhaseBanner();
+  switch(v){
+    case'calendar':renderCalendar();break;
+    case'log':renderLog();break;
+    case'insights':renderInsights();break;
+    case'history':renderHistory();break;
+    case'settings':renderSettings();break;
   }
 }
 
-// ─── Init ───────────────────────────────────────────────────
+// ─── Init ────────────────────────────────────────────────────
+checkOnboarding();
 checkPinLock();
 showView('calendar');
 </script>
