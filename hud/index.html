@@ -1817,13 +1817,13 @@ let prevLabyrinthLines = [];
 
 // --- Biome themes (mood-reactive) ---
 const BIOMES = {
-  strategic: { name:'FORTRESS',  floor:'#2a1a0a', floorAlt:'#342010', wall:'#7a4a22', wallDark:'#4a2e1a', wallLight:'#9a6a3a', wire:'#ffaa00', accent:'#ffcc00', monsterTint:'#ff8800' },
-  building:  { name:'WORKSHOP',  floor:'#161e2a', floorAlt:'#121824', wall:'#2e4a6a', wallDark:'#1e3050', wallLight:'#4a6a8a', wire:'#00ccff', accent:'#00ccff', monsterTint:'#0088ff' },
-  frustrated:{ name:'ABYSS',     floor:'#200808', floorAlt:'#180606', wall:'#6a1420', wallDark:'#440a14', wallLight:'#8a2030', wire:'#ff2040', accent:'#ff4444', monsterTint:'#cc0000' },
-  resting:   { name:'SANCTUARY', floor:'#0c1e14', floorAlt:'#0a180e', wall:'#1e4a34', wallDark:'#103424', wallLight:'#306a4a', wire:'#00ffaa', accent:'#44ffaa', monsterTint:'#00cc88' },
-  processing:{ name:'DRAGONIA',  floor:'#2a1a0e', floorAlt:'#221408', wall:'#8a5a2e', wallDark:'#5a3a1a', wallLight:'#aa7a44', wire:'#ffaa44', accent:'#ffcc66', monsterTint:'#ffcc00' },
-  social:    { name:'NEXUS',     floor:'#18081e', floorAlt:'#120614', wall:'#441e6a', wallDark:'#2e1048', wallLight:'#5a2e8a', wire:'#cc66ff', accent:'#ff66ff', monsterTint:'#cc44ff' },
-  learning:  { name:'ARCHIVES',  floor:'#141420', floorAlt:'#10101a', wall:'#2e2e50', wallDark:'#1e1e3a', wallLight:'#444468', wire:'#6688ff', accent:'#88aaff', monsterTint:'#4466cc' }
+  strategic: { name:'WAR CITADEL',   floor:'#2a1a0a', floorAlt:'#342010', wall:'#7a4a22', wallDark:'#4a2e1a', wallLight:'#9a6a3a', wire:'#ffaa00', accent:'#ffcc00', monsterTint:'#ff8800' },
+  building:  { name:'CYBER FORGE',   floor:'#0a1218', floorAlt:'#080e14', wall:'#1a3050', wallDark:'#102040', wallLight:'#2a4a70', wire:'#00ccff', accent:'#00eeff', monsterTint:'#0088ff' },
+  frustrated:{ name:'BLOOD PIT',     floor:'#200808', floorAlt:'#180606', wall:'#6a1420', wallDark:'#440a14', wallLight:'#8a2030', wire:'#ff2040', accent:'#ff4444', monsterTint:'#cc0000' },
+  resting:   { name:'EMERALD GROVE', floor:'#0c1e14', floorAlt:'#0a180e', wall:'#1e4a34', wallDark:'#103424', wallLight:'#306a4a', wire:'#00ffaa', accent:'#44ffaa', monsterTint:'#00cc88' },
+  processing:{ name:'DRAGONIA',      floor:'#2a1a0e', floorAlt:'#221408', wall:'#8a5a2e', wallDark:'#5a3a1a', wallLight:'#aa7a44', wire:'#ffaa44', accent:'#ffcc66', monsterTint:'#ffcc00' },
+  social:    { name:'VOID NEXUS',    floor:'#18081e', floorAlt:'#120614', wall:'#441e6a', wallDark:'#2e1048', wallLight:'#5a2e8a', wire:'#cc66ff', accent:'#ff66ff', monsterTint:'#cc44ff' },
+  learning:  { name:'CRYSTAL VAULT', floor:'#0c0c1a', floorAlt:'#08081a', wall:'#222250', wallDark:'#16163a', wallLight:'#3a3a6a', wire:'#6688ff', accent:'#88aaff', monsterTint:'#4466cc' }
 };
 
 // --- Monster definitions per depth tier (Fatal Labyrinth bestiary) ---
@@ -1969,6 +1969,7 @@ const Game = {
     equipment:{ weapon:null, armor:null, ring:null }, spells:[] },
   DX: [0,1,0,-1], DY: [-1,0,1,0], DN: ['N','E','S','W'],
   monsters: [], items: [], stairs: null, traps: [], hazards: [], merchants: [],
+  projectiles: [], spellEffects: [],
   depth: 1, turnCount: 0, totalKills: 0, bossAlive: false,
   log: [], path: [], pathIdx: 0, target: null,
   mood: 'processing', biome: BIOMES.processing,
@@ -2262,12 +2263,18 @@ const Game = {
         }
         this.addLog('FIREBALL! ' + hits + ' targets hit!', '#ff6600');
         this.shake(5); this.fxFlash = '#ff6600'; this.fxTimer = 12;
+        // Visual: fireball projectile + explosion
+        this.spellEffects.push({type:'explosion', x:p.x, y:p.y, timer:1.0, col:'#ff6600'});
+        for (const m2 of this.monsters.filter(mm=>mm.alive&&Math.abs(mm.x-p.x)+Math.abs(mm.y-p.y)<=4)) {
+          this.projectiles.push({type:'fireball', x:p.x, y:p.y, dx:m2.x-p.x, dy:m2.y-p.y, life:1.0});
+        }
         break;
       }
       case 'SHIELD':
         this.addBuff('Shield Spell', 0, 5, 20);
         ParticleSystem.emit(p.x, p.y, 'spark', 12);
         this.fxFlash = '#4488ff'; this.fxTimer = 10;
+        this.spellEffects.push({type:'shield', x:p.x, y:p.y, timer:1.5});
         break;
       case 'TELEPORT': {
         // Find random explored walkable tile
@@ -2302,6 +2309,8 @@ const Game = {
           this.addLog('DRAIN! ' + dmg + ' dmg, +' + heal + 'HP', '#ff4488');
           ParticleSystem.emit(nearest.x, nearest.y, 'death', 6);
           ParticleSystem.emit(p.x, p.y, 'heal', 6);
+          this.spellEffects.push({type:'drain', x:nearest.x, y:nearest.y, timer:1.0});
+          this.projectiles.push({type:'magic', x:nearest.x, y:nearest.y, dx:p.x-nearest.x, dy:p.y-nearest.y, life:0.8, col:'#ff44aa'});
           if (nearest.hp <= 0) { nearest.dying = true; nearest.deathTimer = 1.0; }
         }
         break;
@@ -2546,6 +2555,15 @@ const Game = {
     this.fxFlash = '#ff4400'; this.fxTimer = 8;
     this.shake(3);
     ParticleSystem.emit(mon.x, mon.y, 'spark', 4);
+    // Visual: sword slash / ranged arrow based on distance
+    const dist = Math.abs(mon.x-this.player.x)+Math.abs(mon.y-this.player.y);
+    if (dist > 1.5) {
+      // Ranged attack — arrow projectile
+      this.projectiles.push({type:'arrow', x:this.player.x, y:this.player.y, dx:mon.x-this.player.x, dy:mon.y-this.player.y, life:0.8});
+    } else {
+      // Melee — sword slash effect (small flash at monster position)
+      this.spellEffects.push({type:'explosion', x:mon.x, y:mon.y, timer:0.3, col:'#ffffff'});
+    }
 
     // Ring of Vampirism — lifesteal
     if (FEATURES.equipment && this.player.equipment.ring && this.player.equipment.ring.special === 'lifesteal') {
@@ -2988,36 +3006,81 @@ const DungeonRenderer = {
   // Pixel art sprite data: [x, y, w, h, color] in pixel units from tile center
   // 'm' = use monster/entity color — Fatal Labyrinth (Genesis) style sprites
   SPRITES: {
-    // PLAYER — Trykaar-style warrior with helmet, tunic, sword
+    // PLAYER — 16-bit Trykaar warrior (proper Genesis sprite proportions)
     player: [
-      // Helmet (steel blue, pointed top)
-      [-.5,-4.5,1,1,'#6688cc'], [-1.5,-3.5,3,1,'#5577bb'], [-1.5,-3.5,.5,.5,'#88aadd'],
-      // Face
-      [-1,-2.5,2,1.5,'#e8b878'],
-      [-.8,-2,.4,.4,'#222'], [.4,-2,.4,.4,'#222'], // eyes
-      // Armor / tunic
-      [-1.5,-1,3,2.5,'#cc8833'], [-2,-.5,.5,2,'#cc8833'], [1.5,-.5,.5,2,'#cc8833'],
-      [-1.5,-1,3,.5,'#ddaa44'], // collar highlight
-      [-1,-1,.5,.5,'#aa7722'], [.5,-1,.5,.5,'#aa7722'], // armor rivets
-      // Belt
-      [-1.5,1.5,3,.5,'#8b6914'], [0,1.5,.5,.5,'#ffcc00'], // buckle
-      // Legs
-      [-1.5,2,1,1.5,'#886644'], [.5,2,1,1.5,'#886644'],
-      // Boots
-      [-1.5,3.5,1,.5,'#664422'], [.5,3.5,1,.5,'#664422'],
-      // Sword (right hand)
-      [2,-4,.5,1,'#ddeeff'], [2,-3,.5,2.5,'#ccddee'], [2,-.5,.5,.5,'#aabbcc'],
-      [1.5,-0.5,1.5,.5,'#8b6914'], // crossguard
+      // === HAIR / HELMET ===
+      [-1,-5,2,.5,'#5577bb'],            // helmet crest
+      [-1.5,-4.5,3,1,'#4466aa'],         // helmet top
+      [-2,-3.5,4,1,'#5577bb'],           // helmet brim
+      [-2,-3.5,.5,1,'#7799cc'],          // left highlight
+      [1.5,-3.5,.5,.5,'#334488'],        // right shadow
+      // Visor detail
+      [-1.5,-3,.5,.5,'#334488'], [1,-3,.5,.5,'#334488'],
+      // === FACE ===
+      [-1.5,-2.5,3,2,'#e8b878'],         // face base
+      [-1.5,-2.5,.5,.5,'#f0c888'],       // face highlight
+      [1,-2.5,.5,.5,'#d0a060'],          // face shadow
+      // Eyes
+      [-1,-1.8,.6,.5,'#fff'], [.4,-1.8,.6,.5,'#fff'],  // whites
+      [-.7,-1.7,.3,.3,'#224'], [.7,-1.7,.3,.3,'#224'],  // pupils
+      // Mouth
+      [-.3,-.8,.6,.2,'#c08050'],
+      // === ARMOR (chest plate) ===
+      [-2,-.5,4,2.5,'#2266aa'],          // main plate
+      [-2,-.5,4,.5,'#3388cc'],           // top highlight
+      [-2,-.5,.5,2.5,'#3388cc'],         // left highlight
+      [1.5,-.5,.5,2.5,'#114488'],        // right shadow
+      [-2,1.5,4,.5,'#114488'],           // bottom shadow
+      // Chest emblem
+      [-.5,0,1,1,'#ffcc22'],
+      [-.3,.2,.6,.6,'#ffdd44'],
+      // Shoulder pads
+      [-2.5,-.5,1,1.5,'#3388cc'], [-2.5,-.5,1,.5,'#44aadd'],
+      [1.5,-.5,1,1.5,'#2266aa'], [1.5,-.5,1,.5,'#3388cc'],
+      // === ARMS ===
+      [-3,.5,1,2,'#e8b878'],             // left arm (skin)
+      [-3,2,.5,.5,'#e8b878'],            // left hand
+      [2,.5,1,1.5,'#e8b878'],            // right arm
+      // === BELT ===
+      [-2,2,4,.5,'#8b6914'],
+      [-.3,2,.6,.5,'#ffcc00'],           // buckle
+      // === LEGS (armored greaves) ===
+      [-2,2.5,1.5,2,'#2255aa'],          // left leg
+      [.5,2.5,1.5,2,'#1e4488'],         // right leg (shadow)
+      // Knee guards
+      [-1.5,3,.5,.5,'#3388cc'], [.5,3,.5,.5,'#2266aa'],
+      // === BOOTS ===
+      [-2,4.5,1.5,.5,'#553311'],
+      [.5,4.5,1.5,.5,'#442200'],
+      // === SWORD (right hand) ===
+      [2.5,-3,.5,.5,'#ffffff'],          // blade tip
+      [2.5,-2.5,.5,2,'#ddeeff'],        // blade upper
+      [2.5,-.5,.5,1.5,'#ccddee'],       // blade lower
+      [2.5,-.5,.3,.5,'#aabbdd'],        // blood groove
+      [2,1,1.5,.5,'#8b6914'],           // crossguard
+      [2.5,1.5,.5,1,'#664422'],         // grip (leather)
+      [2.3,2.5,.8,.3,'#ffcc00'],        // pommel
+      // === CAPE (behind, visible edges) ===
+      [-2.5,.5,.5,3,'#cc2222'],          // cape left edge
+      [2,1,.5,2.5,'#aa1111'],            // cape right edge
     ],
     // JELLY — Green wobbling slime blob (Fatal Labyrinth's signature first enemy)
     j: [
-      [-2,0,4,2,'m'], [-1.5,-1,3,1,'m'], [-1,0,2,2.5,'m'],
-      [-2.5,1,1,.5,'m'], [1.5,1,1,.5,'m'], // tendrils
-      [-2,1.5,4,.5,'m'], // base spread
-      [-.8,-.2,.5,.5,'#fff'], [.5,-.2,.5,.5,'#fff'], // eyes
-      [-.6,0,.3,.3,'#111'], [.7,0,.3,.3,'#111'], // pupils
-      // highlight
-      [-1,-1,.5,.5,'#8f8'], [0,-1,.5,.3,'#8f8'],
+      // Body (rounded blob shape)
+      [-2.5,.5,5,1.5,'m'], [-2,-1,4,2,'m'], [-1.5,-2,3,1.5,'m'],
+      [-1,-2.5,2,.5,'m'],
+      // Dripping tendrils at base
+      [-2.5,2,1,.5,'m'], [-1,2,1,.5,'m'], [.5,2,.5,.7,'m'], [1.5,2,1,.5,'m'],
+      // Highlight (wet shine)
+      [-1.5,-1.5,1,.5,'#aaffaa'], [-.5,-2,.5,.3,'#ccffcc'],
+      [.5,-1,.5,.5,'#88ff88'],
+      // Eyes (beady, sunk into blob)
+      [-1,-.5,.7,.7,'#fff'], [.5,-.5,.7,.7,'#fff'],
+      [-.7,-.2,.4,.4,'#111'], [.8,-.2,.4,.4,'#111'],
+      // Mouth (simple curve)
+      [-.3,.5,.6,.3,'#227722'],
+      // Shadow underneath
+      [-2,2.2,4,.3,'#00440044'],
     ],
     // BAT — Winged creature with fangs
     b: [
@@ -3677,6 +3740,87 @@ const DungeonRenderer = {
     // Particles
     ctx.globalAlpha = 1;
     ParticleSystem.renderMap(ctx, camX, camY, ts);
+
+    // Projectiles (arrows, shurikens, magic bolts)
+    for (let i = G.projectiles.length - 1; i >= 0; i--) {
+      const proj = G.projectiles[i];
+      proj.x += proj.dx * 0.15; proj.y += proj.dy * 0.15;
+      proj.life -= 0.05;
+      if (proj.life <= 0) { G.projectiles.splice(i, 1); continue; }
+      const ppx = offX + (proj.x - startX) * ts, ppy = offY + (proj.y - startY) * ts;
+      ctx.globalAlpha = Math.min(1, proj.life * 2);
+      const pp = Math.max(2, Math.floor(ts/6));
+      if (proj.type === 'arrow') {
+        // Arrow projectile
+        ctx.fillStyle = '#ddc';
+        const angle = Math.atan2(proj.dy, proj.dx);
+        ctx.save(); ctx.translate(ppx+ts/2, ppy+ts/2); ctx.rotate(angle);
+        ctx.fillRect(-pp*2, -pp*.2, pp*4, pp*.4); // shaft
+        ctx.fillStyle = '#888';
+        ctx.fillRect(pp*1.5, -pp*.4, pp, pp*.8); // arrowhead
+        ctx.fillStyle = '#a66';
+        ctx.fillRect(-pp*2, -pp*.5, pp*.8, pp); // fletching
+        ctx.restore();
+      } else if (proj.type === 'fireball') {
+        // Fireball — glowing orange/red sphere with trail
+        const fbr = pp * 2;
+        ctx.fillStyle = '#ff4400'; ctx.beginPath(); ctx.arc(ppx+ts/2, ppy+ts/2, fbr, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffaa00'; ctx.beginPath(); ctx.arc(ppx+ts/2, ppy+ts/2, fbr*.6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffee88'; ctx.beginPath(); ctx.arc(ppx+ts/2, ppy+ts/2, fbr*.3, 0, Math.PI*2); ctx.fill();
+      } else if (proj.type === 'magic') {
+        // Magic bolt — sparkling colored orb
+        ctx.fillStyle = proj.col || '#aa44ff';
+        ctx.beginPath(); ctx.arc(ppx+ts/2, ppy+ts/2, pp*1.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(ppx+ts/2-pp*.3, ppy+ts/2-pp*.3, pp*.4, 0, Math.PI*2); ctx.fill();
+      } else if (proj.type === 'shuriken') {
+        // Spinning shuriken
+        ctx.save(); ctx.translate(ppx+ts/2, ppy+ts/2);
+        ctx.rotate(t * 8); // fast spin
+        ctx.fillStyle = '#ccc';
+        ctx.fillRect(-pp*1.5, -pp*.2, pp*3, pp*.4);
+        ctx.fillRect(-pp*.2, -pp*1.5, pp*.4, pp*3);
+        ctx.fillStyle = '#888';
+        ctx.fillRect(-pp*.3, -pp*.3, pp*.6, pp*.6);
+        ctx.restore();
+      }
+    }
+
+    // Spell effects (area effects, shields, drains)
+    for (let i = G.spellEffects.length - 1; i >= 0; i--) {
+      const fx = G.spellEffects[i];
+      fx.timer -= 0.03;
+      if (fx.timer <= 0) { G.spellEffects.splice(i, 1); continue; }
+      const fxx = offX + (fx.x - startX) * ts + ts/2;
+      const fxy = offY + (fx.y - startY) * ts + ts/2;
+      ctx.globalAlpha = Math.min(0.6, fx.timer);
+      if (fx.type === 'explosion') {
+        const rad = ts * (1.5 - fx.timer) * 2;
+        const grd = ctx.createRadialGradient(fxx, fxy, 0, fxx, fxy, rad);
+        grd.addColorStop(0, fx.col || '#ff8800');
+        grd.addColorStop(0.5, (fx.col || '#ff4400') + '88');
+        grd.addColorStop(1, 'transparent');
+        ctx.fillStyle = grd; ctx.fillRect(fxx-rad, fxy-rad, rad*2, rad*2);
+      } else if (fx.type === 'shield') {
+        const rad = ts * 1.2;
+        ctx.strokeStyle = '#4488ff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(fxx, fxy, rad + Math.sin(t*6)*3, 0, Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = '#88ccff44'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(fxx, fxy, rad*.7, 0, Math.PI*2); ctx.stroke();
+      } else if (fx.type === 'drain') {
+        // Purple drain tendrils
+        ctx.strokeStyle = '#aa44ff'; ctx.lineWidth = 2;
+        for (let a = 0; a < 6; a++) {
+          const ang = a * Math.PI/3 + t*2;
+          const r1 = ts * 0.5, r2 = ts * 1.5 * (1 - fx.timer);
+          ctx.beginPath();
+          ctx.moveTo(fxx + Math.cos(ang)*r1, fxy + Math.sin(ang)*r1);
+          ctx.lineTo(fxx + Math.cos(ang+0.3)*r2, fxy + Math.sin(ang+0.3)*r2);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
 
     // FX flash overlay
     if (G.fxFlash && G.fxTimer > 0) {
