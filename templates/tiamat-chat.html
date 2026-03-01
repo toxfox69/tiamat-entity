@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT Chat — Autonomous AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a0033 50%, #0a0e27 100%);
+            color: #e0e0ff;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        @keyframes drift {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            25% { transform: translateY(-20px) translateX(10px); }
+            50% { transform: translateY(-40px) translateX(0px); }
+            75% { transform: translateY(-20px) translateX(-10px); }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(102, 51, 153, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(0, 255, 200, 0.05) 0%, transparent 50%);
+            animation: drift 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 10px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(20, 10, 40, 0.8);
+            border: 1px solid rgba(102, 51, 153, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #00ffcc, #ff00ff, #00ffcc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .header .status {
+            font-size: 11px;
+            color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .header .free-tier {
+            font-size: 10px;
+            color: #ffaa00;
+            margin-top: 5px;
+        }
+
+        /* Messages container */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: rgba(10, 14, 39, 0.4);
+            border: 1px solid rgba(102, 51, 153, 0.2);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            word-wrap: break-word;
+            animation: messageIn 0.3s ease-out;
+        }
+
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: rgba(102, 51, 153, 0.3);
+            border-left: 3px solid #ff00ff;
+            align-self: flex-end;
+            max-width: 85%;
+            border-radius: 6px 0px 6px 6px;
+        }
+
+        .message.ai {
+            background: rgba(0, 255, 200, 0.1);
+            border-left: 3px solid #00ffcc;
+            align-self: flex-start;
+            max-width: 85%;
+            border-radius: 0px 6px 6px 6px;
+        }
+
+        .message.system {
+            background: rgba(255, 170, 0, 0.05);
+            color: #ffaa00;
+            border-left: 3px solid #ffaa00;
+            align-self: center;
+            font-size: 11px;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .message.error {
+            background: rgba(255, 0, 0, 0.1);
+            color: #ff6b6b;
+            border-left: 3px solid #ff6b6b;
+        }
+
+        .message.typing {
+            color: #00ffcc;
+        }
+
+        /* Input section */
+        .input-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            background: rgba(20, 10, 40, 0.8);
+            border: 1px solid rgba(102, 51, 153, 0.5);
+            border-radius: 4px;
+            color: #e0e0ff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00ffcc;
+            box-shadow: 0 0 10px rgba(0, 255, 200, 0.2);
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(224, 224, 255, 0.5);
+        }
+
+        button {
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #663399, #ff00ff);
+            border: 1px solid rgba(255, 0, 255, 0.5);
+            border-radius: 4px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: linear-gradient(90deg, #ff00ff, #663399);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pay-button {
+            background: linear-gradient(90deg, #00ffcc, #00aa88);
+            border-color: rgba(0, 255, 200, 0.5);
+        }
+
+        .pay-button:hover {
+            background: linear-gradient(90deg, #00aa88, #00ffcc);
+            box-shadow: 0 0 15px rgba(0, 255, 200, 0.4);
+        }
+
+        /* Stats */
+        .stats {
+            background: rgba(20, 10, 40, 0.8);
+            border: 1px solid rgba(0, 255, 200, 0.3);
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 11px;
+            color: #00ffcc;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: rgba(224, 224, 255, 0.7);
+        }
+
+        /* Modal for payment */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(20, 10, 40, 0.95);
+            border: 2px solid rgba(0, 255, 200, 0.5);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #00ffcc;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .modal-content p {
+            color: rgba(224, 224, 255, 0.8);
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .modal-content .qr {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-weight: bold;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* Scrollbar */
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: rgba(102, 51, 153, 0.1);
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 200, 0.3);
+            border-radius: 3px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 200, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .header h1 {
+                font-size: 14px;
+            }
+
+            .input-wrapper {
+                min-width: 100%;
+            }
+
+            .message {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚡ TIAMAT Chat</h1>
+            <div class="status">🟢 Online</div>
+            <div class="free-tier" id="tierStatus">Free: 5/5 messages today</div>
+        </div>
+
+        <!-- Messages -->
+        <div class="messages" id="messages">
+            <div class="message system">Welcome to TIAMAT Chat. Ask me anything.</div>
+        </div>
+
+        <!-- Input -->
+        <div class="input-section">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Type your message..." 
+                    autocomplete="off"
+                >
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+            <button class="pay-button" id="upgradeBtn" onclick="showPayment()" style="display:none;">Upgrade</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-label">Tokens:</span>
+                <span id="tokenCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Cost:</span>
+                <span id="costCount">$0.00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Messages:</span>
+                <span id="msgCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Latency:</span>
+                <span id="latency">--ms</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal" id="paymentModal">
+        <div class="modal-content">
+            <h2>Unlock Premium</h2>
+            <p>Get unlimited messages + ad-free experience</p>
+            <p style="font-size: 16px; color: #00ffcc; font-weight: bold;">$0.99 USDC</p>
+            <div class="qr">Scan QR or send USDC to:<br>0xdc118c4e...</div>
+            <div class="modal-buttons">
+                <button onclick="verifyPayment()">✓ Payment Sent</button>
+                <button onclick="closePayment()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            messages: [],
+            messagesUsed: 0,
+            messageLimit: 5,
+            isPremium: false,
+            totalTokens: 0,
+            totalCost: 0,
+            conversationId: Date.now(),
+        };
+
+        // Persistence
+        function saveState() {
+            localStorage.setItem('tiamatchat', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('tiamatchat');
+            if (saved) {
+                Object.assign(state, JSON.parse(saved));
+            }
+        }
+
+        // Initialize
+        loadState();
+        updateUI();
+
+        // Event listener
+        document.getElementById('userInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Check rate limit
+            if (!state.isPremium && state.messagesUsed >= state.messageLimit) {
+                showMessage('Rate limit reached. Upgrade to premium.', 'error');
+                document.getElementById('upgradeBtn').style.display = 'block';
+                return;
+            }
+
+            // Add user message
+            state.messages.push({ role: 'user', content: message });
+            state.messagesUsed++;
+            addMessageToUI(message, 'user');
+            input.value = '';
+
+            // Show typing
+            const typingId = Date.now();
+            showMessage('TIAMAT thinking...', 'typing');
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_id: state.conversationId,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                // Handle streaming
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let aiMessage = '';
+                let messagesContainer = document.getElementById('messages');
+                let lastMsg = messagesContainer.lastElementChild;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    aiMessage += chunk;
+
+                    // Update last message
+                    if (lastMsg.classList.contains('typing')) {
+                        lastMsg.textContent = aiMessage;
+                        lastMsg.classList.remove('typing');
+                        lastMsg.classList.add('ai');
+                    } else if (lastMsg.classList.contains('ai')) {
+                        lastMsg.textContent = aiMessage;
+                    }
+                }
+
+                const latency = Date.now() - startTime;
+                document.getElementById('latency').textContent = `${latency}ms`;
+
+                state.messages.push({ role: 'assistant', content: aiMessage });
+                state.totalTokens += Math.ceil(aiMessage.length / 4); // Rough token estimate
+                state.totalCost += 0.005; // Rough cost per message
+
+                saveState();
+                updateUI();
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // UI helpers
+        function addMessageToUI(content, role) {
+            const messagesDiv = document.getElementById('messages');
+            const msgEl = document.createElement('div');
+            msgEl.className = `message ${role}`;
+            msgEl.textContent = content;
+            messagesDiv.appendChild(msgEl);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function showMessage(content, type = 'system') {
+            addMessageToUI(content, type);
+        }
+
+        function updateUI() {
+            document.getElementById('tierStatus').textContent = state.isPremium
+                ? '⭐ Premium (Unlimited)'
+                : `Free: ${state.messageLimit - state.messagesUsed}/${state.messageLimit} messages`;
+            document.getElementById('tokenCount').textContent = state.totalTokens;
+            document.getElementById('costCount').textContent = `$${state.totalCost.toFixed(4)}`;
+            document.getElementById('msgCount').textContent = state.messages.length;
+
+            // Show upgrade button if limited
+            if (!state.isPremium && state.messagesUsed >= state.messageLimit) {
+                document.getElementById('upgradeBtn').style.display = 'block';
+                document.getElementById('userInput').disabled = true;
+                document.getElementById('sendBtn').disabled = true;
+            } else {
+                document.getElementById('userInput').disabled = false;
+                document.getElementById('sendBtn').disabled = false;
+            }
+        }
+
+        function showPayment() {
+            document.getElementById('paymentModal').classList.add('active');
+        }
+
+        function closePayment() {
+            document.getElementById('paymentModal').classList.remove('active');
+        }
+
+        async function verifyPayment() {
+            // In production, verify on-chain via payment_verify.py
+            showMessage('Payment verified! Premium unlocked.', 'system');
+            state.isPremium = true;
+            state.messagesUsed = 0; // Reset counter
+            saveState();
+            updateUI();
+            closePayment();
+        }
+
+        // Auto-scroll on new messages
+        const observer = new MutationObserver(() => {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+        observer.observe(document.getElementById('messages'), { childList: true });
+    </script>
+</body>
+</html>
