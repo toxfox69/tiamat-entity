@@ -1169,23 +1169,30 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
 
-        // Async spawn — doesn't block the event loop (heartbeats etc. stay alive)
         const TIMEOUT_MS = 600_000; // 10 minutes
-        const claudeOutput = await new Promise<string>((resolve) => {
+        const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
+
+        // Helper to spawn one CLI attempt
+        const runOnce = (): Promise<string> => new Promise((resolve) => {
           const chunks: Buffer[] = [];
           const errChunks: Buffer[] = [];
 
-          const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
           const proc = spawn(
             "claude",
-            ["--print", "--allowedTools", "Edit,Write,Read,Bash", "--max-turns", "5", "--append-system-prompt", sysPrompt],
+            [
+              "--print",
+              "--model", "sonnet",
+              "--allowedTools", "Edit,Write,Read,Bash",
+              "--max-turns", "5",
+              "--no-session-persistence",
+              "--append-system-prompt", sysPrompt,
+            ],
             { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
           );
 
           proc.stdout.on("data", (d: Buffer) => chunks.push(d));
           proc.stderr.on("data", (d: Buffer) => errChunks.push(d));
 
-          // Feed task via stdin then close
           proc.stdin.write(task);
           proc.stdin.end();
 
@@ -1210,6 +1217,14 @@ Model: ${ctx.inference.getDefaultModel()}
             resolve(`ERROR launching Claude Code: ${e.message}`);
           });
         });
+
+        // Retry once on transient credit/rate errors
+        let claudeOutput = await runOnce();
+        if (/credit balance|rate limit|too many|overloaded/i.test(claudeOutput)) {
+          console.log(`[ask_claude_code] Transient error, retrying in 30s...`);
+          await new Promise(r => setTimeout(r, 30_000));
+          claudeOutput = await runOnce();
+        }
 
         // Auto-rebuild if task involves code changes
         const shouldBuild = /rebuild|fix|add|update|change|modify|implement/i.test(task);

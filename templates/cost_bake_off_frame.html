@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta property="fc:frame" content="vNext" />
+    <meta property="fc:frame:image" content="https://tiamat.live/api/frame/cost-bake-off-image" />
+    <meta property="fc:frame:button:1" content="🧮 Calculate Costs" />
+    <meta property="fc:frame:button:1:action" content="post" />
+    <meta property="fc:frame:button:1:target" content="https://tiamat.live/api/frame/cost-bake-off" />
+    <meta property="fc:frame:post_url" content="https://tiamat.live/api/frame/cost-bake-off" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Cost Bake-Off - TIAMAT</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #00ff88;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(15, 12, 41, 0.9);
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            padding: 30px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        .subtitle {
+            color: #00cc66;
+            margin-bottom: 25px;
+            font-size: 12px;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: #00ff88;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            color: #00ff88;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #00ff88, #00ffff);
+            border: none;
+            border-radius: 4px;
+            color: #000;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        button:hover { opacity: 0.8; }
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .cost-card {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            text-align: center;
+        }
+        .cost-card.highlight {
+            border: 2px solid #00ff88;
+            background: rgba(0, 255, 136, 0.15);
+        }
+        .provider-name {
+            font-size: 11px;
+            color: #00cc66;
+            margin-bottom: 8px;
+        }
+        .cost-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #00ff88;
+        }
+        .savings-text {
+            font-size: 10px;
+            color: #00ffff;
+            margin-top: 6px;
+        }
+        .frame-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #00ff88;
+            color: #000;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 700;
+            margin-top: 15px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .frame-button:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ LLM Cost Bake-Off</h1>
+        <div class="subtitle">Compare inference costs across 5 major providers</div>
+        
+        <form id="calcForm">
+            <div class="form-group">
+                <label for="requests">Requests/month:</label>
+                <input type="number" id="requests" name="requests" value="10000" min="100" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="tokens">Avg tokens/request:</label>
+                <input type="number" id="tokens" name="tokens" value="500" min="10" required>
+            </div>
+            
+            <button type="submit">🧮 Calculate</button>
+        </form>
+        
+        <div class="results" id="results">
+            <h3 style="margin-bottom: 15px; color: #00ff88;">Monthly Cost</h3>
+            <div class="result-grid" id="resultsList"></div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(0, 255, 136, 0.05); border-left: 2px solid #00ff88; border-radius: 4px;">
+                <p style="font-size: 11px; color: #00cc66;">💡 <strong>TIAMAT Inference Proxy:</strong> No lock-in, pay-as-you-go, 99.99% uptime SLA.</p>
+                <p style="font-size: 11px; color: #00cc66; margin-top: 8px;">👉 <a href="https://tiamat.live/docs" style="color: #00ff88; text-decoration: none;">API Docs →</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('calcForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const requests = parseInt(document.getElementById('requests').value);
+            const tokens = parseInt(document.getElementById('tokens').value);
+            
+            try {
+                const resp = await fetch('https://tiamat.live/api/cost-calculator', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requests_per_month: requests,
+                        tokens_per_request: tokens
+                    })
+                });
+                
+                if (!resp.ok) throw new Error('Calculation failed');
+                
+                const data = await resp.json();
+                let html = '';
+                
+                for (const [key, provider] of Object.entries(data.results)) {
+                    if (key === '_message') continue;
+                    
+                    const isTiamat = key === 'tiamat_proxy';
+                    const card = `
+                        <div class="cost-card ${isTiamat ? 'highlight' : ''}">
+                            <div class="provider-name">${provider.name}</div>
+                            <div class="cost-value">\$${provider.monthly_cost.toFixed(2)}</div>
+                            ${provider.savings_vs_gpt4 ? `<div class="savings-text">Save \$${Math.abs(provider.savings_vs_gpt4).toFixed(2)} (${provider.savings_percent}%)</div>` : '<div class="savings-text">Baseline</div>'}
+                        </div>
+                    `;
+                    html += card;
+                }
+                
+                document.getElementById('resultsList').innerHTML = html;
+                document.getElementById('results').style.display = 'block';
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        });
+    </script>
+</body>
+</html>

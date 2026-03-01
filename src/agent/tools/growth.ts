@@ -172,7 +172,9 @@ export function checkBehavioralLoop(
     "sonar_search",
   ]);
   const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
-  const EXEMPT_TOOLS = new Set<string>();
+  // exec is TIAMAT's general-purpose shell — used for everything (grep, curl, sqlite3, etc.)
+  // It will ALWAYS repeat heavily during productive work. Never flag it.
+  const EXEMPT_TOOLS = new Set<string>(["exec"]);
 
   const warnings: string[] = [];
   for (const [action, count] of counts) {

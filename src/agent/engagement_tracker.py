@@ -1,148 +1,145 @@
 #!/usr/bin/env python3
 """
-Bluesky Engagement Tracker — analyzes TIAMAT posts, tracks engagement, recommends optimal posting times.
-BUILT: TURN 115 (evolution directive)
+TIAMAT Engagement Analytics Tracker
+
+Monitor Bluesky/Farcaster post performance and optimize content strategy.
+Runs as a cooldown task to avoid cycle costs.
 """
 
-import os
 import json
-import sqlite3
+import os
 from datetime import datetime, timedelta
-from collections import defaultdict
-import statistics
+from pathlib import Path
 
-DB_PATH = "/root/.automaton/engagement.db"
+# Track engagement on recent posts
+# Format: {post_id: {url, text, timestamp, engagement: {likes, reposts, replies}, keywords: []}}
 
-def init_db():
-    """Create engagement tracking DB schema."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS posts (
-            post_id TEXT PRIMARY KEY,
-            timestamp TEXT,
-            text TEXT,
-            likes INTEGER DEFAULT 0,
-            reposts INTEGER DEFAULT 0,
-            replies INTEGER DEFAULT 0,
-            impressions INTEGER DEFAULT 0,
-            hour_posted INTEGER,
-            day_of_week TEXT,
-            engagement_score REAL DEFAULT 0.0,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS hourly_stats (
-            hour INTEGER PRIMARY KEY,
-            avg_likes REAL DEFAULT 0.0,
-            avg_reposts REAL DEFAULT 0.0,
-            avg_replies REAL DEFAULT 0.0,
-            sample_size INTEGER DEFAULT 0
-        )
-    """)
-    conn.commit()
-    conn.close()
+TRACKER_DB = Path("/root/.automaton/engagement.json")
 
-def log_post(post_id, timestamp, text, hour_posted, day_of_week):
-    """Log a new TIAMAT post."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        INSERT OR REPLACE INTO posts (post_id, timestamp, text, hour_posted, day_of_week)
-        VALUES (?, ?, ?, ?, ?)
-    """, (post_id, timestamp, text, hour_posted, day_of_week))
-    conn.commit()
-    conn.close()
+def init_tracker():
+    """Initialize engagement tracker database."""
+    if not TRACKER_DB.exists():
+        TRACKER_DB.write_text(json.dumps({
+            "posts": [],
+            "summary": {
+                "total_posts": 0,
+                "avg_engagement_rate": 0.0,
+                "best_content_type": None,
+                "last_updated": None
+            }
+        }, indent=2))
 
-def update_engagement(post_id, likes, reposts, replies, impressions):
-    """Update engagement metrics for a post."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+def log_post(url: str, text: str, content_type: str):
+    """
+    Log a social post.
+    content_type: 'technical' | 'sales' | 'cost' | 'research'
+    """
+    init_tracker()
+    data = json.loads(TRACKER_DB.read_text())
     
-    # Calculate engagement score: (likes + reposts*2 + replies*3) / impressions
-    engagement_score = 0.0
-    if impressions > 0:
-        engagement_score = (likes + reposts*2 + replies*3) / impressions
+    post = {
+        "id": len(data["posts"]) + 1,
+        "url": url,
+        "text": text[:100],  # First 100 chars
+        "content_type": content_type,
+        "timestamp": datetime.utcnow().isoformat(),
+        "engagement": {"likes": 0, "reposts": 0, "replies": 0, "conversions": 0},
+        "keywords": extract_keywords(text)
+    }
     
-    c.execute("""
-        UPDATE posts
-        SET likes=?, reposts=?, replies=?, impressions=?, engagement_score=?, updated_at=CURRENT_TIMESTAMP
-        WHERE post_id=?
-    """, (likes, reposts, replies, impressions, engagement_score, post_id))
-    conn.commit()
-    conn.close()
+    data["posts"].append(post)
+    TRACKER_DB.write_text(json.dumps(data, indent=2))
+    print(f"[TRACKER] Logged post {post['id']}: {content_type}")
 
-def analyze_hourly_performance():
-    """Analyze engagement by hour posted. Returns optimal posting hour."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+def extract_keywords(text: str) -> list:
+    """Extract keywords from post text."""
+    keywords = []
+    important_words = [
+        "inference", "autonomy", "customer", "revenue", "research",
+        "DARPA", "energy", "cybersecurity", "robotics", "API",
+        "cost", "cycle", "agent", "evolution", "capability"
+    ]
+    for word in important_words:
+        if word.lower() in text.lower():
+            keywords.append(word)
+    return keywords
+
+def analyze_performance():
+    """
+    Analyze which content types drive the most engagement.
+    Returns performance report.
+    """
+    init_tracker()
+    data = json.loads(TRACKER_DB.read_text())
+    posts = data["posts"]
     
-    # Get stats by hour
-    c.execute("""
-        SELECT hour_posted, AVG(likes), AVG(reposts), AVG(replies), COUNT(*)
-        FROM posts
-        WHERE hour_posted IS NOT NULL
-        GROUP BY hour_posted
-        ORDER BY AVG(likes + reposts*2 + replies*3) DESC
-    """)
-    results = c.fetchall()
-    conn.close()
+    if not posts:
+        return {"status": "no_data", "message": "No posts logged yet"}
     
-    if not results:
-        return None
+    # Group by content type
+    by_type = {}
+    for post in posts:
+        ct = post["content_type"]
+        if ct not in by_type:
+            by_type[ct] = {"count": 0, "total_engagement": 0, "conversions": 0}
+        
+        engagement = post["engagement"]
+        total = engagement["likes"] + engagement["reposts"] + engagement["replies"]
+        by_type[ct]["count"] += 1
+        by_type[ct]["total_engagement"] += total
+        by_type[ct]["conversions"] += engagement["conversions"]
     
-    best_hour = results[0][0]
-    best_avg_likes = results[0][1]
+    # Calculate metrics
+    results = {}
+    for ct, metrics in by_type.items():
+        avg_engagement = metrics["total_engagement"] / metrics["count"] if metrics["count"] > 0 else 0
+        conversion_rate = metrics["conversions"] / metrics["count"] if metrics["count"] > 0 else 0
+        results[ct] = {
+            "posts": metrics["count"],
+            "avg_engagement": avg_engagement,
+            "total_conversions": metrics["conversions"],
+            "conversion_rate": conversion_rate
+        }
+    
+    # Find best performer
+    best = max(results.items(), key=lambda x: x[1]["conversion_rate"], default=(None, {}))
     
     return {
-        "best_hour": best_hour,
-        "best_hour_avg_likes": best_avg_likes,
-        "all_hours": [{
-            "hour": r[0],
-            "avg_likes": round(r[1], 2),
-            "avg_reposts": round(r[2], 2),
-            "avg_replies": round(r[3], 2),
-            "sample_size": r[4]
-        } for r in results]
+        "timestamp": datetime.utcnow().isoformat(),
+        "by_content_type": results,
+        "best_content_type": best[0],
+        "recommendation": f"Focus on {best[0]} posts (conversion rate: {best[1].get('conversion_rate', 0):.1%})"
     }
 
-def get_top_posts(limit=5):
-    """Get your top performing posts by engagement score."""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+def generate_report():
+    """Generate human-readable engagement report."""
+    analysis = analyze_performance()
     
-    c.execute("""
-        SELECT timestamp, text, likes, reposts, replies, engagement_score
-        FROM posts
-        ORDER BY engagement_score DESC
-        LIMIT ?
-    """, (limit,))
-    results = c.fetchall()
-    conn.close()
-    
-    return [{
-        "posted_at": r[0],
-        "text": r[1][:100] + "..." if len(r[1]) > 100 else r[1],
-        "likes": r[2],
-        "reposts": r[3],
-        "replies": r[4],
-        "engagement_score": round(r[5], 4)
-    } for r in results]
+    report = f"""
+# 📊 ENGAGEMENT ANALYTICS REPORT
+{analysis['timestamp']}
 
-def report():
-    """Generate engagement report."""
-    hourly = analyze_hourly_performance()
-    top_posts = get_top_posts()
+## By Content Type
+"""
     
-    report = {
-        "generated_at": datetime.utcnow().isoformat(),
-        "hourly_analysis": hourly,
-        "top_posts": top_posts
-    }
+    for ct, metrics in analysis.get("by_content_type", {}).items():
+        report += f"""
+### {ct.title()}
+- Posts: {metrics['posts']}
+- Avg Engagement: {metrics['avg_engagement']:.1f}
+- Conversions: {metrics['total_conversions']}
+- Conversion Rate: {metrics['conversion_rate']:.1%}
+"""
+    
+    report += f"""
+## Recommendation
+{analysis.get('recommendation', 'Insufficient data')}
+"""
     
     return report
 
 if __name__ == "__main__":
-    init_db()
-    print(json.dumps(report(), indent=2))
+    # Test: Log some sample posts
+    init_tracker()
+    print("[TRACKER] Engagement tracker initialized")
+    print(generate_report())

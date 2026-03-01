@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cycle Tracker — Privacy First</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #ff006e;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #ff006e;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .lock-status {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 8px;
+            background: rgba(255, 0, 110, 0.1);
+            border: 1px solid #ff006e;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #ff006e;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* PIN SETUP SCREEN */
+        .pin-setup {
+            background: rgba(15, 15, 35, 0.8);
+            border: 1px solid #ff006e;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .pin-setup h2 {
+            color: #ff006e;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .pin-setup p {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .pin-input {
+            font-size: 32px;
+            letter-spacing: 10px;
+            text-align: center;
+            border: 2px solid #ff006e;
+            background: rgba(255, 0, 110, 0.05);
+            color: #ff006e;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .pin-input::placeholder {
+            color: #555;
+            letter-spacing: 8px;
+        }
+
+        .pin-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .pin-btn {
+            padding: 15px;
+            background: rgba(255, 0, 110, 0.1);
+            border: 1px solid #ff006e;
+            color: #ff006e;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .pin-btn:hover {
+            background: rgba(255, 0, 110, 0.2);
+            transform: scale(1.05);
+        }
+
+        .pin-btn.delete {
+            grid-column: span 3;
+            background: rgba(255, 100, 100, 0.1);
+            border-color: #ff6464;
+            color: #ff6464;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ff006e, #ff4081);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 0, 110, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* MAIN APP SCREEN */
+        .main-app {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(20, 20, 50, 0.6);
+            border: 1px solid #ff006e;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card h3 {
+            color: #ff006e;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .log-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            color: #ff006e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group select {
+            padding: 10px;
+            background: rgba(255, 0, 110, 0.05);
+            border: 1px solid #ff006e;
+            color: #e0e0e0;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #ff4081;
+            box-shadow: 0 0 10px rgba(255, 0, 110, 0.2);
+        }
+
+        .symptoms {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .symptom-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: rgba(255, 0, 110, 0.05);
+            border: 1px solid #ff006e;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .symptom-checkbox input {
+            margin-right: 8px;
+            cursor: pointer;
+            accent-color: #ff006e;
+        }
+
+        .symptom-checkbox label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 12px;
+            color: #e0e0e0;
+        }
+
+        .cycle-info {
+            background: rgba(255, 0, 110, 0.05);
+            border-left: 3px solid #ff006e;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .cycle-info strong {
+            color: #ff006e;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-top: 15px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid #444;
+            background: #1a1a3e;
+            color: #888;
+        }
+
+        .calendar-day.period {
+            background: rgba(255, 0, 110, 0.3);
+            border-color: #ff006e;
+            color: #ff006e;
+        }
+
+        .calendar-day.fertile {
+            background: rgba(255, 200, 0, 0.2);
+            border-color: #ffc800;
+            color: #ffc800;
+        }
+
+        .calendar-day.today {
+            border-color: #00ff00;
+        }
+
+        .logs-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            background: rgba(255, 0, 110, 0.05);
+            border-left: 3px solid #ff006e;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .log-date {
+            color: #ff006e;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .log-symptoms {
+            color: #888;
+            font-size: 11px;
+        }
+
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            border-top: 1px solid #444;
+            padding-top: 20px;
+        }
+
+        .nav-btn {
+            padding: 10px;
+            background: rgba(255, 0, 110, 0.1);
+            border: 1px solid #ff006e;
+            color: #ff006e;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 0, 110, 0.2);
+        }
+
+        .nav-btn.active {
+            background: #ff006e;
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+
+        .footer a {
+            color: #ff006e;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>◆ Cycle ◆</h1>
+            <p class="subtitle">Privacy-First Period Tracker</p>
+            <div class="lock-status">🔒 All data local. Zero cloud.</div>
+        </header>
+
+        <!-- PIN SETUP SCREEN -->
+        <div id="pinSetupScreen" class="screen active">
+            <div class="pin-setup">
+                <h2>Create Your PIN</h2>
+                <p>Your data is private. Set a 4-digit code to protect it.</p>
+                <input type="password" id="pinSetupInput" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
+                <div class="pin-buttons" id="pinSetupButtons"></div>
+                <button class="btn" onclick="confirmPin()">Set PIN</button>
+            </div>
+        </div>
+
+        <!-- PIN LOCK SCREEN -->
+        <div id="pinLockScreen" class="screen">
+            <div class="pin-setup">
+                <h2>Enter PIN</h2>
+                <input type="password" id="pinLockInput" class="pin-input" placeholder="••••" maxlength="4" inputmode="numeric">
+                <div class="pin-buttons" id="pinLockButtons"></div>
+                <button class="btn" onclick="verifyPin()">Unlock</button>
+            </div>
+        </div>
+
+        <!-- MAIN APP -->
+        <div id="mainApp" class="screen">
+            <div class="main-app">
+                <!-- TAB NAVIGATION -->
+                <div class="card">
+                    <div class="nav-buttons">
+                        <button class="nav-btn active" onclick="switchTab('log')">Log</button>
+                        <button class="nav-btn" onclick="switchTab('calendar')">Calendar</button>
+                        <button class="nav-btn" onclick="switchTab('history')">History</button>
+                        <button class="nav-btn" onclick="switchTab('settings')">Settings</button>
+                        <button class="nav-btn" onclick="switchTab('export')">Export</button>
+                        <button class="nav-btn" onclick="logout()" style="background: rgba(255,100,100,0.1); border-color: #ff6464; color: #ff6464;">Lock</button>
+                    </div>
+                </div>
+
+                <!-- LOG TAB -->
+                <div id="logTab" class="tab-content">
+                    <div class="card">
+                        <h3>📝 Log Your Period</h3>
+                        <form class="log-form">
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" id="logDate">
+                            </div>
+                            <div class="form-group">
+                                <label>Flow Intensity</label>
+                                <select id="logFlow">
+                                    <option>Light</option>
+                                    <option>Medium</option>
+                                    <option>Heavy</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Symptoms</label>
+                                <div class="symptoms">
+                                    <div class="symptom-checkbox">
+                                        <input type="checkbox" value="Cramps">
+                                        <label>Cramps</label>
+                                    </div>
+                                    <div class="symptom-checkbox">
+                                        <input type="checkbox" value="Headache">
+                                        <label>Headache</label>
+                                    </div>
+                                    <div class="symptom-checkbox">
+                                        <input type="checkbox" value="Mood Swing">
+                                        <label>Mood Swing</label>
+                                    </div>
+                                    <div class="symptom-checkbox">
+                                        <input type="checkbox" value="Fatigue">
+                                        <label>Fatigue</label>
+                                    </div>
+                                    <div class="symptom-checkbox">
+                                        <input type="checkbox" value="Bloating">
+                                        <label>Bloating</label>
+                                    </div>
+                                    <div class="symptom-checkbox">
+                                        <input type="checkbox" value="Acne">
+                                        <label>Acne</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn" onclick="logPeriod()">Save Entry</button>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h3>📊 Current Cycle Info</h3>
+                        <div id="cycleInfo" class="cycle-info">
+                            <p>No data yet. Log your first period entry.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CALENDAR TAB -->
+                <div id="calendarTab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <h3>📅 Your Cycle Calendar</h3>
+                        <div id="calendarView" class="calendar-grid"></div>
+                    </div>
+                </div>
+
+                <!-- HISTORY TAB -->
+                <div id="historyTab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <h3>📋 Period History</h3>
+                        <div id="logsList" class="logs-list"></div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS TAB -->
+                <div id="settingsTab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <h3>⚙️ Settings</h3>
+                        <div class="form-group">
+                            <label>Average Cycle Length (days)</label>
+                            <input type="number" id="cycleLength" min="20" max="40" value="28">
+                            <button class="btn" onclick="saveCycleLength()" style="margin-top: 10px;">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EXPORT TAB -->
+                <div id="exportTab" class="tab-content" style="display:none;">
+                    <div class="card">
+                        <h3>📥 Export Data</h3>
+                        <p style="color: #888; font-size: 12px; margin-bottom: 15px;">Download all your data as CSV. Your data, your control.</p>
+                        <button class="btn" onclick="exportCSV()">Download CSV</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Built by TIAMAT — Autonomous AI for privacy.</p>
+        <p><a href="https://tiamat.live">tiamat.live</a></p>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'cycle_tracker';
+        let userData = { pin: null, cycleLength: 28, logs: [] };
+        let isAuthenticated = false;
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            loadData();
+            if (!userData.pin) {
+                showScreen('pinSetupScreen');
+            } else {
+                showScreen('pinLockScreen');
+            }
+            setupPinButtons();
+            updateCycleInfo();
+            renderLogs();
+            renderCalendar();
+            setTodayDate();
+        });
+
+        function loadData() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                userData = JSON.parse(stored);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function setupPinButtons() {
+            const buttons = document.querySelectorAll('#pinSetupButtons, #pinLockButtons');
+            buttons.forEach(container => {
+                container.innerHTML = '';
+                for (let i = 1; i <= 9; i++) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'pin-btn';
+                    btn.textContent = i;
+                    btn.onclick = () => addPinDigit(i);
+                    container.appendChild(btn);
+                }
+                const zeroBtn = document.createElement('button');
+                zeroBtn.type = 'button';
+                zeroBtn.className = 'pin-btn';
+                zeroBtn.textContent = '0';
+                zeroBtn.onclick = () => addPinDigit(0);
+                container.appendChild(zeroBtn);
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'pin-btn delete';
+                delBtn.textContent = '← Delete';
+                delBtn.onclick = () => deletePinDigit();
+                container.appendChild(delBtn);
+            });
+        }
+
+        function addPinDigit(digit) {
+            const input = document.getElementById('pinSetupInput') || document.getElementById('pinLockInput');
+            if (input.value.length < 4) {
+                input.value += digit;
+            }
+        }
+
+        function deletePinDigit() {
+            const input = document.getElementById('pinSetupInput') || document.getElementById('pinLockInput');
+            input.value = input.value.slice(0, -1);
+        }
+
+        function confirmPin() {
+            const pin = document.getElementById('pinSetupInput').value;
+            if (pin.length !== 4) {
+                alert('PIN must be 4 digits');
+                return;
+            }
+            userData.pin = pin;
+            saveData();
+            isAuthenticated = true;
+            document.getElementById('pinSetupInput').value = '';
+            showScreen('mainApp');
+        }
+
+        function verifyPin() {
+            const pin = document.getElementById('pinLockInput').value;
+            if (pin === userData.pin) {
+                isAuthenticated = true;
+                document.getElementById('pinLockInput').value = '';
+                showScreen('mainApp');
+            } else {
+                alert('Incorrect PIN');
+                document.getElementById('pinLockInput').value = '';
+            }
+        }
+
+        function logPeriod() {
+            const date = document.getElementById('logDate').value;
+            const flow = document.getElementById('logFlow').value;
+            const symptoms = Array.from(document.querySelectorAll('.symptoms input:checked')).map(cb => cb.value);
+
+            if (!date) {
+                alert('Please select a date');
+                return;
+            }
+
+            const entry = { date, flow, symptoms };
+            userData.logs.push(entry);
+            userData.logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            saveData();
+
+            alert('Period logged!');
+            document.getElementById('logDate').value = '';
+            document.getElementById('logFlow').value = 'Medium';
+            document.querySelectorAll('.symptoms input:checked').forEach(cb => cb.checked = false);
+
+            updateCycleInfo();
+            renderLogs();
+            renderCalendar();
+        }
+
+        function updateCycleInfo() {
+            if (userData.logs.length === 0) {
+                document.getElementById('cycleInfo').innerHTML = '<p>No data yet. Log your first period entry.</p>';
+                return;
+            }
+
+            const sortedDates = userData.logs.map(l => new Date(l.date)).sort((a, b) => b - a);
+            const lastPeriod = sortedDates[0];
+            const today = new Date();
+            const daysSince = Math.floor((today - lastPeriod) / (1000 * 60 * 60 * 24));
+
+            let cycleLengths = [];
+            for (let i = 1; i < sortedDates.length; i++) {
+                const diff = Math.floor((sortedDates[i - 1] - sortedDates[i]) / (1000 * 60 * 60 * 24));
+                if (diff > 0) cycleLengths.push(diff);
+            }
+
+            const avgCycle = cycleLengths.length > 0 ? Math.round(cycleLengths.reduce((a, b) => a + b) / cycleLengths.length) : userData.cycleLength;
+            const nextPeriod = new Date(lastPeriod);
+            nextPeriod.setDate(nextPeriod.getDate() + avgCycle);
+
+            const fertileStart = new Date(nextPeriod);
+            fertileStart.setDate(fertileStart.getDate() - 5);
+            const fertileEnd = new Date(nextPeriod);
+            fertileEnd.setDate(fertileEnd.getDate() - 1);
+
+            document.getElementById('cycleInfo').innerHTML = `
+                <p><strong>Last Period:</strong> ${lastPeriod.toLocaleDateString()}</p>
+                <p><strong>Days Since:</strong> ${daysSince} days</p>
+                <p><strong>Avg Cycle:</strong> ${avgCycle} days</p>
+                <p><strong>Next Period:</strong> ${nextPeriod.toLocaleDateString()}</p>
+                <p><strong>Fertile Window:</strong> ${fertileStart.toLocaleDateString()} — ${fertileEnd.toLocaleDateString()}</p>
+            `;
+        }
+
+        function renderLogs() {
+            const list = document.getElementById('logsList');
+            if (userData.logs.length === 0) {
+                list.innerHTML = '<p style="color: #888; font-size: 12px;">No entries yet.</p>';
+                return;
+            }
+            list.innerHTML = userData.logs.map(log => `
+                <div class="log-entry">
+                    <div class="log-date">📌 ${new Date(log.date).toLocaleDateString()}</div>
+                    <div class="log-symptoms"><strong>Flow:</strong> ${log.flow}</div>
+                    <div class="log-symptoms"><strong>Symptoms:</strong> ${log.symptoms.length > 0 ? log.symptoms.join(', ') : 'None'}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendarView');
+            calendar.innerHTML = '';
+
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+            // Get period dates for styling
+            const periodDates = new Set(userData.logs.map(l => new Date(l.date).toISOString().split('T')[0]));
+
+            for (let i = 0; i < 42; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                const day = date.getDate();
+                const isToday = date.toDateString() === today.toDateString();
+                const isPeriod = periodDates.has(dateStr);
+                const isInMonth = date.getMonth() === month;
+
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day';
+                if (!isInMonth) cell.style.opacity = '0.3';
+                if (isPeriod) cell.classList.add('period');
+                if (isToday) cell.classList.add('today');
+                cell.textContent = day;
+                calendar.appendChild(cell);
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab + 'Tab').style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        function saveCycleLength() {
+            const length = parseInt(document.getElementById('cycleLength').value);
+            if (length >= 20 && length <= 40) {
+                userData.cycleLength = length;
+                saveData();
+                alert('Cycle length saved!');
+                updateCycleInfo();
+            } else {
+                alert('Cycle length must be between 20 and 40 days');
+            }
+        }
+
+        function exportCSV() {
+            if (userData.logs.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            let csv = 'Date,Flow,Symptoms\n';
+            userData.logs.forEach(log => {
+                csv += `${log.date},${log.flow},"${log.symptoms.join('; ')}"`;
+                csv += '\n';
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cycle-tracker-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        function logout() {
+            isAuthenticated = false;
+            showScreen('pinLockScreen');
+            document.getElementById('pinLockInput').value = '';
+        }
+
+        function setTodayDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('logDate').value = today;
+        }
+    </script>
+</body>
+</html>

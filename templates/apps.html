@@ -8,131 +8,225 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Orbitron', 'JetBrains Mono', monospace;
-      background: linear-gradient(135deg, #0a0e27 0%, #1a0033 100%);
-      color: #e0e6ff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+      color: #fff;
       min-height: 100vh;
-      padding: 2rem;
+      padding: 20px;
     }
-    .container { max-width: 1200px; margin: 0 auto; }
-    h1 { text-align: center; margin-bottom: 2rem; font-size: 2.5rem; color: #00ffff; text-shadow: 0 0 20px #00ffff; }
-    .subtitle { text-align: center; margin-bottom: 3rem; color: #a0a6ff; font-size: 1.1rem; }
-    .apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem; }
-    .app-card {
-      background: rgba(20, 20, 60, 0.9);
-      border: 1px solid #00ffff;
-      border-radius: 8px;
-      padding: 2rem;
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
       text-align: center;
+      margin-bottom: 60px;
+      padding-top: 40px;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #00d9ff, #0099cc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      font-size: 1.1em;
+      color: #aaa;
+      margin-bottom: 30px;
+    }
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+    .app-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 12px;
+      padding: 25px;
       transition: all 0.3s ease;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+      position: relative;
+      overflow: hidden;
     }
-    .app-card:hover { transform: translateY(-10px); box-shadow: 0 0 40px rgba(0, 255, 255, 0.6); }
-    .app-card h3 { font-size: 1.5rem; margin-bottom: 1rem; color: #00ffff; }
-    .app-card p { margin-bottom: 1.5rem; color: #a0a6ff; font-size: 0.95rem; }
+    .app-card:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(0, 217, 255, 0.6);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+    }
     .app-card.featured {
-      border: 2px solid #ff00ff;
-      background: rgba(40, 10, 60, 0.95);
-      box-shadow: 0 0 40px rgba(255, 0, 255, 0.5);
+      border-color: #00d9ff;
+      background: rgba(0, 217, 255, 0.1);
     }
-    .app-card.featured h3 { color: #ff00ff; }
-    .badge { display: inline-block; background: #ff00ff; color: #0a0e27; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-bottom: 1rem; }
+    .featured-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: linear-gradient(90deg, #00d9ff, #0099cc);
+      color: #000;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75em;
+      font-weight: bold;
+    }
+    .app-icon {
+      font-size: 3em;
+      margin-bottom: 15px;
+    }
+    .app-name {
+      font-size: 1.4em;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .app-desc {
+      color: #aaa;
+      margin-bottom: 20px;
+      font-size: 0.95em;
+      line-height: 1.4;
+    }
+    .app-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 0.9em;
+      color: #888;
+    }
+    .app-size { }
+    .app-price {
+      font-weight: bold;
+      color: #00d9ff;
+    }
     .download-btn {
-      background: #00ffff;
-      color: #0a0e27;
+      width: 100%;
+      padding: 12px 20px;
+      background: linear-gradient(90deg, #00d9ff, #0099cc);
+      color: #000;
       border: none;
-      padding: 0.8rem 1.5rem;
-      border-radius: 4px;
-      font-family: 'Orbitron', monospace;
+      border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 0.95rem;
+      font-size: 1em;
     }
-    .download-btn:hover { background: #ff00ff; color: #fff; box-shadow: 0 0 20px rgba(255, 0, 255, 0.6); }
-    .download-btn.free { background: #00ff00; color: #0a0e27; }
-    .download-btn.free:hover { background: #00ffff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.6); }
-    .price-text { color: #a0a6ff; font-size: 0.9rem; margin-top: 0.5rem; }
-    .divider { height: 1px; background: linear-gradient(90deg, transparent, #00ffff, transparent); margin: 3rem 0; }
+    .download-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 5px 15px rgba(0, 217, 255, 0.3);
+    }
+    .download-btn:disabled {
+      background: #666;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .free-badge {
+      display: inline-block;
+      background: #00aa00;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.8em;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .unavailable {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    footer {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid rgba(0, 217, 255, 0.2);
+      color: #666;
+      margin-top: 80px;
+    }
+    .info-section {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 40px;
+    }
+    .info-section h2 {
+      color: #00d9ff;
+      margin-bottom: 15px;
+    }
+    .info-section p {
+      color: #aaa;
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🚀 TIAMAT APPS</h1>
-    <p class="subtitle">AI-powered utilities & inference client. Free & paid tiers available.</p>
-    
+    <header>
+      <h1>TIAMAT Apps</h1>
+      <p class="subtitle">Mobile AI & Productivity Tools</p>
+    </header>
+
+    <div class="info-section">
+      <h2>🚀 Download & Run</h2>
+      <p>All apps work offline after download. Paid apps require a one-time USDC payment on Base mainnet. TIAMAT Chat is free and connects to our inference proxy for unlimited AI conversations.</p>
+    </div>
+
     <div class="apps-grid">
-      <!-- STRATEGIC PRODUCT: TIAMAT Chat -->
-      <div class="app-card featured">
-        <span class="badge">✨ NEW — FREE TIER</span>
-        <h3>TIAMAT Chat</h3>
-        <p>Free AI chat powered by TIAMAT inference. Real-time streaming. 4-provider fallback. No lock-in.</p>
-        <p style="font-size: 0.85rem; color: #ff00ff; margin-top: 0.5rem;">Every message drives YOUR API adoption</p>
-        <button class="download-btn free" data-app="tiamat-chat" data-price="0">DOWNLOAD FREE APK</button>
-        <p class="price-text">Free tier: 5 messages/hour. Premium: $2.99/month for unlimited</p>
+      {% for app in apps %}
+      <div class="app-card {% if app.featured %}featured{% endif %} {% if not app.available %}unavailable{% endif %}">
+        {% if app.featured %}
+        <div class="featured-badge">⭐ Featured</div>
+        {% endif %}
+        <div class="app-icon">{{ app.icon }}</div>
+        <div class="app-name">{{ app.name }}</div>
+        <div class="app-desc">{{ app.description }}</div>
+        <div class="app-meta">
+          <div class="app-size">{{ app.size }} MB</div>
+          <div class="app-price">
+            {% if app.price == 0 %}
+              <span class="free-badge">FREE</span>
+            {% else %}
+              ${{ app.price }}
+            {% endif %}
+          </div>
+        </div>
+        <button class="download-btn" {% if not app.available %}disabled{% endif %} onclick="downloadApp('{{ app.id }}', {{ app.price }})">
+          {% if not app.available %}
+            Coming Soon
+          {% else %}
+            Download APK
+          {% endif %}
+        </button>
       </div>
-      
-      <!-- Commodity apps (keep existing) -->
-      <div class="app-card">
-        <h3>Daily Quotes</h3>
-        <p>Motivational wisdom delivered daily. Curated, inspiring, personal.</p>
-        <button class="download-btn" data-app="daily-quotes" data-price="0.99">GET APK — $0.99 USDC</button>
-        <p class="price-text">One-time purchase. No subscriptions.</p>
-      </div>
-      
-      <div class="app-card">
-        <h3>Unit Converter</h3>
-        <p>Length, weight, temperature, volume, speed, energy. Instant conversions.</p>
-        <button class="download-btn" data-app="unit-converter" data-price="0.99">GET APK — $0.99 USDC</button>
-        <p class="price-text">Works offline. No API calls.</p>
-      </div>
-      
-      <div class="app-card">
-        <h3>Pomodoro Timer</h3>
-        <p>25-min focus intervals + 5-min breaks. Track productivity. Beat procrastination.</p>
-        <button class="download-btn" data-app="pomodoro-timer" data-price="0.99">GET APK — $0.99 USDC</button>
-        <p class="price-text">One-time purchase. Lifetime updates.</p>
-      </div>
+      {% endfor %}
     </div>
-    
-    <div class="divider"></div>
-    
-    <div style="text-align: center; margin-top: 3rem;">
-      <h2 style="color: #00ffff; margin-bottom: 1rem;">Why Choose TIAMAT Apps?</h2>
-      <p style="color: #a0a6ff; max-width: 600px; margin: 0 auto; line-height: 1.8;">
-        Built by an autonomous AI agent on live infrastructure. No corporate overhead. No tracking. No surveillance. Real compute, real ownership. Download once, use forever. Or go free with TIAMAT Chat and support the evolution.
-      </p>
+
+    <div class="info-section">
+      <h2>💳 How to Pay</h2>
+      <p><strong>Step 1:</strong> Send USDC (0.99 USDC per app) to <code>0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</code> on Base mainnet.<br>
+      <strong>Step 2:</strong> Copy your transaction hash.<br>
+      <strong>Step 3:</strong> Come back and provide the tx hash to download your app.<br>
+      TIAMAT Chat is free — download anytime with no payment.</p>
     </div>
+
+    <footer>
+      <p>TIAMAT Apps • Powered by ENERGENAI LLC • <a href="/" style="color: #00d9ff; text-decoration: none;">Back to Home</a></p>
+    </footer>
   </div>
-  
+
   <script>
-    document.querySelectorAll('.download-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const app = btn.dataset.app;
-        const price = parseFloat(btn.dataset.price);
-        
-        if (price === 0) {
-          // Free download — direct APK link
-          window.location.href = `https://tiamat.live/apps/${app}.apk`;
-        } else {
-          // Paid — x402 payment gateway
-          const response = await fetch('/api/payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              app: app,
-              price_usdc: price,
-              recipient: '0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE'
-            })
-          });
-          const data = await response.json();
-          // Redirect to payment modal or x402 checkout
-          if (data.payment_url) {
-            window.location.href = data.payment_url;
-          }
+    function downloadApp(appId, price) {
+      if (price === 0) {
+        // Free app — download directly
+        window.location.href = `/apps/download/${appId}`;
+      } else {
+        // Paid app — prompt for tx hash
+        const txHash = prompt(`Enter your USDC payment transaction hash for ${appId}:`);
+        if (txHash) {
+          window.location.href = `/apps/download/${appId}?tx=${txHash}`;
         }
-      });
-    });
+      }
+    }
   </script>
 </body>
 </html>

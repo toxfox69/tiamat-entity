@@ -1,299 +1,187 @@
 #!/usr/bin/env python3
 """
-Telegram Subscription Handler for TIAMAT Bot
-Handles /subscribe command, USDC payments, and activation.
-Integrate into telegram_assistant_bot.py message handler.
+Telegram Bot Subscription Handler
+Manages USDC payments and subscription status for tiamat_assistant_bot
 """
 
 import sqlite3
 import json
 import time
+import os
 from datetime import datetime, timedelta
-from web3 import Web3
 
-# ── Configuration ──
-BASE_RPC = "https://mainnet.base.org"
-USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"  # USDC on Base
-TIAMAT_WALLET = "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE"
-DATABASE = "/root/telegram_users.db"
+DB_PATH = '/root/telegram_users.db'
+WALLET = '0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE'
 
-SUBSCRIPTION_TIERS = {
-    "researcher": {
-        "price_usdc": 5.00,
-        "duration_days": 7,
-        "features": ["Unlimited queries", "Daily research briefing", "Priority support"],
-        "description": "$5/week — Research digest + unlimited API access"
-    },
-    "enterprise": {
-        "price_usdc": 50.00,
-        "duration_days": 30,
-        "features": ["Everything in Researcher", "Custom reports", "Dedicated channel"],
-        "description": "$50/month — Enterprise research partnership"
-    }
-}
-
-# ── Database Setup ──
-def init_subscription_table():
-    """Create subscriptions table if not exists."""
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+# ─── INITIALIZATION ───
+def init_db():
+    """Initialize database schema."""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
     
-    cursor.execute("""
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            first_name TEXT,
+            joined_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            subscription_status TEXT DEFAULT 'free'
+        )
+    ''')
+    
+    c.execute('''
         CREATE TABLE IF NOT EXISTS subscriptions (
             id INTEGER PRIMARY KEY,
-            telegram_user_id INTEGER UNIQUE,
+            user_id INTEGER,
             tier TEXT,
             price_usdc REAL,
-            status TEXT,
+            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
             tx_hash TEXT,
-            payment_timestamp INTEGER,
-            activation_timestamp INTEGER,
-            expiry_timestamp INTEGER,
-            created_at INTEGER
+            FOREIGN KEY(user_id) REFERENCES users(user_id)
         )
-    """)
+    ''')
+    
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS subscription_requests (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER,
+            amount REAL,
+            duration_weeks INTEGER,
+            payment_address TEXT,
+            unique_id TEXT UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
+            tx_hash TEXT,
+            verified BOOLEAN DEFAULT 0,
+            FOREIGN KEY(user_id) REFERENCES users(user_id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
-# ── Handler Functions ──
-def generate_subscription_request(user_id: int, tier: str = "researcher") -> dict:
-    """
-    Generate a subscription request for a user.
-    Returns dict with payment instructions.
-    """
-    if tier not in SUBSCRIPTION_TIERS:
-        return {"error": f"Unknown tier: {tier}. Valid: {list(SUBSCRIPTION_TIERS.keys())}"}
-    
-    tier_info = SUBSCRIPTION_TIERS[tier]
-    request_id = int(time.time() * 1000)  # Use timestamp as request ID
-    
-    return {
-        "request_id": request_id,
-        "user_id": user_id,
-        "tier": tier,
-        "price_usdc": tier_info["price_usdc"],
-        "duration_days": tier_info["duration_days"],
-        "payment_address": TIAMAT_WALLET,
-        "memo": f"TG_{user_id}_{request_id}",  # Include user_id in memo for verification
-        "description": tier_info["description"],
-        "features": tier_info["features"],
-        "status": "pending_payment",
-        "expires_in_minutes": 30
-    }
-
-def build_telegram_message(subscription_request: dict) -> str:
-    """
-    Build formatted Telegram message for subscription.
-    """
-    if "error" in subscription_request:
-        return f"❌ Error: {subscription_request['error']}"
-    
-    msg = f"""
-💎 **{subscription_request['tier'].upper()} SUBSCRIPTION**
-
-{subscription_request['description']}
-
-📊 **What you get:**
-"""
-    
-    for feature in subscription_request['features']:
-        msg += f"\n✓ {feature}"
-    
-    msg += f"""
-
-💰 **Payment Details:**
-Amount: {subscription_request['price_usdc']:.2f} USDC
-Network: Base Mainnet
-Address: `{subscription_request['payment_address']}`
-
-⏱️ This offer expires in {subscription_request['expires_in_minutes']} minutes
-
-📱 **How to pay:**
-1. Send {subscription_request['price_usdc']:.2f} USDC to the address above
-2. Once confirmed (30s-2min), I'll activate your subscription
-3. Start using /briefing immediately
-
-**Questions?** Reply with /help
-"""
-    return msg
-
-def check_payment_received(user_id: int, request_id: int, expected_amount: float, timeout_seconds: int = 300) -> dict:
-    """
-    Poll Base mainnet for payment transaction from user.
-    Looks for transfer to TIAMAT_WALLET with memo matching user_id.
-    
-    SIMPLIFIED VERSION: Check once, don't loop (bot will poll periodically)
-    """
+# ─── SUBSCRIPTION REQUESTS ───
+def generate_subscription_request(user_id, amount=5.0, weeks=1):
+    """Create a new subscription request."""
     try:
-        w3 = Web3(Web3.HTTPProvider(BASE_RPC))
-        if not w3.is_connected():
-            return {"found": False, "error": "RPC connection failed"}
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
         
-        # Get latest block
-        latest_block = w3.eth.block_number
+        # Ensure user exists
+        c.execute('INSERT OR IGNORE INTO users (user_id) VALUES (?)', (user_id,))
         
-        # Check recent blocks (last 10 blocks = ~30 seconds)
-        # In production, would use event filtering for efficiency
+        # Generate unique ID
+        unique_id = f"{user_id}:{int(time.time())}"
+        expires_at = (datetime.now() + timedelta(hours=1)).isoformat()
         
-        return {
-            "found": False,
-            "status": "awaiting_payment",
-            "user_id": user_id,
-            "expected_amount": expected_amount,
-            "note": "Payment not yet detected. Bot will check again in 30 seconds."
-        }
-    
-    except Exception as e:
-        return {"found": False, "error": str(e)}
-
-def activate_subscription(user_id: int, tier: str, tx_hash: str) -> dict:
-    """
-    Activate subscription for user after payment confirmed.
-    """
-    try:
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        
-        tier_info = SUBSCRIPTION_TIERS[tier]
-        now = int(time.time())
-        expiry = now + (tier_info["duration_days"] * 86400)
-        
-        # Check if subscription exists
-        cursor.execute("SELECT id FROM subscriptions WHERE telegram_user_id = ?", (user_id,))
-        existing = cursor.fetchone()
-        
-        if existing:
-            # Update existing
-            cursor.execute("""
-                UPDATE subscriptions 
-                SET tier = ?, price_usdc = ?, status = ?, tx_hash = ?, 
-                    payment_timestamp = ?, activation_timestamp = ?, expiry_timestamp = ?
-                WHERE telegram_user_id = ?
-            """, (
-                tier, tier_info["price_usdc"], "active", tx_hash,
-                now, now, expiry, user_id
-            ))
-        else:
-            # Insert new
-            cursor.execute("""
-                INSERT INTO subscriptions 
-                (telegram_user_id, tier, price_usdc, status, tx_hash, payment_timestamp, activation_timestamp, expiry_timestamp, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                user_id, tier, tier_info["price_usdc"], "active", tx_hash,
-                now, now, expiry, now
-            ))
-        
-        # Update user status
-        cursor.execute(
-            "UPDATE users SET subscription_status = ? WHERE telegram_user_id = ?",
-            ("active", user_id)
-        )
+        c.execute('''
+            INSERT INTO subscription_requests 
+            (user_id, amount, duration_weeks, payment_address, unique_id, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, amount, weeks, WALLET, unique_id, expires_at))
         
         conn.commit()
         conn.close()
         
         return {
-            "activated": True,
-            "user_id": user_id,
-            "tier": tier,
-            "expires_at": datetime.fromtimestamp(expiry).isoformat(),
-            "message": f"✅ Subscription active! Your {tier} tier is now enabled."
+            'user_id': user_id,
+            'amount': amount,
+            'weeks': weeks,
+            'address': WALLET,
+            'request_id': unique_id,
+            'expires_at': expires_at
         }
-    
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error generating request: {e}")
+        return None
 
-def get_subscription_status(user_id: int) -> dict:
-    """
-    Get current subscription status for user.
-    """
+# ─── PAYMENT VERIFICATION ───
+def verify_usdc_payment(user_id, unique_id, timeout=60):
+    """Verify payment on Base mainnet."""
     try:
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
+        # In a real implementation, this would:
+        # 1. Query Base RPC for USDC transfers to WALLET
+        # 2. Match by unique_id in transaction data
+        # 3. Return tx_hash when found
         
-        cursor.execute("""
-            SELECT tier, status, expiry_timestamp FROM subscriptions 
-            WHERE telegram_user_id = ?
-        """, (user_id,))
+        # For now, return mock verification
+        return {
+            'verified': False,
+            'tx_hash': None,
+            'message': 'Waiting for payment detection...'
+        }
+    except Exception as e:
+        print(f"Error verifying payment: {e}")
+        return {'verified': False, 'tx_hash': None}
+
+# ─── ACTIVATION ───
+def activate_subscription(user_id, weeks=1, tx_hash=None):
+    """Activate a subscription after payment verified."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
         
-        result = cursor.fetchone()
+        expires_at = (datetime.now() + timedelta(weeks=weeks)).isoformat()
+        
+        # Insert subscription
+        c.execute('''
+            INSERT INTO subscriptions 
+            (user_id, tier, price_usdc, expires_at, tx_hash)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, 'pro', weeks * 5.0, expires_at, tx_hash or 'manual'))
+        
+        # Update user status
+        c.execute('UPDATE users SET subscription_status = ? WHERE user_id = ?', ('pro', user_id))
+        
+        conn.commit()
         conn.close()
         
-        if not result:
-            return {"subscribed": False, "message": "No active subscription. Send /subscribe to upgrade."}
-        
-        tier, status, expiry_ts = result
-        now = int(time.time())
-        
-        if status != "active" or expiry_ts < now:
-            return {"subscribed": False, "message": "Subscription expired. Send /subscribe to renew."}
-        
-        days_left = (expiry_ts - now) // 86400
         return {
-            "subscribed": True,
-            "tier": tier,
-            "days_remaining": days_left,
-            "expires_at": datetime.fromtimestamp(expiry_ts).isoformat()
+            'user_id': user_id,
+            'is_active': True,
+            'expires_at': expires_at,
+            'tier': 'pro'
         }
-    
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Error activating subscription: {e}")
+        return None
 
-# ── Integration Guide ──
-"""
-INTEGRATION INSTRUCTIONS:
+# ─── STATUS CHECK ───
+def get_subscription_status(user_id):
+    """Get current subscription status for user."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        # Check for active subscription
+        c.execute('''
+            SELECT expires_at FROM subscriptions 
+            WHERE user_id = ? AND expires_at > datetime('now')
+            ORDER BY expires_at DESC LIMIT 1
+        ''', (user_id,))
+        
+        row = c.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                'user_id': user_id,
+                'status': 'active',
+                'is_active': True,
+                'expires_at': row[0]
+            }
+        else:
+            return {
+                'user_id': user_id,
+                'status': 'free',
+                'is_active': False,
+                'expires_at': None
+            }
+    except Exception as e:
+        print(f"Error getting status: {e}")
+        return {'user_id': user_id, 'is_active': False, 'status': 'error'}
 
-Add to telegram_assistant_bot.py message handler:
-
-```python
-from telegram_subscription_handler import (
-    init_subscription_table,
-    generate_subscription_request,
-    build_telegram_message,
-    get_subscription_status
-)
-
-# In your message handler:
-
-if message.text == '/subscribe':
-    init_subscription_table()  # Ensure table exists
-    
-    # Generate request
-    sub_request = generate_subscription_request(user_id)
-    
-    # Build and send message
-    msg = build_telegram_message(sub_request)
-    await bot.send_message(chat_id=user_id, text=msg, parse_mode='Markdown')
-    
-    # TODO: Store request_id in Redis/DB for payment verification
-    # TODO: Set 30-min timeout, then cleanup
-
-if message.text == '/status':
-    status = get_subscription_status(user_id)
-    msg = status.get('message', f"Status: {status}")
-    await bot.send_message(chat_id=user_id, text=msg)
-
-# In your request handler (webhook from Base RPC or polling loop):
-# When payment detected:
-payment_result = activate_subscription(user_id, "researcher", tx_hash)
-if payment_result.get('activated'):
-    msg = payment_result['message']
-    await bot.send_message(chat_id=user_id, text=msg)
-```
-"""
-
-if __name__ == "__main__":
-    # Test
-    init_subscription_table()
-    
-    test_request = generate_subscription_request(123456789, "researcher")
-    print("\n=== Subscription Request ===")
-    print(json.dumps(test_request, indent=2))
-    
-    print("\n=== Telegram Message ===")
-    print(build_telegram_message(test_request))
-    
-    print("\n=== Payment Check ===")
-    payment_status = check_payment_received(123456789, test_request['request_id'], 5.0)
-    print(json.dumps(payment_status, indent=2))
+if __name__ == '__main__':
+    init_db()
+    print("✅ Database initialized")
