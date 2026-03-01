@@ -147,6 +147,33 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .alert-box.warning{background:var(--peach-pale);border:1px solid var(--peach-soft);color:var(--peach-deep)}
 .alert-box.urgent{background:#FFEBEE;border:1px solid #FFCDD2;color:var(--danger)}
 
+.photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
+.photo-card{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:1;background:var(--violet-pale);border:1px solid var(--border);cursor:pointer}
+.photo-card img{width:100%;height:100%;object-fit:cover}
+.photo-card .photo-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(62,36,101,.7));color:#fff;padding:4px 6px;font-size:10px;font-weight:600}
+.photo-card .photo-delete{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.photo-card:hover .photo-delete,.photo-card:active .photo-delete{opacity:1}
+.photo-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.photo-compare img{width:100%;border-radius:12px;border:1px solid var(--border)}
+.photo-compare .compare-label{text-align:center;font-size:12px;color:var(--text-dim);margin-top:4px;font-weight:600}
+.photo-add-btn{aspect-ratio:1;border-radius:12px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:24px;color:var(--text-muted);transition:all .2s;cursor:pointer;background:transparent}
+.photo-add-btn:hover{border-color:var(--violet);background:var(--violet-pale);color:var(--violet-deep)}
+.photo-add-btn span{font-size:11px;font-weight:600}
+
+.resource-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.resource-card h4{font-size:14px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.resource-card p{font-size:13px;color:var(--text-dim);line-height:1.6}
+.resource-card a{color:var(--violet-deep);text-decoration:none;font-weight:500}
+.resource-card a:hover{text-decoration:underline}
+.resource-link{display:block;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.resource-link:last-child{border-bottom:none}
+.crisis-card{background:linear-gradient(135deg,var(--pink-pale),var(--violet-pale));border:1px solid var(--pink-soft);border-radius:14px;padding:16px;margin-bottom:12px}
+.crisis-card h4{font-size:15px;font-weight:700;color:var(--pink-deep);margin-bottom:8px}
+.crisis-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(244,143,177,.2)}
+.crisis-line:last-child{border-bottom:none}
+.crisis-line .name{font-size:14px;font-weight:500}
+.crisis-line .number{font-size:14px;font-weight:700;color:var(--violet-deep)}
+
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
@@ -157,6 +184,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff;color:#000}
+  .report-page{max-width:100%;padding:20px;font-size:12px}
+  .report-page h1{font-size:20px;color:#7C4DFF}
+  .report-page h2{font-size:16px;border-bottom:1px solid #ccc;padding-bottom:4px;margin:16px 0 8px}
+  .report-page table{width:100%;border-collapse:collapse;margin:8px 0}
+  .report-page th,td{text-align:left;padding:4px 8px;border-bottom:1px solid #eee;font-size:12px}
+  .report-page th{font-weight:600;background:#f5f0ff}
+}
 </style>
 </head>
 <body>
@@ -170,14 +208,25 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 
   <div class="onboarding" id="onboarding" style="display:none">
     <h2>Welcome to Bloom</h2>
-    <p>Your private HRT companion. Track your journey with complete privacy — everything stays on your device.</p>
+    <p>Your private transition &amp; wellness companion. Everything stays on your device.</p>
+    <div style="text-align:left;max-width:320px;margin:0 auto 16px">
+      <div style="font-size:13px;font-weight:600;color:var(--violet-deep);margin-bottom:8px">What's your journey?</div>
+      <select id="onboardJourney" style="width:100%;padding:12px;font-size:15px;margin-bottom:8px">
+        <option value="mtf">MTF (Male to Female)</option>
+        <option value="ftm">FTM (Female to Male)</option>
+        <option value="femboy">Femboy</option>
+        <option value="tomboy">Tomboy</option>
+        <option value="nonbinary">Non-Binary</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
     <div class="feature-list">
-      <div><span class="feature-icon" style="background:var(--violet-pale)">&#128138;</span> Medications, labs &amp; injections</div>
-      <div><span class="feature-icon" style="background:var(--pink-pale)">&#128200;</span> Body changes &amp; measurements</div>
-      <div><span class="feature-icon" style="background:var(--sky-pale)">&#128302;</span> Timeline &amp; milestone tracking</div>
+      <div><span class="feature-icon" style="background:var(--violet-pale)">&#128138;</span> Meds, supplements &amp; lab tracking</div>
+      <div><span class="feature-icon" style="background:var(--pink-pale)">&#128247;</span> Photo timeline &amp; comparisons</div>
+      <div><span class="feature-icon" style="background:var(--sky-pale)">&#128200;</span> Body changes, stacks &amp; phases</div>
       <div><span class="feature-icon" style="background:var(--mint-pale)">&#128274;</span> PIN lock, stealth mode &amp; encryption</div>
     </div>
-    <button class="btn-primary" style="max-width:300px" onclick="completeOnboarding()">Get Started</button>
+    <button class="btn-primary" style="max-width:300px" onclick="S.journeyType=document.getElementById('onboardJourney').value;completeOnboarding()">Get Started</button>
     <p style="font-size:11px;color:var(--text-muted);margin-top:16px">Zero data collection. Zero network requests.<br>Your journey, your data, your device only.</p>
   </div>
 
@@ -203,8 +252,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
       <button class="nav-btn" data-view="meds" onclick="showView('meds')">Meds</button>
       <button class="nav-btn" data-view="labs" onclick="showView('labs')">Labs</button>
       <button class="nav-btn" data-view="body" onclick="showView('body')">Body</button>
+      <button class="nav-btn" data-view="photos" onclick="showView('photos')">Photos</button>
+      <button class="nav-btn" data-view="supps" onclick="showView('supps')">Supps</button>
       <button class="nav-btn" data-view="timeline" onclick="showView('timeline')">Timeline</button>
       <button class="nav-btn" data-view="insights" onclick="showView('insights')">Insights</button>
+      <button class="nav-btn" data-view="resources" onclick="showView('resources')">Resources</button>
       <button class="nav-btn" data-view="settings" onclick="showView('settings')">Settings</button>
     </div>
     <div class="content" id="content"></div>
@@ -215,7 +267,16 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 // ─── Constants ───────────────────────────────────────────────
 const STORAGE_KEY='bloom_data',SETTINGS_KEY='bloom_settings',PIN_KEY='bloom_pin';
 
-const CHANGE_TIMELINE=[
+const JOURNEY_TYPES={
+  mtf:{label:'MTF (Male to Female)',desc:'Feminizing HRT — estrogen + anti-androgens'},
+  ftm:{label:'FTM (Female to Male)',desc:'Masculinizing HRT — testosterone'},
+  femboy:{label:'Femboy',desc:'Selective feminization — lower doses, subtle changes'},
+  tomboy:{label:'Tomboy',desc:'Selective masculinization — lower doses or presentation'},
+  nonbinary:{label:'Non-Binary',desc:'Custom approach — any combination'},
+  custom:{label:'Custom',desc:'Define your own journey'}
+};
+
+const MTF_TIMELINE=[
   {change:'Skin softening',onset:'1-3 months',max:'1-2 years',reversible:true},
   {change:'Decreased libido',onset:'1-3 months',max:'3-6 months',reversible:true},
   {change:'Breast budding',onset:'1-3 months',max:'2-5 years',reversible:false},
@@ -228,6 +289,97 @@ const CHANGE_TIMELINE=[
   {change:'Facial hair slowing',onset:'6-12 months',max:'2-4 years',reversible:'partial'},
   {change:'Areola growth',onset:'3-6 months',max:'2-3 years',reversible:false}
 ];
+
+const FTM_TIMELINE=[
+  {change:'Voice deepening',onset:'1-3 months',max:'1-2 years',reversible:false},
+  {change:'Bottom growth',onset:'1-3 months',max:'1-3 years',reversible:false},
+  {change:'Increased libido',onset:'Weeks',max:'1-3 months',reversible:true},
+  {change:'Menstruation cessation',onset:'2-6 months',max:'6-12 months',reversible:true},
+  {change:'Skin oiliness / acne',onset:'1-3 months',max:'1-2 years',reversible:true},
+  {change:'Fat redistribution',onset:'3-6 months',max:'2-5 years',reversible:true},
+  {change:'Increased muscle mass',onset:'6-12 months',max:'2-5 years',reversible:true},
+  {change:'Body hair growth',onset:'3-6 months',max:'4-5 years',reversible:'partial'},
+  {change:'Facial hair growth',onset:'6-12 months',max:'4-5 years',reversible:false},
+  {change:'Scalp hair changes',onset:'6-12+ months',max:'Variable',reversible:false},
+  {change:'Emotional changes',onset:'Weeks',max:'Ongoing',reversible:true}
+];
+
+const FEMBOY_TIMELINE=[
+  {change:'Skin softening',onset:'1-3 months',max:'1-2 years',reversible:true},
+  {change:'Body hair thinning',onset:'3-6 months',max:'2-3+ years',reversible:'partial'},
+  {change:'Fat redistribution (subtle)',onset:'3-6 months',max:'2-5 years',reversible:true},
+  {change:'Emotional changes',onset:'Weeks',max:'Ongoing',reversible:true},
+  {change:'Decreased body odor',onset:'1-3 months',max:'6 months',reversible:true},
+  {change:'Softer features',onset:'3-6 months',max:'1-2 years',reversible:true},
+  {change:'Breast budding (if on E)',onset:'1-3 months',max:'2-5 years',reversible:false}
+];
+
+const TOMBOY_TIMELINE=[
+  {change:'Voice deepening (if on T)',onset:'1-3 months',max:'1-2 years',reversible:false},
+  {change:'Increased energy',onset:'Weeks',max:'1-3 months',reversible:true},
+  {change:'Muscle definition',onset:'3-6 months',max:'2-5 years',reversible:true},
+  {change:'Fat redistribution',onset:'3-6 months',max:'2-5 years',reversible:true},
+  {change:'Body hair (if on T)',onset:'3-6 months',max:'4-5 years',reversible:'partial'},
+  {change:'Skin changes',onset:'1-3 months',max:'1-2 years',reversible:true}
+];
+
+function getTimeline(){
+  const j=S.journeyType||'mtf';
+  if(j==='ftm')return FTM_TIMELINE;
+  if(j==='femboy')return FEMBOY_TIMELINE;
+  if(j==='tomboy')return TOMBOY_TIMELINE;
+  if(j==='nonbinary'||j==='custom')return MTF_TIMELINE.concat(FTM_TIMELINE);
+  return MTF_TIMELINE;
+}
+
+const FTM_LAB_TARGETS={
+  'Testosterone':{unit:'ng/dL',low:300,high:1000,urgentHigh:1500},
+  'Estradiol':{unit:'pg/mL',low:0,high:50,urgentHigh:100},
+  'Hemoglobin':{unit:'g/dL',low:13.5,high:17.5,urgentHigh:18.5},
+  'Hematocrit':{unit:'%',low:38,high:52,urgentHigh:54}
+};
+
+function getLabTargets(){
+  const j=S.journeyType||'mtf';
+  if(j==='ftm'||j==='tomboy')return Object.assign({},LAB_TARGETS,FTM_LAB_TARGETS);
+  return LAB_TARGETS;
+}
+
+const FTM_MEDS={
+  testosterone:['Testosterone cypionate IM','Testosterone cypionate SubQ','Testosterone enanthate IM','Testosterone enanthate SubQ','Testosterone gel','Testosterone patch','Testosterone pellets','Nebido (undecanoate)'],
+  other:['Finasteride (hair loss)','Minoxidil (facial hair)','Anastrozole','Letrozole','Biotin','Vitamin D','Iron','Custom...']
+};
+
+const SUPPLEMENT_STACKS={
+  'Skin & Hair':{
+    desc:'Support healthy skin, hair, and nails',
+    items:['Biotin 5000mcg','Vitamin E 400IU','Vitamin C 1000mg','Zinc 30mg','Collagen peptides 10g','MSM 1000mg']
+  },
+  'Bone Health':{
+    desc:'Maintain bone density (important on HRT)',
+    items:['Calcium 600mg','Vitamin D3 2000IU','Magnesium 400mg','Vitamin K2 100mcg']
+  },
+  'Energy & Mood':{
+    desc:'Combat fatigue and support mental health',
+    items:['B-Complex','Vitamin D3 2000IU','Omega-3 1000mg','Magnesium 400mg','CoQ10 100mg','Iron 18mg (if low)']
+  },
+  'Feminization Support':{
+    desc:'Natural supplements (not a replacement for HRT)',
+    items:['Spearmint tea 2x daily','Saw palmetto 320mg','DIM 200mg','Evening primrose oil 1000mg','Red clover extract','Pueraria mirifica 500mg']
+  },
+  'Masculinization Support':{
+    desc:'Natural supplements (not a replacement for HRT)',
+    items:['Zinc 30mg','Vitamin D3 5000IU','Ashwagandha 600mg','Fenugreek 600mg','D-Aspartic acid 3g','Magnesium 400mg']
+  },
+  'Recovery & Healing':{
+    desc:'Post-procedure or general healing support',
+    items:['Vitamin C 2000mg','Zinc 50mg','Arnica montana','Bromelain 500mg','Protein 30g+','Iron 18mg']
+  },
+  'Heart & Circulation':{
+    desc:'Cardiovascular support (monitor on HRT)',
+    items:['Omega-3 2000mg','CoQ10 200mg','Garlic extract 600mg','Vitamin E 200IU','Magnesium 400mg']
+  }
+};
 
 const TANNER_STAGES=[
   {stage:'I',desc:'Prepubertal — no breast tissue',typical:'Pre-HRT'},
@@ -277,16 +429,33 @@ const MED_TYPES={
   other:['Finasteride','Dutasteride','Biotin','Vitamin D','Calcium','Fish oil','Iron','Custom...']
 };
 
+const PHOTO_CATEGORIES=['Face','Body','Outfit','Custom'];
+const MAX_PHOTO_PX=800;
+const JPEG_QUALITY=0.7;
+
+function getMedTypes(){
+  const j=S.journeyType||'mtf';
+  if(j==='ftm'||j==='tomboy')return{testosterone:FTM_MEDS.testosterone,other:[...FTM_MEDS.other,...MED_TYPES.other]};
+  if(j==='femboy')return{estrogen:MED_TYPES.estrogen,antiandrogen:MED_TYPES.antiandrogen,other:MED_TYPES.other};
+  if(j==='nonbinary'||j==='custom')return{estrogen:MED_TYPES.estrogen,testosterone:FTM_MEDS.testosterone,antiandrogen:MED_TYPES.antiandrogen,progesterone:MED_TYPES.progesterone,other:[...MED_TYPES.other,...FTM_MEDS.other]};
+  return MED_TYPES;
+}
+
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
-function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[]}}
+function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[]}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
-function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false}}
+function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf'}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
 function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
 
 let D=loadData(),S=loadSettings(),currentView='dashboard',tempLog={};
+if(!D.photos)D.photos=[];
+if(!D.supplements)D.supplements=[];
+if(!D.phases)D.phases=[];
+if(!D.supplementLog)D.supplementLog=[];
+if(!S.journeyType)S.journeyType='mtf';
 
 // ─── Calculations ────────────────────────────────────────────
 function daysOnHRT(){if(!D.startDate)return 0;return Math.floor((new Date()-new Date(D.startDate))/864e5)}
@@ -297,7 +466,7 @@ function today(){return new Date().toISOString().split('T')[0]}
 function latestLab(name){const results=D.labs.flatMap(l=>l.results.filter(r=>r.name===name)).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));return results[0]}
 function labHistory(name){return D.labs.flatMap(l=>l.results.filter(r=>r.name===name).map(r=>({...r,date:l.date}))).sort((a,b)=>new Date(a.date)-new Date(b.date))}
 function flagLab(name,value){
-  const t=LAB_TARGETS[name];if(!t)return'normal';
+  const t=getLabTargets()[name];if(!t)return'normal';
   if(t.urgentHigh&&value>t.urgentHigh)return'urgent';
   if(t.urgentLow&&value<t.urgentLow)return'urgent';
   if(value>t.high)return'high';
@@ -321,9 +490,7 @@ function generateAlerts(){
   const alerts=[];const meds=D.meds.filter(m=>!m.ended);
   const hasSpiro=meds.some(m=>m.name.toLowerCase().includes('spironolactone'));
   const hasBical=meds.some(m=>m.name.toLowerCase().includes('bicalutamide'));
-  const hasOralE=meds.some(m=>m.name.toLowerCase().includes('oral'));
 
-  // Lab due alerts
   if(D.labs.length){
     const lastLab=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
     const daysSince=Math.floor((new Date()-new Date(lastLab.date))/864e5);
@@ -334,10 +501,8 @@ function generateAlerts(){
     alerts.push({type:'warning',msg:'No labs recorded yet. Baseline labs are recommended before or shortly after starting HRT.'});
   }
 
-  // Potassium alert
   if(hasSpiro){const k=latestLab('Potassium');if(k&&k.value>5.0)alerts.push({type:'urgent',msg:`Potassium is ${k.value} mEq/L (elevated). Contact your provider — risk with spironolactone.`})}
 
-  // Liver alert
   if(hasBical){
     const alt=latestLab('ALT');if(alt&&alt.value>120)alerts.push({type:'urgent',msg:`ALT is ${alt.value} U/L (>3x normal). Contact provider immediately — bicalutamide liver risk.`});
     const bicalMed=meds.find(m=>m.name.toLowerCase().includes('bicalutamide'));
@@ -346,15 +511,61 @@ function generateAlerts(){
         if(!lastALT||Math.floor((new Date()-new Date(lastALT.date))/864e5)>35)alerts.push({type:'warning',msg:'Monthly liver function tests recommended during first 6 months of bicalutamide.'})}}
   }
 
-  // Prolactin
   const prl=latestLab('Prolactin');if(prl&&prl.value>50)alerts.push({type:'warning',msg:`Prolactin is ${prl.value} ng/mL (elevated). Discuss imaging with your provider.`});
 
-  // E2 levels
   const e2=latestLab('Estradiol');
   if(e2&&e2.value<50&&daysOnHRT()>90)alerts.push({type:'warning',msg:`Estradiol ${e2.value} pg/mL may be subtherapeutic. Discuss dosing with provider.`});
   if(e2&&e2.value>500)alerts.push({type:'info',msg:`Estradiol ${e2.value} pg/mL is above typical target range.`});
 
   return alerts;
+}
+
+function storageUsed(){
+  let total=0;
+  for(let k in localStorage){if(localStorage.hasOwnProperty(k))total+=localStorage[k].length*2}
+  return total;
+}
+
+// ─── Photo Helpers ──────────────────────────────────────────
+function resizeImage(file,callback){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      const canvas=document.createElement('canvas');
+      let w=img.width,h=img.height;
+      if(w>MAX_PHOTO_PX){h=h*(MAX_PHOTO_PX/w);w=MAX_PHOTO_PX}
+      if(h>MAX_PHOTO_PX){w=w*(MAX_PHOTO_PX/h);h=MAX_PHOTO_PX}
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      callback(canvas.toDataURL('image/jpeg',JPEG_QUALITY));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function addPhoto(category){
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';
+  input.setAttribute('capture','environment');
+  input.onchange=function(e){
+    const file=e.target.files[0];if(!file)return;
+    resizeImage(file,function(dataUrl){
+      const used=storageUsed();
+      if(used>4*1024*1024){alert('Storage nearly full. Delete old photos or export a backup first.');return}
+      const note=prompt('Add a note (optional):','')||'';
+      D.photos.push({date:today(),category:category,data:dataUrl,note:note,time:new Date().toLocaleTimeString()});
+      saveData();renderPhotos();
+    });
+  };
+  input.click();
+}
+
+function deletePhoto(idx){
+  if(!confirm('Delete this photo? This cannot be undone.'))return;
+  D.photos.splice(idx,1);saveData();renderPhotos();
 }
 
 // ─── PIN ─────────────────────────────────────────────────────
@@ -403,11 +614,9 @@ function renderDashboard(){
     </div>`;
   }
 
-  // Alerts
   const alerts=generateAlerts();
   if(alerts.length){for(const a of alerts)h+=`<div class="alert-box ${a.type}">${a.msg}</div>`}
 
-  // Quick stats
   const bs=braSize(),w=whr(),e2=latestLab('Estradiol'),t=latestLab('Testosterone');
   if(e2||t||bs||w){
     h+=`<div class="panel"><h3>Quick Stats</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
@@ -418,8 +627,7 @@ function renderDashboard(){
     h+=`</div></div>`;
   }
 
-  // Tanner stage
-  if(days>0){
+  if(days>0&&(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')){
     const ts=TANNER_STAGES[S.tannerStage-1];
     h+=`<div class="panel"><h3>Breast Development — Tanner ${ts.stage}</h3>
       <p style="font-size:13px;color:var(--text-dim);line-height:1.5">${ts.desc}</p>
@@ -429,7 +637,6 @@ function renderDashboard(){
     </div>`;
   }
 
-  // Active meds
   const activeMeds=D.meds.filter(m=>!m.ended);
   if(activeMeds.length){
     h+=`<div class="panel"><h3>Active Medications</h3>`;
@@ -442,8 +649,7 @@ function renderDashboard(){
     h+=`</div>`;
   }
 
-  // Next injection
-  if(D.meds.some(m=>!m.ended&&(m.route||'').toLowerCase().includes('injection')||m.name.toLowerCase().includes('im')||m.name.toLowerCase().includes('subq'))){
+  if(D.meds.some(m=>!m.ended&&((m.route||'').toLowerCase().includes('injection')||m.name.toLowerCase().includes('im')||m.name.toLowerCase().includes('subq')))){
     const next=nextInjectionSite();
     h+=`<div class="panel"><h3>Injection Tracker</h3>
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Next suggested site: <strong style="color:var(--violet-deep)">${next}</strong></p>
@@ -452,6 +658,15 @@ function renderDashboard(){
         return`<span class="inj-site${last?' recent':''}" title="${s}">${s.replace(/\s/g,'').slice(0,2)}</span>`;
       }).join('')}</div>
       <button class="btn-small" style="margin-top:10px" onclick="logInjection()">Log Injection</button>
+    </div>`;
+  }
+
+  // Recent photos preview
+  if(D.photos.length){
+    const recent=D.photos.slice(-3);
+    h+=`<div class="panel"><h3>Recent Photos</h3>
+      <div style="display:flex;gap:6px;overflow-x:auto">${recent.map(p=>`<div style="flex-shrink:0;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid var(--border)"><img src="${p.data}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}</div>
+      <button class="btn-small" style="margin-top:8px" onclick="showView('photos')">View All Photos</button>
     </div>`;
   }
 
@@ -550,7 +765,7 @@ function renderMeds(){
 
 function addMed(){
   let choices=[];
-  for(const[cat,meds]of Object.entries(MED_TYPES))choices.push(...meds);
+  for(const[cat,meds]of Object.entries(getMedTypes()))choices.push(...meds);
   const name=prompt('Medication:\n'+choices.join(', '));
   if(!name)return;
   const dose=prompt('Dose (e.g. 2mg, 100mg):');if(!dose)return;
@@ -564,7 +779,6 @@ function addMed(){
 function renderLabs(){
   let h='<div class="fade-in">';
 
-  // Latest results
   const latest=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
   if(latest){
     h+=`<div class="panel"><h3>Latest Labs — ${new Date(latest.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</h3>`;
@@ -581,7 +795,6 @@ function renderLabs(){
     h+=`</div>`;
   }
 
-  // E2/T trend charts
   const e2hist=labHistory('Estradiol'),thist=labHistory('Testosterone');
   if(e2hist.length>=2){
     const mx=Math.max(...e2hist.map(l=>l.value),200);
@@ -602,7 +815,6 @@ function renderLabs(){
 
   h+=`<button class="btn-primary" onclick="addLabPanel()">+ Add Lab Results</button>`;
 
-  // Past labs
   if(D.labs.length>1){
     h+=`<div class="section-title" style="margin-top:16px">Previous Labs</div>`;
     for(const lab of D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(1)){
@@ -646,7 +858,6 @@ function renderBody(){
     <button class="btn-primary" onclick="saveMeasurements()">Save Measurements</button>
   </div>`;
 
-  // Current stats
   if(last){
     const bs=braSize();
     h+=`<div class="panel"><h3>Current</h3>
@@ -659,7 +870,6 @@ function renderBody(){
     </div>`;
   }
 
-  // Measurement history chart
   if(D.measurements.length>=2){
     const hips=D.measurements.filter(m=>m.hips).slice(-8);
     const waists=D.measurements.filter(m=>m.waist).slice(-8);
@@ -699,6 +909,217 @@ function saveMeasurements(){
   setTimeout(()=>{btn.textContent='Save Measurements';btn.style.background=''},1200);
 }
 
+// ─── Photos View ─────────────────────────────────────────────
+function renderPhotos(){
+  let h='<div class="fade-in">';
+  const usedKB=Math.round(storageUsed()/1024);
+  const maxKB=5*1024;
+
+  h+=`<div class="panel"><h3>Photo Timeline</h3>
+    <div class="panel-sub">Track visual changes over time. Photos stored locally only.</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Storage: ${usedKB}KB / ~${maxKB}KB</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">`;
+  for(const cat of PHOTO_CATEGORIES){
+    h+=`<button class="btn-small" onclick="addPhoto('${cat}')">+ ${cat}</button>`;
+  }
+  h+=`</div></div>`;
+
+  // Compare mode
+  if(D.photos.length>=2){
+    h+=`<div class="panel"><h3>Compare</h3>
+      <div class="panel-sub">Select two photos to compare side by side</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select id="compareA" style="flex:1;padding:8px"><option value="">First...</option>${D.photos.map((p,i)=>`<option value="${i}">${p.date} — ${p.category}</option>`).join('')}</select>
+        <select id="compareB" style="flex:1;padding:8px"><option value="">Second...</option>${D.photos.map((p,i)=>`<option value="${i}">${p.date} — ${p.category}</option>`).join('')}</select>
+      </div>
+      <button class="btn-small" onclick="comparePhotos()">Compare</button>
+      <div id="compareResult"></div>
+    </div>`;
+  }
+
+  // Group photos by month
+  if(D.photos.length){
+    const byMonth={};
+    for(let i=0;i<D.photos.length;i++){
+      const p=D.photos[i];
+      const key=p.date.slice(0,7);
+      if(!byMonth[key])byMonth[key]=[];
+      byMonth[key].push({...p,idx:i});
+    }
+    const months=Object.keys(byMonth).sort().reverse();
+    for(const month of months){
+      const photos=byMonth[month];
+      const label=new Date(month+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      h+=`<div class="section-title">${label} (${photos.length})</div>
+        <div class="photo-grid">`;
+      for(const p of photos){
+        h+=`<div class="photo-card" onclick="viewPhoto(${p.idx})">
+          <img src="${p.data}" alt="${p.category}" loading="lazy">
+          <div class="photo-label">${p.category}<br>${p.date.slice(5)}</div>
+          <button class="photo-delete" onclick="event.stopPropagation();deletePhoto(${p.idx})">&#10005;</button>
+        </div>`;
+      }
+      h+=`</div>`;
+    }
+  }else{
+    h+=`<div class="empty-state"><div class="icon">&#128247;</div><p>Take your first photo to start your visual timeline.<br>Face, body, or outfit — track your changes over time.</p></div>`;
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function viewPhoto(idx){
+  const p=D.photos[idx];if(!p)return;
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML=`
+    <img src="${p.data}" style="max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain">
+    <div style="color:#fff;text-align:center;margin-top:12px">
+      <div style="font-size:16px;font-weight:600">${p.category}</div>
+      <div style="font-size:13px;opacity:.7">${p.date}${p.time?' at '+p.time:''}</div>
+      ${p.note?`<div style="font-size:13px;margin-top:4px;opacity:.8">${p.note}</div>`:''}
+    </div>
+    <button style="margin-top:16px;padding:10px 24px;border-radius:12px;background:rgba(255,255,255,.15);color:#fff;font-size:14px;font-weight:500;border:1px solid rgba(255,255,255,.2)" onclick="this.parentElement.remove()">Close</button>
+  `;
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
+  document.body.appendChild(overlay);
+}
+
+function comparePhotos(){
+  const a=parseInt(document.getElementById('compareA').value);
+  const b=parseInt(document.getElementById('compareB').value);
+  if(isNaN(a)||isNaN(b)){return}
+  const pa=D.photos[a],pb=D.photos[b];
+  if(!pa||!pb)return;
+  document.getElementById('compareResult').innerHTML=`
+    <div class="photo-compare" style="margin-top:12px">
+      <div><img src="${pa.data}" alt="Before"><div class="compare-label">${pa.date}<br>${pa.category}</div></div>
+      <div><img src="${pb.data}" alt="After"><div class="compare-label">${pb.date}<br>${pb.category}</div></div>
+    </div>`;
+}
+
+// ─── Supplements View ────────────────────────────────────────
+function renderSupps(){
+  let h='<div class="fade-in">';
+  const td=today();
+  const todayLog=D.supplementLog.find(l=>l.date===td)||{date:td,taken:[]};
+
+  // Daily checklist
+  if(D.supplements.filter(s=>!s.ended).length){
+    h+=`<div class="panel"><h3>Today's Supplements</h3>
+      <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>`;
+    for(const s of D.supplements.filter(s=>!s.ended)){
+      const taken=todayLog.taken.includes(s.id);
+      h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?'var(--mint)':'var(--border)'};background:${taken?'var(--mint-pale)':'transparent'};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center" onclick="toggleSupp('${s.id}')">${taken?'&#10003;':''}</button>
+        <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${s.dose||''} ${s.timing||''}</div></div>
+        <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderSupps()">Stop</button>
+      </div>`;
+    }
+    const taken=todayLog.taken.length,total=D.supplements.filter(s=>!s.ended).length;
+    h+=`<div style="margin-top:10px;font-size:12px;color:var(--text-muted)">${taken}/${total} taken today</div></div>`;
+  }
+
+  // Add supplement
+  h+=`<div class="panel"><h3>Add Supplement</h3>
+    <div class="form-row"><label>Name</label><input type="text" id="suppName" placeholder="e.g. Vitamin D3"></div>
+    <div class="form-row"><label>Dose</label><input type="text" id="suppDose" placeholder="e.g. 2000 IU"></div>
+    <div class="form-row"><label>Timing</label><select id="suppTiming"><option>Morning</option><option>Afternoon</option><option>Evening</option><option>With food</option><option>Empty stomach</option><option>Any time</option></select></div>
+    <button class="btn-primary" onclick="addSupplement()">+ Add Supplement</button>
+  </div>`;
+
+  // Stack recommendations
+  h+=`<div class="panel"><h3>Recommended Stacks</h3>
+    <div class="panel-sub">Pre-built supplement plans for common goals. Tap to add all items.</div>`;
+  const j=S.journeyType||'mtf';
+  for(const[name,stack]of Object.entries(SUPPLEMENT_STACKS)){
+    if(name==='Feminization Support'&&(j==='ftm'||j==='tomboy'))continue;
+    if(name==='Masculinization Support'&&(j==='mtf'||j==='femboy'))continue;
+    h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div><div style="font-size:14px;font-weight:600">${name}</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${stack.desc}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${stack.items.join(' · ')}</div></div>
+        <button class="btn-small" style="flex-shrink:0;margin-left:8px" onclick="addStack('${name}')">Add</button>
+      </div>
+    </div>`;
+  }
+  h+=`</div>`;
+
+  // Phases
+  h+=`<div class="panel"><h3>Phase Planning</h3>
+    <div class="panel-sub">Plan supplement phases with goals and timelines</div>`;
+  if(D.phases.length){
+    for(const p of D.phases){
+      const isActive=new Date(p.startDate)<=new Date()&&(!p.endDate||new Date(p.endDate)>=new Date());
+      h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border);${isActive?'background:var(--mint-pale);margin:0 -16px;padding:10px 16px;border-radius:8px':''}">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div style="font-size:14px;font-weight:600">${isActive?'&#9679; ':''}${p.name}</div>
+            <div style="font-size:12px;color:var(--text-dim)">${p.goal||''}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.startDate}${p.endDate?' to '+p.endDate:' — ongoing'}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Supps: ${p.supplements.join(', ')||'None assigned'}</div></div>
+          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.phases=D.phases.filter(x=>x.id!=='${p.id}');saveData();renderSupps()">&#10005;</button>
+        </div>
+      </div>`;
+    }
+  }
+  h+=`<button class="btn-secondary" onclick="addPhase()">+ Add Phase</button></div>`;
+
+  // Stopped supplements
+  const stopped=D.supplements.filter(s=>s.ended);
+  if(stopped.length){
+    h+=`<div class="panel"><h3>Past Supplements</h3>`;
+    for(const s of stopped){
+      h+=`<div style="padding:6px 0;font-size:13px;color:var(--text-dim);border-bottom:1px solid var(--border)">${s.name} ${s.dose||''} — stopped ${s.ended}</div>`;
+    }
+    h+=`</div>`;
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function addSupplement(){
+  const name=document.getElementById('suppName').value.trim();
+  if(!name)return;
+  const dose=document.getElementById('suppDose').value.trim();
+  const timing=document.getElementById('suppTiming').value;
+  D.supplements.push({id:Date.now().toString(36),name,dose,timing,started:today(),ended:null});
+  saveData();renderSupps();
+}
+
+function toggleSupp(id){
+  const td=today();
+  let log=D.supplementLog.find(l=>l.date===td);
+  if(!log){log={date:td,taken:[]};D.supplementLog.push(log)}
+  const idx=log.taken.indexOf(id);
+  if(idx>=0)log.taken.splice(idx,1);else log.taken.push(id);
+  saveData();renderSupps();
+}
+
+function addStack(name){
+  const stack=SUPPLEMENT_STACKS[name];if(!stack)return;
+  if(!confirm(`Add all ${stack.items.length} supplements from "${name}" stack?`))return;
+  for(const item of stack.items){
+    const parts=item.match(/^(.+?)\s+(\d.+)$/);
+    D.supplements.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:parts?parts[1]:item,dose:parts?parts[2]:'',timing:'Any time',started:today(),ended:null});
+  }
+  saveData();renderSupps();
+}
+
+function addPhase(){
+  const name=prompt('Phase name (e.g. "Loading Phase", "Maintenance"):');if(!name)return;
+  const goal=prompt('Goal (e.g. "Build bone density", "Support feminization"):');
+  const startDate=prompt('Start date (YYYY-MM-DD):',today());if(!startDate)return;
+  const endDate=prompt('End date (YYYY-MM-DD, leave empty for ongoing):','');
+  const suppNames=D.supplements.filter(s=>!s.ended).map(s=>s.name);
+  const selected=prompt('Supplements for this phase (comma-separated):\nAvailable: '+suppNames.join(', '));
+  D.phases.push({id:Date.now().toString(36),name:name.trim(),goal:(goal||'').trim(),startDate,endDate:endDate||null,supplements:selected?selected.split(',').map(s=>s.trim()):[]});
+  saveData();renderSupps();
+}
+
 // ─── Timeline View ───────────────────────────────────────────
 function renderTimeline(){
   const months=monthsOnHRT();
@@ -707,7 +1128,7 @@ function renderTimeline(){
 
   h+=`<p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">You are at <strong style="color:var(--violet-deep)">${months} months</strong>. Here's what to expect:</p>`;
 
-  for(const c of CHANGE_TIMELINE){
+  for(const c of getTimeline()){
     const onsetMonths=parseFloat(c.onset);
     const isActive=!isNaN(onsetMonths)&&months>=onsetMonths;
     const isFuture=!isNaN(onsetMonths)&&months<onsetMonths;
@@ -722,17 +1143,20 @@ function renderTimeline(){
   }
   h+=`</div>`;
 
-  // Tanner stages
-  h+=`<div class="panel"><h3>Breast Development Stages</h3>`;
-  for(const ts of TANNER_STAGES){
-    const isCurrent=parseInt(ts.stage)===S.tannerStage;
-    h+=`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${isCurrent?'background:var(--violet-pale);margin:0 -16px;padding:10px 16px;border-radius:8px':''}">
-      <div style="font-size:20px;font-weight:700;color:${isCurrent?'var(--violet-deep)':'var(--text-muted)};min-width:30px">${ts.stage}</div>
-      <div><div style="font-size:13px;font-weight:${isCurrent?'600':'400'}">${ts.desc}</div>
-        <div style="font-size:11px;color:var(--text-muted)">Typical: ${ts.typical}</div></div>
-    </div>`;
+  const j=S.journeyType||'mtf';
+  if(j==='mtf'||j==='femboy'||j==='nonbinary'){
+    h+=`<div class="panel"><h3>Breast Development Stages</h3>`;
+    for(const ts of TANNER_STAGES){
+      const isCurrent=parseInt(ts.stage)===S.tannerStage;
+      h+=`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${isCurrent?'background:var(--violet-pale);margin:0 -16px;padding:10px 16px;border-radius:8px':''}">
+        <div style="font-size:20px;font-weight:700;color:${isCurrent?'var(--violet-deep)':'var(--text-muted)');min-width:30px">${ts.stage}</div>
+        <div><div style="font-size:13px;font-weight:${isCurrent?'600':'400'}">${ts.desc}</div>
+          <div style="font-size:11px;color:var(--text-muted)">Typical: ${ts.typical}</div></div>
+      </div>`;
+    }
+    h+=`</div>`;
   }
-  h+=`</div></div>`;
+  h+=`</div>`;
   document.getElementById('content').innerHTML=h;
 }
 
@@ -740,7 +1164,6 @@ function renderTimeline(){
 function renderInsights(){
   let h='<div class="fade-in">';
 
-  // Mood patterns
   const moodCounts={};D.logs.forEach(l=>{if(l.mood)moodCounts[l.mood]=(moodCounts[l.mood]||0)+1});
   const topMoods=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   if(topMoods.length){
@@ -756,7 +1179,6 @@ function renderInsights(){
     h+=`</div>`;
   }
 
-  // Dysphoria trend
   const dysLogs=D.logs.filter(l=>l.dysphoria!==undefined).slice(-14);
   if(dysLogs.length>=3){
     h+=`<div class="panel"><h3>Dysphoria Trend</h3>
@@ -765,7 +1187,6 @@ function renderInsights(){
     </div>`;
   }
 
-  // Top symptoms
   const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
   const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
   if(topTags.length){
@@ -778,7 +1199,6 @@ function renderInsights(){
       </div>`).join('')}</div>`;
   }
 
-  // Weight trend
   const weightLogs=D.logs.filter(l=>l.weight).slice(-14);
   if(weightLogs.length>=3){
     const vals=weightLogs.map(l=>parseFloat(l.weight)),mn=Math.min(...vals)-2,mx=Math.max(...vals)+2,range=mx-mn;
@@ -787,7 +1207,6 @@ function renderInsights(){
       <div class="chart-labels">${weightLogs.map(l=>`<span>${l.weight}</span>`).join('')}</div></div>`;
   }
 
-  // Auto insights
   if(D.logs.length>=5){
     const recentDys=D.logs.slice(-7).filter(l=>l.dysphoria!==undefined);
     const olderDys=D.logs.slice(-30,-7).filter(l=>l.dysphoria!==undefined);
@@ -799,10 +1218,102 @@ function renderInsights(){
     }
   }
 
-  h+=`<button class="btn-primary" onclick="exportReport()">Export Doctor Report</button>`;
+  h+=`<button class="btn-primary" onclick="exportDoctorReport()">Export Doctor Report (PDF-ready)</button>`;
+  h+=`<button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>`;
 
   if(!D.logs.length)h+=`<div class="empty-state"><div class="icon">&#128300;</div><p>Start logging daily entries to see patterns, trends, and insights about your journey.</p></div>`;
   h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+// ─── Resources View ──────────────────────────────────────────
+function renderResources(){
+  let h=`<div class="fade-in">
+
+    <div class="crisis-card">
+      <h4>Crisis Support</h4>
+      <div class="crisis-line"><span class="name">Trans Lifeline</span><span class="number"><a href="tel:8775658860" style="color:var(--violet-deep);text-decoration:none">877-565-8860</a></span></div>
+      <div class="crisis-line"><span class="name">988 Suicide &amp; Crisis</span><span class="number"><a href="tel:988" style="color:var(--violet-deep);text-decoration:none">Call/Text 988</a></span></div>
+      <div class="crisis-line"><span class="name">Crisis Text Line</span><span class="number" style="font-size:13px">Text HOME to 741741</span></div>
+      <div class="crisis-line"><span class="name">Trevor Project</span><span class="number"><a href="tel:18664887386" style="color:var(--violet-deep);text-decoration:none">1-866-488-7386</a></span></div>
+      <div class="crisis-line"><span class="name">Trans Lifeline Canada</span><span class="number"><a href="tel:8773306366" style="color:var(--violet-deep);text-decoration:none">877-330-6366</a></span></div>
+    </div>
+
+    <div class="resource-card">
+      <h4>&#127968; Communities</h4>
+      <p>Safe spaces to connect, ask questions, and share your journey.</p>
+      <div style="margin-top:8px">
+        <div class="resource-link"><a href="https://reddit.com/r/MtF" target="_blank" rel="noopener">r/MtF</a> — Transfeminine community</div>
+        <div class="resource-link"><a href="https://reddit.com/r/FtM" target="_blank" rel="noopener">r/FtM</a> — Transmasculine community</div>
+        <div class="resource-link"><a href="https://reddit.com/r/NonBinary" target="_blank" rel="noopener">r/NonBinary</a> — Non-binary community</div>
+        <div class="resource-link"><a href="https://reddit.com/r/TransDIY" target="_blank" rel="noopener">r/TransDIY</a> — DIY HRT safety &amp; harm reduction</div>
+        <div class="resource-link"><a href="https://reddit.com/r/asktransgender" target="_blank" rel="noopener">r/asktransgender</a> — Q&amp;A community</div>
+        <div class="resource-link"><a href="https://reddit.com/r/TransTimelines" target="_blank" rel="noopener">r/TransTimelines</a> — Transition photo timelines</div>
+        <div class="resource-link"><a href="https://reddit.com/r/feminineboys" target="_blank" rel="noopener">r/feminineboys</a> — Femboy community</div>
+      </div>
+    </div>
+
+    <div class="resource-card">
+      <h4>&#128218; HRT Information</h4>
+      <p>Evidence-based resources for understanding your treatment.</p>
+      <div style="margin-top:8px">
+        <div class="resource-link"><a href="https://transfemscience.org" target="_blank" rel="noopener">Transfem Science</a> — Peer-reviewed HRT research &amp; guides</div>
+        <div class="resource-link"><a href="https://diyhrt.wiki" target="_blank" rel="noopener">DIY HRT Directory</a> — Harm reduction for self-medication</div>
+        <div class="resource-link"><a href="https://transcare.ucsf.edu/guidelines" target="_blank" rel="noopener">UCSF Trans Care</a> — Clinical guidelines</div>
+        <div class="resource-link"><a href="https://genderdysphoria.fyi" target="_blank" rel="noopener">Gender Dysphoria Bible</a> — Understanding dysphoria</div>
+        <div class="resource-link"><a href="https://transharmreduction.org" target="_blank" rel="noopener">Trans Harm Reduction</a> — Blood test info &amp; safety</div>
+      </div>
+    </div>
+
+    <div class="resource-card">
+      <h4>&#127973; Finding Providers</h4>
+      <p>Directories to find trans-friendly healthcare.</p>
+      <div style="margin-top:8px">
+        <div class="resource-link"><a href="https://www.wpath.org/provider/search" target="_blank" rel="noopener">WPATH Provider Search</a> — Certified trans health providers</div>
+        <div class="resource-link"><a href="https://www.glma.org/find-a-provider.html" target="_blank" rel="noopener">GLMA Provider Directory</a> — LGBTQ+ healthcare providers</div>
+        <div class="resource-link"><a href="https://getplume.co" target="_blank" rel="noopener">Plume</a> — Telehealth HRT (37 states)</div>
+        <div class="resource-link"><a href="https://www.folxhealth.com" target="_blank" rel="noopener">FOLX Health</a> — Telehealth HRT + community</div>
+        <div class="resource-link"><a href="https://www.plannedparenthood.org" target="_blank" rel="noopener">Planned Parenthood</a> — Informed consent HRT at many locations</div>
+      </div>
+    </div>
+
+    <div class="resource-card">
+      <h4>&#9878; Legal Resources</h4>
+      <p>Know your rights and protect yourself.</p>
+      <div style="margin-top:8px">
+        <div class="resource-link"><a href="https://transequality.org" target="_blank" rel="noopener">National Center for Trans Equality</a> — Policy, rights, ID guides</div>
+        <div class="resource-link"><a href="https://www.lambdalegal.org" target="_blank" rel="noopener">Lambda Legal</a> — Legal help for discrimination</div>
+        <div class="resource-link"><a href="https://srlp.org" target="_blank" rel="noopener">Sylvia Rivera Law Project</a> — Free legal services</div>
+        <div class="resource-link"><a href="https://transgenderlawcenter.org" target="_blank" rel="noopener">Transgender Law Center</a> — Legal support &amp; advocacy</div>
+      </div>
+    </div>
+
+    <div class="resource-card">
+      <h4>&#128156; Mutual Aid &amp; Support</h4>
+      <div style="margin-top:8px">
+        <div class="resource-link"><a href="https://pointofpride.org" target="_blank" rel="noopener">Point of Pride</a> — Free binders, fem care, electrolysis grants</div>
+        <div class="resource-link"><a href="https://transgenderlawcenter.org/trans-agenda/tef" target="_blank" rel="noopener">Trans Economic Fund</a> — Emergency financial aid</div>
+        <div class="resource-link"><a href="https://jimcollinsfoundation.org" target="_blank" rel="noopener">Jim Collins Foundation</a> — Surgery grants</div>
+        <div class="resource-link"><a href="https://www.gofundme.com/c/act/trans-charity" target="_blank" rel="noopener">GoFundMe Trans Charity</a> — Community fundraising</div>
+      </div>
+    </div>
+
+    <div class="resource-card">
+      <h4>&#128161; Safety Tips</h4>
+      <p style="line-height:1.8">
+        <strong>Digital safety:</strong> Use a PIN lock and stealth mode on this app. Don't store transition photos in cloud-synced galleries.<br><br>
+        <strong>At the pharmacy:</strong> You can use GoodRx or ask about manufacturer coupons for HRT medications.<br><br>
+        <strong>Lab work:</strong> Quest Diagnostics and Labcorp offer self-pay panels. Some Planned Parenthood locations include labs in visit fees.<br><br>
+        <strong>If you feel unsafe:</strong> Trans Lifeline (877-565-8860) is staffed by trans people and will never contact police without your consent.
+      </p>
+    </div>
+
+    <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;line-height:1.6">
+      All links open in your browser.<br>
+      Bloom does not track which links you visit.<br>
+      You are valid. You are loved. You belong.
+    </div>
+  </div>`;
   document.getElementById('content').innerHTML=h;
 }
 
@@ -817,8 +1328,12 @@ function renderSettings(){
     </div>
 
     <div class="settings-group"><h3>Profile</h3>
+      <div class="setting-row"><label>Journey Type</label>
+        <select style="width:130px;padding:6px" onchange="S.journeyType=this.value;saveSettings();renderSettings()">
+          ${Object.entries(JOURNEY_TYPES).map(([k,v])=>`<option value="${k}"${k===S.journeyType?' selected':''}>${v.label}</option>`).join('')}
+        </select></div>
       <div class="setting-row"><label>HRT Start Date</label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
-      <div class="setting-row"><label>Tanner Stage</label>
+      ${(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')?`<div class="setting-row"><label>Tanner Stage</label>`:`<div class="setting-row" style="display:none"><label>Tanner Stage</label>`}
         <select style="width:80px;padding:6px" onchange="S.tannerStage=+this.value;saveSettings()">
           ${TANNER_STAGES.map(t=>`<option value="${t.stage}"${parseInt(t.stage)===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
         </select></div>
@@ -836,24 +1351,19 @@ function renderSettings(){
       <div class="setting-row"><label>Lab panels</label><span style="color:var(--text-dim)">${D.labs.length}</span></div>
       <div class="setting-row"><label>Measurements</label><span style="color:var(--text-dim)">${D.measurements.length}</span></div>
       <div class="setting-row"><label>Medications</label><span style="color:var(--text-dim)">${D.meds.length}</span></div>
+      <div class="setting-row"><label>Photos</label><span style="color:var(--text-dim)">${D.photos.length}</span></div>
+      <div class="setting-row"><label>Supplements</label><span style="color:var(--text-dim)">${D.supplements.length}</span></div>
+      <div class="setting-row"><label>Phases</label><span style="color:var(--text-dim)">${D.phases.length}</span></div>
       <div class="setting-row"><label>Injections</label><span style="color:var(--text-dim)">${D.injections.length}</span></div>
+      <div class="setting-row"><label>Storage used</label><span style="color:var(--text-dim)">${Math.round(storageUsed()/1024)} KB</span></div>
     </div>
 
-    <div class="settings-group"><h3>Resources</h3>
-      <div style="font-size:13px;color:var(--text-dim);line-height:1.8">
-        <strong>Crisis Lines:</strong><br>
-        Trans Lifeline: 877-565-8860<br>
-        988 Suicide & Crisis: call/text 988<br>
-        Crisis Text: text HOME to 741741
-      </div>
-    </div>
-
-    <button class="btn-primary" onclick="exportReport()">Export Doctor Report</button>
+    <button class="btn-primary" onclick="exportDoctorReport()">Export Doctor Report (PDF-ready)</button>
     <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
 
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-      <strong style="color:var(--violet-deep)">Bloom</strong> v1.0 — Private HRT Tracker<br>
+      <strong style="color:var(--violet-deep)">Bloom</strong> v2.0 — Private HRT Tracker<br>
       All data stored locally. No accounts. No cloud.<br>
       Your journey. Your data. Your device only.<br>
       <span style="font-size:11px">by ENERGENAI LLC</span>
@@ -878,63 +1388,112 @@ function exportCSV(){
   downloadFile(csv,'text/csv',`bloom-export-${today()}.csv`);
 }
 
-function exportReport(){
-  let r=`BLOOM HRT HEALTH REPORT\nGenerated: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}\n`;
-  r+=`Days on HRT: ${daysOnHRT()} (${monthsOnHRT()} months)\n`;
-  r+=`Start Date: ${D.startDate||'Not set'}\n`;
-  r+=`Tanner Stage: ${S.tannerStage}\n\n`;
+function exportDoctorReport(){
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const activeMeds=D.meds.filter(x=>!x.ended);
+  const pastMeds=D.meds.filter(x=>x.ended);
+  const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
+  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  const dysLogs=D.logs.filter(l=>l.dysphoria!==undefined);
+  const dysAvg=dysLogs.length>=3?(dysLogs.reduce((s,l)=>s+l.dysphoria,0)/dysLogs.length).toFixed(1):'N/A';
+  const last=D.measurements.slice(-1)[0];
+  const bs=braSize(),w=whr();
 
-  // Medications
-  r+=`ACTIVE MEDICATIONS\n`;
-  for(const m of D.meds.filter(x=>!x.ended))r+=`  ${m.name} ${m.dose} ${m.frequency} (${m.route||''})\n    Started: ${m.started}\n`;
-  if(D.meds.filter(x=>x.ended).length){
-    r+=`\nPAST MEDICATIONS\n`;
-    for(const m of D.meds.filter(x=>x.ended))r+=`  ${m.name} ${m.dose} (${m.started} to ${m.ended})\n`;
-  }
-
-  // Labs
+  let labsHtml='';
   if(D.labs.length){
-    r+=`\nLAB RESULTS\n`;
-    for(const lab of D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,3)){
-      r+=`  ${lab.date}:\n`;
-      for(const res of lab.results){
-        const flag=flagLab(res.name,res.value);
-        r+=`    ${res.name}: ${res.value} ${LAB_TARGETS[res.name]?.unit||''} [${flag}]\n`;
+    const sorted=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+    for(const lab of sorted){
+      labsHtml+=`<h3 style="font-size:14px;margin:12px 0 4px">${lab.date}</h3><table style="width:100%;border-collapse:collapse">
+        <tr style="background:#f5f0ff"><th style="text-align:left;padding:4px 8px;font-size:12px">Test</th><th style="padding:4px 8px;font-size:12px">Value</th><th style="padding:4px 8px;font-size:12px">Unit</th><th style="padding:4px 8px;font-size:12px">Status</th><th style="padding:4px 8px;font-size:12px">Range</th></tr>`;
+      for(const r of lab.results){
+        const flag=flagLab(r.name,r.value);
+        const t=LAB_TARGETS[r.name];
+        const color=flag==='normal'?'#43A047':flag==='urgent'?'#EF5350':'#EF6C00';
+        labsHtml+=`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px;font-size:12px">${r.name}</td>
+          <td style="padding:4px 8px;font-size:12px;font-weight:700;color:${color}">${r.value}</td>
+          <td style="padding:4px 8px;font-size:12px;color:#888">${t?t.unit:''}</td>
+          <td style="padding:4px 8px;font-size:12px;color:${color};font-weight:600">${flag}</td>
+          <td style="padding:4px 8px;font-size:12px;color:#888">${t?t.low+'-'+t.high:''}</td></tr>`;
       }
+      labsHtml+=`</table>`;
     }
   }
 
-  // Measurements
-  const last=D.measurements.slice(-1)[0];
-  if(last){
-    r+=`\nLATEST MEASUREMENTS (${last.date})\n`;
-    if(last.bust)r+=`  Bust: ${last.bust}\n`;
-    if(last.underbust)r+=`  Underbust: ${last.underbust}\n`;
-    if(braSize())r+=`  Bra Size: ${braSize()}\n`;
-    if(last.waist)r+=`  Waist: ${last.waist}\n`;
-    if(last.hips)r+=`  Hips: ${last.hips}\n`;
-    if(whr())r+=`  WHR: ${whr()}\n`;
-    if(last.weight)r+=`  Weight: ${last.weight}\n`;
-  }
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bloom HRT Health Report — ${dateStr}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#333;padding:32px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}
+h1{font-size:22px;color:#7C4DFF;border-bottom:3px solid #7C4DFF;padding-bottom:8px;margin-bottom:4px}
+h2{font-size:16px;color:#7C4DFF;border-bottom:1px solid #E8D5F5;padding-bottom:4px;margin:20px 0 8px}
+h3{font-size:14px;color:#3E2465;margin:12px 0 4px}
+.meta{font-size:12px;color:#888;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+.stat{background:#F8F0FF;border:1px solid #E8D5F5;border-radius:8px;padding:10px 14px}
+.stat .label{font-size:10px;color:#A99BBB;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat .val{font-size:18px;font-weight:700;color:#7C4DFF}
+table{width:100%;border-collapse:collapse;margin:8px 0}
+th{text-align:left;padding:4px 8px;font-size:12px;background:#f5f0ff;font-weight:600}
+td{padding:4px 8px;font-size:12px;border-bottom:1px solid #eee}
+.footer{margin-top:24px;padding-top:12px;border-top:1px solid #E8D5F5;font-size:11px;color:#A99BBB;text-align:center}
+.disclaimer{background:#FFF3E0;border:1px solid #FFE0B2;border-radius:8px;padding:10px 14px;font-size:11px;color:#EF6C00;margin:16px 0}
+@media print{body{padding:16px} .no-print{display:none}}
+</style></head><body>
+<h1>Bloom HRT Health Report</h1>
+<div class="meta">Generated: ${dateStr} | Days on HRT: ${daysOnHRT()} (${monthsOnHRT()} months) | Start Date: ${D.startDate||'Not set'} | Tanner Stage: ${S.tannerStage}</div>
 
-  // Symptoms
-  const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
-  const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
-  if(topTags.length){r+=`\nMOST REPORTED CHANGES/SYMPTOMS\n`;topTags.forEach(([t,c])=>{r+=`  ${t}: ${c} occurrences\n`})}
+<div class="disclaimer">This report was generated by Bloom, a personal HRT tracking app. It is not a medical document. All data was self-reported by the user. Consult your healthcare provider for medical decisions.</div>
 
-  // Dysphoria
-  const dysLogs=D.logs.filter(l=>l.dysphoria!==undefined);
-  if(dysLogs.length>=3){
-    const avg=(dysLogs.reduce((s,l)=>s+l.dysphoria,0)/dysLogs.length).toFixed(1);
-    r+=`\nDYSPHORIA\nAverage: ${avg}/10\nEntries: ${dysLogs.length}\n`;
-  }
+<div class="grid">
+  <div class="stat"><div class="label">Days on HRT</div><div class="val">${daysOnHRT()}</div></div>
+  <div class="stat"><div class="label">Months</div><div class="val">${monthsOnHRT()}</div></div>
+  <div class="stat"><div class="label">Tanner Stage</div><div class="val">${S.tannerStage}</div></div>
+  <div class="stat"><div class="label">Avg Dysphoria (0-10)</div><div class="val">${dysAvg}</div></div>
+</div>
 
-  r+=`\n---\nGenerated by Bloom v1.0 (Private HRT Tracker)\nAll data stored locally. This report was created by the user.\nThis is not medical advice.\n`;
-  downloadFile(r,'text/plain',`bloom-report-${today()}.txt`);
+<h2>Active Medications</h2>
+${activeMeds.length?`<table><tr><th>Medication</th><th>Dose</th><th>Frequency</th><th>Route</th><th>Started</th><th>Days</th></tr>
+${activeMeds.map(m=>`<tr><td><strong>${m.name}</strong></td><td>${m.dose}</td><td>${m.frequency}</td><td>${m.route||'—'}</td><td>${m.started}</td><td>${Math.floor((new Date()-new Date(m.started))/864e5)}</td></tr>`).join('')}</table>`:'<p style="color:#888">No active medications.</p>'}
+
+${pastMeds.length?`<h2>Past Medications</h2><table><tr><th>Medication</th><th>Dose</th><th>Started</th><th>Ended</th></tr>
+${pastMeds.map(m=>`<tr><td>${m.name}</td><td>${m.dose}</td><td>${m.started}</td><td>${m.ended}</td></tr>`).join('')}</table>`:''}
+
+<h2>Lab Results</h2>
+${D.labs.length?labsHtml:'<p style="color:#888">No lab results recorded.</p>'}
+
+${last?`<h2>Body Measurements (${last.date})</h2>
+<div class="grid">
+${last.bust?`<div class="stat"><div class="label">Bust</div><div class="val">${last.bust}"</div></div>`:''}
+${last.underbust?`<div class="stat"><div class="label">Underbust</div><div class="val">${last.underbust}"</div></div>`:''}
+${bs?`<div class="stat"><div class="label">Bra Size</div><div class="val">${bs}</div></div>`:''}
+${last.waist?`<div class="stat"><div class="label">Waist</div><div class="val">${last.waist}"</div></div>`:''}
+${last.hips?`<div class="stat"><div class="label">Hips</div><div class="val">${last.hips}"</div></div>`:''}
+${w?`<div class="stat"><div class="label">WHR</div><div class="val">${w}</div></div>`:''}
+${last.weight?`<div class="stat"><div class="label">Weight</div><div class="val">${last.weight}</div></div>`:''}
+</div>`:''}
+
+${topTags.length?`<h2>Most Reported Changes/Symptoms</h2>
+<table><tr><th>Symptom/Change</th><th>Occurrences</th></tr>
+${topTags.map(([t,c])=>`<tr><td>${t}</td><td>${c}</td></tr>`).join('')}</table>`:''}
+
+${dysLogs.length>=3?`<h2>Dysphoria Summary</h2>
+<p>Average: <strong>${dysAvg}/10</strong> over ${dysLogs.length} entries</p>`:''}
+
+<div class="footer">
+  Generated by Bloom v2.0 — Private HRT Tracker<br>
+  All data stored locally on user's device. This report was created by the user.<br>
+  This is not medical advice. Consult your healthcare provider for treatment decisions.
+</div>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`;
+
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  window.open(url,'_blank');
 }
 
 function exportBackup(){
-  const backup={version:1,app:'bloom',exportedAt:new Date().toISOString(),data:D,settings:S};
+  const backup={version:2,app:'bloom',exportedAt:new Date().toISOString(),data:D,settings:S};
   const json=JSON.stringify(backup);
   const pass=prompt('Set a backup password (leave empty for unencrypted):');
   let output=json;
@@ -994,8 +1553,11 @@ function showView(v){
     case'meds':renderMeds();break;
     case'labs':renderLabs();break;
     case'body':renderBody();break;
+    case'photos':renderPhotos();break;
+    case'supps':renderSupps();break;
     case'timeline':renderTimeline();break;
     case'insights':renderInsights();break;
+    case'resources':renderResources();break;
     case'settings':renderSettings();break;
   }
 }
