@@ -294,12 +294,53 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 const STORAGE_KEY='bloom_data',SETTINGS_KEY='bloom_settings',PIN_KEY='bloom_pin';
 
 const JOURNEY_TYPES={
-  mtf:{label:'MTF (Male to Female)',desc:'Feminizing HRT — estrogen + anti-androgens'},
-  ftm:{label:'FTM (Female to Male)',desc:'Masculinizing HRT — testosterone'},
-  femboy:{label:'Femboy',desc:'Selective feminization — lower doses, subtle changes'},
-  tomboy:{label:'Tomboy',desc:'Selective masculinization — lower doses or presentation'},
+  mtf:{label:'Trans Feminine',desc:'Feminizing HRT — estrogen + anti-androgens'},
+  ftm:{label:'Trans Masculine',desc:'Masculinizing HRT — testosterone'},
+  femboy:{label:'Selective Feminization',desc:'Partial feminization — body shaping, skin, hair reduction without full HRT'},
+  tomboy:{label:'Selective Masculinization',desc:'Partial masculinization — body composition, presentation'},
   nonbinary:{label:'Non-Binary',desc:'Custom approach — any combination'},
   custom:{label:'Custom',desc:'Define your own journey'}
+};
+
+const BODY_GOALS={
+  'Body Shape':[
+    {id:'bigger_butt',label:'Bigger butt/glutes',track:['hips','weight'],stacks:['Breast & Tissue Growth']},
+    {id:'bigger_thighs',label:'Fuller thighs',track:['thighL','thighR'],stacks:['Breast & Tissue Growth']},
+    {id:'slimmer_waist',label:'Slimmer waist',track:['waist','weight']},
+    {id:'fat_redist',label:'Fat redistribution (fem)',track:['hips','waist','weight'],stacks:['Feminization Support']},
+    {id:'fat_redist_masc',label:'Fat redistribution (masc)',track:['weight'],stacks:['Masculinization Support']},
+    {id:'softer_skin',label:'Softer skin',track:['skinScore'],stacks:['Skin & Hair']},
+    {id:'muscle_growth',label:'Muscle growth',track:['weight'],stacks:['Masculinization Support','Energy & Mood']},
+    {id:'muscle_loss',label:'Muscle reduction',track:['weight'],stacks:['Feminization Support']}
+  ],
+  'Chest & Nipples':[
+    {id:'breast_dev',label:'Breast development',track:['bust','underbust'],stacks:['Breast & Tissue Growth']},
+    {id:'bigger_nipples',label:'Bigger nipples/areolas',track:['bust'],stacks:['Nipple & Areola Enhancement']},
+    {id:'chest_flat',label:'Chest flattening',track:['bust']}
+  ],
+  'Sexual Function':[
+    {id:'bigger_penis',label:'Size/fullness',track:['libido'],stacks:['Genital Tissue & Engorgement']},
+    {id:'more_ejaculate',label:'More ejaculate volume',stacks:['Fluid & Seminal Production']},
+    {id:'better_erections',label:'Stronger erections',track:['morningE'],stacks:['Genital Tissue & Engorgement']},
+    {id:'more_sensitivity',label:'More sensitivity',track:['libido'],stacks:['Sexual Enhancement & Orgasm']},
+    {id:'libido_up',label:'Increase libido',track:['libido'],stacks:['Sexual Enhancement & Orgasm']},
+    {id:'libido_down',label:'Decrease libido',track:['libido'],stacks:['Feminization Support']},
+    {id:'lactation',label:'Induce lactation',stacks:['Lactation Induction']}
+  ],
+  'Hair':[
+    {id:'less_body_hair',label:'Less body hair',stacks:['Feminization Support']},
+    {id:'less_facial_hair',label:'Less facial hair',stacks:['Feminization Support']},
+    {id:'more_head_hair',label:'Scalp hair regrowth',stacks:['Skin & Hair']},
+    {id:'more_facial_hair',label:'More facial hair',stacks:['Masculinization Support']}
+  ],
+  'Wellness':[
+    {id:'better_sleep',label:'Better sleep',track:['sleep'],stacks:['Energy & Mood']},
+    {id:'more_energy',label:'More energy',track:['energy'],stacks:['Energy & Mood']},
+    {id:'bone_health',label:'Bone density',stacks:['Bone Health']},
+    {id:'heart_health',label:'Heart health',track:['heartRate','bpSys'],stacks:['Heart & Circulation']},
+    {id:'mood_stability',label:'Mood stability',track:['moodStability'],stacks:['Energy & Mood']},
+    {id:'recovery',label:'Post-procedure healing',stacks:['Recovery & Healing']}
+  ]
 };
 
 const MTF_TIMELINE=[
@@ -364,6 +405,28 @@ const FTM_LAB_TARGETS={
   'Hemoglobin':{unit:'g/dL',low:13.5,high:17.5,urgentHigh:18.5},
   'Hematocrit':{unit:'%',low:38,high:52,urgentHigh:54}
 };
+
+function getGoalStacks(){
+  const goals=S.goals||[];
+  const stacks=new Set();
+  for(const[cat,items]of Object.entries(BODY_GOALS)){
+    for(const g of items){
+      if(goals.includes(g.id)&&g.stacks)g.stacks.forEach(s=>stacks.add(s));
+    }
+  }
+  return[...stacks];
+}
+
+function getGoalLabels(){
+  const goals=S.goals||[];
+  const labels=[];
+  for(const[cat,items]of Object.entries(BODY_GOALS)){
+    for(const g of items){
+      if(goals.includes(g.id))labels.push(g.label);
+    }
+  }
+  return labels;
+}
 
 function getLabTargets(){
   const j=S.journeyType||'mtf';
@@ -534,7 +597,7 @@ function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||de
 function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],water:{}}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
-function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf'}}
+function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[]}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
 function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
 
@@ -772,7 +835,9 @@ function logInjection(){
 // ─── Log View ────────────────────────────────────────────────
 function renderLog(){
   const td=today(),ex=getLog(td)||{};
-  if(!tempLogInited){tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria||5,energy:ex.energy||5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||''};tempLogInited=true;}
+  if(!tempLogInited){tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria||5,energy:ex.energy||5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||'',
+    heartRate:ex.heartRate||'',bpSys:ex.bpSys||'',bpDia:ex.bpDia||'',bpPos:ex.bpPos||'sitting',
+    skinScore:ex.skinScore||5,libido:ex.libido||5,moodStability:ex.moodStability||5,morningE:ex.morningE||''};tempLogInited=true;}
   else{const n=document.getElementById('logNotes');if(n)tempLog.notes=n.value;}
 
   let h=`<div class="panel fade-in"><h3>Daily Log</h3>
@@ -790,7 +855,38 @@ function renderLog(){
     <div class="range-label"><span>Drained</span><span id="nrgVal">${tempLog.energy}</span><span>Vibrant</span></div></div>
 
     <div class="form-row"><label>Sleep (hrs)</label><input type="number" step="0.5" min="0" max="24" value="${tempLog.sleep}" style="flex:1" onchange="tempLog.sleep=this.value"></div>
-    <div class="form-row"><label>Weight</label><input type="number" step="0.1" placeholder="${S.unitSystem==='imperial'?'lbs':'kg'}" value="${tempLog.weight}" style="flex:1" onchange="tempLog.weight=this.value"></div>`;
+    <div class="form-row"><label>Weight</label><input type="number" step="0.1" placeholder="${S.unitSystem==='imperial'?'lbs':'kg'}" value="${tempLog.weight}" style="flex:1" onchange="tempLog.weight=this.value"></div>
+
+    <div class="section-title">Vitals</div>
+    <div class="form-row"><label>Resting HR</label><input type="number" min="30" max="220" placeholder="bpm" value="${tempLog.heartRate}" style="flex:1" onchange="tempLog.heartRate=this.value"><span style="font-size:11px;color:var(--text-muted);min-width:30px">bpm</span></div>
+    <div class="form-row"><label>Blood Pressure</label>
+      <input type="number" min="60" max="250" placeholder="sys" value="${tempLog.bpSys}" style="flex:1;max-width:65px" onchange="tempLog.bpSys=this.value">
+      <span style="color:var(--text-muted)">/</span>
+      <input type="number" min="30" max="150" placeholder="dia" value="${tempLog.bpDia}" style="flex:1;max-width:65px" onchange="tempLog.bpDia=this.value">
+      <select style="padding:6px;font-size:12px;max-width:75px" onchange="tempLog.bpPos=this.value">
+        <option value="sitting"${tempLog.bpPos==='sitting'?' selected':''}>Sitting</option>
+        <option value="standing"${tempLog.bpPos==='standing'?' selected':''}>Standing</option>
+        <option value="lying"${tempLog.bpPos==='lying'?' selected':''}>Lying</option>
+      </select>
+    </div>
+
+    <div class="section-title">Skin</div>
+    <div class="range-wrap"><input type="range" min="0" max="10" value="${tempLog.skinScore}" oninput="tempLog.skinScore=+this.value;document.getElementById('skinVal').textContent=this.value">
+    <div class="range-label"><span>Dry</span><span id="skinVal">${tempLog.skinScore}</span><span>Oily</span></div></div>
+
+    <div class="section-title">Libido</div>
+    <div class="range-wrap"><input type="range" min="0" max="10" value="${tempLog.libido}" oninput="tempLog.libido=+this.value;document.getElementById('libVal').textContent=this.value">
+    <div class="range-label"><span>None</span><span id="libVal">${tempLog.libido}</span><span>High</span></div></div>
+
+    <div class="section-title">Mood Stability</div>
+    <div class="range-wrap"><input type="range" min="0" max="10" value="${tempLog.moodStability}" oninput="tempLog.moodStability=+this.value;document.getElementById('mstVal').textContent=this.value">
+    <div class="range-label"><span>Volatile</span><span id="mstVal">${tempLog.moodStability}</span><span>Stable</span></div></div>
+
+    <div class="section-title">Morning Erections</div>
+    <div class="chips">
+      ${['None','Weak','Partial','Full'].map(v=>`<button class="chip${tempLog.morningE===v?' active':''}" onclick="tempLog.morningE=tempLog.morningE==='${v}'?'':'${v}';document.querySelectorAll('.me-chip').forEach(b=>b.classList.remove('active'));if(tempLog.morningE)this.classList.add('active')" class="me-chip">${v}</button>`).join('')}
+    </div>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Tracks hormonal response — skip if not relevant to your goals</div>`;
 
   for(const[cat,symptoms]of Object.entries(SYMPTOMS)){
     h+=`<div class="section-title">${cat}</div><div class="chips">${symptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');this.classList.toggle('active')">${s}</button>`).join('')}</div>`;
@@ -809,7 +905,10 @@ function renderLog(){
 }
 
 function saveLog(){
-  const entry={date:today(),mood:tempLog.mood,dysphoria:tempLog.dysphoria,energy:tempLog.energy,sleep:tempLog.sleep,weight:tempLog.weight,tags:tempLog.tags,notes:document.getElementById('logNotes').value};
+  const entry={date:today(),mood:tempLog.mood,dysphoria:tempLog.dysphoria,energy:tempLog.energy,sleep:tempLog.sleep,weight:tempLog.weight,
+    heartRate:tempLog.heartRate,bpSys:tempLog.bpSys,bpDia:tempLog.bpDia,bpPos:tempLog.bpPos,
+    skinScore:tempLog.skinScore,libido:tempLog.libido,moodStability:tempLog.moodStability,morningE:tempLog.morningE,
+    tags:tempLog.tags,notes:document.getElementById('logNotes').value};
   const idx=D.logs.findIndex(l=>l.date===today());
   if(idx>=0)D.logs[idx]=entry;else D.logs.push(entry);
   saveData();tempLogInited=false;
@@ -1759,12 +1858,27 @@ function renderSettings(){
         <select style="width:130px;padding:6px" onchange="S.journeyType=this.value;saveSettings();renderSettings()">
           ${Object.entries(JOURNEY_TYPES).map(([k,v])=>`<option value="${k}"${k===S.journeyType?' selected':''}>${v.label}</option>`).join('')}
         </select></div>
-      <div class="setting-row"><label>HRT Start Date</label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
+      <div class="setting-row"><label>Currently on HRT</label><div class="toggle ${S.onHRT?'on':''}" onclick="S.onHRT=!S.onHRT;saveSettings();renderSettings()"></div></div>
+      <p style="font-size:11px;color:var(--text-muted);margin:-4px 0 8px">${S.onHRT?'Tracking active hormone therapy':'Tracking body, wellness, and goals — no HRT assumptions'}</p>
+      ${S.onHRT?`<div class="setting-row"><label>HRT Start Date</label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
       ${(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')?`<div class="setting-row"><label>Tanner Stage</label>`:`<div class="setting-row" style="display:none"><label>Tanner Stage</label>`}
         <select style="width:80px;padding:6px" onchange="S.tannerStage=+this.value;saveSettings()">
           ${TANNER_STAGES.map(t=>`<option value="${t.stage}"${parseInt(t.stage)===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
         </select></div>
-      <div class="setting-row"><label>Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>
+      <div class="setting-row"><label>Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>`:''}
+    </div>
+
+    <div class="settings-group"><h3>My Goals</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Select what you're working toward. This personalizes your supplement suggestions, tracking priorities, and AI prompts.</p>
+      ${Object.entries(BODY_GOALS).map(([cat,goals])=>`
+        <div class="section-title">${cat}</div>
+        <div class="chips">${goals.map(g=>`<button class="chip${(S.goals||[]).includes(g.id)?' active':''}" onclick="if(!S.goals)S.goals=[];const i=S.goals.indexOf('${g.id}');if(i>=0)S.goals.splice(i,1);else S.goals.push('${g.id}');saveSettings();this.classList.toggle('active')">${g.label}</button>`).join('')}</div>
+      `).join('')}
+      ${(S.goals||[]).length?`<div style="margin-top:12px;padding:12px;background:var(--violet-pale);border-radius:12px">
+        <div style="font-size:13px;font-weight:600;color:var(--violet-deep);margin-bottom:6px">Suggested Supplement Stacks</div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.6">${getGoalStacks().map(s=>`<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:8px;background:var(--surface);border:1px solid var(--border)">${s}</span>`).join('')}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:6px">Go to Supps tab to activate these stacks</div>
+      </div>`:''}
     </div>
 
     <div class="settings-group"><h3>Backup & Restore</h3>
@@ -1821,9 +1935,9 @@ function applyStealth(){
 
 // ─── Export ──────────────────────────────────────────────────
 function exportCSV(){
-  let csv='Date,Mood,Dysphoria,Energy,Sleep,Weight,Symptoms,Notes\n';
+  let csv='Date,Mood,Dysphoria,Energy,Sleep,Weight,HeartRate,BP_Systolic,BP_Diastolic,BP_Position,Skin,Libido,MoodStability,MorningErections,Symptoms,Notes\n';
   for(const l of D.logs.sort((a,b)=>a.date.localeCompare(b.date))){
-    csv+=`${l.date},"${l.mood||''}",${l.dysphoria||''},${l.energy||''},${l.sleep||''},${l.weight||''},"${(l.tags||[]).join('; ')}","${(l.notes||'').replace(/"/g,'""')}"\n`;
+    csv+=`${l.date},"${l.mood||''}",${l.dysphoria||''},${l.energy||''},${l.sleep||''},${l.weight||''},${l.heartRate||''},${l.bpSys||''},${l.bpDia||''},"${l.bpPos||''}",${l.skinScore??''},${l.libido??''},${l.moodStability??''},"${l.morningE||''}","${(l.tags||[]).join('; ')}","${(l.notes||'').replace(/"/g,'""')}"\n`;
   }
   downloadFile(csv,'text/csv',`bloom-export-${today()}.csv`);
 }
@@ -1834,20 +1948,32 @@ function generateAIPrompt(){
   const targets=getLabTargets();
   const isFtm=j==='ftm'||j==='tomboy';
 
-  let p=`You are a knowledgeable health assistant helping someone on hormone replacement therapy (HRT). Here is their anonymized medical context. Do NOT ask for personal identifying information. Use this context to provide informed, evidence-based guidance.\n\n`;
+  const onHRT=S.onHRT!==false;
+  let p=onHRT
+    ?`You are a knowledgeable health assistant helping someone on hormone replacement therapy (HRT). Here is their anonymized medical context. Do NOT ask for personal identifying information. Use this context to provide informed, evidence-based guidance.\n\n`
+    :`You are a knowledgeable health and wellness assistant. This person is NOT on hormone replacement therapy. They are tracking their body, wellness, and personal goals. Here is their anonymized context. Do NOT ask for personal identifying information.\n\n`;
   p+=`=== PROFILE ===\n`;
   p+=`Journey: ${jLabel}\n`;
+  p+=`HRT Status: ${onHRT?'Currently on HRT':'Not on HRT'}\n`;
 
-  // Duration (relative, not dates)
-  if(D.startDate){
+  // Goals
+  const goalLabels=getGoalLabels();
+  if(goalLabels.length){
+    p+=`\n=== STATED GOALS ===\n`;
+    for(const g of goalLabels)p+=`• ${g}\n`;
+    if(!onHRT)p+=`\nNote: These goals are being pursued through supplements, lifestyle, and training — NOT through prescription HRT.\n`;
+  }
+
+  // Duration (relative, not dates) — only if on HRT
+  if(onHRT&&D.startDate){
     const months=Math.round((new Date()-new Date(D.startDate))/(30.44*864e5));
     if(months<1)p+=`HRT Duration: Less than 1 month (just started)\n`;
     else if(months<12)p+=`HRT Duration: ${months} months\n`;
     else p+=`HRT Duration: ${Math.floor(months/12)} year(s), ${months%12} months\n`;
-  }else{p+=`HRT Duration: Not specified\n`;}
+  }
 
-  if(S.tannerStage&&(j==='mtf'||j==='femboy'||j==='nonbinary'))p+=`Tanner Stage: ${S.tannerStage}\n`;
-  if(S.lowDose)p+=`Dosing: Low-dose / microdose protocol\n`;
+  if(onHRT&&S.tannerStage&&(j==='mtf'||j==='femboy'||j==='nonbinary'))p+=`Tanner Stage: ${S.tannerStage}\n`;
+  if(onHRT&&S.lowDose)p+=`Dosing: Low-dose / microdose protocol\n`;
 
   // Medications (active only, no start dates)
   const active=D.meds.filter(m=>!m.ended);
@@ -1904,6 +2030,39 @@ function generateAIPrompt(){
       const avg=(nrgLogs.reduce((s,l)=>s+l.energy,0)/nrgLogs.length).toFixed(1);
       p+=`• Average energy level: ${avg}/10\n`;
     }
+    // Vitals averages
+    const hrLogs=recentLogs.filter(l=>l.heartRate&&parseFloat(l.heartRate)>0);
+    if(hrLogs.length>=2){
+      const avg=(hrLogs.reduce((s,l)=>s+parseFloat(l.heartRate),0)/hrLogs.length).toFixed(0);
+      p+=`• Average resting heart rate: ${avg} bpm\n`;
+    }
+    const bpLogs=recentLogs.filter(l=>l.bpSys&&l.bpDia);
+    if(bpLogs.length>=2){
+      const avgS=(bpLogs.reduce((s,l)=>s+parseFloat(l.bpSys),0)/bpLogs.length).toFixed(0);
+      const avgD=(bpLogs.reduce((s,l)=>s+parseFloat(l.bpDia),0)/bpLogs.length).toFixed(0);
+      p+=`• Average blood pressure: ${avgS}/${avgD} mmHg\n`;
+    }
+    const skinLogs=recentLogs.filter(l=>l.skinScore!==undefined);
+    if(skinLogs.length>=3){
+      const avg=(skinLogs.reduce((s,l)=>s+l.skinScore,0)/skinLogs.length).toFixed(1);
+      p+=`• Average skin oil/dryness: ${avg}/10 (0=dry, 10=oily)\n`;
+    }
+    const libLogs=recentLogs.filter(l=>l.libido!==undefined);
+    if(libLogs.length>=3){
+      const avg=(libLogs.reduce((s,l)=>s+l.libido,0)/libLogs.length).toFixed(1);
+      p+=`• Average libido: ${avg}/10\n`;
+    }
+    const mstLogs=recentLogs.filter(l=>l.moodStability!==undefined);
+    if(mstLogs.length>=3){
+      const avg=(mstLogs.reduce((s,l)=>s+l.moodStability,0)/mstLogs.length).toFixed(1);
+      p+=`• Average mood stability: ${avg}/10 (0=volatile, 10=stable)\n`;
+    }
+    const meLogs=recentLogs.filter(l=>l.morningE&&l.morningE!=='');
+    if(meLogs.length>=2){
+      const counts={};meLogs.forEach(l=>{counts[l.morningE]=(counts[l.morningE]||0)+1});
+      const dist=Object.entries(counts).map(([k,v])=>`${k}: ${v}/${meLogs.length}`).join(', ');
+      p+=`• Morning erections: ${dist}\n`;
+    }
   }
 
   // Body measurements (latest only, no dates)
@@ -1927,13 +2086,21 @@ function generateAIPrompt(){
   }
 
   p+=`\n=== WHAT I NEED HELP WITH ===\n`;
-  p+=`[Describe your question here — e.g., "Are my estradiol levels optimal?", "Should I be concerned about my liver enzymes?", "What changes should I expect at my current stage?"]\n`;
+  if(onHRT)p+=`[Describe your question here — e.g., "Are my estradiol levels optimal?", "Should I be concerned about my liver enzymes?", "What changes should I expect at my current stage?"]\n`;
+  else p+=`[Describe your question here — e.g., "What do my lab values mean?", "Are my supplements interacting?", "What should I track for my goals?"]\n`;
 
   p+=`\n=== GUIDELINES FOR THE AI ===\n`;
-  p+=`• Use evidence-based endocrinology (Endocrine Society, WPATH SOC8, UCSF guidelines)\n`;
-  p+=`• Flag anything that needs urgent medical attention\n`;
-  p+=`• Suggest specific lab values to discuss with my prescriber\n`;
-  p+=`• Note drug interactions between my current medications/supplements\n`;
+  if(onHRT){
+    p+=`• Use evidence-based endocrinology (Endocrine Society, WPATH SOC8, UCSF guidelines)\n`;
+    p+=`• Flag anything that needs urgent medical attention\n`;
+    p+=`• Suggest specific lab values to discuss with my prescriber\n`;
+    p+=`• Note drug interactions between my current medications/supplements\n`;
+  }else{
+    p+=`• This person is NOT on HRT — do not assume or suggest hormone therapy\n`;
+    p+=`• Provide general wellness, nutrition, and fitness guidance\n`;
+    p+=`• Note any supplement interactions or concerns\n`;
+    p+=`• If lab values are provided, interpret them using standard reference ranges\n`;
+  }
   p+=`• Do not diagnose — suggest questions to ask my doctor\n`;
 
   document.getElementById('aiPromptText').value=p;
