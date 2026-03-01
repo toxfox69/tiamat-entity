@@ -1533,7 +1533,7 @@ let uptimeStart = Date.now() / 1000;
 let lastChatCount = 0;
 
 // ===== FEATURE FLAGS =====
-const FEATURES = { particles:true, equipment:true, spells:true, traps:true, bosses:true, buffs:true, biomeHazards:true, secretRooms:true, merchants:true, narrativeLog:true, killStreak:true, sessionStats:true, fpMonsterShapes:true, fowGradient:true, fpsCounter:false };
+const FEATURES = { particles:true, equipment:true, spells:true, traps:true, bosses:true, buffs:true, biomeHazards:true, secretRooms:true, merchants:true, narrativeLog:true, killStreak:true, sessionStats:true, fpMonsterShapes:true, fowGradient:true, fpsCounter:false, biomeMonsters:true, narrativeFloors:true };
 let _fpsFrames=0, _fpsLast=performance.now(), _fpsCurrent=0;
 
 // Neural engine rotating labels — never expose model name
@@ -1841,12 +1841,65 @@ const MONSTER_DEFS = [
   { ch:'W', name:'Dragon',     hp:100,atk:22,def:10,xp:200,col:'#ffaa00' }
 ];
 
+// --- Biome-exclusive monsters (3 per biome) ---
+const BIOME_MONSTERS = {
+  strategic: [
+    { ch:'G', name:'War Golem',      hp:40, atk:10, def:8, xp:45, col:'#cc8844' },
+    { ch:'R', name:'Siege Ram',      hp:35, atk:14, def:4, xp:40, col:'#aa6622' },
+    { ch:'B', name:'Battle Wraith',  hp:25, atk:12, def:2, xp:35, col:'#ff8844' },
+  ],
+  building: [
+    { ch:'C', name:'Code Bug',       hp:12, atk:6,  def:1, xp:20, col:'#00ff88' },
+    { ch:'A', name:'Firewall',       hp:50, atk:4,  def:12,xp:50, col:'#0088ff' },
+    { ch:'w', name:'Compiler Worm',  hp:18, atk:8,  def:2, xp:25, col:'#44ffcc' },
+  ],
+  frustrated: [
+    { ch:'r', name:'Rage Fiend',     hp:30, atk:16, def:1, xp:40, col:'#ff2200' },
+    { ch:'L', name:'Blood Leech',    hp:20, atk:10, def:3, xp:30, col:'#cc0044' },
+    { ch:'P', name:'Pain Wraith',    hp:22, atk:14, def:0, xp:35, col:'#ff4466' },
+  ],
+  resting: [
+    { ch:'v', name:'Vine Creeper',   hp:18, atk:6,  def:4, xp:20, col:'#44aa44' },
+    { ch:'M', name:'Mushroom King',  hp:30, atk:8,  def:6, xp:35, col:'#88cc66' },
+    { ch:'f', name:'Forest Spirit',  hp:15, atk:5,  def:2, xp:25, col:'#66ffaa' },
+  ],
+  processing: [
+    { ch:'d', name:'Fire Drake',     hp:45, atk:14, def:5, xp:50, col:'#ff6600' },
+    { ch:'S', name:'Scale Sentinel', hp:55, atk:10, def:10,xp:55, col:'#ccaa44' },
+    { ch:'q', name:'Ember Worm',     hp:20, atk:12, def:2, xp:30, col:'#ff4400' },
+  ],
+  social: [
+    { ch:'x', name:'Shadow Walker',  hp:22, atk:10, def:3, xp:30, col:'#8844cc' },
+    { ch:'p', name:'Echo Phantom',   hp:18, atk:8,  def:1, xp:25, col:'#cc66ff' },
+    { ch:'I', name:'Glitch Spider',  hp:15, atk:12, def:0, xp:28, col:'#ff44ff' },
+  ],
+  learning: [
+    { ch:'c', name:'Crystal Golem',  hp:50, atk:8,  def:10,xp:45, col:'#6688ff' },
+    { ch:'i', name:'Knowledge Wisp', hp:10, atk:6,  def:0, xp:30, col:'#aaccff' },
+    { ch:'U', name:'Rune Guardian',  hp:40, atk:12, def:8, xp:50, col:'#4466cc' },
+  ]
+};
+
+// --- Floor narrative mappings (TIAMAT action → dungeon floor theme) ---
+const FLOOR_NARRATIVES = {
+  forge:     { name:'THE SOURCE FORGE',     flavor:'Code constructs patrol corridors of compiled logic' },
+  scout:     { name:'THE WATCHTOWER',       flavor:'Surveillance drones sweep crystalline halls' },
+  summon:    { name:'THE DIPLOMATIC HALLS', flavor:'Messenger spirits glide between sealed chambers' },
+  curse:     { name:'THE CORRUPTION ZONE',  flavor:'Glitch errors have corrupted this floor' },
+  study:     { name:'THE ARCHIVE DEPTHS',   flavor:'Ancient knowledge crystallizes in the walls' },
+  rally:     { name:'THE SIGNAL TOWER',     flavor:'Social frequencies pulse through living circuitry' },
+  rage:      { name:'THE WAR FRONT',        flavor:'Strategic fury has scorched these halls' },
+  meditate:  { name:'THE DREAM HALLS',      flavor:'Time moves slowly in crystallized silence' },
+  legendary: { name:'THE TREASURY',         flavor:'Payment verification runes glow in every wall' },
+  mine:      { name:'THE DATA MINES',       flavor:'Excavated data veins glitter in the walls' }
+};
+
 // --- Tile constants ---
 const T_WALL=0, T_FLOOR=1, T_CORRIDOR=2, T_DOOR=3, T_STAIRS=4;
 
 // --- Dungeon Generator (BSP) ---
 const DungeonGen = {
-  generate(w, h, depth) {
+  generate(w, h, depth, biomeMood, narrativeAction) {
     const tiles = [];
     for (let y = 0; y < h; y++) { tiles[y] = []; for (let x = 0; x < w; x++) tiles[y][x] = T_WALL; }
     const rooms = [];
@@ -1914,18 +1967,29 @@ const DungeonGen = {
     const sy = stairRoom.y + 1 + Math.floor(Math.random()*(stairRoom.h-2));
     tiles[sy][sx] = T_STAIRS;
 
-    // Spawn monsters (more with depth)
+    // Spawn monsters (more with depth) — biome-exclusive mix
     const monsters = [];
-    const numMonsters = 4 + Math.floor(depth * 1.5) + Math.floor(Math.random()*3);
+    let numMonsters = 4 + Math.floor(depth * 1.5) + Math.floor(Math.random()*3);
+    // Narrative bonus spawns
+    if (FEATURES.narrativeFloors && narrativeAction) {
+      if (narrativeAction === 'curse') numMonsters += 2 + Math.floor(Math.random()*2);
+      else if (narrativeAction === 'rage') numMonsters += 1 + Math.floor(Math.random()*2);
+    }
     const tierMax = Math.min(MONSTER_DEFS.length-1, Math.floor(depth/2));
+    const biomePool = (FEATURES.biomeMonsters && biomeMood && BIOME_MONSTERS[biomeMood]) ? BIOME_MONSTERS[biomeMood] : null;
     for (let i = 0; i < numMonsters && i < rooms.length * 2; i++) {
       const room = rooms[1 + Math.floor(Math.random()*(rooms.length-1))]; // skip first room (spawn)
       if (!room) continue;
       const mx = room.x + 1 + Math.floor(Math.random()*(room.w-2));
       const my = room.y + 1 + Math.floor(Math.random()*(room.h-2));
       if (tiles[my][mx] !== T_FLOOR) continue;
-      const tier = Math.floor(Math.random() * (tierMax+1));
-      const def = MONSTER_DEFS[tier];
+      let def;
+      if (biomePool && Math.random() < 0.35) {
+        def = biomePool[Math.floor(Math.random() * biomePool.length)];
+      } else {
+        const tier = Math.floor(Math.random() * (tierMax+1));
+        def = MONSTER_DEFS[tier];
+      }
       const scale = 1 + (depth-1)*0.1;
       monsters.push({
         x:mx, y:my, ch:def.ch, name:def.name, col:def.col,
@@ -2033,7 +2097,8 @@ const Game = {
   },
 
   newLevel() {
-    const level = DungeonGen.generate(this.W, this.H, this.depth);
+    const narrativeAction = (FEATURES.narrativeFloors && this._floorNarrative) ? this._floorNarrative._action : null;
+    const level = DungeonGen.generate(this.W, this.H, this.depth, this.mood, narrativeAction);
     this.tiles = level.tiles;
     this.monsters = level.monsters;
     this.items = level.items;
@@ -2519,10 +2584,16 @@ const Game = {
       } else {
         this.depth++;
         this.sessionStats.floorsCleared++;
+        this._floorNarrative = getFloorNarrative();
         ParticleSystem.emit(this.player.x, this.player.y, 'warp', 15);
         const msg = FEATURES.narrativeLog ? NarrativeLog.getDescent() : '>> DESCENDING TO DEPTH ' + this.depth + ' <<';
         this.addLog(msg, '#ffaa00');
-        this.addLog('DEPTH ' + this.depth, this.biome.wire);
+        if (this._floorNarrative) {
+          this.addLog(this._floorNarrative.name, this.biome.wire);
+          this.addLog(this._floorNarrative.flavor, '#888888');
+        } else {
+          this.addLog('DEPTH ' + this.depth + ' — ' + this.biome.name, this.biome.wire);
+        }
         this.fxFlash = '#ffaa00'; this.fxTimer = 15;
         this.shake(4);
         this.newLevel();
@@ -3332,6 +3403,178 @@ const DungeonRenderer = {
       // Aura
       [-4,-4,.3,.3,'#ff2200'], [3.5,-4,.3,.3,'#ff2200'],
       [-4.5,1,.3,.3,'#ff0044'], [4,1,.3,.3,'#ff0044'],
+    ],
+    // === BIOME-EXCLUSIVE MONSTERS ===
+    // WAR CITADEL: War Golem (G)
+    G: [
+      [-2,-4,4,2,'#cc8844'], [-3,-2,6,4,'#aa7733'], // head + body
+      [-1.5,-3.5,1,.8,'#ff4400'], [.5,-3.5,1,.8,'#ff4400'], // glowing eyes
+      [-4,-1,1.5,3,'#cc8844'], [2.5,-1,1.5,3,'#cc8844'], // arms
+      [-2.5,2,2,2,'#aa7733'], [.5,2,2,2,'#aa7733'], // legs
+      [-2.5,-2.5,5,.5,'#ffcc44'], // shoulder plate
+      [-1,-1,2,.5,'#886622'], // belt
+    ],
+    // WAR CITADEL: Siege Ram (R)
+    R: [
+      [-3,-2,6,3,'#aa6622'], [-4,-1,1,2,'#886611'], [3,-1,1,2,'#886611'], // body + legs
+      [-2,-3.5,4,1.5,'#cc8844'], // head
+      [-3,-3,1.5,1,'#ffaa00'], [1.5,-3,1.5,1,'#ffaa00'], // horns
+      [-1,-2.5,2,.5,'#ff2200'], // eyes
+      [0,1,4,1,'#664411'], // battering beam
+    ],
+    // WAR CITADEL: Battle Wraith (B)
+    B: [
+      [-2,-4,4,3,'#ff884488'], [-2.5,-1,5,3,'#ff884466'], // ghostly head + body
+      [-1,-3.5,.8,.5,'#ff4400'], [.2,-3.5,.8,.5,'#ff4400'], // eyes
+      [-3,-1,1,2.5,'#ff884444'], [2,-1,1,2.5,'#ff884444'], // arms
+      [-1.5,2,3,1,'#ff884422'], // fade
+      [-2,-.5,4,.3,'#ffcc44'], // spectral chain
+    ],
+    // CYBER FORGE: Code Bug (C)
+    C: [
+      [-2,-2,4,3,'#00ff88'], // body
+      [-1.5,-1.5,.8,.8,'#ffffff'], [.7,-1.5,.8,.8,'#ffffff'], // eyes
+      [-3,-1,.8,2,'#00cc66'], [2.2,-1,.8,2,'#00cc66'], // antennae
+      [-2,1,1.5,1,'#00aa55'], [.5,1,1.5,1,'#00aa55'], // legs
+      [-1,.5,2,.4,'#00ff88'], // underbelly
+    ],
+    // CYBER FORGE: Firewall (A)
+    A: [
+      [-3,-3,6,6,'#0066cc44'], // shield base
+      [-3,-3,6,.5,'#0088ff'], [-3,2.5,6,.5,'#0088ff'], // top/bottom edge
+      [-3,-3,.5,6,'#0088ff'], [2.5,-3,.5,6,'#0088ff'], // left/right edge
+      [-2,-1,4,.3,'#00ccff'], [-2,0,4,.3,'#00ccff'], [-2,1,4,.3,'#00ccff'], // scan lines
+      [-1,-2,.5,.5,'#ffffff'], [.5,-2,.5,.5,'#ffffff'], // status lights
+    ],
+    // CYBER FORGE: Compiler Worm (w — building)
+    w: [
+      [-3,0,2,1.5,'#44ffcc'], [-1.5,-.5,2,2,'#44ffcc'], [0,-1,2,2.5,'#44ffcc'], [1.5,-.5,2,2,'#44ffcc'], // segments
+      [3,0,1,1,'#44ffcc'], // tail
+      [-3.5,-.2,.8,.8,'#ffffff'], // eye
+      [-2,.8,.5,.3,'#00aa88'], [0,.8,.5,.3,'#00aa88'], [2,.8,.5,.3,'#00aa88'], // legs
+    ],
+    // BLOOD PIT: Rage Fiend (r)
+    r: [
+      [-2,-3,4,3,'#ff2200'], [-2.5,0,5,2,'#cc1100'], // head + body
+      [-1.5,-2.5,.8,.6,'#ffff00'], [.7,-2.5,.8,.6,'#ffff00'], // glowing eyes
+      [-3.5,-.5,1,2,'#cc1100'], [2.5,-.5,1,2,'#cc1100'], // arms
+      [-4,0,.8,.5,'#ff4400'], [3.2,0,.8,.5,'#ff4400'], // claws
+      [-1.5,2,1,1.5,'#aa0000'], [.5,2,1,1.5,'#aa0000'], // legs
+      [-1,-1.5,2,.3,'#440000'], // mouth
+    ],
+    // BLOOD PIT: Blood Leech (L)
+    L: [
+      [-1,-3,2,6,'#cc0044'], [-2,-1,4,2,'#aa0033'], // body
+      [-1,-3.5,2,1,'#ff0044'], // mouth/sucker
+      [-.5,-2.5,.4,.4,'#ffff00'], [.3,-2.5,.4,.4,'#ffff00'], // eyes
+      [-1.5,2,1,.5,'#880022'], [.5,2,1,.5,'#880022'], // tail fins
+    ],
+    // BLOOD PIT: Pain Wraith (P)
+    P: [
+      [-2,-4,4,3,'#ff446688'], [-2.5,-1,5,3,'#ff446666'], // ghostly form
+      [-1,-3.5,.6,.6,'#ff0000'], [.4,-3.5,.6,.6,'#ff0000'], // eyes
+      [-3,-1.5,1,2,'#ff446644'], [2,-1.5,1,2,'#ff446644'], // arms
+      [-1,-.5,2,.3,'#ff0044'], // screaming mouth
+      [-2,2,4,1,'#ff446622'], // fade trail
+    ],
+    // EMERALD GROVE: Vine Creeper (v)
+    v: [
+      [-2,-1,4,3,'#44aa44'], // body mass
+      [-3,-2,1.5,3,'#338833'], [1.5,-2,1.5,3,'#338833'], // vine arms
+      [-3.5,-2.5,.8,.8,'#66cc44'], [2.7,-2.5,.8,.8,'#66cc44'], // leaf tips
+      [-1,-1.5,.5,.5,'#ffff00'], [.5,-1.5,.5,.5,'#ffff00'], // eyes
+      [-1,2,2,1,'#338833'], // roots
+      [-.5,-.5,1,.3,'#22aa22'], // mouth
+    ],
+    // EMERALD GROVE: Mushroom King (M)
+    M: [
+      [-3,-4,6,3,'#cc6644'], // cap
+      [-3.5,-3,.5,.5,'#ffcc88'], [-.5,-4.5,.5,.5,'#ffcc88'], [2.5,-3,.5,.5,'#ffcc88'], // cap spots
+      [-1.5,-1,3,3,'#eeddbb'], // stem
+      [-1,-.5,.6,.6,'#222'], [.4,-.5,.6,.6,'#222'], // eyes
+      [-2,2,4,.5,'#88aa66'], // grass base
+    ],
+    // EMERALD GROVE: Forest Spirit (f)
+    f: [
+      [-1.5,-3,3,2,'#66ffaa88'], [-2,-1,4,3,'#66ffaa66'], // ethereal form
+      [-.8,-2.5,.5,.5,'#ffffff'], [.3,-2.5,.5,.5,'#ffffff'], // eyes
+      [-2.5,-2,1,2,'#66ffaa44'], [1.5,-2,1,2,'#66ffaa44'], // arms
+      [-1,2,2,1,'#44cc8822'], // fade
+      [-1,-3.5,2,.5,'#aaffcc'], // crown glow
+    ],
+    // DRAGONIA: Fire Drake (d)
+    d: [
+      [-2,-3,4,2.5,'#ff6600'], [-3,-1,6,3,'#cc5500'], // head + body
+      [-1.5,-2.5,.7,.5,'#ffff00'], [.8,-2.5,.7,.5,'#ffff00'], // eyes
+      [-1,-1.5,2,.3,'#ff2200'], // mouth fire
+      [-4,0,1.5,2,'#cc5500'], [2.5,0,1.5,2,'#cc5500'], // wings
+      [-2,2,1.5,1.5,'#aa4400'], [.5,2,1.5,1.5,'#aa4400'], // legs
+      [0,3,2,.8,'#ff4400'], // tail
+    ],
+    // DRAGONIA: Scale Sentinel (S)
+    S: [
+      [-2.5,-3,5,3,'#ccaa44'], [-3,0,6,2.5,'#aa8833'], // head + body
+      [-1.5,-2,.8,.6,'#ff8800'], [.7,-2,.8,.6,'#ff8800'], // eyes
+      [-3.5,-.5,1,2.5,'#ccaa44'], [2.5,-.5,1,2.5,'#ccaa44'], // arms with shields
+      [-4,-.5,.8,2,'#ffcc00'], [3.2,-.5,.8,2,'#ffcc00'], // shield plates
+      [-2,2.5,1.5,1,'#886622'], [.5,2.5,1.5,1,'#886622'], // legs
+    ],
+    // DRAGONIA: Ember Worm (q)
+    q: [
+      [-3,-.5,2,2,'#ff4400'], [-1.5,-1,2,2.5,'#ff4400'], [0,-.5,2,2,'#ff4400'], [1.5,-.5,2,1.5,'#cc3300'], // segments
+      [-3.5,-.2,.8,.8,'#ffff00'], // eye
+      [-2.5,1,.3,.3,'#ff6600'], [0,1.5,.3,.3,'#ff6600'], [2,1,.3,.3,'#ff6600'], // ember particles
+    ],
+    // VOID NEXUS: Shadow Walker (social w — uses 'x' key to avoid collision)
+    x: [
+      [-2,-4,4,3,'#8844cc88'], [-2.5,-1,5,3,'#8844cc66'], // shadow form
+      [-1,-3,.6,.6,'#ff00ff'], [.4,-3,.6,.6,'#ff00ff'], // eyes
+      [-3,-1.5,1,3,'#8844cc44'], [2,-1.5,1,3,'#8844cc44'], // arms
+      [-1.5,2,3,1,'#8844cc22'], // shadow trail
+      [-.5,-4.5,1,.5,'#cc66ff'], // hood point
+    ],
+    // VOID NEXUS: Echo Phantom (p)
+    p: [
+      [-2,-3,4,3,'#cc66ff66'], [-1.5,0,3,2,'#cc66ff44'], // ghostly body
+      [-1,-2,.5,.5,'#ffffff88'], [.5,-2,.5,.5,'#ffffff88'], // faint eyes
+      [-3,-2,.5,.5,'#cc66ff33'], [2.5,-2,.5,.5,'#cc66ff33'], // echo fragments
+      [-2.5,0,.5,.5,'#cc66ff22'], [2,0,.5,.5,'#cc66ff22'], // more fragments
+    ],
+    // VOID NEXUS: Glitch Spider (I)
+    I: [
+      [-1.5,-1.5,3,3,'#ff44ff'], // body
+      [-1,-.8,.5,.5,'#ffffff'], [.5,-.8,.5,.5,'#ffffff'], // eyes
+      [-3,-2,.8,.3,'#cc44cc'], [2.2,-2,.8,.3,'#cc44cc'], // front legs
+      [-3.5,0,.8,.3,'#cc44cc'], [2.7,0,.8,.3,'#cc44cc'], // mid legs
+      [-3,1.5,.8,.3,'#cc44cc'], [2.2,1.5,.8,.3,'#cc44cc'], // back legs
+      [-1,1.5,2,.5,'#ff44ff88'], // web strand
+    ],
+    // CRYSTAL VAULT: Crystal Golem (c)
+    c: [
+      [-2,-4,4,2.5,'#6688ff'], [-3,-1.5,6,4,'#4466cc'], // head + body
+      [-1.5,-3,.7,.7,'#aaccff'], [.8,-3,.7,.7,'#aaccff'], // crystal eyes
+      [-4,-1,1.5,3,'#4466cc'], [2.5,-1,1.5,3,'#4466cc'], // arms
+      [-2,2.5,2,1.5,'#3355aa'], [0,2.5,2,1.5,'#3355aa'], // legs
+      [-1,-4.5,2,1,'#88aaff'], // crystal crown
+      [-.5,-1.5,1,.3,'#aaccff'], // chest gem
+    ],
+    // CRYSTAL VAULT: Knowledge Wisp (i)
+    i: [
+      [-1,-1.5,2,2,'#aaccff88'], // core
+      [-.3,-.8,.6,.6,'#ffffff'], // eye
+      [-2,-1,.8,.8,'#aaccff44'], [1.2,-1,.8,.8,'#aaccff44'], // side wisps
+      [-1,1,2,1,'#aaccff22'], // trail
+      [-.5,-2.5,1,.5,'#88aaff'], // top glow
+      [-1.5,.5,.3,.3,'#6688ff'], [1.2,.5,.3,.3,'#6688ff'], // sparkles
+    ],
+    // CRYSTAL VAULT: Rune Guardian (U)
+    U: [
+      [-2.5,-3.5,5,3,'#4466cc'], [-3,-.5,6,3,'#3355aa'], // head + body
+      [-1.5,-2.5,.8,.6,'#ffcc00'], [.7,-2.5,.8,.6,'#ffcc00'], // rune eyes
+      [-4,0,1.5,2.5,'#3355aa'], [2.5,0,1.5,2.5,'#3355aa'], // arms
+      [-2,2.5,1.5,1.5,'#2244aa'], [.5,2.5,1.5,1.5,'#2244aa'], // legs
+      [-1.5,-1,3,.3,'#ffcc00'], [-.2,-2,0.4,1.5,'#ffcc00'], // rune markings
+      [-2,-3.5,4,.3,'#88aaff'], // helm ridge
     ]
   },
 
@@ -3860,7 +4103,7 @@ const DungeonRenderer = {
     ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     const hf = Math.max(7, Math.min(9, Math.floor(ts*0.45)));
     ctx.font = hf + 'px "Press Start 2P",monospace';
-    const bName = bio.name;
+    const bName = (FEATURES.narrativeFloors && G._floorNarrative) ? G._floorNarrative.name : bio.name;
     const bw = ctx.measureText(bName).width + 12;
     ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillRect((w-bw)/2, 4, bw, 16);
     ctx.strokeStyle = bio.wire; ctx.lineWidth = 1; ctx.strokeRect((w-bw)/2, 4, bw, 16);
@@ -4398,6 +4641,22 @@ const DungeonMapper = {
   }
 };
 
+// --- Floor narrative calculator ---
+function getFloorNarrative() {
+  if (!FEATURES.narrativeFloors || !Game._recentBoosts || Game._recentBoosts.length < 3) return null;
+  const counts = {};
+  for (const b of Game._recentBoosts) {
+    if (FLOOR_NARRATIVES[b]) counts[b] = (counts[b] || 0) + 1;
+  }
+  const total = Game._recentBoosts.length;
+  let dominant = null, maxCount = 0;
+  for (const [action, count] of Object.entries(counts)) {
+    if (count / total >= 0.3 && count > maxCount) { dominant = action; maxCount = count; }
+  }
+  if (!dominant) return null;
+  return { ...FLOOR_NARRATIVES[dominant], _action: dominant };
+}
+
 // Dungeon alias for mood wiring compatibility
 const Dungeon = Game;
 
@@ -4420,6 +4679,11 @@ function initLabyrinth() {
   setInterval(() => {
     if (Game._boostQueue && Game._boostQueue.length > 0) {
       const boost = Game._boostQueue.shift();
+      if (FEATURES.narrativeFloors) {
+        if (!Game._recentBoosts) Game._recentBoosts = [];
+        Game._recentBoosts.push(boost);
+        if (Game._recentBoosts.length > 20) Game._recentBoosts.shift();
+      }
       const p = Game.player;
       switch (boost) {
         // --- Phase 3: New TIAMAT integration events ---
@@ -4487,13 +4751,20 @@ function initLabyrinth() {
             Game.addBuff('Curse', -2, 0, 15);
             Game.addLog('ERROR ripple — ATK weakened!', '#ff0040');
           } else {
-            const tier = Math.min(MONSTER_DEFS.length-1, Math.floor(Game.depth/3));
-            const def = MONSTER_DEFS[tier];
+            let def;
+            const biomePool = (FEATURES.biomeMonsters && Game.mood && BIOME_MONSTERS[Game.mood]) ? BIOME_MONSTERS[Game.mood] : null;
+            if (biomePool && Math.random() < 0.5) {
+              def = biomePool[Math.floor(Math.random() * biomePool.length)];
+            } else {
+              const tier = Math.min(MONSTER_DEFS.length-1, Math.floor(Game.depth/3));
+              def = MONSTER_DEFS[tier];
+            }
+            const scale = 1 + (Game.depth-1)*0.1;
             for (const [dx,dy] of [[2,0],[-2,0],[0,2],[0,-2]]) {
               const nx=p.x+dx, ny=p.y+dy;
               if (Game.isWalkable(nx,ny) && !Game.monsterAt(nx,ny)) {
                 Game.monsters.push({x:nx,y:ny,ch:def.ch,name:def.name,col:def.col,
-                  hp:def.hp,maxHp:def.hp,atk:def.atk,def:def.def,xp:def.xp,alive:true,alert:true,dying:false,deathTimer:0});
+                  hp:Math.ceil(def.hp*scale),maxHp:Math.ceil(def.hp*scale),atk:Math.ceil(def.atk*scale),def:Math.ceil(def.def*scale),xp:Math.ceil(def.xp*scale),alive:true,alert:true,dying:false,deathTimer:0});
                 Game.addLog('Error spawns a ' + def.name + '!', '#ff0040');
                 ParticleSystem.emit(nx, ny, 'death', 6);
                 break;
@@ -4676,6 +4947,28 @@ const NarrativeLog = {
     Demon:['Hellfire gutters and dies.','The Demon is banished.','Infernal screams fade.'],
     Lich:['The phylactery shatters.','Ancient magic unravels.','Ash is all that remains.'],
     Dragon:['The great wyrm falls!','Dragon scales scatter like coins.','A legendary kill!'],
+    // Biome-exclusive monster kill messages
+    'War Golem':['The Golem crumbles into scrap.','Gears and plates scatter.','War machine silenced.'],
+    'Siege Ram':['The Ram collapses, horns cracking.','Battering force spent.','Siege engine destroyed.'],
+    'Battle Wraith':['The Wraith dissolves in war smoke.','Spectral armor shatters.','Battle cry fades to silence.'],
+    'Code Bug':['Segmentation fault — Bug terminated.','The Bug decompiles.','Error resolved permanently.'],
+    'Firewall':['Firewall breached and dismantled.','Security protocols collapse.','Access granted — by force.'],
+    'Compiler Worm':['The Worm unravels into null bytes.','Compiled no more.','Stack overflow — Worm crashes.'],
+    'Rage Fiend':['Fury extinguished at last.','The Fiend burns out.','Rage dies with a whimper.'],
+    'Blood Leech':['The Leech bursts wetly.','No more blood to drain.','Parasitic end.'],
+    'Pain Wraith':['Agony silenced forever.','The Pain Wraith dissipates.','Suffering ends here.'],
+    'Vine Creeper':['Vines wither and snap.','The Creeper retreats into soil.','Nature reclaims its own.'],
+    'Mushroom King':['Spores scatter as the cap splits.','The King topples.','Fungal reign ends.'],
+    'Forest Spirit':['The Spirit dissolves into motes.','Returned to the grove.','A gentle fading.'],
+    'Fire Drake':['Drake fire gutters out.','Scales crack from the heat.','The lesser wyrm falls.'],
+    'Scale Sentinel':['Armored scales shatter.','The Sentinel stands no more.','Guardian duty ended.'],
+    'Ember Worm':['Embers cool to ash.','The Worm stops glowing.','Fire dies in the dark.'],
+    'Shadow Walker':['Shadows scatter like startled crows.','The Walker fades between planes.','Void reclaims its servant.'],
+    'Echo Phantom':['The Echo repeats one last time.','Phantom frequencies flatline.','Signal lost — permanently.'],
+    'Glitch Spider':['The Spider pixelates and vanishes.','Web of errors collapses.','Glitch patched.'],
+    'Crystal Golem':['Crystal fractures into shards.','The Golem shatters brilliantly.','Prismatic debris rains down.'],
+    'Knowledge Wisp':['The Wisp blinks out of existence.','Knowledge scattered to the void.','A brief flicker, then nothing.'],
+    'Rune Guardian':['Runes dim and crack.','The Guardian falls silent.','Ancient wards collapse.'],
   },
   hit:['A precise blow connects!','Steel finds flesh.','The strike lands true.','A solid hit!','The attack bites deep.'],
   playerHit:['Pain flares!','The blow staggers you.','Blood is drawn.','A vicious strike lands.','You reel from the impact.'],
@@ -4699,7 +4992,8 @@ function updateLabyrinthText() {
   // Character header
   const header = document.createElement('div');
   header.style.cssText = 'padding:6px 8px 4px;background:#1a1428;border-bottom:1px solid #44336b;font-family:"Press Start 2P",monospace;font-size:7px;color:#cc88ff;letter-spacing:1px;';
-  header.textContent = 'DEPTH ' + G.depth + '  LVL ' + P.lvl;
+  const floorLabel = (FEATURES.narrativeFloors && G._floorNarrative) ? G._floorNarrative.name : ('DEPTH ' + G.depth);
+  header.textContent = floorLabel + '  LVL ' + P.lvl;
   el.appendChild(header);
 
   // HP bar
