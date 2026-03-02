@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#F8F0FF">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
 <title>Bloom — Private Wellness Tracker</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -18,6 +19,31 @@
   --rose:#F48FB1;--rose-pale:#FCE4EC;
   --text:#3E2465;--text-dim:#7B6B8A;--text-muted:#A99BBB;
   --danger:#EF5350;--success:#66BB6A;--warn:#FFA726;
+}
+html.dark{
+  --bg:#1a1025;--surface:#241830;--card:#2a1e38;--border:#3d2a55;
+  --text:#e8dff0;--text-dim:#b8a5cc;--text-muted:#7a6890;
+  --violet-pale:#2d1f40;--pink-pale:#2d1a28;--sky-pale:#1a2535;--mint-pale:#1a2b1f;--peach-pale:#2b2018;--rose-pale:#2d1a28;
+  --violet-soft:#4a3570;--pink-soft:#5a2845;--sky-soft:#264060;--mint-soft:#265530;--peach-soft:#604525;
+  --danger:#FF6B6B;--success:#81C784;--warn:#FFB74D;
+}
+html.dark body{background:var(--bg)}
+html.dark input,html.dark textarea,html.dark select{background:var(--surface);color:var(--text);border-color:var(--border)}
+html.dark .pin-key{background:var(--surface);color:var(--text);border-color:var(--border)}
+html.dark .onboarding{background:var(--bg)}
+html.dark .pin-overlay{background:linear-gradient(180deg,var(--bg) 0%,var(--surface) 100%)}
+@media(prefers-color-scheme:dark){html.theme-auto{
+  --bg:#1a1025;--surface:#241830;--card:#2a1e38;--border:#3d2a55;
+  --text:#e8dff0;--text-dim:#b8a5cc;--text-muted:#7a6890;
+  --violet-pale:#2d1f40;--pink-pale:#2d1a28;--sky-pale:#1a2535;--mint-pale:#1a2b1f;--peach-pale:#2b2018;--rose-pale:#2d1a28;
+  --violet-soft:#4a3570;--pink-soft:#5a2845;--sky-soft:#264060;--mint-soft:#265530;--peach-soft:#604525;
+  --danger:#FF6B6B;--success:#81C784;--warn:#FFB74D;
+}
+html.theme-auto body{background:var(--bg)}
+html.theme-auto input,html.theme-auto textarea,html.theme-auto select{background:var(--surface);color:var(--text);border-color:var(--border)}
+html.theme-auto .pin-key{background:var(--surface);color:var(--text);border-color:var(--border)}
+html.theme-auto .onboarding{background:var(--bg)}
+html.theme-auto .pin-overlay{background:linear-gradient(180deg,var(--bg) 0%,var(--surface) 100%)}
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
@@ -191,7 +217,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .exercise-card .ex-how{font-size:12px;color:var(--text);line-height:1.6;padding:8px 10px;background:var(--violet-pale);border-radius:10px}
 .exercise-card .ex-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .exercise-card .ex-tag{font-size:10px;padding:3px 10px;border-radius:10px;font-weight:600}
-.exercise-done{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer;transition:all .2s}
+.exercise-done{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer;transition:all .2s;-webkit-appearance:none}
 .exercise-done.checked{border-color:var(--mint);background:var(--mint-pale);color:var(--mint-deep)}
 
 .reward-overlay{position:fixed;inset:0;background:rgba(62,36,101,.5);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease}
@@ -225,6 +251,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
   .report-page th,td{text-align:left;padding:4px 8px;border-bottom:1px solid #eee;font-size:12px}
   .report-page th{font-weight:600;background:#f5f0ff}
 }
+.tour-overlay{position:fixed;inset:0;z-index:600;pointer-events:none}
+.tour-backdrop{position:fixed;inset:0;z-index:599;pointer-events:auto}
+.tour-spotlight{position:absolute;z-index:601;border-radius:14px;box-shadow:0 0 0 9999px rgba(62,36,101,.55);pointer-events:none;transition:all .35s ease}
+.tour-tooltip{position:absolute;z-index:602;background:var(--surface);border-radius:16px;padding:16px 18px;max-width:280px;box-shadow:0 8px 32px rgba(62,36,101,.25);border:1px solid var(--violet-soft);pointer-events:auto;animation:fadeUp .3s ease}
+.tour-tooltip .tour-title{font-size:15px;font-weight:700;color:var(--violet-deep);margin-bottom:4px}
+.tour-tooltip .tour-desc{font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:12px}
+.tour-tooltip .tour-footer{display:flex;justify-content:space-between;align-items:center}
+.tour-tooltip .tour-dots{display:flex;gap:4px}
+.tour-tooltip .tour-dot{width:6px;height:6px;border-radius:3px;background:var(--border);transition:all .2s}
+.tour-tooltip .tour-dot.active{width:16px;background:var(--violet)}
+.tour-tooltip .tour-next{padding:6px 16px;border-radius:10px;background:linear-gradient(135deg,var(--violet),var(--pink));color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer}
+.tour-tooltip .tour-skip{font-size:11px;color:var(--text-muted);cursor:pointer;border:none;background:none;padding:4px 8px}
 </style>
 </head>
 <body>
@@ -264,8 +302,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
         <div class="header-quote" id="headerQuote"></div>
       </div>
       <div class="header-actions">
-        <button class="header-btn" id="moodHeaderBtn" onclick="showView('log')" title="Mood"></button>
-        <button class="header-btn" id="menuBtn" onclick="toggleSettings()" title="Menu" style="flex-direction:column;gap:3px;padding:0">
+        <button class="header-btn" id="moodHeaderBtn" onclick="showView('log')" title="Mood" aria-label="Log mood"></button>
+        <button class="header-btn" id="menuBtn" onclick="toggleSettings()" title="Menu" aria-label="Open menu" style="flex-direction:column;gap:3px;padding:0">
           <span style="display:block;width:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--violet-deep),var(--pink));transition:all .3s"></span>
           <span style="display:block;width:12px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--pink),var(--violet-soft));transition:all .3s"></span>
           <span style="display:block;width:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--violet-soft),var(--mint));transition:all .3s"></span>
@@ -293,7 +331,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 </div>
 
 <!-- Water tracker floating widget -->
-<div id="waterFloat" onclick="toggleWaterPanel()" style="position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--mint));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(129,212,250,.4);cursor:pointer;z-index:100;transition:all .2s;font-size:11px;font-weight:700;line-height:1.1">
+<div id="waterFloat" onclick="toggleWaterPanel()" role="button" aria-label="Log water intake" tabindex="0" style="position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--mint));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(129,212,250,.4);cursor:pointer;z-index:100;transition:all .2s;font-size:11px;font-weight:700;line-height:1.1">
   <span style="font-size:18px">&#128167;</span>
   <span id="waterCount">0</span>
 </div>
@@ -1111,6 +1149,33 @@ const LAB_TARGETS={
   'Creatinine':{unit:'mg/dL',low:0.5,high:1.2,urgentHigh:1.5}
 };
 
+const LAB_SI_CONV={
+  'Estradiol':{factor:3.671,siUnit:'pmol/L'},
+  'Testosterone':{factor:0.0347,siUnit:'nmol/L'},
+  'Prolactin':{factor:1,siUnit:'ng/mL'},
+  'ALT':{factor:1,siUnit:'U/L'},
+  'AST':{factor:1,siUnit:'U/L'},
+  'Potassium':{factor:1,siUnit:'mmol/L'},
+  'Hemoglobin':{factor:10,siUnit:'g/L'},
+  'LDL':{factor:0.0259,siUnit:'mmol/L'},
+  'HDL':{factor:0.0259,siUnit:'mmol/L'},
+  'Triglycerides':{factor:0.0113,siUnit:'mmol/L'},
+  'A1C':{factor:1,siUnit:'%'},
+  'Estrone':{factor:3.699,siUnit:'pmol/L'},
+  'SHBG':{factor:1,siUnit:'nmol/L'},
+  'Free T':{factor:3.47,siUnit:'pmol/L'},
+  'DHT':{factor:0.0344,siUnit:'nmol/L'},
+  'TSH':{factor:1,siUnit:'mIU/L'},
+  'Vitamin D':{factor:2.496,siUnit:'nmol/L'},
+  'Creatinine':{factor:88.42,siUnit:'μmol/L'}
+};
+function labDisplayValue(name,value){
+  if(S.labUnits!=='si')return{val:value,unit:LAB_TARGETS[name]?.unit||''};
+  const conv=LAB_SI_CONV[name];
+  if(!conv)return{val:value,unit:LAB_TARGETS[name]?.unit||''};
+  return{val:Math.round(value*conv.factor*100)/100,unit:conv.siUnit};
+}
+
 const LAB_INFO={
   'Estradiol':{cat:'Hormones',why:'Primary estrogen — drives breast growth, fat redistribution, skin softening. Always test at trough (before next dose).',ftmWhy:'Should be suppressed on T therapy.',critical:true},
   'Testosterone':{cat:'Hormones',why:'Must suppress below 50 ng/dL for feminization. Confirms anti-androgen is working.',ftmWhy:'Primary androgen — drives voice, facial hair, muscle. Test at trough.',critical:true},
@@ -1214,7 +1279,7 @@ function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||de
 function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{},exerciseLog:[],dailyReward:{lastClaim:'',streak:0,xp:0,level:1,history:[]}}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
-function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[],reminders:{am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}}}}
+function defaultSettings(){return{pinEnabled:false,onboarded:false,tutorialDone:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[],theme:'auto',height:null,labUnits:'us',reminders:{am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}}}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
 async function hashPin(p){
   const enc=new TextEncoder();
@@ -1231,6 +1296,8 @@ if(!D.phases)D.phases=[];
 if(!D.supplementLog)D.supplementLog=[];
 if(!D.medLog)D.medLog=[];
 if(!S.journeyType)S.journeyType='mtf';
+if(!S.theme)S.theme='auto';
+if(!S.labUnits)S.labUnits='us';
 if(!S.reminders)S.reminders={am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}};
 
 // ─── Calculations ────────────────────────────────────────────
@@ -1384,6 +1451,7 @@ function completeOnboarding(){
   S.onHRT=obData.onHRT===true;
   S.goals=[...obData.goals];
   S.unitSystem=obData.units;
+  S.height=parseFloat(obData.height)||null;
   S.onboarded=true;
   saveSettings();
   if(obData.weight){
@@ -1392,6 +1460,7 @@ function completeOnboarding(){
   }
   document.getElementById('onboarding').style.display='none';
   showView('dashboard');
+  if(!S.tutorialDone)setTimeout(startTutorial,500);
 }
 
 function renderOB(){
@@ -1550,7 +1619,12 @@ function renderDashboard(){
   h+=`<div class="qs"><div class="qs-label">Level</div><div class="qs-value" style="color:var(--violet-deep)">${rLevel.level} <span style="font-size:10px;font-weight:400">${rLevel.title}</span></div></div>`;
   if(hasWeight){
     const wt=todayLog?.weight||lastM?.weight;
-    h+=`<div class="qs"><div class="qs-label">Weight</div><div class="qs-value">${wt} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`;
+    let wDelta='';
+    if(D.measurements.length>=2&&D.measurements[0].weight&&lastM?.weight){
+      const d=(lastM.weight-D.measurements[0].weight).toFixed(1);
+      if(Math.abs(d)>=0.05){const s=d>0?'+':'';const c=d>0?'var(--mint-deep)':'var(--pink-deep)';wDelta=` <span style="font-size:10px;color:${c}">${s}${d}</span>`}
+    }
+    h+=`<div class="qs"><div class="qs-label">Weight</div><div class="qs-value">${wt} ${S.unitSystem==='imperial'?'lbs':'kg'}${wDelta}</div></div>`;
   }
   if(todayLog?.heartRate)h+=`<div class="qs"><div class="qs-label">Resting HR</div><div class="qs-value">${todayLog.heartRate} bpm</div></div>`;
   if(todayLog?.bpSys)h+=`<div class="qs"><div class="qs-label">Blood Pressure</div><div class="qs-value">${todayLog.bpSys}/${todayLog.bpDia}</div></div>`;
@@ -1922,6 +1996,7 @@ function getNextLevel(xp){
 }
 
 function checkDailyReward(){
+  if(!S.tutorialDone)return; // Don't show reward during tutorial
   const r=getDailyReward();
   const td=today();
   if(r.lastClaim===td)return; // Already claimed today
@@ -1999,7 +2074,13 @@ function showRewardPopup(r,xpGain,leveledUp,currentLevel){
 }
 
 // ─── Log View ────────────────────────────────────────────────
+let logSubView='today';
 function renderLog(){
+  const tabs=`<div style="display:flex;gap:4px;margin-bottom:12px;background:var(--surface);border-radius:12px;padding:3px;border:1px solid var(--border)">
+    ${['today','history'].map(v=>`<button style="flex:1;padding:8px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .2s;${logSubView===v?'background:var(--violet);color:#fff':'background:transparent;color:var(--text-dim)'}" onclick="logSubView='${v}';renderLog()">${v==='today'?'Today':'History'}</button>`).join('')}
+  </div>`;
+  if(logSubView==='history'){renderLogHistory();document.getElementById('content').insertAdjacentHTML('afterbegin',tabs);return}
+
   const td=today(),ex=getLog(td)||{};
   if(!tempLogInited){tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria||5,energy:ex.energy||5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||'',
     heartRate:ex.heartRate||'',bpSys:ex.bpSys||'',bpDia:ex.bpDia||'',bpPos:ex.bpPos||'sitting',
@@ -2067,6 +2148,55 @@ function renderLog(){
     <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today? Any changes?">${tempLog.notes}</textarea>
     <button class="btn-primary" id="saveLogBtn" onclick="saveLog()">Save Today's Log</button>
   </div>`;
+  document.getElementById('content').innerHTML=h;
+  document.getElementById('content').insertAdjacentHTML('afterbegin',tabs);
+}
+
+function renderLogHistory(){
+  const logs=D.logs.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  let h='<div class="fade-in">';
+  if(!logs.length){
+    h+=`<div class="empty-state"><div class="icon">&#128221;</div><p>No past entries yet.<br>Log your first day to start building your history.</p></div>`;
+  }else{
+    for(const l of logs){
+      const dateStr=new Date(l.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+      const moodEmoji=l.mood?MOODS.find(m=>m.l===l.mood)?.e||'':'';
+      const tags=(l.tags||[]).slice(0,5);
+      const notePreview=(l.notes||'').slice(0,80);
+      h+=`<div class="history-item" onclick="this.querySelector('.log-expand').classList.toggle('hidden')" style="cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="date">${dateStr}</div>
+          <span style="font-size:20px">${moodEmoji}</span>
+        </div>
+        <div class="details">`;
+      const details=[];
+      if(l.dysphoria!==undefined)details.push('Dysphoria: '+l.dysphoria+'/10');
+      if(l.energy!==undefined)details.push('Energy: '+l.energy+'/10');
+      if(l.sleep)details.push('Sleep: '+l.sleep+'h');
+      if(l.weight)details.push('Weight: '+l.weight);
+      h+=details.join(' · ');
+      h+=`</div>`;
+      if(tags.length)h+=`<div class="tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${(l.tags||[]).length>5?`<span class="tag" style="background:var(--border);color:var(--text-muted)">+${(l.tags||[]).length-5}</span>`:''}</div>`;
+      if(notePreview)h+=`<div style="font-size:12px;color:var(--text-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(notePreview)}${(l.notes||'').length>80?'...':''}</div>`;
+      // Expanded detail (hidden by default)
+      h+=`<div class="log-expand hidden" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">`;
+      if(l.mood)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Mood:</strong> ${moodEmoji} ${l.mood}</div>`;
+      if(l.dysphoria!==undefined)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Dysphoria:</strong> ${l.dysphoria}/10</div>`;
+      if(l.energy!==undefined)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Energy:</strong> ${l.energy}/10</div>`;
+      if(l.sleep)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Sleep:</strong> ${l.sleep} hrs</div>`;
+      if(l.weight)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Weight:</strong> ${l.weight} ${S.unitSystem==='imperial'?'lbs':'kg'}</div>`;
+      if(l.heartRate)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Resting HR:</strong> ${l.heartRate} bpm</div>`;
+      if(l.bpSys)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>BP:</strong> ${l.bpSys}/${l.bpDia} (${l.bpPos||'sitting'})</div>`;
+      if(l.skinScore!==undefined)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Skin:</strong> ${l.skinScore}/10</div>`;
+      if(l.libido!==undefined)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Libido:</strong> ${l.libido}/10</div>`;
+      if(l.moodStability!==undefined)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Mood Stability:</strong> ${l.moodStability}/10</div>`;
+      if(l.morningE)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Morning E:</strong> ${l.morningE}</div>`;
+      if((l.tags||[]).length)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>All tags:</strong> ${(l.tags||[]).map(t=>esc(t)).join(', ')}</div>`;
+      if(l.notes)h+=`<div style="font-size:13px;margin-bottom:4px"><strong>Notes:</strong> ${esc(l.notes)}</div>`;
+      h+=`</div></div>`;
+    }
+  }
+  h+='</div>';
   document.getElementById('content').innerHTML=h;
 }
 
@@ -2189,14 +2319,15 @@ function renderLabs(){
         const t=targets[r.name];
         const info=LAB_INFO[r.name];
         const why=info?(isFtm&&info.ftmWhy?info.ftmWhy:info.why):'';
+        const dv=labDisplayValue(r.name,r.value);
         h+=`<div style="padding:6px 0;border-bottom:1px solid var(--border)">
           <div class="lab-row" style="border:none;padding:0">
             <span class="lab-name">${r.name}</span>
-            <span class="lab-value" style="color:${flag==='normal'?'var(--text)':flag==='urgent'?'var(--danger)':'var(--warn)'}">${r.value}</span>
-            <span class="lab-unit">${t?t.unit:''}</span>
-            <span class="lab-flag ${flag}">${flag}</span>
+            <span class="lab-value" style="color:${flag==='normal'?'var(--text)':flag==='urgent'?'var(--danger)':'var(--warn)'}">${dv.val}</span>
+            <span class="lab-unit">${dv.unit}</span>
+            <span class="lab-flag ${flag}">${flag==='normal'?'&#10003; normal':flag==='high'?'&#8593; high':flag==='low'?'&#8595; low':'&#9888; urgent'}</span>
           </div>
-          ${t?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">Range: ${t.low||0}–${t.high} ${t.unit}${t.urgentHigh?' · Urgent above '+t.urgentHigh:''}${t.urgentLow?' · Urgent below '+t.urgentLow:''}</div>`:''}
+          ${t?`<div style="font-size:10px;color:var(--text-muted);margin-top:2px">Range: ${S.labUnits==='si'?labDisplayValue(r.name,t.low||0).val+'–'+labDisplayValue(r.name,t.high).val+' '+dv.unit:(t.low||0)+'–'+t.high+' '+t.unit}${t.urgentHigh?' · Urgent above '+(S.labUnits==='si'?labDisplayValue(r.name,t.urgentHigh).val:t.urgentHigh):''}${t.urgentLow?' · Urgent below '+(S.labUnits==='si'?labDisplayValue(r.name,t.urgentLow).val:t.urgentLow):''}</div>`:''}
           ${why?`<div style="font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.4">${why}</div>`:''}
         </div>`;
       }
@@ -2306,7 +2437,7 @@ function viewLabDetail(date){
     const flag=flagLab(r.name,r.value);const t=targets[r.name];const info=LAB_INFO[r.name];
     h+=`<div class="lab-row"><span class="lab-name">${r.name}</span>
       <span class="lab-value" style="color:${flag==='normal'?'var(--text)':flag==='urgent'?'var(--danger)':'var(--warn)'}">${r.value}</span>
-      <span class="lab-unit">${t?t.unit:''}</span><span class="lab-flag ${flag}">${flag}</span></div>`;
+      <span class="lab-unit">${t?t.unit:''}</span><span class="lab-flag ${flag}">${flag==='normal'?'&#10003; normal':flag==='high'?'&#8593; high':flag==='low'?'&#8595; low':'&#9888; urgent'}</span></div>`;
   }
   h+=`<button class="btn-secondary" onclick="renderLabs()">Back</button>
     <button class="btn-small" style="margin-top:8px;background:#FFEBEE;color:var(--danger)" onclick="if(confirm('Delete this lab entry?')){D.labs=D.labs.filter(l=>l.date!=='${date}');saveData();renderLabs()}">Delete</button>`;
@@ -2328,10 +2459,12 @@ function showLabEntry(){
   for(const[cat,labs]of Object.entries(cats)){
     h+=`<div class="section-title">${cat}</div>`;
     for(const{name,t,info}of labs){
+      const siConv=LAB_SI_CONV[name];
+      const siHint=siConv&&siConv.siUnit!==t.unit?` <span style="font-size:9px;color:var(--text-muted)">(${siConv.siUnit})</span>`:'';
       h+=`<div class="form-row">
         <label style="min-width:90px">${name}${info.critical?' *':''}</label>
         <input type="number" step="0.01" id="lab_${name.replace(/[\s\/]/g,'_')}" placeholder="${t.low||0}–${t.high}" style="flex:1">
-        <span style="font-size:11px;color:var(--text-muted);min-width:45px">${t.unit}</span>
+        <span style="font-size:11px;color:var(--text-muted);min-width:45px">${t.unit}${siHint}</span>
       </div>`;
     }
   }
@@ -2387,16 +2520,37 @@ function renderBody(){
 
   if(last){
     const bs=braSize();
+    const first=D.measurements[0];
+    const prev=D.measurements.length>=2?D.measurements[D.measurements.length-2]:null;
+    function measDelta(field,u){
+      if(!last[field])return'';
+      let d='';
+      if(first&&first[field]&&D.measurements.length>=2){
+        const diff=(last[field]-first[field]).toFixed(1);
+        const sign=diff>0?'+':'';
+        const color=Math.abs(diff)<0.05?'var(--text-muted)':diff>0?'var(--mint-deep)':'var(--pink-deep)';
+        d+=` <span style="font-size:11px;color:${color};font-weight:600">(${sign}${diff}${u})</span>`;
+      }
+      if(prev&&prev[field]&&prev!==first){
+        const pdiff=(last[field]-prev[field]).toFixed(1);
+        if(Math.abs(pdiff)>=0.05){
+          const psign=pdiff>0?'+':'';
+          d+=` <span style="font-size:10px;color:var(--text-muted)">${psign}${pdiff} prev</span>`;
+        }
+      }
+      return d;
+    }
+    const wu=S.unitSystem==='imperial'?'lbs':'kg';
     h+=`<div class="panel"><h3>Current</h3>
-      ${last.bust?`<div style="font-size:13px;margin-bottom:4px">Bust: <strong>${last.bust}${unit}</strong></div>`:''}
-      ${last.underbust?`<div style="font-size:13px;margin-bottom:4px">Underbust: <strong>${last.underbust}${unit}</strong></div>`:''}
+      ${last.bust?`<div style="font-size:13px;margin-bottom:4px">Bust: <strong>${last.bust}${unit}</strong>${measDelta('bust',unit)}</div>`:''}
+      ${last.underbust?`<div style="font-size:13px;margin-bottom:4px">Underbust: <strong>${last.underbust}${unit}</strong>${measDelta('underbust',unit)}</div>`:''}
       ${bs?`<div style="font-size:13px;margin-bottom:4px">Bra Size: <strong style="color:var(--violet-deep)">${bs}</strong></div>`:''}
-      ${last.waist?`<div style="font-size:13px;margin-bottom:4px">Waist: <strong>${last.waist}${unit}</strong></div>`:''}
-      ${last.hips?`<div style="font-size:13px;margin-bottom:4px">Hips: <strong>${last.hips}${unit}</strong></div>`:''}
+      ${last.waist?`<div style="font-size:13px;margin-bottom:4px">Waist: <strong>${last.waist}${unit}</strong>${measDelta('waist',unit)}</div>`:''}
+      ${last.hips?`<div style="font-size:13px;margin-bottom:4px">Hips: <strong>${last.hips}${unit}</strong>${measDelta('hips',unit)}</div>`:''}
       ${whr()?`<div style="font-size:13px;margin-bottom:4px">WHR: <strong style="color:var(--mint-deep)">${whr()}</strong> <span style="font-size:11px;color:var(--text-muted)">(female avg: 0.70-0.80)</span></div>`:''}
-      ${last.thighL?`<div style="font-size:13px;margin-bottom:4px">L Thigh: <strong>${last.thighL}${unit}</strong></div>`:''}
-      ${last.thighR?`<div style="font-size:13px;margin-bottom:4px">R Thigh: <strong>${last.thighR}${unit}</strong></div>`:''}
-      ${last.weight?`<div style="font-size:13px;margin-bottom:4px">Weight: <strong>${last.weight} ${S.unitSystem==='imperial'?'lbs':'kg'}</strong></div>`:''}
+      ${last.thighL?`<div style="font-size:13px;margin-bottom:4px">L Thigh: <strong>${last.thighL}${unit}</strong>${measDelta('thighL',unit)}</div>`:''}
+      ${last.thighR?`<div style="font-size:13px;margin-bottom:4px">R Thigh: <strong>${last.thighR}${unit}</strong>${measDelta('thighR',unit)}</div>`:''}
+      ${last.weight?`<div style="font-size:13px;margin-bottom:4px">Weight: <strong>${last.weight} ${wu}</strong>${measDelta('weight',' '+wu)}</div>`:''}
     </div>`;
   }
 
@@ -2764,6 +2918,40 @@ function renderSupps(){
           <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderStack()">Stop</button>
         </div>
         ${doseCard?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--violet-deep);cursor:pointer;font-weight:600;padding:4px 0">View personalized dosing</summary>${doseCard}</details>`:""}
+      </div>`;
+    }
+    h+=`</div>`;
+  }
+
+  // Adherence chart — 30-day dot grid per active supplement
+  const activeSups30=D.supplements.filter(s=>!s.ended);
+  if(activeSups30.length&&D.supplementLog.length){
+    h+=`<div class="panel"><h3>Adherence (30 Days)</h3>
+      <div class="panel-sub">Daily tracking — filled dots = taken</div>`;
+    const now=new Date();
+    const days30=[];
+    for(let i=29;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days30.push(d.toISOString().split('T')[0])}
+    for(const s of activeSups30){
+      const startDate=s.started||'2020-01-01';
+      let taken=0,total=0;
+      const dots=days30.map(d=>{
+        const isFuture=d>today();
+        const isBeforeStart=d<startDate;
+        if(isFuture)return`<div style="width:10px;height:10px;border-radius:50%;background:var(--border);opacity:.3"></div>`;
+        if(isBeforeStart)return`<div style="width:10px;height:10px;border-radius:50%;background:var(--border);opacity:.15"></div>`;
+        total++;
+        const log=D.supplementLog.find(l=>l.date===d);
+        const wasTaken=log&&log.taken.includes(s.id);
+        if(wasTaken)taken++;
+        return`<div style="width:10px;height:10px;border-radius:50%;${wasTaken?'background:var(--mint)':'border:1.5px solid var(--border)'}" title="${d}"></div>`;
+      }).join('');
+      const pct=total>0?Math.round(taken/total*100):0;
+      h+=`<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:600">${esc(s.name)}</span>
+          <span style="font-size:11px;color:${pct>=80?'var(--mint-deep)':pct>=50?'var(--warn)':'var(--danger)'};font-weight:600">${pct}% (${taken}/${total})</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,10px);gap:3px;justify-content:start">${dots}</div>
       </div>`;
     }
     h+=`</div>`;
@@ -3204,26 +3392,47 @@ function renderSettings(){
       </details>
     </div>
 
+    <div class="settings-group">
+      <div class="setting-row"><label>App Tutorial</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showView('dashboard');setTimeout(startTutorial,300)">Replay Tour</button></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Walk through the app features step by step.</p>
+    </div>
+
     <div class="settings-group"><h3>Security</h3>
-      <div class="setting-row"><label>PIN Lock</label><div class="toggle ${S.pinEnabled?'on':''}" onclick="if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem(PIN_KEY);saveSettings();renderSettings()}else{showPinUI(null,true)}"></div></div>
+      <div class="setting-row"><label id="pinLabel">PIN Lock</label><div class="toggle ${S.pinEnabled?'on':''}" role="switch" aria-checked="${S.pinEnabled}" aria-labelledby="pinLabel" tabindex="0" onclick="if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem(PIN_KEY);saveSettings();renderSettings()}else{showPinUI(null,true)}"></div></div>
       ${S.pinEnabled?`<div class="setting-row"><label>Change PIN</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showPinUI(null,true)">Change</button></div>`:''}
-      <div class="setting-row"><label>Stealth Mode</label><div class="toggle ${S.stealthMode?'on':''}" onclick="S.stealthMode=!S.stealthMode;saveSettings();applyStealth();renderSettings()"></div></div>
+      <div class="setting-row"><label id="stealthLabel">Stealth Mode</label><div class="toggle ${S.stealthMode?'on':''}" role="switch" aria-checked="${S.stealthMode}" aria-labelledby="stealthLabel" tabindex="0" onclick="S.stealthMode=!S.stealthMode;saveSettings();applyStealth();renderSettings()"></div></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Stealth mode changes the app name and icon to look like a generic wellness app.</p>
     </div>
 
     <div class="settings-group"><h3>Profile</h3>
+      <div class="setting-row"><label>Theme</label>
+        <select style="width:100px;padding:6px" onchange="S.theme=this.value;saveSettings();applyTheme()">
+          <option value="auto"${(S.theme||'auto')==='auto'?' selected':''}>Auto</option>
+          <option value="light"${S.theme==='light'?' selected':''}>Light</option>
+          <option value="dark"${S.theme==='dark'?' selected':''}>Dark</option>
+        </select></div>
       <div class="setting-row"><label>Journey Type</label>
         <select style="width:130px;padding:6px" onchange="S.journeyType=this.value;saveSettings();renderSettings()">
           ${Object.entries(JOURNEY_TYPES).map(([k,v])=>`<option value="${k}"${k===S.journeyType?' selected':''}>${v.label}</option>`).join('')}
         </select></div>
-      <div class="setting-row"><label>Currently on HRT</label><div class="toggle ${S.onHRT?'on':''}" onclick="S.onHRT=!S.onHRT;saveSettings();renderSettings()"></div></div>
+      <div class="setting-row"><label id="hrtLabel">Currently on HRT</label><div class="toggle ${S.onHRT?'on':''}" role="switch" aria-checked="${S.onHRT}" aria-labelledby="hrtLabel" tabindex="0" onclick="S.onHRT=!S.onHRT;saveSettings();renderSettings()"></div></div>
       <p style="font-size:11px;color:var(--text-muted);margin:-4px 0 8px">${S.onHRT?'Tracking active hormone therapy':'Tracking body, wellness, and goals — no HRT assumptions'}</p>
       ${S.onHRT?`<div class="setting-row"><label>HRT Start Date</label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
       ${(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')?`<div class="setting-row"><label>Tanner Stage</label>`:`<div class="setting-row" style="display:none"><label>Tanner Stage</label>`}
         <select style="width:80px;padding:6px" onchange="S.tannerStage=+this.value;saveSettings()">
           ${TANNER_STAGES.map(t=>`<option value="${t.stage}"${parseInt(t.stage)===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
         </select></div>
-      <div class="setting-row"><label>Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>`:''}
+      <div class="setting-row"><label id="lowDoseLabel">Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" role="switch" aria-checked="${S.lowDose}" aria-labelledby="lowDoseLabel" tabindex="0" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>`:''}
+      <div class="setting-row"><label>Height</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" step="0.1" placeholder="${S.unitSystem==='imperial'?'inches':'cm'}" value="${S.height||''}" style="width:90px;padding:6px" onchange="S.height=parseFloat(this.value)||null;saveSettings()">
+          <span style="font-size:11px;color:var(--text-muted)">${S.unitSystem==='imperial'?'in':'cm'}</span>
+        </div></div>
+      <div class="setting-row"><label>Lab Units</label>
+        <select style="width:100px;padding:6px" onchange="S.labUnits=this.value;saveSettings();renderSettings()">
+          <option value="us"${(S.labUnits||'us')==='us'?' selected':''}>US</option>
+          <option value="si"${S.labUnits==='si'?' selected':''}>SI</option>
+        </select></div>
     </div>
 
     <div class="settings-group"><h3>My Goals</h3>
@@ -3290,8 +3499,43 @@ function renderSettings(){
     <button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
 
+    <div class="settings-group">
+      <details><summary style="font-size:16px;font-weight:700;cursor:pointer;color:var(--text);padding:4px 0">Legal</summary>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-dim);line-height:1.7">
+
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px">Terms of Service</div>
+        <p>By using Bloom ("the App"), you agree to these terms. Bloom is provided by ENERGENAI LLC ("we", "us") on an "as-is" basis.</p>
+        <p style="margin-top:6px"><strong>Not medical advice.</strong> Bloom is a personal wellness tracking tool. All supplement dosages, medication information, exercise recommendations, lab reference ranges, and health content are for <strong>educational and informational purposes only</strong>. Nothing in this app constitutes medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider before starting, stopping, or changing any medication, supplement, or health regimen.</p>
+        <p style="margin-top:6px"><strong>No warranty.</strong> We make no guarantees about the accuracy, completeness, or reliability of any information displayed. Supplement stacks, timelines, and expected changes are based on community-reported data and published research — individual results vary significantly.</p>
+        <p style="margin-top:6px"><strong>Assumption of risk.</strong> You use Bloom at your own risk. We are not liable for any health outcomes, adverse reactions, data loss, or damages arising from use of this app.</p>
+        <p style="margin-top:6px"><strong>Age requirement.</strong> You must be 18 years or older to use Bloom.</p>
+        <p style="margin-top:6px"><strong>Data ownership.</strong> All data you enter belongs to you. We never access, collect, or transmit your data. See Privacy Policy below.</p>
+
+        <div style="font-size:14px;font-weight:700;margin:16px 0 6px">Privacy Policy</div>
+        <p><strong>No data collection.</strong> Bloom stores all data exclusively in your browser's localStorage on your device. No data is ever sent to any server, cloud service, or third party.</p>
+        <p style="margin-top:6px"><strong>No accounts.</strong> Bloom does not require registration, login, or any personal identifying information.</p>
+        <p style="margin-top:6px"><strong>No analytics.</strong> We do not use cookies, tracking pixels, analytics services, or any form of usage monitoring.</p>
+        <p style="margin-top:6px"><strong>No network requests.</strong> Bloom functions entirely offline. The only outbound connections are links you voluntarily tap (resources, crisis lines) which open in your browser.</p>
+        <p style="margin-top:6px"><strong>Backups.</strong> Exported backup files are encrypted with AES-256-GCM using a password you choose. Backup files are saved to your device only — we never see them.</p>
+        <p style="margin-top:6px"><strong>Photos.</strong> Photos taken or imported are stored as compressed data within localStorage on your device. They are never uploaded or transmitted.</p>
+        <p style="margin-top:6px"><strong>Deletion.</strong> You can permanently delete all data at any time via Settings. Uninstalling the app or clearing browser data also removes everything.</p>
+
+        <div style="font-size:14px;font-weight:700;margin:16px 0 6px">Medical Disclaimer</div>
+        <p>Bloom is not a medical device and is not FDA-approved or regulated. The supplement information, dosage suggestions, lab reference ranges, expected timelines, drug interaction warnings, and exercise recommendations provided are <strong>not substitutes for professional medical advice</strong>.</p>
+        <p style="margin-top:6px">Hormone therapy (HRT) carries serious medical risks and should only be undertaken under the supervision of a qualified healthcare provider. Supplement stacks may interact with prescription medications. Lab values must be interpreted by your doctor in the context of your full medical history.</p>
+        <p style="margin-top:6px">If you are experiencing a medical emergency, call 911 or your local emergency number immediately.</p>
+
+        <div style="margin-top:16px;padding:10px 14px;background:var(--violet-pale);border-radius:10px;font-size:11px;color:var(--text-muted);line-height:1.6">
+          Effective date: March 2, 2026<br>
+          ENERGENAI LLC &middot; All rights reserved<br>
+          Contact: tiamat@tiamat.live
+        </div>
+      </div>
+      </details>
+    </div>
+
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-      <strong style="color:var(--violet-deep)">Bloom</strong> v2.3 — Private Wellness Tracker<br>
+      <strong style="color:var(--violet-deep)">Bloom</strong> v3.0 — Private Wellness Tracker<br>
       All data stored locally. No accounts. No cloud.<br>
       Your journey. Your data. Your device only.<br>
       <span style="font-size:11px">by ENERGENAI LLC</span>
@@ -3307,6 +3551,21 @@ function applyStealth(){
   const svg=logo?.querySelector('svg');
   if(S.stealthMode){title.textContent=S.stealthName||'Wellness';document.title=S.stealthName||'Wellness';if(svg)svg.style.display='none'}
   else{title.textContent='Bloom';document.title='Bloom — Private Wellness Tracker';if(svg)svg.style.display=''}
+}
+
+// ─── Theme ───────────────────────────────────────────────────
+function applyTheme(){
+  const html=document.documentElement;
+  html.classList.remove('dark','theme-auto');
+  const t=S.theme||'auto';
+  if(t==='dark')html.classList.add('dark');
+  else if(t==='auto')html.classList.add('theme-auto');
+  // Update meta theme-color
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta){
+    const isDark=t==='dark'||(t==='auto'&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+    meta.content=isDark?'#1a1025':'#F8F0FF';
+  }
 }
 
 // ─── Export ──────────────────────────────────────────────────
@@ -3818,6 +4077,17 @@ function initReminders(){
     const ms=target-now;
     if(ms<=0)continue;
     _reminderTimers.push(setTimeout(()=>showReminder(slot),ms));
+    // Also schedule via SW for background delivery (best-effort)
+    if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+      const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
+      navigator.serviceWorker.controller.postMessage({
+        type:'SCHEDULE_REMINDER',
+        delay:ms,
+        title:`Bloom — ${label} Reminder`,
+        body:'Time to check your meds & supplements!',
+        tag:'bloom-'+slot
+      });
+    }
   }
 }
 
@@ -3882,10 +4152,82 @@ function showView(v){
   }
 }
 
+// ─── Tutorial Walkthrough ────────────────────────────────────
+const TOUR_STEPS=[
+  {target:()=>document.querySelector('#content .panel'),title:'Your Dashboard',desc:'Quick stats and daily plan at a glance. This is your home base.'},
+  {target:()=>document.querySelector('.nav-btn[data-view="active"]'),title:'Exercises',desc:'Personalized exercises matched to your goals. Track daily completion and build streaks.'},
+  {target:()=>document.querySelector('.nav-btn[data-view="log"]'),title:'Daily Log',desc:'Check in daily — mood, energy, sleep, symptoms. This powers your insights and trends.'},
+  {target:()=>document.querySelector('.nav-btn[data-view="body"]'),title:'Body Tracking',desc:'Measurements, labs, and timeline. See your changes unfold over time.'},
+  {target:()=>document.querySelector('.nav-btn[data-view="stack"]'),title:'Supplement Stack',desc:'Manage supplements and medications. Get personalized stack recommendations based on your goals.'},
+  {target:()=>document.getElementById('menuBtn'),title:'Menu',desc:'Settings, resources, goals, backup, and your AI health assistant live here.'},
+  {target:()=>document.getElementById('waterFloat'),title:'Hydration',desc:'Tap anytime to log water. Your daily goal adjusts to your weight and medications.'}
+];
+let _tourStep=0,_tourEls={};
+
+function startTutorial(){
+  _tourStep=0;
+  const backdrop=document.createElement('div');backdrop.className='tour-backdrop';backdrop.id='tourBackdrop';
+  const spot=document.createElement('div');spot.className='tour-spotlight';spot.id='tourSpotlight';
+  const tip=document.createElement('div');tip.className='tour-tooltip';tip.id='tourTooltip';
+  document.body.appendChild(backdrop);document.body.appendChild(spot);document.body.appendChild(tip);
+  _tourEls={backdrop,spot,tip};
+  backdrop.onclick=()=>advanceTour();
+  renderTourStep();
+}
+
+function renderTourStep(){
+  if(_tourStep>=TOUR_STEPS.length){endTutorial();return}
+  const step=TOUR_STEPS[_tourStep];
+  const el=step.target();
+  if(!el){_tourStep++;renderTourStep();return}
+  const r=el.getBoundingClientRect();
+  const pad=6;
+  const spot=_tourEls.spot;
+  spot.style.left=(r.left-pad)+'px';
+  spot.style.top=(r.top-pad)+'px';
+  spot.style.width=(r.width+pad*2)+'px';
+  spot.style.height=(r.height+pad*2)+'px';
+
+  const tip=_tourEls.tip;
+  const dots=TOUR_STEPS.map((_,i)=>`<div class="tour-dot${i===_tourStep?' active':''}"></div>`).join('');
+  const isLast=_tourStep===TOUR_STEPS.length-1;
+  tip.innerHTML=`<div class="tour-title">${step.title}</div>
+    <div class="tour-desc">${step.desc}</div>
+    <div class="tour-footer">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="tour-dots">${dots}</div>
+        <button class="tour-skip" onclick="endTutorial()">Skip tour</button>
+      </div>
+      <button class="tour-next" onclick="advanceTour()">${isLast?'Done':'Next'}</button>
+    </div>`;
+
+  // Position tooltip
+  const tipW=280;
+  let tipLeft=r.left+(r.width/2)-(tipW/2);
+  if(tipLeft<8)tipLeft=8;
+  if(tipLeft+tipW>window.innerWidth-8)tipLeft=window.innerWidth-tipW-8;
+  tip.style.left=tipLeft+'px';
+  tip.style.width=tipW+'px';
+  // Place below or above target
+  if(r.bottom+160<window.innerHeight){tip.style.top=(r.bottom+pad+8)+'px';tip.style.bottom='auto'}
+  else{tip.style.bottom=(window.innerHeight-r.top+pad+8)+'px';tip.style.top='auto'}
+}
+
+function advanceTour(){_tourStep++;renderTourStep()}
+
+function endTutorial(){
+  if(_tourEls.backdrop)_tourEls.backdrop.remove();
+  if(_tourEls.spot)_tourEls.spot.remove();
+  if(_tourEls.tip)_tourEls.tip.remove();
+  _tourEls={};
+  S.tutorialDone=true;saveSettings();
+}
+
 // ─── Init ────────────────────────────────────────────────────
 checkOnboarding();
 checkPinLock();
 applyStealth();
+applyTheme();
 initReminders();
 // Motivational quote in header — rotates daily
 function updateHeaderQuote(){
@@ -3909,6 +4251,8 @@ function updateMoodHeader(){
 updateHeaderQuote();
 updateMoodHeader();
 if(!checkPinLock()){showView('dashboard');setTimeout(checkDailyReward,800)}
+// Service Worker registration
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
 </body>
 </html>
