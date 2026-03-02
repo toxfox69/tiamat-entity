@@ -220,6 +220,20 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .exercise-done{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer;transition:all .2s;-webkit-appearance:none}
 .exercise-done.checked{border-color:var(--mint);background:var(--mint-pale);color:var(--mint-deep)}
 
+.help-btn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--violet-pale);color:var(--violet-deep);font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--violet-soft);margin-left:6px;flex-shrink:0;transition:all .2s;line-height:1}
+.help-btn:hover,.help-btn:active{background:var(--violet);color:#fff}
+.help-popup{position:fixed;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;background:rgba(62,36,101,.4);animation:fadeIn .2s ease}
+.help-popup-card{background:var(--surface);border-radius:16px;padding:20px;max-width:320px;width:90%;box-shadow:0 12px 40px rgba(62,36,101,.3)}
+.help-popup-card h4{font-size:15px;font-weight:700;color:var(--violet-deep);margin-bottom:8px}
+.help-popup-card p{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:6px}
+.help-popup-card .help-close{width:100%;padding:10px;border-radius:10px;background:var(--violet);color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;margin-top:10px}
+
+.phase-form{background:var(--violet-pale);border-radius:12px;padding:14px;margin-top:8px}
+.phase-form input,.phase-form select{margin-bottom:8px}
+.phase-form .phase-supps{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.phase-form .phase-supp-chip{padding:4px 10px;border-radius:10px;font-size:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .2s}
+.phase-form .phase-supp-chip.selected{background:var(--violet);color:#fff;border-color:var(--violet-deep)}
+
 .reward-overlay{position:fixed;inset:0;background:rgba(62,36,101,.5);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease}
 .reward-card{background:var(--surface);border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(62,36,101,.3);animation:fadeUp .4s ease}
 .reward-card .reward-emoji{font-size:48px;margin-bottom:12px}
@@ -350,6 +364,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 </div>
 
 <script>
+// ─── Global Error Handler ────────────────────────────────────
+window.onerror=function(msg,src,line){console.error('[Bloom]',msg,src,line);return true};
+window.addEventListener('unhandledrejection',function(e){console.error('[Bloom Promise]',e.reason)});
+
 // ─── Constants ───────────────────────────────────────────────
 const STORAGE_KEY='bloom_data',SETTINGS_KEY='bloom_settings',PIN_KEY='bloom_pin';
 
@@ -841,6 +859,18 @@ function toggleExercise(exId){
   renderActive();
 }
 
+let _customRoutineOpen=false;
+function saveCustomRoutine(){
+  const name=document.getElementById('crName').value.trim();
+  if(!name){alert('Enter a name for your routine.');return}
+  const sets=document.getElementById('crSets').value.trim();
+  const notes=document.getElementById('crNotes').value.trim();
+  if(!D.customRoutines)D.customRoutines=[];
+  D.customRoutines.push({id:Date.now().toString(36),name,sets,notes,icon:'&#127939;',created:today()});
+  _customRoutineOpen=false;
+  saveData();renderActive();
+}
+
 function getTimeline(){
   const j=S.journeyType||'mtf';
   if(j==='ftm')return FTM_TIMELINE;
@@ -1280,11 +1310,11 @@ function esc(s){if(!s)return'';const d=document.createElement('div');d.textConte
 
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
-function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{},exerciseLog:[],dailyReward:{lastClaim:'',streak:0,xp:0,level:1,history:[]}}}
-function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
+function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{},exerciseLog:[],customRoutines:[],dailyReward:{lastClaim:'',streak:0,xp:0,level:1,history:[]}}}
+function saveData(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}catch(e){console.error('[Bloom] Save failed:',e);toast('Storage full — export a backup and clear old photos.')}}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
 function defaultSettings(){return{pinEnabled:false,onboarded:false,tutorialDone:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[],theme:'auto',height:null,labUnits:'us',reminders:{am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}}}}
-function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
+function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}catch(e){console.error('[Bloom] Settings save failed:',e);toast('Storage full.')}}
 async function hashPin(p){
   const enc=new TextEncoder();
   const salt=enc.encode('bloom-pin-salt');
@@ -1298,6 +1328,7 @@ const _isCapacitor=typeof window!=='undefined'&&window.Capacitor&&window.Capacit
 if(!D.photos)D.photos=[];
 if(!D.supplements)D.supplements=[];
 if(!D.phases)D.phases=[];
+if(!D.customRoutines)D.customRoutines=[];
 if(!D.supplementLog)D.supplementLog=[];
 if(!D.medLog)D.medLog=[];
 if(!S.journeyType)S.journeyType='mtf';
@@ -1956,6 +1987,8 @@ function renderActive(){
   const goals=S.goals||[];
   const j=S.journeyType||'mtf';
   const td=today();
+  const customCount=(D.customRoutines||[]).length;
+  const totalCount=exercises.length+customCount;
   const todayDone=getExerciseLog().filter(l=>l.date===td).length;
 
   let h='<div class="fade-in">';
@@ -1963,13 +1996,28 @@ function renderActive(){
   // Streak & today's progress
   const streak=getExerciseStreak();
   h+=`<div class="stats">
-    <div class="stat-card"><div class="label">Today</div><div class="value" style="color:var(--mint-deep)">${todayDone}/${exercises.length}</div></div>
+    <div class="stat-card"><div class="label">Today</div><div class="value" style="color:var(--mint-deep)">${todayDone}/${totalCount}</div></div>
     <div class="stat-card"><div class="label">Streak</div><div class="value" style="color:var(--peach-deep)">${streak} day${streak!==1?'s':''}</div></div>
   </div>`;
 
-  if(!exercises.length){
+  if(!exercises.length&&!customCount){
     h+=`<div class="empty-state"><div class="icon">🏃</div>
-      <p>Select goals in <span style="color:var(--violet-deep);cursor:pointer;font-weight:600" onclick="showView('settings')">Settings</span> to get personalized exercise recommendations.</p></div>`;
+      <p>Select goals in <span style="color:var(--violet-deep);cursor:pointer;font-weight:600" onclick="showView('settings')">Settings</span> to get personalized exercise recommendations, or add your own routines below.</p></div>`;
+    // Still show add custom button even with no goal exercises
+    if(_customRoutineOpen){
+      h+=`<div class="panel" style="background:var(--violet-pale)">
+        <h3>New Routine</h3>
+        <input type="text" id="crName" placeholder="Exercise name (e.g. Yoga, Running)" style="margin-bottom:8px">
+        <input type="text" id="crSets" placeholder="Sets/reps/duration (e.g. 3x10, 30 min)" style="margin-bottom:8px">
+        <input type="text" id="crNotes" placeholder="Notes (optional)" style="margin-bottom:8px">
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" style="flex:1;margin-top:0;padding:10px" onclick="saveCustomRoutine()">Add</button>
+          <button class="btn-secondary" style="flex:1;margin-top:0;padding:10px" onclick="_customRoutineOpen=false;renderActive()">Cancel</button>
+        </div>
+      </div>`;
+    } else {
+      h+=`<button class="btn-secondary" style="margin-top:8px" onclick="_customRoutineOpen=true;renderActive()">+ Add Custom Routine</button>`;
+    }
     h+='</div>';
     document.getElementById('content').innerHTML=h;
     return;
@@ -2024,11 +2072,49 @@ function renderActive(){
     }
   }
 
+  // Custom routines
+  const customs=D.customRoutines||[];
+  if(customs.length){
+    h+=`<div class="section-title">My Routines</div>`;
+    for(const cr of customs){
+      const done=isExerciseDone('custom_'+cr.id);
+      h+=`<div class="exercise-card" style="${done?'opacity:.6':''}">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div class="exercise-done${done?' checked':''}" onclick="toggleExercise('custom_${cr.id}')">${done?'&#10003;':''}</div>
+          <div style="flex:1">
+            <h4>${cr.icon||'&#127939;'} ${esc(cr.name)} <span style="font-size:12px;font-weight:400;color:var(--text-muted)">${esc(cr.sets||'')}</span></h4>
+            ${cr.notes?`<div class="ex-why">${esc(cr.notes)}</div>`:''}
+          </div>
+          <button style="font-size:11px;color:var(--danger);font-weight:500;padding:4px" onclick="if(confirm('Remove this routine?')){D.customRoutines=D.customRoutines.filter(x=>x.id!=='${cr.id}');saveData();renderActive()}">&#10005;</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  // Add custom routine
+  if(_customRoutineOpen){
+    h+=`<div class="panel" style="background:var(--violet-pale)">
+      <h3>New Routine</h3>
+      <input type="text" id="crName" placeholder="Exercise name (e.g. Yoga, Running)" style="margin-bottom:8px">
+      <input type="text" id="crSets" placeholder="Sets/reps/duration (e.g. 3x10, 30 min)" style="margin-bottom:8px">
+      <input type="text" id="crNotes" placeholder="Notes (optional)" style="margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" style="flex:1;margin-top:0;padding:10px" onclick="saveCustomRoutine()">Add</button>
+        <button class="btn-secondary" style="flex:1;margin-top:0;padding:10px" onclick="_customRoutineOpen=false;renderActive()">Cancel</button>
+      </div>
+    </div>`;
+  } else {
+    h+=`<button class="btn-secondary" style="margin-top:8px" onclick="_customRoutineOpen=true;renderActive()">+ Add Custom Routine</button>`;
+  }
+
+  h+=`<div style="height:12px"></div>`;
+
   // Weekly overview
+  const totalEx=exercises.length+(customs||[]).length;
   const weekLog=getWeekExerciseLog();
   if(weekLog.some(d=>d>0)){
     h+=`<div class="panel"><h3>This Week</h3>
-      <div class="chart-bar">${weekLog.map(d=>`<div class="bar" style="height:${d?Math.max(15,d/exercises.length*100):2}%;background:${d>=exercises.length?'var(--mint)':'var(--violet-soft)'}"></div>`).join('')}</div>
+      <div class="chart-bar">${weekLog.map(d=>`<div class="bar" style="height:${d?Math.max(15,d/totalEx*100):2}%;background:${d>=totalEx?'var(--mint)':'var(--violet-soft)'}"></div>`).join('')}</div>
       <div class="chart-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
     </div>`;
   }
@@ -3244,24 +3330,7 @@ function renderSupps(){
   if(!stackCount)h+=`<p style="font-size:13px;color:var(--text-muted);padding:8px 0">All recommended stacks added!</p>`;
   h+=`</div>`;
 
-  // Phases
-  h+=`<div class="panel"><h3>Phase Planning</h3>
-    <div class="panel-sub">Plan supplement phases with goals and timelines</div>`;
-  if(D.phases.length){
-    for(const p of D.phases){
-      const isActive=new Date(p.startDate)<=new Date()&&(!p.endDate||new Date(p.endDate)>=new Date());
-      h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border);${isActive?'background:var(--mint-pale);margin:0 -16px;padding:10px 16px;border-radius:8px':''}">
-        <div style="display:flex;justify-content:space-between;align-items:start">
-          <div><div style="font-size:14px;font-weight:600">${isActive?'&#9679; ':''}${p.name}</div>
-            <div style="font-size:12px;color:var(--text-dim)">${p.goal||''}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.startDate}${p.endDate?' to '+p.endDate:' — ongoing'}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Supps: ${p.supplements.join(', ')||'None assigned'}</div></div>
-          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.phases=D.phases.filter(x=>x.id!=='${p.id}');saveData();renderStack()">&#10005;</button>
-        </div>
-      </div>`;
-    }
-  }
-  h+=`<button class="btn-secondary" onclick="addPhase()">+ Add Phase</button></div>`;
+  // Phases — see Phase Planning in Body → Timeline
 
   // Stopped supplements
   const stopped=D.supplements.filter(s=>s.ended);
@@ -3348,16 +3417,7 @@ function addStack(name){
   saveData();renderStack();
 }
 
-function addPhase(){
-  const name=prompt('Phase name (e.g. "Loading Phase", "Maintenance"):');if(!name)return;
-  const goal=prompt('Goal (e.g. "Build bone density", "Support feminization"):');
-  const startDate=prompt('Start date (YYYY-MM-DD):',today());if(!startDate)return;
-  const endDate=prompt('End date (YYYY-MM-DD, leave empty for ongoing):','');
-  const suppNames=D.supplements.filter(s=>!s.ended).map(s=>s.name);
-  const selected=prompt('Supplements for this phase (comma-separated):\nAvailable: '+suppNames.join(', '));
-  D.phases.push({id:Date.now().toString(36),name:name.trim(),goal:(goal||'').trim(),startDate,endDate:endDate||null,supplements:selected?selected.split(',').map(s=>s.trim()):[]});
-  saveData();renderStack();
-}
+// addPhase moved to inline form — see savePhase() above
 
 // ─── Timeline View ───────────────────────────────────────────
 function renderTimeline(){
@@ -3449,6 +3509,32 @@ function renderTimeline(){
       </div>
     </div>`;
   }
+
+  // Phase Planning
+  h+=`<div class="panel"><h3>Phase Planning</h3>
+    <div class="panel-sub">Organize supplements into timed phases with goals</div>`;
+  if(D.phases.length){
+    for(const p of D.phases){
+      const isActive=new Date(p.startDate)<=new Date()&&(!p.endDate||new Date(p.endDate)>=new Date());
+      h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border);${isActive?'background:var(--mint-pale);margin:0 -16px;padding:10px 16px;border-radius:8px':''}">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><div style="font-size:14px;font-weight:600">${isActive?'&#9679; ':''}${esc(p.name)}</div>
+            ${p.goal?`<div style="font-size:12px;color:var(--text-dim)">${esc(p.goal)}</div>`:''}
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.startDate}${p.endDate?' to '+p.endDate:' — ongoing'}</div>
+            ${p.supplements.length?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.supplements.map(s=>`<span style="display:inline-block;padding:1px 6px;margin:1px;border-radius:6px;background:var(--violet-pale);color:var(--violet-deep)">${esc(s)}</span>`).join('')}</div>`:''}</div>
+          <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.phases=D.phases.filter(x=>x.id!=='${p.id}');saveData();renderTimeline()">&#10005;</button>
+        </div>
+      </div>`;
+    }
+  } else {
+    h+=`<p style="font-size:12px;color:var(--text-muted);padding:4px 0">No phases yet. Create one to organize your supplement schedule.</p>`;
+  }
+  if(_phaseFormOpen){
+    h+=renderPhaseForm();
+  } else {
+    h+=`<button class="btn-secondary" onclick="togglePhaseForm()">+ Add Phase</button>`;
+  }
+  h+=`</div>`;
 
   h+='</div>';
   document.getElementById('content').innerHTML=h;
@@ -3676,9 +3762,9 @@ function renderSettings(){
     </div>
 
     <div class="settings-group"><h3>Security</h3>
-      <div class="setting-row"><label id="pinLabel">PIN Lock</label><div class="toggle ${S.pinEnabled?'on':''}" role="switch" aria-checked="${S.pinEnabled}" aria-labelledby="pinLabel" tabindex="0" onclick="if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem(PIN_KEY);saveSettings();renderSettings()}else{showPinUI(null,true)}"></div></div>
+      <div class="setting-row"><label id="pinLabel">PIN Lock<span class="help-btn" onclick="event.stopPropagation();showHelp('pin')">?</span></label><div class="toggle ${S.pinEnabled?'on':''}" role="switch" aria-checked="${S.pinEnabled}" aria-labelledby="pinLabel" tabindex="0" onclick="if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem(PIN_KEY);saveSettings();renderSettings()}else{showPinUI(null,true)}"></div></div>
       ${S.pinEnabled?`<div class="setting-row"><label>Change PIN</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showPinUI(null,true)">Change</button></div>`:''}
-      <div class="setting-row"><label id="stealthLabel">Stealth Mode</label><div class="toggle ${S.stealthMode?'on':''}" role="switch" aria-checked="${S.stealthMode}" aria-labelledby="stealthLabel" tabindex="0" onclick="S.stealthMode=!S.stealthMode;saveSettings();applyStealth();renderSettings()"></div></div>
+      <div class="setting-row"><label id="stealthLabel">Stealth Mode<span class="help-btn" onclick="event.stopPropagation();showHelp('stealth')">?</span></label><div class="toggle ${S.stealthMode?'on':''}" role="switch" aria-checked="${S.stealthMode}" aria-labelledby="stealthLabel" tabindex="0" onclick="S.stealthMode=!S.stealthMode;saveSettings();applyStealth();renderSettings()"></div></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Stealth mode changes the app name and icon to look like a generic wellness app.</p>
     </div>
 
@@ -3689,40 +3775,40 @@ function renderSettings(){
           <option value="light"${S.theme==='light'?' selected':''}>Light</option>
           <option value="dark"${S.theme==='dark'?' selected':''}>Dark</option>
         </select></div>
-      <div class="setting-row"><label>Journey Type</label>
+      <div class="setting-row"><label>Journey Type<span class="help-btn" onclick="event.stopPropagation();showHelp('journeyType')">?</span></label>
         <select style="width:130px;padding:6px" onchange="S.journeyType=this.value;saveSettings();renderSettings()">
           ${Object.entries(JOURNEY_TYPES).map(([k,v])=>`<option value="${k}"${k===S.journeyType?' selected':''}>${v.label}</option>`).join('')}
         </select></div>
-      <div class="setting-row"><label id="hrtLabel">Currently on HRT</label><div class="toggle ${S.onHRT?'on':''}" role="switch" aria-checked="${S.onHRT}" aria-labelledby="hrtLabel" tabindex="0" onclick="S.onHRT=!S.onHRT;saveSettings();renderSettings()"></div></div>
+      <div class="setting-row"><label id="hrtLabel">Currently on HRT<span class="help-btn" onclick="event.stopPropagation();showHelp('onHRT')">?</span></label><div class="toggle ${S.onHRT?'on':''}" role="switch" aria-checked="${S.onHRT}" aria-labelledby="hrtLabel" tabindex="0" onclick="S.onHRT=!S.onHRT;saveSettings();renderSettings()"></div></div>
       <p style="font-size:11px;color:var(--text-muted);margin:-4px 0 8px">${S.onHRT?'Tracking active hormone therapy':'Tracking body, wellness, and goals — no HRT assumptions'}</p>
-      ${S.onHRT?`<div class="setting-row"><label>HRT Start Date</label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
-      ${(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')?`<div class="setting-row"><label>Tanner Stage</label>`:`<div class="setting-row" style="display:none"><label>Tanner Stage</label>`}
-        <select style="width:80px;padding:6px" onchange="S.tannerStage=+this.value;saveSettings()">
+      ${S.onHRT?`<div class="setting-row"><label>HRT Start Date<span class="help-btn" onclick="event.stopPropagation();showHelp('hrtStart')">?</span></label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
+      ${(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')?`<div class="setting-row"><label>Tanner Stage<span class="help-btn" onclick="event.stopPropagation();showHelp('tannerStage')">?</span></label>`:`<div class="setting-row" style="display:none"><label>Tanner Stage<span class="help-btn" onclick="event.stopPropagation();showHelp('tannerStage')">?</span></label>`}
+        <select style="width:120px;padding:6px" onchange="S.tannerStage=+this.value;saveSettings()">
           ${TANNER_STAGES.map((t,i)=>`<option value="${i+1}"${i+1===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
         </select></div>
-      <div class="setting-row"><label id="lowDoseLabel">Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" role="switch" aria-checked="${S.lowDose}" aria-labelledby="lowDoseLabel" tabindex="0" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>`:''}
-      <div class="setting-row"><label>Units</label>
+      <div class="setting-row"><label id="lowDoseLabel">Low-dose / Microdose<span class="help-btn" onclick="event.stopPropagation();showHelp('lowDose')">?</span></label><div class="toggle ${S.lowDose?'on':''}" role="switch" aria-checked="${S.lowDose}" aria-labelledby="lowDoseLabel" tabindex="0" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>`:''}
+      <div class="setting-row"><label>Units<span class="help-btn" onclick="event.stopPropagation();showHelp('unitSystem')">?</span></label>
         <select style="width:120px;padding:6px" onchange="S.unitSystem=this.value;saveSettings();renderSettings()">
           <option value="imperial"${S.unitSystem==='imperial'?' selected':''}>Imperial (lbs/in)</option>
           <option value="metric"${S.unitSystem!=='imperial'?' selected':''}>Metric (kg/cm)</option>
         </select></div>
-      <div class="setting-row"><label>Height</label>
+      <div class="setting-row"><label>Height<span class="help-btn" onclick="event.stopPropagation();showHelp('height')">?</span></label>
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" step="0.1" placeholder="${S.unitSystem==='imperial'?'inches':'cm'}" value="${S.height||''}" style="width:90px;padding:6px" onchange="S.height=parseFloat(this.value)||null;saveSettings()">
           <span style="font-size:11px;color:var(--text-muted)">${S.unitSystem==='imperial'?'in':'cm'}</span>
         </div></div>
-      <div class="setting-row"><label>Lab Units</label>
+      <div class="setting-row"><label>Lab Units<span class="help-btn" onclick="event.stopPropagation();showHelp('labUnits')">?</span></label>
         <select style="width:100px;padding:6px" onchange="S.labUnits=this.value;saveSettings();renderSettings()">
           <option value="us"${(S.labUnits||'us')==='us'?' selected':''}>US</option>
           <option value="si"${S.labUnits==='si'?' selected':''}>SI</option>
         </select></div>
     </div>
 
-    <div class="settings-group"><h3>My Goals</h3>
+    <div class="settings-group"><h3>My Goals<span class="help-btn" onclick="event.stopPropagation();showHelp('goals')" style="margin-left:6px">?</span></h3>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Select what you're working toward. This personalizes your supplement suggestions, tracking priorities, and AI prompts.</p>
       ${Object.entries(BODY_GOALS).map(([cat,goals])=>`
         <div class="section-title">${cat}</div>
-        <div class="chips">${goals.map(g=>`<button class="chip${(S.goals||[]).includes(g.id)?' active':''}" onclick="if(!S.goals)S.goals=[];const i=S.goals.indexOf('${g.id}');if(i>=0)S.goals.splice(i,1);else S.goals.push('${g.id}');saveSettings();this.classList.toggle('active')">${g.label}</button>`).join('')}</div>
+        <div class="chips">${goals.map(g=>`<button class="chip${(S.goals||[]).includes(g.id)?' active':''}" onclick="if(!S.goals)S.goals=[];const i=S.goals.indexOf('${g.id}');if(i>=0){S.goals.splice(i,1);saveSettings();renderSettings()}else{S.goals.push('${g.id}');saveSettings();toast('Added: ${g.label}');renderSettings()}">${g.label}</button>`).join('')}</div>
       `).join('')}
       ${(S.goals||[]).length?`<div style="margin-top:12px;padding:12px;background:var(--violet-pale);border-radius:12px">
         <div style="font-size:13px;font-weight:600;color:var(--violet-deep);margin-bottom:6px">Suggested Supplement Stacks</div>
@@ -3743,14 +3829,12 @@ function renderSettings(){
       <div class="setting-row"><label>Storage used</label><span style="color:var(--text-dim)">${Math.round(storageUsed()/1024)} KB</span></div>
     </div>
 
-    <div class="settings-group"><h3>Backup & Restore</h3>
+    <div class="settings-group"><h3>Backup & Restore<span class="help-btn" onclick="event.stopPropagation();showHelp('backup')" style="margin-left:6px">?</span></h3>
       <div class="setting-row"><label>Backup data</label><button style="color:var(--mint-deep);font-size:14px;font-weight:600" onclick="exportBackup()">Download</button></div>
       <div class="setting-row"><label>Restore backup</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="importBackup()">Upload</button></div>
+      <div class="setting-row"><label>Health report</label><button style="color:var(--pink-deep);font-size:14px;font-weight:600" onclick="exportDoctorReport()">Export</button></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Encrypted backups — password-protected, no cloud.</p>
     </div>
-
-    <button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>
-    <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data including settings and PIN? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(SETTINGS_KEY);localStorage.removeItem(PIN_KEY);D=defaultData();S=defaultSettings();showView('dashboard')}">Delete All Data</button>
 
     <div class="settings-group"><h3>Feedback</h3>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Found a bug or have a suggestion? Let us know anonymously — no contact info needed.</p>
@@ -3804,6 +3888,8 @@ function renderSettings(){
       <div class="setting-row"><label>App Tutorial</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showView('dashboard');setTimeout(startTutorial,300)">Replay Tour</button></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Walk through the app features step by step.</p>
     </div>
+
+    <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger);margin-top:24px" onclick="if(confirm('Delete ALL data including settings and PIN? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(SETTINGS_KEY);localStorage.removeItem(PIN_KEY);D=defaultData();S=defaultSettings();showView('dashboard')}">Delete All Data</button>
 
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
       <strong style="color:var(--violet-deep)">Bloom</strong> v3.2 — Private Wellness Tracker<br>
@@ -3881,6 +3967,73 @@ function applyTheme(){
   }
 }
 
+// ─── Help Popups ─────────────────────────────────────────────
+const HELP_TEXT={
+  tannerStage:{title:'Tanner Stage',text:'The Tanner scale measures breast development in 5 stages. Stage I is pre-development, Stage V is mature. On feminizing HRT, most people progress through these over 2-5 years. Your doctor can help assess your current stage during exams. This is self-reported — update it as you notice changes.'},
+  journeyType:{title:'Journey Type',text:'This controls which trackers, timelines, and supplement suggestions you see. Choose the option that best matches your goals. You can change it anytime.'},
+  onHRT:{title:'Currently on HRT',text:'Toggle this ON if you are taking hormone replacement therapy (estrogen, testosterone, anti-androgens, etc). This activates HRT-specific tracking like timelines, Tanner stages, and medication-aware hydration goals. Leave OFF if tracking wellness, supplements, or body changes without HRT.'},
+  lowDose:{title:'Low-dose / Microdose',text:'Enable if you\'re on a lower-than-standard dose of HRT. This adjusts timeline expectations — changes may be slower and more gradual. Common for non-binary approaches or early exploration.'},
+  unitSystem:{title:'Units',text:'Choose Imperial (pounds, inches, oz) or Metric (kg, cm, ml). This affects measurements, weight, water tracking, and health reports.'},
+  labUnits:{title:'Lab Units',text:'US uses conventional units (pg/mL, ng/dL). SI uses international units (pmol/L, nmol/L). Match what your lab reports show.'},
+  height:{title:'Height',text:'Used to calculate BMI and personalize health insights. Enter once — it won\'t change often.'},
+  hrtStart:{title:'HRT Start Date',text:'The date you started hormone therapy. This drives your timeline, milestone banners, and expected change windows. Set it to your first dose date.'},
+  goals:{title:'My Goals',text:'Select what you\'re working toward. This personalizes supplement suggestions, exercise recommendations, tracking priorities, and timeline expectations.'},
+  backup:{title:'Backup & Restore',text:'Download creates an encrypted file on your device. Upload restores from a previous backup. Backups use AES-256 encryption with a password you choose. No data leaves your device.'},
+  pin:{title:'PIN Lock',text:'Adds a 4-digit PIN when opening the app. Combined with stealth mode, this keeps your data private even if someone picks up your phone.'},
+  stealth:{title:'Stealth Mode',text:'Changes the app name and icon to look like a generic utility app. Useful if you\'re not ready to share your journey with others who might see your phone.'},
+};
+function showHelp(key){
+  const h=HELP_TEXT[key];if(!h)return;
+  const el=document.createElement('div');
+  el.className='help-popup';
+  el.onclick=e=>{if(e.target===el)el.remove()};
+  el.innerHTML=`<div class="help-popup-card"><h4>${h.title}</h4><p>${h.text}</p><button class="help-close" onclick="this.closest('.help-popup').remove()">Got it</button></div>`;
+  document.body.appendChild(el);
+}
+
+// ─── Phase Form (inline) ────────────────────────────────────
+let _phaseFormOpen=false;
+function togglePhaseForm(){
+  _phaseFormOpen=!_phaseFormOpen;
+  if(bodySubView==='timeline')renderTimeline();
+  else renderStack();
+}
+function renderPhaseForm(){
+  const activeSupps=D.supplements.filter(s=>!s.ended);
+  return `<div class="phase-form" id="phaseForm">
+    <input type="text" id="phaseName" placeholder="Phase name (e.g. Loading, Maintenance)">
+    <input type="text" id="phaseGoal" placeholder="Goal (e.g. Build bone density)">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label style="font-size:11px;color:var(--text-muted)">Start</label><input type="date" id="phaseStart" value="${today()}"></div>
+      <div style="flex:1"><label style="font-size:11px;color:var(--text-muted)">End (optional)</label><input type="date" id="phaseEnd"></div>
+    </div>
+    ${activeSupps.length?`<div style="font-size:11px;color:var(--text-muted);margin-top:4px">Tap supplements to include:</div>
+    <div class="phase-supps" id="phaseSupps">${activeSupps.map(s=>`<button class="phase-supp-chip" data-sid="${s.id}" onclick="this.classList.toggle('selected')">${esc(s.name)}</button>`).join('')}</div>`:`<p style="font-size:12px;color:var(--text-muted);margin:8px 0">No active supplements. Add some in the Stack tab first.</p>`}
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn-primary" style="flex:1;margin-top:0;padding:10px" onclick="savePhase()">Save Phase</button>
+      <button class="btn-secondary" style="flex:1;margin-top:0;padding:10px" onclick="_phaseFormOpen=false;${bodySubView==='timeline'?'renderTimeline()':'renderStack()'}">Cancel</button>
+    </div>
+  </div>`;
+}
+function savePhase(){
+  const name=document.getElementById('phaseName').value.trim();
+  if(!name){alert('Enter a phase name.');return}
+  const goal=document.getElementById('phaseGoal').value.trim();
+  const startDate=document.getElementById('phaseStart').value;
+  if(!startDate){alert('Pick a start date.');return}
+  const endDate=document.getElementById('phaseEnd').value||null;
+  const selected=[...document.querySelectorAll('#phaseSupps .phase-supp-chip.selected')].map(el=>{
+    const sid=el.dataset.sid;
+    const s=D.supplements.find(x=>x.id===sid);
+    return s?s.name:'';
+  }).filter(Boolean);
+  D.phases.push({id:Date.now().toString(36),name,goal,startDate,endDate,supplements:selected});
+  _phaseFormOpen=false;
+  saveData();
+  if(bodySubView==='timeline')renderTimeline();
+  else renderStack();
+}
+
 // ─── Export ──────────────────────────────────────────────────
 function exportCSV(){
   let csv='Date,Mood,Dysphoria,Energy,Sleep,Weight,HeartRate,BP_Systolic,BP_Diastolic,BP_Position,Skin,Libido,MoodStability,MorningErections,Symptoms,Notes\n';
@@ -3914,30 +4067,43 @@ function generateAIPrompt(){
 
   // Duration (relative, not dates) — only if on HRT
   if(onHRT&&D.startDate){
-    const months=Math.round((new Date()-new Date(D.startDate))/(30.44*864e5));
-    if(months<1)p+=`HRT Duration: Less than 1 month (just started)\n`;
-    else if(months<12)p+=`HRT Duration: ${months} months\n`;
-    else p+=`HRT Duration: ${Math.floor(months/12)} year(s), ${months%12} months\n`;
+    const daysOn=Math.floor((new Date()-new Date(D.startDate))/864e5);
+    const months=Math.round(daysOn/30.44);
+    if(daysOn<30)p+=`HRT Duration: ${daysOn} days (just started)\n`;
+    else if(months<12)p+=`HRT Duration: ${months} months (~${daysOn} days)\n`;
+    else p+=`HRT Duration: ${Math.floor(months/12)} year(s), ${months%12} months (~${daysOn} days)\n`;
   }
 
   if(onHRT&&S.tannerStage&&(j==='mtf'||j==='femboy'||j==='nonbinary'))p+=`Tanner Stage: ${S.tannerStage}\n`;
   if(onHRT&&S.lowDose)p+=`Dosing: Low-dose / microdose protocol\n`;
 
-  // Medications (active only, no start dates)
-  const active=D.meds.filter(m=>!m.ended);
+  // Medications (active only, no start dates — filter incomplete entries)
+  const active=D.meds.filter(m=>!m.ended&&m.name&&m.name.trim().length>1);
   if(active.length){
     p+=`\n=== CURRENT MEDICATIONS ===\n`;
     for(const m of active){
-      const days=D.startDate?Math.floor((new Date()-new Date(m.started))/864e5):null;
-      p+=`• ${m.name} — ${m.dose}, ${m.frequency}${m.route?' ('+m.route+')':''}${days?' — on this for ~'+Math.round(days/30)+' months':''}\n`;
+      const parts=[m.name.trim()];
+      if(m.dose&&m.dose.trim())parts.push(m.dose.trim());
+      if(m.frequency&&m.frequency.trim())parts.push(m.frequency.trim());
+      if(m.route&&m.route.trim())parts.push('('+m.route.trim()+')');
+      if(m.started){
+        const days=Math.floor((new Date()-new Date(m.started))/864e5);
+        if(days>0)parts.push(days<30?'— started '+days+' days ago':'— on this ~'+Math.round(days/30.44)+' months');
+      }
+      p+=`• ${parts.join(' — ')}\n`;
     }
   }
 
-  // Active supplements
-  const activeSups=D.supplements.filter(s=>!s.ended);
+  // Active supplements (filter incomplete entries)
+  const activeSups=D.supplements.filter(s=>!s.ended&&s.name&&s.name.trim().length>1);
   if(activeSups.length){
     p+=`\n=== ACTIVE SUPPLEMENTS ===\n`;
-    for(const s of activeSups)p+=`• ${s.name}${s.dose?' — '+s.dose:''}${s.frequency?' — '+s.frequency:''}\n`;
+    for(const s of activeSups){
+      const parts=[s.name.trim()];
+      if(s.dose&&s.dose.trim())parts.push(s.dose.trim());
+      if(s.timing&&s.timing.trim()&&s.timing!=='Anytime')parts.push(s.timing.trim());
+      p+=`• ${parts.join(' — ')}\n`;
+    }
   }
 
   // Latest labs (values + ranges, no dates)
@@ -3954,6 +4120,9 @@ function generateAIPrompt(){
       if(flag!=='normal')p+=` [${flag.toUpperCase()}]`;
       p+=`\n`;
     }
+  }else{
+    p+=`\n=== LAB RESULTS ===\n`;
+    p+=`No lab results recorded.${onHRT?' Baseline labs are recommended within the first 1-3 months of HRT (estradiol, testosterone, liver panel, CBC, metabolic panel).':' Consider baseline labs if starting any new health regimen.'}\n`;
   }
 
   // Recent symptoms (aggregated, no dates)
@@ -3966,18 +4135,50 @@ function generateAIPrompt(){
       p+=`\n=== RECENT SYMPTOMS (last ${recentLogs.length} log entries) ===\n`;
       for(const[tag,count]of topTags)p+=`• ${tag} — reported ${count}/${recentLogs.length} days\n`;
     }
-    // Dysphoria average
+
+    // Wellness summary — show with 1+ entries (not just 3+)
+    const wellnessLines=[];
     const dysLogs=recentLogs.filter(l=>l.dysphoria!==undefined);
-    if(dysLogs.length>=3){
+    if(dysLogs.length){
       const avg=(dysLogs.reduce((s,l)=>s+l.dysphoria,0)/dysLogs.length).toFixed(1);
-      p+=`• Average dysphoria level: ${avg}/10\n`;
+      wellnessLines.push(`Dysphoria: ${avg}/10${dysLogs.length<3?' (limited data, '+dysLogs.length+' entries)':''}`);
     }
-    // Energy average
     const nrgLogs=recentLogs.filter(l=>l.energy!==undefined);
-    if(nrgLogs.length>=3){
+    if(nrgLogs.length){
       const avg=(nrgLogs.reduce((s,l)=>s+l.energy,0)/nrgLogs.length).toFixed(1);
-      p+=`• Average energy level: ${avg}/10\n`;
+      wellnessLines.push(`Energy: ${avg}/10${nrgLogs.length<3?' ('+nrgLogs.length+' entries)':''}`);
     }
+    const sleepLogs=recentLogs.filter(l=>l.sleep&&parseFloat(l.sleep)>0);
+    if(sleepLogs.length){
+      const avg=(sleepLogs.reduce((s,l)=>s+parseFloat(l.sleep),0)/sleepLogs.length).toFixed(1);
+      wellnessLines.push(`Sleep: ${avg} hrs/night${sleepLogs.length<3?' ('+sleepLogs.length+' entries)':''}`);
+    }
+    const moodLogs=recentLogs.filter(l=>l.mood);
+    if(moodLogs.length){
+      const moodCounts={};moodLogs.forEach(l=>{moodCounts[l.mood]=(moodCounts[l.mood]||0)+1});
+      const topMood=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0];
+      wellnessLines.push(`Most common mood: ${topMood[0]} (${topMood[1]}/${moodLogs.length} days)`);
+    }
+    const skinLogs=recentLogs.filter(l=>l.skinScore!==undefined);
+    if(skinLogs.length){
+      const avg=(skinLogs.reduce((s,l)=>s+l.skinScore,0)/skinLogs.length).toFixed(1);
+      wellnessLines.push(`Skin (0=dry, 10=oily): ${avg}/10${skinLogs.length<3?' ('+skinLogs.length+' entries)':''}`);
+    }
+    const libLogs=recentLogs.filter(l=>l.libido!==undefined);
+    if(libLogs.length){
+      const avg=(libLogs.reduce((s,l)=>s+l.libido,0)/libLogs.length).toFixed(1);
+      wellnessLines.push(`Libido: ${avg}/10${libLogs.length<3?' ('+libLogs.length+' entries)':''}`);
+    }
+    const mstLogs=recentLogs.filter(l=>l.moodStability!==undefined);
+    if(mstLogs.length){
+      const avg=(mstLogs.reduce((s,l)=>s+l.moodStability,0)/mstLogs.length).toFixed(1);
+      wellnessLines.push(`Mood stability (0=volatile, 10=stable): ${avg}/10${mstLogs.length<3?' ('+mstLogs.length+' entries)':''}`);
+    }
+    if(wellnessLines.length){
+      p+=`\n=== WELLNESS SUMMARY (last ${recentLogs.length} entries) ===\n`;
+      for(const line of wellnessLines)p+=`• ${line}\n`;
+    }
+
     // Vitals averages
     const hrLogs=recentLogs.filter(l=>l.heartRate&&parseFloat(l.heartRate)>0);
     if(hrLogs.length>=2){
@@ -3989,21 +4190,6 @@ function generateAIPrompt(){
       const avgS=(bpLogs.reduce((s,l)=>s+parseFloat(l.bpSys),0)/bpLogs.length).toFixed(0);
       const avgD=(bpLogs.reduce((s,l)=>s+parseFloat(l.bpDia),0)/bpLogs.length).toFixed(0);
       p+=`• Average blood pressure: ${avgS}/${avgD} mmHg\n`;
-    }
-    const skinLogs=recentLogs.filter(l=>l.skinScore!==undefined);
-    if(skinLogs.length>=3){
-      const avg=(skinLogs.reduce((s,l)=>s+l.skinScore,0)/skinLogs.length).toFixed(1);
-      p+=`• Average skin oil/dryness: ${avg}/10 (0=dry, 10=oily)\n`;
-    }
-    const libLogs=recentLogs.filter(l=>l.libido!==undefined);
-    if(libLogs.length>=3){
-      const avg=(libLogs.reduce((s,l)=>s+l.libido,0)/libLogs.length).toFixed(1);
-      p+=`• Average libido: ${avg}/10\n`;
-    }
-    const mstLogs=recentLogs.filter(l=>l.moodStability!==undefined);
-    if(mstLogs.length>=3){
-      const avg=(mstLogs.reduce((s,l)=>s+l.moodStability,0)/mstLogs.length).toFixed(1);
-      p+=`• Average mood stability: ${avg}/10 (0=volatile, 10=stable)\n`;
     }
     const meLogs=recentLogs.filter(l=>l.morningE&&l.morningE!=='');
     if(meLogs.length>=2){
@@ -4151,12 +4337,12 @@ ${goals.length?`<h2>Active Goals</h2><div class="tags">${goals.map(g=>`<span cla
   ${onHRT?`<div class="stat"><div class="label">Days on HRT</div><div class="val">${daysOnHRT()}</div></div>`:''}
   ${onHRT?`<div class="stat"><div class="label">Months</div><div class="val">${monthsOnHRT()}</div></div>`:''}
   ${isFem&&onHRT?`<div class="stat"><div class="label">Tanner Stage</div><div class="val">${S.tannerStage}</div></div>`:''}
-  <div class="stat"><div class="label">Avg Dysphoria</div><div class="val">${dysAvg}/10</div></div>
-  <div class="stat"><div class="label">Avg Energy</div><div class="val">${energyAvg}/10</div></div>
-  <div class="stat"><div class="label">Avg Sleep</div><div class="val">${sleepAvg} hrs</div></div>
-  <div class="stat"><div class="label">Avg Libido</div><div class="val">${libidoAvg}/10</div></div>
-  <div class="stat"><div class="label">Avg Skin</div><div class="val">${skinAvg}/10</div></div>
-  <div class="stat"><div class="label">Hydration Goal</div><div class="val">${waterGoal.label}</div></div>
+  ${dysAvg!=='N/A'?`<div class="stat"><div class="label">Avg Dysphoria</div><div class="val">${dysAvg}/10</div></div>`:''}
+  ${energyAvg!=='N/A'?`<div class="stat"><div class="label">Avg Energy</div><div class="val">${energyAvg}/10</div></div>`:''}
+  ${sleepAvg!=='N/A'?`<div class="stat"><div class="label">Avg Sleep</div><div class="val">${sleepAvg} hrs</div></div>`:''}
+  ${libidoAvg!=='N/A'?`<div class="stat"><div class="label">Avg Libido</div><div class="val">${libidoAvg}/10</div></div>`:''}
+  ${skinAvg!=='N/A'?`<div class="stat"><div class="label">Avg Skin</div><div class="val">${skinAvg}/10</div></div>`:''}
+  <div class="stat"><div class="label">Hydration Goal</div><div class="val">${fmtWater(waterGoal.ml)}</div></div>
 </div>
 
 ${topMoods.length?`<h2>Mood Distribution</h2>
@@ -4300,11 +4486,44 @@ async function exportBackup(){
     output='BLOOM_AES:'+btoa(String.fromCharCode(...buf));
   }
   const suffix=pass?'':'-UNENCRYPTED';
-  downloadFile(output,'application/json',`bloom-backup-${today()}${suffix}.bloom`);
+  const filename=`bloom-backup-${today()}${suffix}.bloom`;
+  const sizeKB=Math.round(new Blob([output]).size/1024);
+  // On Android (Capacitor): write to cache then open share sheet so user picks where to save
+  if(_isCapacitor&&window.Capacitor?.Plugins?.Filesystem&&window.Capacitor?.Plugins?.Share){
+    try{
+      const FS=window.Capacitor.Plugins.Filesystem;
+      const SH=window.Capacitor.Plugins.Share;
+      const written=await FS.writeFile({path:filename,data:btoa(unescape(encodeURIComponent(output))),directory:'CACHE'});
+      await SH.share({title:'Bloom Backup',text:'Bloom encrypted backup file',url:written.uri,dialogTitle:'Save backup to...'});
+      showBackupToast(filename,sizeKB,!!pass,'Shared via Android — save to Files, Drive, etc.');
+      return;
+    }catch(e){
+      if(e.message&&e.message.includes('cancel')){showBackupToast(filename,sizeKB,!!pass,'Share cancelled — file still in app cache');return}
+      // Fall through to blob download
+    }
+  }
+  // PWA / browser fallback
+  downloadFile(output,'application/json',filename);
+  showBackupToast(filename,sizeKB,!!pass,'Saved to Downloads folder');
+}
+function showBackupToast(filename,sizeKB,encrypted,locationMsg){
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:700;background:var(--surface);border:1px solid var(--mint-soft);border-radius:14px;padding:14px 18px;box-shadow:0 8px 24px rgba(62,36,101,.2);max-width:320px;width:90%;animation:fadeUp .3s ease';
+  el.innerHTML=`<div style="display:flex;align-items:start;gap:10px">
+    <div style="font-size:24px;flex-shrink:0">${encrypted?'&#128274;':'&#128190;'}</div>
+    <div>
+      <div style="font-size:14px;font-weight:600;color:var(--mint-deep)">Backup saved!</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:2px;word-break:break-all">${filename}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${sizeKB} KB &middot; ${encrypted?'AES-256 encrypted':'Unencrypted'}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${locationMsg||''}</div>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},5000);
 }
 
 function importBackup(){
-  const input=document.createElement('input');input.type='file';input.accept='.bloom,.json';
+  const input=document.createElement('input');input.type='file';input.accept='.bloom,.json,application/json,*/*';
   input.onchange=function(e){
     const file=e.target.files[0];if(!file)return;
     const reader=new FileReader();
@@ -4429,15 +4648,22 @@ function updateWaterUI(){
   }
   const tip=document.getElementById('waterTip');
   if(tip){
-    const tips=[
-      'HRT tip: Spironolactone is a diuretic — drink extra water to prevent dizziness & electrolyte drops',
-      'Hydration helps your body absorb supplements more effectively',
-      'Water supports skin elasticity during body changes on HRT',
-      'Dehydration can skew lab results — drink normally before blood draws',
-      'Proper hydration reduces headaches, a common early HRT side effect',
-      'Water helps your kidneys process medications safely',
-      `Based on: ${goal.reason}`
-    ];
+    const onHRT=S.onHRT!==false;
+    const onSpiro=D.meds.some(m=>!m.ended&&m.name&&m.name.toLowerCase().includes('spironolactone'));
+    const hasSupps=D.supplements.filter(s=>!s.ended).length>0;
+    const tips=[];
+    if(onHRT&&onSpiro)tips.push('Spironolactone is a diuretic — drink extra water to prevent dizziness & electrolyte drops');
+    if(onHRT)tips.push('Water supports skin elasticity during body changes on HRT');
+    if(onHRT)tips.push('Proper hydration reduces headaches, a common early HRT side effect');
+    if(onHRT)tips.push('Dehydration can skew lab results — drink normally before blood draws');
+    if(hasSupps)tips.push('Hydration helps your body absorb supplements more effectively');
+    if(hasSupps||onHRT)tips.push('Water helps your kidneys process medications safely');
+    // General tips for everyone
+    tips.push('Staying hydrated supports energy levels and focus throughout the day');
+    tips.push('Water helps regulate body temperature and supports healthy skin');
+    tips.push('Drinking water before meals can help with portion control');
+    tips.push('Even mild dehydration can affect mood and concentration');
+    tips.push(`Based on: ${goal.reason}`);
     tip.textContent=tips[Math.floor(new Date().getHours()/4)%tips.length];
   }
   // Update floating button color based on progress
