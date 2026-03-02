@@ -49,8 +49,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .panel h3{font-size:15px;font-weight:600;margin-bottom:12px;text-align:center}
 .qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 0}
 .qs-grid .qs{padding:6px 0}
-.qs-grid .qs:nth-child(odd){text-align:right;padding-right:16px;border-right:1px solid var(--border)}
-.qs-grid .qs:nth-child(even){text-align:left;padding-left:16px}
+.qs-grid .qs:nth-child(odd){text-align:right;padding-right:10px}
+.qs-grid .qs:nth-child(even){text-align:left;padding-left:10px}
 .qs .qs-label{font-size:11px;color:var(--text-muted);margin-bottom:1px}
 .qs .qs-value{font-size:16px;font-weight:700}
 .panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:10px;text-align:center}
@@ -1500,6 +1500,8 @@ function renderDashboard(){
   if(w)h+=`<div class="qs"><div class="qs-label">WHR</div><div class="qs-value" style="color:var(--mint-deep)">${w}</div></div>`;
   if(todayLog?.libido!==undefined)h+=`<div class="qs"><div class="qs-label">Libido</div><div class="qs-value">${todayLog.libido}/10</div></div>`;
   if(todayLog?.skinScore!==undefined)h+=`<div class="qs"><div class="qs-label">Skin</div><div class="qs-value">${todayLog.skinScore}/10</div></div>`;
+  if(todayLog?.energy!==undefined)h+=`<div class="qs"><div class="qs-label">Energy</div><div class="qs-value">${todayLog.energy}/10</div></div>`;
+  if(todayLog?.sleep)h+=`<div class="qs"><div class="qs-label">Sleep</div><div class="qs-value">${todayLog.sleep} hrs</div></div>`;
   h+=`</div></div>`;
 
   // ── Today's Plan ──
