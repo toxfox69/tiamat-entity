@@ -89,6 +89,21 @@ a:hover{text-decoration:underline}
 .cta-btn-solid{display:inline-block;background:var(--bloom-hero-gradient);color:#fff;font-size:17px;font-weight:700;padding:14px 36px;border-radius:40px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 20px rgba(107,33,168,0.25)}
 .cta-btn-solid:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(107,33,168,0.35);text-decoration:none}
 
+/* Support / Founding */
+.support-section{background:linear-gradient(135deg,rgba(107,33,168,0.06),rgba(232,121,168,0.06));border-top:1px solid var(--bloom-border);border-bottom:1px solid var(--bloom-border)}
+.support-card{background:var(--bloom-surface);border:2px solid var(--bloom-primary-light);border-radius:var(--bloom-radius);padding:36px 32px;text-align:center;max-width:520px;margin:0 auto;box-shadow:0 4px 24px rgba(107,33,168,0.1)}
+.support-card h3{font-size:22px;font-weight:700;color:var(--bloom-primary);margin-bottom:8px}
+.support-card p{font-size:14px;color:var(--bloom-text-muted);line-height:1.6;margin-bottom:16px}
+.support-tiers{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.tier{background:var(--bloom-card);border:1px solid var(--bloom-border);border-radius:12px;padding:16px 20px;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.tier-info .tier-name{font-size:15px;font-weight:700;color:var(--bloom-text)}
+.tier-info .tier-perk{font-size:13px;color:var(--bloom-text-muted)}
+.tier-price{font-size:18px;font-weight:800;color:var(--bloom-primary);white-space:nowrap}
+.wallet-box{background:var(--bloom-card);border:1px solid var(--bloom-border);border-radius:12px;padding:16px;margin-top:16px;word-break:break-all;font-family:monospace;font-size:12px;color:var(--bloom-text-muted)}
+.wallet-box strong{display:block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:var(--bloom-text);margin-bottom:6px}
+.copy-btn{background:var(--bloom-primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity 0.15s}
+.copy-btn:hover{opacity:0.85}
+
 /* Footer */
 .footer{text-align:center;padding:32px 24px 40px;font-size:13px;color:var(--bloom-text-muted);border-top:1px solid var(--bloom-border)}
 .footer a{color:var(--bloom-primary)}
@@ -117,8 +132,8 @@ a:hover{text-decoration:underline}
   <span class="hero-icon">🌸</span>
   <h1>Bloom</h1>
   <p class="tagline">Track hormones, labs, mood, body changes, supplements, exercises, and progress photos. 100% private — no cloud, no accounts, no tracking. Your transition, your device.</p>
-  <a href="https://github.com/toxfox69/tiamat-entity/releases" class="cta-btn">Download APK</a>
-  <span class="cta-sub">Android only &middot; Free &middot; No account required</span>
+  <a href="#download" class="cta-btn">Download Free</a>
+  <span class="cta-sub">Android &middot; 100% Free &middot; No account required</span>
 </div>
 
 <!-- Journeys -->
@@ -195,7 +210,7 @@ a:hover{text-decoration:underline}
   <div class="faq-list">
     <div class="faq-item">
       <div class="faq-q">How much does Bloom cost?</div>
-      <div class="faq-a">Bloom is a one-time purchase of $2.99 — no subscriptions, no ads, no in-app purchases. Pay once, own it forever. All features included.</div>
+      <div class="faq-a">Bloom is completely free — no subscriptions, no ads, no in-app purchases. All features included. If you find it helpful, you can support development by becoming a Founding Supporter.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">What data does Bloom collect?</div>
@@ -220,11 +235,62 @@ a:hover{text-decoration:underline}
   </div>
 </div>
 
-<!-- Final CTA -->
-<div class="final-cta">
+<!-- Download -->
+<div class="final-cta" id="download">
   <h2>Start Tracking Privately</h2>
   <p>Free. Private. No account needed.</p>
-  <a href="https://github.com/toxfox69/tiamat-entity/releases" class="cta-btn-solid">Download Bloom APK</a>
+  <a href="https://play.google.com/store/apps/details?id=com.energenai.bloom" class="cta-btn-solid" style="margin-bottom:12px">Get it on Google Play</a>
+  <br>
+  <a href="https://github.com/toxfox69/tiamat-entity/releases" style="font-size:14px;color:var(--bloom-text-muted)">or download APK directly</a>
+</div>
+
+<!-- Founding Supporter -->
+<div class="section support-section" id="support">
+  <div class="support-card">
+    <div style="font-size:32px;margin-bottom:8px">&#127800;</div>
+    <h3>Become a Founding Supporter</h3>
+    <p>Bloom is free, private, and ad-free — forever. If it helps you on your journey, consider supporting development. Founding Supporters shape what gets built next.</p>
+
+    <div class="support-tiers">
+      <div class="tier">
+        <div class="tier-info">
+          <div class="tier-name">Supporter</div>
+          <div class="tier-perk">Request a custom color theme for the app</div>
+        </div>
+        <div class="tier-price">$5</div>
+      </div>
+      <div class="tier" style="border-color:var(--bloom-primary-light)">
+        <div class="tier-info">
+          <div class="tier-name">Founding Member</div>
+          <div class="tier-perk">Request a feature to be built into Bloom</div>
+        </div>
+        <div class="tier-price">$15</div>
+      </div>
+      <div class="tier" style="border-color:var(--bloom-accent)">
+        <div class="tier-info">
+          <div class="tier-name">Founding Partner</div>
+          <div class="tier-perk">Custom theme + feature request + direct line to the dev</div>
+        </div>
+        <div class="tier-price">$30</div>
+      </div>
+    </div>
+
+    <p style="font-size:13px;color:var(--bloom-text-muted);margin-bottom:16px">Pay with USDC (Base network) or send via PayPal/Venmo. Include your email so we can follow up on your request.</p>
+
+    <div class="wallet-box">
+      <strong>USDC on Base</strong>
+      <span id="wallet-addr">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</span>
+      <br>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('wallet-addr').textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Address',2000)">Copy Address</button>
+    </div>
+
+    <p style="margin-top:16px;font-size:14px">
+      <strong>PayPal / Venmo:</strong>
+      <a href="mailto:tiamat@tiamat.live?subject=Bloom%20Founding%20Supporter&body=Hi!%20I%20want%20to%20become%20a%20Founding%20Supporter.%20My%20tier%20is%3A%20___">Email us for payment link</a>
+    </p>
+
+    <p style="margin-top:16px;font-size:12px;color:var(--bloom-text-muted)">Every dollar goes directly to building Bloom. No middleman. No VC. Just one dev building tools the community actually needs.</p>
+  </div>
 </div>
 
 <!-- Footer -->
