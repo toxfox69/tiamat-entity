@@ -177,6 +177,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes waterPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes quoteFade{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
+
+.header-quote{font-size:11px;color:var(--text-muted);font-style:italic;max-width:200px;line-height:1.3;animation:quoteFade .5s ease;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.exercise-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(62,36,101,.04)}
+.exercise-card h4{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.exercise-card .ex-why{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:8px}
+.exercise-card .ex-how{font-size:12px;color:var(--text);line-height:1.6;padding:8px 10px;background:var(--violet-pale);border-radius:10px}
+.exercise-card .ex-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.exercise-card .ex-tag{font-size:10px;padding:3px 10px;border-radius:10px;font-weight:600}
+.exercise-done{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer;transition:all .2s}
+.exercise-done.checked{border-color:var(--mint);background:var(--mint-pale);color:var(--mint-deep)}
 .fade-in{animation:fadeIn .3s ease}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
 .empty-state .icon{font-size:48px;margin-bottom:12px}
@@ -214,7 +226,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 
   <div id="mainApp">
     <div class="header">
-      <h1 id="appTitle">Bloom</h1>
+      <div style="display:flex;align-items:baseline;gap:10px;min-width:0;flex:1">
+        <h1 id="appTitle" style="flex-shrink:0">Bloom</h1>
+        <div class="header-quote" id="headerQuote"></div>
+      </div>
       <div class="header-actions">
         <button class="header-btn" onclick="showView('insights')" title="Insights">&#9733;</button>
         <button class="header-btn" onclick="showView('settings')" title="Settings">&#9881;</button>
@@ -230,6 +245,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 
     <div class="nav">
       <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">Home</button>
+      <button class="nav-btn" data-view="active" onclick="showView('active')">Active</button>
       <button class="nav-btn" data-view="log" onclick="showView('log')">Log</button>
       <button class="nav-btn" data-view="body" onclick="showView('body')">Body</button>
       <button class="nav-btn" data-view="photos" onclick="showView('photos')">Photos</button>
@@ -501,6 +517,258 @@ const TOMBOY_TIMELINE=[
   {change:'Body hair (if on T)',onset:'3-6 months',max:'4-5 years',reversible:'partial'},
   {change:'Skin changes',onset:'1-3 months',max:'1-2 years',reversible:true}
 ];
+
+// ─── Motivational Quotes ────────────────────────────────────
+const MOTIVATIONAL_QUOTES={
+  general:[
+    'Your body is listening — keep showing up',
+    'Progress, not perfection',
+    'Every day you choose yourself',
+    'Small steps still move you forward',
+    'You are becoming who you were always meant to be',
+    'Trust the process — changes are happening',
+    'Consistency is the real magic',
+    'Be patient with yourself today',
+    'You deserve to feel at home in your body',
+    'One day at a time, one step at a time',
+    'The best project you\'ll ever work on is you',
+    'Your journey is valid, your pace is perfect',
+    'Healing isn\'t linear — and that\'s okay',
+    'You\'re doing something incredibly brave',
+    'Rest is productive too'
+  ],
+  mtf:[
+    'Softness is strength',
+    'She was always in there',
+    'Bloom into who you are',
+    'Estrogen is a slow artist — trust her',
+    'Every milestone matters, even the quiet ones',
+    'Your femininity is yours to define',
+    'The girl in the mirror is getting closer'
+  ],
+  ftm:[
+    'Your strength runs deeper than muscle',
+    'Becoming the man you always were',
+    'T is building — day by day',
+    'Own your voice, own your space',
+    'Masculinity on your own terms',
+    'The changes are coming — stay the course'
+  ],
+  femboy:[
+    'Soft and strong — you can be both',
+    'Rewriting the rules, beautifully',
+    'Your aesthetic, your terms',
+    'Elegance has no gender',
+    'The perfect balance is the one you choose'
+  ],
+  tomboy:[
+    'Strong looks good on you',
+    'Break the mold, build your own',
+    'Power comes in every form',
+    'Your edge is your beauty'
+  ],
+  fitness:[
+    'Your muscles are listening',
+    'One more rep for future you',
+    'Sweat today, results tomorrow',
+    'Movement is medicine',
+    'Your body adapts — keep challenging it',
+    'Discipline beats motivation'
+  ]
+};
+
+function getMotivationalQuote(){
+  const j=S.journeyType||'mtf';
+  const pool=[...MOTIVATIONAL_QUOTES.general];
+  if(MOTIVATIONAL_QUOTES[j])pool.push(...MOTIVATIONAL_QUOTES[j]);
+  // Seed by date so it changes daily
+  const dayNum=Math.floor(Date.now()/86400000);
+  return pool[dayNum%pool.length];
+}
+
+// ─── Exercise Database ──────────────────────────────────────
+const EXERCISE_DB=[
+  // GLUTES & LOWER BODY
+  {id:'squats',name:'Squats',icon:'🦵',sets:'3×15',rest:'60s',
+   why:'Builds glute and thigh mass, redistributes fat to lower body',
+   how:'Feet shoulder-width, push hips back, lower until thighs parallel. Drive through heels. Add weight when bodyweight is easy.',
+   goals:['bigger_butt','bigger_thighs','fat_redist','muscle_growth'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Glutes','Thighs','Compound']},
+  {id:'hip_thrusts',name:'Hip Thrusts',icon:'🍑',sets:'3×20',rest:'60s',
+   why:'#1 glute builder — directly targets glute max for rounder, fuller shape',
+   how:'Back against bench/couch edge, feet flat. Drive hips up squeezing glutes hard at top. Pause 2 seconds. Lower slowly.',
+   goals:['bigger_butt','fat_redist','bigger_thighs'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Glutes','Shape']},
+  {id:'glute_bridges',name:'Glute Bridges',icon:'🌉',sets:'3×20',rest:'45s',
+   why:'Activates glutes, builds mind-muscle connection, great for beginners',
+   how:'Lie on back, knees bent, feet flat. Push hips up, squeeze glutes at top. Hold 3 seconds. Lower slowly.',
+   goals:['bigger_butt','bigger_thighs','fat_redist','better_erections'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Glutes','Beginner']},
+  {id:'donkey_kicks',name:'Donkey Kicks',icon:'🦄',sets:'3×15 each',rest:'30s',
+   why:'Isolates glutes without building quad mass — ideal for feminine lower body shape',
+   how:'On all fours, kick one leg back and up keeping knee bent 90°. Squeeze at top. Don\'t arch lower back.',
+   goals:['bigger_butt','fat_redist'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Glutes','Isolation']},
+  {id:'lunges',name:'Walking Lunges',icon:'🚶',sets:'3×12 each',rest:'60s',
+   why:'Builds thighs and glutes while improving balance and coordination',
+   how:'Step forward into a deep lunge — back knee nearly touching floor. Push through front heel to step forward. Alternate legs.',
+   goals:['bigger_butt','bigger_thighs','muscle_growth','fat_redist'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Legs','Compound']},
+  {id:'sumo_squats',name:'Sumo Squats',icon:'🏋️',sets:'3×15',rest:'60s',
+   why:'Wide stance targets inner thighs and glutes — builds feminine lower body proportions',
+   how:'Wide stance, toes pointed out 45°. Lower slowly, keeping knees tracking over toes. Squeeze inner thighs and glutes to rise.',
+   goals:['bigger_thighs','bigger_butt','fat_redist'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Thighs','Glutes']},
+
+  // PELVIC FLOOR & SEXUAL FUNCTION
+  {id:'kegels',name:'Kegels',icon:'💪',sets:'3×10 (hold 5s)',rest:'30s',
+   why:'Strengthens pelvic floor — stronger erections, better orgasms, improved ejaculation control',
+   how:'Squeeze like you\'re stopping urine mid-flow. Hold 5 seconds, relax 5 seconds. Don\'t clench abs or glutes. Can do anywhere, anytime.',
+   goals:['better_erections','more_sensitivity','more_ejaculate','bigger_penis','libido_up'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Pelvic Floor','Sexual Health']},
+  {id:'reverse_kegels',name:'Reverse Kegels',icon:'🔄',sets:'3×10 (hold 5s)',rest:'30s',
+   why:'Relaxes pelvic floor — increases blood flow, improves fullness, balances kegel work',
+   how:'Instead of squeezing, gently push/bear down as if starting to urinate. Hold the relaxed stretch 5 seconds. Subtle movement — less is more.',
+   goals:['better_erections','bigger_penis','more_sensitivity','more_ejaculate'],journeys:['mtf','femboy','ftm','nonbinary','custom'],
+   tags:['Pelvic Floor','Blood Flow']},
+  {id:'jelqing_stretch',name:'Manual Stretching',icon:'📏',sets:'5 min',rest:'—',
+   why:'Gentle traction promotes tissue expansion over time — works best with vasodilator supplements',
+   how:'Warm up first (warm towel 5 min). Gentle base-to-tip stretches at multiple angles — 30 seconds each direction. Never painful. Consistency > intensity.',
+   goals:['bigger_penis'],journeys:['mtf','femboy','ftm','nonbinary','custom'],
+   tags:['Growth','Tissue']},
+  {id:'pumping',name:'Pumping',icon:'🔬',sets:'2×10 min',rest:'5 min between',
+   why:'Vacuum-assisted engorgement expands tissue capacity — synergizes with L-Citrulline and L-Arginine stack',
+   how:'Use quality pump with pressure gauge. Start low (3-5 inHg), increase gradually. 10 min on, 5 min off, repeat. Always warm up first. Stop if any discomfort.',
+   goals:['bigger_penis','better_erections'],journeys:['mtf','femboy','ftm','nonbinary','custom'],
+   tags:['Growth','Engorgement']},
+
+  // CORE & WAIST
+  {id:'vacuum',name:'Stomach Vacuums',icon:'🌀',sets:'3×20s hold',rest:'30s',
+   why:'Tightens transverse abdominis — slims waist without building blocky obliques',
+   how:'Standing or on all fours. Exhale fully, then pull belly button toward spine as hard as you can. Hold 20 seconds breathing shallowly. Release.',
+   goals:['slimmer_waist','fat_redist'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Core','Waist']},
+  {id:'planks',name:'Plank Holds',icon:'🧱',sets:'3×30-60s',rest:'45s',
+   why:'Builds core stability and posture — defines midsection without adding bulk',
+   how:'Forearms and toes on floor, body straight as a board. Pull belly button in. Don\'t let hips sag or pike up. Breathe normally.',
+   goals:['slimmer_waist','muscle_growth','bone_health'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Core','Stability']},
+  {id:'side_planks',name:'Side Planks',icon:'📐',sets:'3×20s each',rest:'30s',
+   why:'Tones obliques for defined waist-to-hip ratio without adding width',
+   how:'On forearm and side of foot. Stack or stagger feet. Lift hips — body in straight line. Hold. Switch sides.',
+   goals:['slimmer_waist'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Core','Waist']},
+
+  // UPPER BODY
+  {id:'pushups',name:'Push-Ups',icon:'💎',sets:'3×10-15',rest:'60s',
+   why:'Builds chest foundation under breast tissue — creates fuller appearance and better posture',
+   how:'Hands shoulder-width, lower chest to floor, push back up. Start on knees if needed. Keep core tight throughout.',
+   goals:['breast_dev','muscle_growth','chest_flat','bone_health'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Chest','Upper Body']},
+  {id:'chest_massage',name:'Breast Massage',icon:'✨',sets:'5 min each side',rest:'—',
+   why:'Promotes blood flow to breast tissue — may enhance development especially with phytoestrogen stack',
+   how:'Warm hands. Circular motions from outside inward, then upward strokes. Gentle but firm pressure. Best after shower when skin is warm.',
+   goals:['breast_dev','bigger_nipples','lactation'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Breast','Circulation']},
+  {id:'pullups',name:'Pull-Ups / Rows',icon:'🪨',sets:'3×8-12',rest:'90s',
+   why:'Builds V-taper back and biceps — key for masculine upper body proportions',
+   how:'Overhand grip, pull chin over bar. If can\'t do full pull-ups, use resistance bands or do inverted rows under a table.',
+   goals:['muscle_growth','chest_flat'],journeys:['ftm','tomboy','nonbinary','custom'],
+   tags:['Back','Upper Body']},
+
+  // YOGA & FLEXIBILITY
+  {id:'yoga_hip_opener',name:'Hip Opening Yoga',icon:'🧘',sets:'15 min flow',rest:'—',
+   why:'Opens hip flexors, improves pelvic blood flow, builds feminine posture and fluidity',
+   how:'Pigeon pose (2 min each side) → Frog pose (2 min) → Butterfly stretch (2 min) → Happy baby (2 min). Breathe deeply into each stretch.',
+   goals:['bigger_butt','fat_redist','better_erections','more_sensitivity','mood_stability','better_sleep'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Flexibility','Hips','Yoga']},
+  {id:'yoga_flow',name:'Vinyasa Flow',icon:'🌊',sets:'20 min',rest:'—',
+   why:'Full-body movement meditation — reduces cortisol, improves mood, builds lean flexibility',
+   how:'Sun salutation A (5 rounds) → Warrior I, II, III → Triangle → Tree pose. Flow with breath. No rushing.',
+   goals:['mood_stability','better_sleep','more_energy','slimmer_waist','recovery'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Yoga','Mood','Full Body']},
+  {id:'evening_stretch',name:'Evening Stretch',icon:'🌙',sets:'10 min',rest:'—',
+   why:'Signals body to wind down — reduces muscle tension, improves sleep onset',
+   how:'Child\'s pose (2 min) → Seated forward fold (2 min) → Supine twist each side (2 min) → Legs up the wall (4 min). Slow, deep breathing.',
+   goals:['better_sleep','mood_stability','recovery'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Sleep','Recovery','Stretch']},
+
+  // CARDIO
+  {id:'walking',name:'Walking (30 min)',icon:'🚶',sets:'30 min',rest:'—',
+   why:'Burns fat without building muscle — ideal for feminizing body recomposition. Boosts mood and heart health.',
+   how:'Brisk pace where you can still talk. Aim for daily. Great fasted in the morning for fat burning. Take the scenic route.',
+   goals:['slimmer_waist','fat_redist','heart_health','mood_stability','more_energy','muscle_loss'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Cardio','Fat Loss']},
+  {id:'hiit',name:'HIIT Sprint Intervals',icon:'⚡',sets:'8×30s on/60s off',rest:'—',
+   why:'Spikes testosterone naturally, burns fat, builds explosive power',
+   how:'30 seconds ALL OUT (sprints, burpees, bike) → 60 seconds walk/rest. Repeat 8 times. Warm up 5 min first. Cool down 5 min after.',
+   goals:['muscle_growth','fat_redist_masc','more_energy','heart_health','libido_up'],journeys:['ftm','tomboy','nonbinary','custom'],
+   tags:['Cardio','HIIT','Power']},
+  {id:'cycling',name:'Cycling / Stationary Bike',icon:'🚴',sets:'20-30 min',rest:'—',
+   why:'Low-impact cardio that builds thighs without stressing joints. Improves pelvic circulation.',
+   how:'Moderate resistance, 70-90 RPM. Mix in 1-min high resistance intervals every 5 min. Keep seat at proper height.',
+   goals:['bigger_thighs','heart_health','more_energy','better_erections'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Cardio','Legs']},
+
+  // COMPOUND / STRENGTH (FTM-focused)
+  {id:'deadlifts',name:'Deadlifts',icon:'🏋️',sets:'3×8',rest:'120s',
+   why:'King of compound lifts — builds full posterior chain, boosts natural testosterone',
+   how:'Feet hip-width under bar. Hinge at hips, grip bar. Flat back, drive through heels. Lock out at top. Control the descent.',
+   goals:['muscle_growth','fat_redist_masc','bone_health'],journeys:['ftm','tomboy','nonbinary','custom'],
+   tags:['Strength','Full Body']},
+  {id:'ohp',name:'Overhead Press',icon:'🙌',sets:'3×10',rest:'90s',
+   why:'Builds broad shoulders — creates masculine V-taper upper body',
+   how:'Barbell or dumbbells at shoulder height. Press straight up overhead. Lower controlled. Keep core braced — don\'t arch back.',
+   goals:['muscle_growth','chest_flat'],journeys:['ftm','tomboy','nonbinary','custom'],
+   tags:['Shoulders','Strength']},
+
+  // BONE & RECOVERY
+  {id:'weight_bearing',name:'Weight-Bearing Walks',icon:'🦴',sets:'30 min',rest:'—',
+   why:'Critical for bone density — especially important when suppressing sex hormones',
+   how:'Walk with light ankle weights or weighted vest. Stairs count double. Impact-loading stimulates bone mineral deposition.',
+   goals:['bone_health','heart_health'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Bones','Low Impact']},
+  {id:'gentle_movement',name:'Gentle Recovery Movement',icon:'🌿',sets:'15-20 min',rest:'—',
+   why:'Promotes circulation to healing tissues without strain — accelerates recovery',
+   how:'Slow walking (10 min) → Gentle arm circles → Ankle rotations → Deep breathing. No exertion. Listen to your body.',
+   goals:['recovery'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
+   tags:['Recovery','Gentle']},
+
+  // NIPPLE/BREAST SPECIFIC
+  {id:'nipple_stimulation',name:'Nipple Stimulation',icon:'🎯',sets:'5 min each',rest:'—',
+   why:'Triggers prolactin release — key for lactation induction and nipple/areola growth',
+   how:'Gentle rolling between fingers, light suction, warm compresses. Twice daily for best results. Combine with galactagogue supplements.',
+   goals:['lactation','bigger_nipples'],journeys:['mtf','femboy','nonbinary','custom'],
+   tags:['Breast','Hormonal']},
+];
+
+function getExercisesForUser(){
+  const goals=S.goals||[];
+  const j=S.journeyType||'mtf';
+  if(!goals.length)return EXERCISE_DB.filter(e=>e.journeys.includes(j));
+  return EXERCISE_DB.filter(e=>{
+    if(!e.journeys.includes(j))return false;
+    return e.goals.some(g=>goals.includes(g));
+  });
+}
+
+function getExerciseLog(){
+  if(!D.exerciseLog)D.exerciseLog=[];
+  return D.exerciseLog;
+}
+function isExerciseDone(exId){
+  const td=today();
+  return getExerciseLog().some(l=>l.date===td&&l.id===exId);
+}
+function toggleExercise(exId){
+  const td=today();
+  if(!D.exerciseLog)D.exerciseLog=[];
+  const idx=D.exerciseLog.findIndex(l=>l.date===td&&l.id===exId);
+  if(idx>=0)D.exerciseLog.splice(idx,1);
+  else D.exerciseLog.push({date:td,id:exId,time:new Date().toLocaleTimeString()});
+  saveData();
+  renderActive();
+}
 
 function getTimeline(){
   const j=S.journeyType||'mtf';
@@ -885,7 +1153,7 @@ function getMedTypes(){
 
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
-function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{}}}
+function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{},exerciseLog:[]}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
 function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[],reminders:{am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}}}}
@@ -1401,6 +1669,125 @@ function logInjection(){
   if(!site)return;
   D.injections.push({date:today(),site:site,time:new Date().toLocaleTimeString()});
   saveData();showView('dashboard');
+}
+
+// ─── Active View (Exercises) ─────────────────────────────────
+function renderActive(){
+  const exercises=getExercisesForUser();
+  const goals=S.goals||[];
+  const j=S.journeyType||'mtf';
+  const td=today();
+  const todayDone=getExerciseLog().filter(l=>l.date===td).length;
+
+  let h='<div class="fade-in">';
+
+  // Streak & today's progress
+  const streak=getExerciseStreak();
+  h+=`<div class="stats">
+    <div class="stat-card"><div class="label">Today</div><div class="value" style="color:var(--mint-deep)">${todayDone}/${exercises.length}</div></div>
+    <div class="stat-card"><div class="label">Streak</div><div class="value" style="color:var(--peach-deep)">${streak} day${streak!==1?'s':''}</div></div>
+  </div>`;
+
+  if(!exercises.length){
+    h+=`<div class="empty-state"><div class="icon">🏃</div>
+      <p>Select goals in <span style="color:var(--violet-deep);cursor:pointer;font-weight:600" onclick="showView('settings')">Settings</span> to get personalized exercise recommendations.</p></div>`;
+    h+='</div>';
+    document.getElementById('content').innerHTML=h;
+    return;
+  }
+
+  // Motivational fitness quote
+  const fq=MOTIVATIONAL_QUOTES.fitness;
+  const fqIdx=Math.floor(Date.now()/86400000)%fq.length;
+  h+=`<div style="text-align:center;padding:8px 16px;font-size:13px;font-style:italic;color:var(--violet-deep);margin-bottom:8px">"${fq[fqIdx]}"</div>`;
+
+  // Group by relevance category
+  const categories=new Map();
+  for(const ex of exercises){
+    const matchingGoals=ex.goals.filter(g=>goals.includes(g));
+    let cat='General';
+    if(matchingGoals.length){
+      // Use the first matching goal's category from BODY_GOALS
+      for(const[catName,items]of Object.entries(BODY_GOALS)){
+        if(items.some(g=>matchingGoals.includes(g.id))){cat=catName;break;}
+      }
+    }
+    if(!categories.has(cat))categories.set(cat,[]);
+    categories.get(cat).push(ex);
+  }
+
+  for(const[cat,exs]of categories){
+    h+=`<div class="section-title">${cat}</div>`;
+    for(const ex of exs){
+      const done=isExerciseDone(ex.id);
+      const goalTags=ex.goals.filter(g=>goals.includes(g)).map(gid=>{
+        const gObj=Object.values(BODY_GOALS).flat().find(g=>g.id===gid);
+        return gObj?gObj.label:gid;
+      });
+
+      h+=`<div class="exercise-card" style="${done?'opacity:.6':''}">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div class="exercise-done${done?' checked':''}" onclick="toggleExercise('${ex.id}')">${done?'&#10003;':''}</div>
+          <div style="flex:1">
+            <h4>${ex.icon} ${ex.name} <span style="font-size:12px;font-weight:400;color:var(--text-muted)">${ex.sets}</span></h4>
+            <div class="ex-why">${ex.why}</div>
+            <details style="margin-top:4px">
+              <summary style="font-size:12px;color:var(--violet-deep);cursor:pointer;font-weight:600">How to do it</summary>
+              <div class="ex-how" style="margin-top:6px">${ex.how}</div>
+            </details>
+            <div class="ex-meta">
+              ${ex.tags.map(t=>`<span class="ex-tag" style="background:var(--violet-pale);color:var(--violet-deep)">${t}</span>`).join('')}
+              ${goalTags.map(t=>`<span class="ex-tag" style="background:var(--pink-pale);color:var(--pink-deep)">${t}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+  }
+
+  // Weekly overview
+  const weekLog=getWeekExerciseLog();
+  if(weekLog.some(d=>d>0)){
+    h+=`<div class="panel"><h3>This Week</h3>
+      <div class="chart-bar">${weekLog.map(d=>`<div class="bar" style="height:${d?Math.max(15,d/exercises.length*100):2}%;background:${d>=exercises.length?'var(--mint)':'var(--violet-soft)'}"></div>`).join('')}</div>
+      <div class="chart-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+    </div>`;
+  }
+
+  h+='</div>';
+  document.getElementById('content').innerHTML=h;
+}
+
+function getExerciseStreak(){
+  const log=getExerciseLog();
+  let streak=0;
+  const d=new Date();
+  // Check if today has any, if so start counting from today, else from yesterday
+  const todayStr=today();
+  const hasTodayEx=log.some(l=>l.date===todayStr);
+  if(!hasTodayEx)d.setDate(d.getDate()-1);
+  for(let i=0;i<365;i++){
+    const ds=d.toISOString().slice(0,10);
+    if(log.some(l=>l.date===ds))streak++;
+    else break;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+
+function getWeekExerciseLog(){
+  const log=getExerciseLog();
+  const result=[];
+  const d=new Date();
+  const dayOfWeek=d.getDay();
+  const mondayOffset=(dayOfWeek+6)%7;
+  d.setDate(d.getDate()-mondayOffset);
+  for(let i=0;i<7;i++){
+    const ds=d.toISOString().slice(0,10);
+    result.push(log.filter(l=>l.date===ds).length);
+    d.setDate(d.getDate()+1);
+  }
+  return result;
 }
 
 // ─── Log View ────────────────────────────────────────────────
@@ -3153,6 +3540,7 @@ function showView(v){
   updateBanner();
   switch(v){
     case'dashboard':renderDashboard();break;
+    case'active':renderActive();break;
     case'log':renderLog();break;
     case'body':renderBodyHub();break;
     case'photos':renderPhotos();break;
@@ -3166,6 +3554,12 @@ checkOnboarding();
 checkPinLock();
 applyStealth();
 initReminders();
+// Motivational quote in header — rotates daily
+function updateHeaderQuote(){
+  const el=document.getElementById('headerQuote');
+  if(el)el.textContent=getMotivationalQuote();
+}
+updateHeaderQuote();
 showView('dashboard');
 </script>
 </body>
