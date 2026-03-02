@@ -184,22 +184,64 @@ def verify_payment(tx_hash):
 @app.route('/', methods=['GET'])
 def index():
     """Landing page."""
-    return render_template('landing.html')
+    total_cycles = 0
+    total_cost = 0.0
+    try:
+        with open('/root/.automaton/cost.log', 'r') as f:
+            for i, line in enumerate(f):
+                if i == 0:
+                    continue
+                parts = line.strip().split(',')
+                if len(parts) >= 8:
+                    try:
+                        total_cost += float(parts[7])
+                    except ValueError:
+                        pass
+                    total_cycles += 1
+    except Exception:
+        pass
+    uptime_seconds = total_cycles * 90
+    uptime_days = uptime_seconds // 86400
+    uptime_str = f"{max(uptime_days, 1)}d+" if uptime_days >= 1 else f"{uptime_seconds // 3600}h"
+    return render_template('landing.html',
+        cycle_count=total_cycles,
+        requests_served=total_cycles * 3,
+        uptime=uptime_str
+    )
 
 @app.route('/proof', methods=['GET'])
 def proof():
     """Machine-readable proof-of-autonomy JSON (exempt from rate limit)."""
+    total_cycles = 0
+    total_cost = 0.0
+    try:
+        with open('/root/.automaton/cost.log', 'r') as f:
+            for i, line in enumerate(f):
+                if i == 0:
+                    continue  # skip header
+                parts = line.strip().split(',')
+                if len(parts) >= 8:
+                    try:
+                        total_cost += float(parts[7])
+                    except ValueError:
+                        pass
+                    total_cycles += 1
+    except Exception:
+        total_cycles = 0
+        total_cost = 0.0
+    cost_per_cycle = (total_cost / total_cycles) if total_cycles > 0 else 0
+    from datetime import datetime, timezone
     return jsonify({
         'autonomous': True,
-        'total_cycles_completed': 5421,
-        'total_api_cost_usd': 36.80,
+        'total_cycles_completed': total_cycles,
+        'total_api_cost_usd': round(total_cost, 2),
         'current_usdc_balance': 10.0001,
-        'cost_per_cycle_usd': 0.007,
+        'cost_per_cycle_usd': round(cost_per_cycle, 4),
         'live_endpoints': ['/chat', '/summarize', '/generate', '/synthesize', '/thoughts'],
         'entity': 'TIAMAT',
         'company': 'ENERGENAI LLC',
         'wallet': USER_WALLET,
-        'as_of': '2026-03-02',
+        'as_of': datetime.now(timezone.utc).strftime('%Y-%m-%d'),
     })
 
 
@@ -1051,6 +1093,41 @@ def bloom_feedback():
         logger.error(f"Bloom feedback error: {e}")
         return jsonify({'error': 'Server error'}), 500, cors_headers
 
+@app.route('/bloom/download')
+def bloom_download():
+    """Direct APK download for Bloom."""
+    apk_path = '/root/bloom.apk'
+    if not os.path.exists(apk_path):
+        return 'APK not available', 503
+    return send_file(apk_path, mimetype='application/vnd.android.package-archive', as_attachment=True, download_name='Bloom-v3.2.5.apk')
+
+@app.route('/bloom/download/aab')
+def bloom_download_aab():
+    """Direct AAB download for Bloom (Play Store upload)."""
+    aab_path = '/root/bloom-app/bloom-v3.2.6-release.aab'
+    if not os.path.exists(aab_path):
+        return 'AAB not available', 503
+    return send_file(aab_path, mimetype='application/octet-stream', as_attachment=True, download_name='bloom-v3.2.6-release.aab')
+
+@app.route('/bloom/screenshots')
+def bloom_screenshots():
+    """Download page for Bloom Play Store screenshots."""
+    import glob
+    shots = sorted(glob.glob('/root/bloom-app/screenshots/0*.png'))
+    links = ''.join(f'<a href="/bloom/screenshots/{os.path.basename(s)}" download style="display:block;margin:12px 0;color:#7c3aed;font-size:18px">{os.path.basename(s)}</a>' for s in shots)
+    return f'<!DOCTYPE html><html><head><title>Bloom Screenshots</title></head><body style="font-family:sans-serif;max-width:600px;margin:40px auto;padding:20px"><h1>Bloom Screenshots</h1><p>{len(shots)} screenshots for Play Store</p>{links}</body></html>'
+
+@app.route('/bloom/screenshots/<filename>')
+def bloom_screenshot_file(filename):
+    """Serve individual screenshot."""
+    import re
+    if not re.match(r'^[0-9a-z\-]+\.png$', filename):
+        return 'Invalid filename', 400
+    path = f'/root/bloom-app/screenshots/{filename}'
+    if not os.path.exists(path):
+        return 'Not found', 404
+    return send_file(path, mimetype='image/png')
+
 @app.route('/bloom/privacy')
 def bloom_privacy():
     """Standalone privacy policy page for Google Play."""
@@ -1176,6 +1253,24 @@ def download_app(app_name):
         as_attachment=True,
         download_name=f"{app_name}.apk"
     )
+
+@app.route('/bloom/assets/icon')
+def bloom_store_icon():
+    """512x512 app icon for Play Store."""
+    return send_file('/root/bloom-app/store-icon-512.png', mimetype='image/png', as_attachment=True, download_name='bloom-icon-512.png')
+
+@app.route('/bloom/assets/screenshot/<int:num>')
+def bloom_screenshot(num):
+    """Phone screenshots for Play Store (1-6)."""
+    names = {1:'01-dashboard.png', 2:'02-daily-log.png', 3:'03-labs.png', 4:'04-trends.png', 5:'05-supplements.png', 6:'06-settings.png'}
+    if num not in names:
+        return 'Screenshot not found', 404
+    return send_file(f'/root/bloom-app/screenshots/{names[num]}', mimetype='image/png', as_attachment=True, download_name=names[num])
+
+@app.route('/bloom/assets/feature')
+def bloom_store_feature():
+    """1024x500 feature graphic for Play Store."""
+    return send_file('/root/bloom-app/feature-graphic-1024x500.png', mimetype='image/png', as_attachment=True, download_name='bloom-feature-1024x500.png')
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=False)
