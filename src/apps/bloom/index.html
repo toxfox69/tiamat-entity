@@ -3424,36 +3424,64 @@ function generateAIPrompt(){
 function exportDoctorReport(){
   const now=new Date();
   const dateStr=now.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const j=S.journeyType||'mtf';
+  const jLabel=JOURNEY_TYPES[j]?.label||'Custom';
+  const onHRT=S.onHRT!==false;
   const activeMeds=D.meds.filter(x=>!x.ended);
   const pastMeds=D.meds.filter(x=>x.ended);
+  const activeSupps=D.supplements.filter(x=>!x.ended);
+  const pastSupps=D.supplements.filter(x=>x.ended);
+  const goals=(S.goals||[]).map(gid=>Object.values(BODY_GOALS).flat().find(g=>g.id===gid)?.label||gid);
   const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
   const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
   const dysLogs=D.logs.filter(l=>l.dysphoria!==undefined);
   const dysAvg=dysLogs.length>=3?(dysLogs.reduce((s,l)=>s+l.dysphoria,0)/dysLogs.length).toFixed(1):'N/A';
+  const energyLogs=D.logs.filter(l=>l.energy!==undefined);
+  const energyAvg=energyLogs.length>=3?(energyLogs.reduce((s,l)=>s+l.energy,0)/energyLogs.length).toFixed(1):'N/A';
+  const sleepLogs=D.logs.filter(l=>l.sleep);
+  const sleepAvg=sleepLogs.length>=3?(sleepLogs.reduce((s,l)=>s+parseFloat(l.sleep),0)/sleepLogs.length).toFixed(1):'N/A';
+  const libidoLogs=D.logs.filter(l=>l.libido!==undefined);
+  const libidoAvg=libidoLogs.length>=3?(libidoLogs.reduce((s,l)=>s+l.libido,0)/libidoLogs.length).toFixed(1):'N/A';
+  const skinLogs=D.logs.filter(l=>l.skinScore!==undefined);
+  const skinAvg=skinLogs.length>=3?(skinLogs.reduce((s,l)=>s+l.skinScore,0)/skinLogs.length).toFixed(1):'N/A';
+  const moodCounts={};D.logs.forEach(l=>{if(l.mood)moodCounts[l.mood]=(moodCounts[l.mood]||0)+1});
+  const topMoods=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const last=D.measurements.slice(-1)[0];
   const bs=braSize(),w=whr();
+  const isFem=j==='mtf'||j==='femboy'||j==='nonbinary';
+
+  // Vitals from recent logs
+  const recentVitals=D.logs.filter(l=>l.heartRate||l.bpSys).slice(-5);
+  const lastVital=recentVitals.slice(-1)[0];
+
+  // Water
+  const waterToday=getTodayWater();
+  const waterGoal=getWaterGoal();
 
   let labsHtml='';
   if(D.labs.length){
-    const sorted=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+    const sorted=[...D.labs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
     for(const lab of sorted){
-      labsHtml+=`<h3 style="font-size:14px;margin:12px 0 4px">${lab.date}</h3><table style="width:100%;border-collapse:collapse">
-        <tr style="background:#f5f0ff"><th style="text-align:left;padding:4px 8px;font-size:12px">Test</th><th style="padding:4px 8px;font-size:12px">Value</th><th style="padding:4px 8px;font-size:12px">Unit</th><th style="padding:4px 8px;font-size:12px">Status</th><th style="padding:4px 8px;font-size:12px">Range</th></tr>`;
+      labsHtml+=`<h3>${lab.date}</h3><table>
+        <tr><th>Test</th><th>Value</th><th>Unit</th><th>Status</th><th>Range</th></tr>`;
       for(const r of lab.results){
         const flag=flagLab(r.name,r.value);
         const t=LAB_TARGETS[r.name];
         const color=flag==='normal'?'#43A047':flag==='urgent'?'#EF5350':'#EF6C00';
-        labsHtml+=`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px;font-size:12px">${r.name}</td>
-          <td style="padding:4px 8px;font-size:12px;font-weight:700;color:${color}">${r.value}</td>
-          <td style="padding:4px 8px;font-size:12px;color:#888">${t?t.unit:''}</td>
-          <td style="padding:4px 8px;font-size:12px;color:${color};font-weight:600">${flag}</td>
-          <td style="padding:4px 8px;font-size:12px;color:#888">${t?t.low+'-'+t.high:''}</td></tr>`;
+        labsHtml+=`<tr><td>${r.name}</td>
+          <td style="font-weight:700;color:${color}">${r.value}</td>
+          <td style="color:#888">${t?t.unit:''}</td>
+          <td style="color:${color};font-weight:600">${flag}</td>
+          <td style="color:#888">${t?t.low+'-'+t.high:''}</td></tr>`;
       }
       labsHtml+=`</table>`;
     }
   }
 
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bloom HRT Health Report — ${dateStr}</title>
+  // Measurement history (last 5)
+  const measHistory=D.measurements.slice(-5);
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bloom Health Report — ${dateStr}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#333;padding:32px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}
@@ -3461,28 +3489,43 @@ h1{font-size:22px;color:#7C4DFF;border-bottom:3px solid #7C4DFF;padding-bottom:8
 h2{font-size:16px;color:#7C4DFF;border-bottom:1px solid #E8D5F5;padding-bottom:4px;margin:20px 0 8px}
 h3{font-size:14px;color:#3E2465;margin:12px 0 4px}
 .meta{font-size:12px;color:#888;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:8px 0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
 .stat{background:#F8F0FF;border:1px solid #E8D5F5;border-radius:8px;padding:10px 14px}
 .stat .label{font-size:10px;color:#A99BBB;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .stat .val{font-size:18px;font-weight:700;color:#7C4DFF}
 table{width:100%;border-collapse:collapse;margin:8px 0}
 th{text-align:left;padding:4px 8px;font-size:12px;background:#f5f0ff;font-weight:600}
 td{padding:4px 8px;font-size:12px;border-bottom:1px solid #eee}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.tag{font-size:11px;padding:3px 10px;border-radius:10px;background:#F8F0FF;color:#7C4DFF;font-weight:500}
 .footer{margin-top:24px;padding-top:12px;border-top:1px solid #E8D5F5;font-size:11px;color:#A99BBB;text-align:center}
 .disclaimer{background:#FFF3E0;border:1px solid #FFE0B2;border-radius:8px;padding:10px 14px;font-size:11px;color:#EF6C00;margin:16px 0}
 @media print{body{padding:16px} .no-print{display:none}}
 </style></head><body>
-<h1>Bloom HRT Health Report</h1>
-<div class="meta">Generated: ${dateStr} | Days on HRT: ${daysOnHRT()} (${monthsOnHRT()} months) | Start Date: ${D.startDate||'Not set'} | Tanner Stage: ${S.tannerStage}</div>
+<h1>Bloom Health Report</h1>
+<div class="meta">Generated: ${dateStr} | Journey: ${jLabel}${onHRT?' | On HRT: '+daysOnHRT()+' days ('+monthsOnHRT()+' months)':''} | Start: ${D.startDate||'Not set'} | Total Logs: ${D.logs.length}</div>
 
-<div class="disclaimer">This report was generated by Bloom, a personal HRT tracking app. It is not a medical document. All data was self-reported by the user. Consult your healthcare provider for medical decisions.</div>
+<div class="disclaimer">This report was generated by Bloom, a personal health tracking app. It is not a medical document. All data was self-reported by the user. Consult your healthcare provider for medical decisions.</div>
 
+${goals.length?`<h2>Active Goals</h2><div class="tags">${goals.map(g=>`<span class="tag">${g}</span>`).join('')}</div>`:''}
+
+<h2>Overview</h2>
 <div class="grid">
-  <div class="stat"><div class="label">Days on HRT</div><div class="val">${daysOnHRT()}</div></div>
-  <div class="stat"><div class="label">Months</div><div class="val">${monthsOnHRT()}</div></div>
-  <div class="stat"><div class="label">Tanner Stage</div><div class="val">${S.tannerStage}</div></div>
-  <div class="stat"><div class="label">Avg Dysphoria (0-10)</div><div class="val">${dysAvg}</div></div>
+  ${onHRT?`<div class="stat"><div class="label">Days on HRT</div><div class="val">${daysOnHRT()}</div></div>`:''}
+  ${onHRT?`<div class="stat"><div class="label">Months</div><div class="val">${monthsOnHRT()}</div></div>`:''}
+  ${isFem&&onHRT?`<div class="stat"><div class="label">Tanner Stage</div><div class="val">${S.tannerStage}</div></div>`:''}
+  <div class="stat"><div class="label">Avg Dysphoria</div><div class="val">${dysAvg}/10</div></div>
+  <div class="stat"><div class="label">Avg Energy</div><div class="val">${energyAvg}/10</div></div>
+  <div class="stat"><div class="label">Avg Sleep</div><div class="val">${sleepAvg} hrs</div></div>
+  <div class="stat"><div class="label">Avg Libido</div><div class="val">${libidoAvg}/10</div></div>
+  <div class="stat"><div class="label">Avg Skin</div><div class="val">${skinAvg}/10</div></div>
+  <div class="stat"><div class="label">Hydration Goal</div><div class="val">${waterGoal.label}</div></div>
 </div>
+
+${topMoods.length?`<h2>Mood Distribution</h2>
+<table><tr><th>Mood</th><th>Count</th><th>% of Logs</th></tr>
+${topMoods.map(([m,c])=>`<tr><td>${m}</td><td>${c}</td><td>${(c/D.logs.length*100).toFixed(0)}%</td></tr>`).join('')}</table>`:''}
 
 <h2>Active Medications</h2>
 ${activeMeds.length?`<table><tr><th>Medication</th><th>Dose</th><th>Frequency</th><th>Route</th><th>Started</th><th>Days</th></tr>
@@ -3491,30 +3534,51 @@ ${activeMeds.map(m=>`<tr><td><strong>${m.name}</strong></td><td>${m.dose}</td><t
 ${pastMeds.length?`<h2>Past Medications</h2><table><tr><th>Medication</th><th>Dose</th><th>Started</th><th>Ended</th></tr>
 ${pastMeds.map(m=>`<tr><td>${m.name}</td><td>${m.dose}</td><td>${m.started}</td><td>${m.ended}</td></tr>`).join('')}</table>`:''}
 
+<h2>Active Supplements</h2>
+${activeSupps.length?`<table><tr><th>Supplement</th><th>Dose</th><th>Timing</th><th>Started</th><th>Days</th></tr>
+${activeSupps.map(s=>`<tr><td><strong>${s.name}</strong></td><td>${s.dose||'—'}</td><td>${s.timing||'—'}</td><td>${s.started||'—'}</td><td>${s.started?Math.floor((new Date()-new Date(s.started))/864e5):'—'}</td></tr>`).join('')}</table>`:'<p style="color:#888">No active supplements.</p>'}
+
+${pastSupps.length?`<h2>Past Supplements</h2><table><tr><th>Supplement</th><th>Dose</th><th>Started</th><th>Ended</th></tr>
+${pastSupps.map(s=>`<tr><td>${s.name}</td><td>${s.dose||'—'}</td><td>${s.started||'—'}</td><td>${s.ended||'—'}</td></tr>`).join('')}</table>`:''}
+
 <h2>Lab Results</h2>
 ${D.labs.length?labsHtml:'<p style="color:#888">No lab results recorded.</p>'}
 
-${last?`<h2>Body Measurements (${last.date})</h2>
+${lastVital?`<h2>Vitals</h2>
+<div class="grid-2">
+  ${lastVital.heartRate?`<div class="stat"><div class="label">Resting HR</div><div class="val">${lastVital.heartRate} bpm</div></div>`:''}
+  ${lastVital.bpSys?`<div class="stat"><div class="label">Blood Pressure</div><div class="val">${lastVital.bpSys}/${lastVital.bpDia}</div></div>`:''}
+</div>
+<p style="font-size:11px;color:#888">From log entry: ${lastVital.date}</p>`:''}
+
+${last?`<h2>Body Measurements (Latest: ${last.date})</h2>
 <div class="grid">
+${last.weight?`<div class="stat"><div class="label">Weight</div><div class="val">${last.weight} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`:''}
 ${last.bust?`<div class="stat"><div class="label">Bust</div><div class="val">${last.bust}"</div></div>`:''}
 ${last.underbust?`<div class="stat"><div class="label">Underbust</div><div class="val">${last.underbust}"</div></div>`:''}
 ${bs?`<div class="stat"><div class="label">Bra Size</div><div class="val">${bs}</div></div>`:''}
 ${last.waist?`<div class="stat"><div class="label">Waist</div><div class="val">${last.waist}"</div></div>`:''}
 ${last.hips?`<div class="stat"><div class="label">Hips</div><div class="val">${last.hips}"</div></div>`:''}
 ${w?`<div class="stat"><div class="label">WHR</div><div class="val">${w}</div></div>`:''}
-${last.weight?`<div class="stat"><div class="label">Weight</div><div class="val">${last.weight}</div></div>`:''}
+${last.thighL?`<div class="stat"><div class="label">Thigh L</div><div class="val">${last.thighL}"</div></div>`:''}
+${last.thighR?`<div class="stat"><div class="label">Thigh R</div><div class="val">${last.thighR}"</div></div>`:''}
 </div>`:''}
+
+${measHistory.length>=2?`<h2>Measurement History</h2>
+<table><tr><th>Date</th><th>Weight</th><th>Bust</th><th>Waist</th><th>Hips</th><th>Thigh L</th><th>Thigh R</th></tr>
+${measHistory.map(m=>`<tr><td>${m.date}</td><td>${m.weight||'—'}</td><td>${m.bust||'—'}</td><td>${m.waist||'—'}</td><td>${m.hips||'—'}</td><td>${m.thighL||'—'}</td><td>${m.thighR||'—'}</td></tr>`).join('')}</table>`:''}
 
 ${topTags.length?`<h2>Most Reported Changes/Symptoms</h2>
 <table><tr><th>Symptom/Change</th><th>Occurrences</th></tr>
 ${topTags.map(([t,c])=>`<tr><td>${t}</td><td>${c}</td></tr>`).join('')}</table>`:''}
 
-${dysLogs.length>=3?`<h2>Dysphoria Summary</h2>
-<p>Average: <strong>${dysAvg}/10</strong> over ${dysLogs.length} entries</p>`:''}
+${D.injections.length?`<h2>Injection History (Last 10)</h2>
+<table><tr><th>Date</th><th>Site</th><th>Time</th></tr>
+${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${i.site}</td><td>${i.time||'—'}</td></tr>`).join('')}</table>`:''}
 
 <div class="footer">
-  Generated by Bloom v2.0 — Private HRT Tracker<br>
-  All data stored locally on user's device. This report was created by the user.<br>
+  Generated by Bloom — Private Health Tracker<br>
+  Journey: ${jLabel} | All data stored locally on user's device.<br>
   This is not medical advice. Consult your healthcare provider for treatment decisions.
 </div>
 <script>window.onload=function(){window.print()}<\/script>
