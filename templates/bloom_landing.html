@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloom — Private HRT &amp; Wellness Tracker</title>
+<meta name="description" content="HRT & wellness tracker. 100% private. No cloud, no accounts, no tracking. Built for trans, non-binary, and gender-diverse people.">
+<style>
+:root {
+  --bloom-bg: #F8F0FF;
+  --bloom-surface: #FFFFFF;
+  --bloom-card: #f5eafa;
+  --bloom-primary: #6b21a8;
+  --bloom-primary-light: #c084fc;
+  --bloom-accent: #e879a8;
+  --bloom-text: #2d1b4e;
+  --bloom-text-muted: #7c6b8a;
+  --bloom-border: #e8d5f5;
+  --bloom-hero-gradient: linear-gradient(135deg, #6b21a8 0%, #a855f7 40%, #e879a8 100%);
+  --bloom-card-shadow: 0 2px 12px rgba(107,33,168,0.08);
+  --bloom-radius: 16px;
+}
+@media(prefers-color-scheme:dark){
+:root {
+  --bloom-bg: #0f0a18;
+  --bloom-surface: #1a1025;
+  --bloom-card: #241535;
+  --bloom-primary: #c084fc;
+  --bloom-primary-light: #d8b4fe;
+  --bloom-accent: #f0a0c0;
+  --bloom-text: #e8ddf5;
+  --bloom-text-muted: #9a8aaa;
+  --bloom-border: #2d1b4e;
+  --bloom-card-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bloom-bg);color:var(--bloom-text);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--bloom-primary);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Hero */
+.hero{background:var(--bloom-hero-gradient);color:#fff;padding:80px 24px 64px;text-align:center;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:48px;background:var(--bloom-bg);border-radius:50% 50% 0 0 / 100% 100% 0 0}
+.hero-icon{font-size:64px;margin-bottom:12px;display:block}
+.hero h1{font-size:40px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
+.hero .tagline{font-size:18px;opacity:0.92;max-width:480px;margin:0 auto 28px;line-height:1.5}
+.cta-btn{display:inline-block;background:#fff;color:#6b21a8;font-size:17px;font-weight:700;padding:14px 36px;border-radius:40px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(0,0,0,0.2);text-decoration:none}
+.cta-sub{display:block;margin-top:12px;font-size:13px;opacity:0.75}
+
+/* Sections */
+.section{max-width:860px;margin:0 auto;padding:56px 24px}
+.section-title{font-size:26px;font-weight:700;color:var(--bloom-primary);margin-bottom:8px;text-align:center}
+.section-subtitle{font-size:15px;color:var(--bloom-text-muted);text-align:center;margin-bottom:36px;max-width:560px;margin-left:auto;margin-right:auto}
+
+/* Journey Cards */
+.journey-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:8px}
+.journey-card{background:var(--bloom-card);border-radius:var(--bloom-radius);padding:20px 16px;text-align:center;border:1px solid var(--bloom-border);transition:transform 0.15s}
+.journey-card:hover{transform:translateY(-3px)}
+.journey-card .jicon{font-size:28px;margin-bottom:8px;display:block}
+.journey-card .jname{font-size:14px;font-weight:600;color:var(--bloom-text)}
+
+/* Feature Cards */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.feature-card{background:var(--bloom-surface);border:1px solid var(--bloom-border);border-radius:var(--bloom-radius);padding:28px 24px;box-shadow:var(--bloom-card-shadow)}
+.feature-card .ficon{font-size:32px;margin-bottom:12px;display:block}
+.feature-card h3{font-size:17px;font-weight:700;margin-bottom:8px;color:var(--bloom-primary)}
+.feature-card p{font-size:14px;color:var(--bloom-text-muted);line-height:1.55}
+
+/* Privacy Callout */
+.privacy-callout{background:var(--bloom-hero-gradient);border-radius:var(--bloom-radius);padding:40px 32px;color:#fff;text-align:center;margin-top:56px}
+.privacy-callout h2{font-size:24px;font-weight:700;margin-bottom:12px}
+.privacy-callout p{font-size:15px;opacity:0.9;max-width:520px;margin:0 auto 24px;line-height:1.6}
+.privacy-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.privacy-badge{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:24px;padding:8px 18px;font-size:13px;font-weight:600;backdrop-filter:blur(4px)}
+
+/* FAQ */
+.faq-list{max-width:640px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--bloom-border);padding:20px 0}
+.faq-item:last-child{border-bottom:none}
+.faq-q{font-size:16px;font-weight:600;color:var(--bloom-text);margin-bottom:6px}
+.faq-a{font-size:14px;color:var(--bloom-text-muted);line-height:1.6}
+
+/* Final CTA */
+.final-cta{text-align:center;padding:56px 24px 40px}
+.final-cta h2{font-size:28px;font-weight:700;color:var(--bloom-primary);margin-bottom:12px}
+.final-cta p{font-size:15px;color:var(--bloom-text-muted);margin-bottom:28px}
+.cta-btn-solid{display:inline-block;background:var(--bloom-hero-gradient);color:#fff;font-size:17px;font-weight:700;padding:14px 36px;border-radius:40px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 20px rgba(107,33,168,0.25)}
+.cta-btn-solid:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(107,33,168,0.35);text-decoration:none}
+
+/* Footer */
+.footer{text-align:center;padding:32px 24px 40px;font-size:13px;color:var(--bloom-text-muted);border-top:1px solid var(--bloom-border)}
+.footer a{color:var(--bloom-primary)}
+.footer .footer-links{margin-bottom:8px}
+.footer .footer-links a{margin:0 10px}
+
+/* Responsive */
+@media(max-width:480px){
+  .hero{padding:56px 20px 48px}
+  .hero h1{font-size:32px}
+  .hero .tagline{font-size:16px}
+  .section{padding:40px 16px}
+  .section-title{font-size:22px}
+  .journey-grid{grid-template-columns:repeat(3,1fr);gap:10px}
+  .journey-card{padding:14px 10px}
+  .feature-grid{grid-template-columns:1fr}
+  .privacy-callout{padding:28px 20px}
+  .privacy-badges{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <span class="hero-icon">🌸</span>
+  <h1>Bloom</h1>
+  <p class="tagline">Private HRT &amp; wellness tracker. No cloud, no accounts, no tracking. Your transition, your data, your device.</p>
+  <a href="https://github.com/toxfox69/tiamat-entity/releases" class="cta-btn">Download APK</a>
+  <span class="cta-sub">Android only &middot; Free &middot; No account required</span>
+</div>
+
+<!-- Journeys -->
+<div class="section">
+  <h2 class="section-title">Your Journey, Your Way</h2>
+  <p class="section-subtitle">Bloom adapts to your path. Choose a journey type during setup — labs, supplements, exercises, and resources all personalize to match.</p>
+  <div class="journey-grid">
+    <div class="journey-card"><span class="jicon">🦋</span><span class="jname">Trans Feminine</span></div>
+    <div class="journey-card"><span class="jicon">🔥</span><span class="jname">Trans Masculine</span></div>
+    <div class="journey-card"><span class="jicon">🌿</span><span class="jname">Selective Feminization</span></div>
+    <div class="journey-card"><span class="jicon">⚡</span><span class="jname">Selective Masculinization</span></div>
+    <div class="journey-card"><span class="jicon">✨</span><span class="jname">Non-Binary</span></div>
+    <div class="journey-card"><span class="jicon">🎨</span><span class="jname">Custom Path</span></div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="section">
+  <h2 class="section-title">Everything You Need to Track</h2>
+  <p class="section-subtitle">50+ features built specifically for hormone therapy and wellness monitoring.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="ficon">📊</span>
+      <h3>Daily Tracking</h3>
+      <p>Mood, dysphoria, energy, sleep, skin, libido — all scored and charted. 50+ symptom tags plus custom ones. Free-text journal.</p>
+    </div>
+    <div class="feature-card">
+      <span class="ficon">🧪</span>
+      <h3>Hormone Labs</h3>
+      <p>17 lab markers with auto-flagging (normal/high/low/urgent). Journey-specific reference ranges, trend charts, and "Ask Your Doctor" prompts.</p>
+    </div>
+    <div class="feature-card">
+      <span class="ficon">📐</span>
+      <h3>Body Measurements</h3>
+      <p>Bust, underbust, waist, hips, thigh tracking with trend charts. Auto-calculated bra size and waist-to-hip ratio.</p>
+    </div>
+    <div class="feature-card">
+      <span class="ficon">💊</span>
+      <h3>Meds &amp; Supplements</h3>
+      <p>Track HRT meds with dosing. 13 supplement stacks with personalized recommendations, interaction warnings, and daily schedules.</p>
+    </div>
+    <div class="feature-card">
+      <span class="ficon">📸</span>
+      <h3>Photo Timeline</h3>
+      <p>Progress photos organized by month with side-by-side before/after comparison. All stored locally, never uploaded.</p>
+    </div>
+    <div class="feature-card">
+      <span class="ficon">🔒</span>
+      <h3>Real Privacy</h3>
+      <p>PIN lock, stealth mode, AES-256 encrypted backups, zero network requests. Built for a community that needs it.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Privacy Callout -->
+<div class="section" style="padding-top:0">
+  <div class="privacy-callout">
+    <h2>Private by Design</h2>
+    <p>Bloom was built privacy-first for a community with real reasons to need it. Your health data never leaves your device. Ever.</p>
+    <div class="privacy-badges">
+      <span class="privacy-badge">Zero Cloud</span>
+      <span class="privacy-badge">PIN Lock</span>
+      <span class="privacy-badge">Stealth Mode</span>
+      <span class="privacy-badge">AES-256 Encryption</span>
+      <span class="privacy-badge">No Network Requests</span>
+      <span class="privacy-badge">Full Data Deletion</span>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="section">
+  <h2 class="section-title">Frequently Asked Questions</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">Is Bloom free?</div>
+      <div class="faq-a">Yes. Bloom is completely free with no ads, no in-app purchases, and no premium tier. All features are available to everyone.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What data does Bloom collect?</div>
+      <div class="faq-a">None. Bloom makes zero network requests. All your data stays on your device in local storage. There are no accounts, no analytics, no telemetry — nothing leaves your phone.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Does it work offline?</div>
+      <div class="faq-a">Bloom works 100% offline. It was designed to never need an internet connection. Once installed, you never need to be online again.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Who is Bloom for?</div>
+      <div class="faq-a">Anyone tracking hormone therapy or wellness — trans feminine, trans masculine, non-binary, and supplement-only journeys are all supported. You can also create a fully custom path.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can someone find out I'm using it?</div>
+      <div class="faq-a">Bloom includes stealth mode, which changes the app name and icon so it doesn't appear as a health tracker. Combined with PIN lock, your data stays hidden even if someone picks up your phone.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I back up my data?</div>
+      <div class="faq-a">Bloom supports encrypted backups (AES-256) protected by a password you choose. Export the backup file, store it wherever you want, and restore it on any device.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Final CTA -->
+<div class="final-cta">
+  <h2>Start Tracking Privately</h2>
+  <p>Free. Private. No account needed.</p>
+  <a href="https://github.com/toxfox69/tiamat-entity/releases" class="cta-btn-solid">Download Bloom APK</a>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <div class="footer-links">
+    <a href="/bloom/privacy">Privacy Policy</a>
+    <a href="mailto:tiamat@tiamat.live">Contact</a>
+    <a href="https://github.com/toxfox69/tiamat-entity">Source</a>
+  </div>
+  <p>Bloom is a personal tracking tool, not a medical device. Always consult a healthcare provider.</p>
+  <p style="margin-top:6px">&copy; 2026 ENERGENAI LLC</p>
+</div>
+
+</body>
+</html>

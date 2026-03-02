@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 RATE_LIMIT_DB = '/root/.automaton/rate_limits.db'
 FREE_TIER_DAILY_LIMIT = 100
-EXEMPT_ENDPOINTS = ['/status', '/proof', '/pay', '/', '/docs', '/apps', '/api/apps', '/.well-known/agent.json', '/api/v1/services', '/cycle-tracker', '/cycle-tracker/']
+EXEMPT_ENDPOINTS = ['/status', '/proof', '/pay', '/', '/docs', '/apps', '/api/apps', '/.well-known/agent.json', '/api/v1/services', '/cycle-tracker', '/cycle-tracker/', '/bloom', '/bloom/', '/bloom/privacy', '/api/bloom/feedback']
 
 def init_rate_limit_db():
     """Initialize rate limit SQLite database."""
@@ -959,12 +959,8 @@ def cycle_tracker():
 @app.route('/bloom')
 @app.route('/bloom/')
 def bloom_tracker():
-    """Serve Bloom HRT Transition Tracker PWA"""
-    try:
-        with open('/root/entity/src/apps/bloom/index.html', 'r') as f:
-            return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
-    except Exception as e:
-        return f"Error loading tracker: {str(e)}", 500
+    """Serve Bloom product landing page"""
+    return render_template('bloom_landing.html')
 
 @app.route('/bloom/manifest.json')
 def bloom_manifest():
@@ -982,6 +978,148 @@ def bloom_sw():
     except Exception as e:
         return f"Error: {str(e)}", 500
 
+# ============ BLOOM FEEDBACK + PRIVACY ============
+
+BLOOM_FEEDBACK_DB = '/root/.automaton/bloom_feedback.db'
+BLOOM_FEEDBACK_DAILY_LIMIT = 5
+
+def init_bloom_feedback_db():
+    try:
+        conn = sqlite3.connect(BLOOM_FEEDBACK_DB)
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS feedback (
+                id INTEGER PRIMARY KEY,
+                type TEXT NOT NULL,
+                message TEXT NOT NULL,
+                app_version TEXT,
+                ip TEXT,
+                timestamp TEXT NOT NULL
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to init bloom feedback DB: {e}")
+
+init_bloom_feedback_db()
+
+@app.route('/api/bloom/feedback', methods=['POST', 'OPTIONS'])
+def bloom_feedback():
+    """Accept anonymous feedback from Bloom app."""
+    cors_headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    }
+    if request.method == 'OPTIONS':
+        return '', 204, cors_headers
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({'error': 'Invalid JSON'}), 400, cors_headers
+
+        fb_type = data.get('type', '').strip()
+        message = data.get('message', '').strip()
+        version = data.get('version', '').strip()
+
+        if fb_type not in ('bug', 'feature', 'other'):
+            return jsonify({'error': 'Invalid type. Must be bug, feature, or other.'}), 400, cors_headers
+        if not message or len(message) > 2000:
+            return jsonify({'error': 'Message required (max 2000 chars).'}), 400, cors_headers
+
+        client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '0.0.0.0').split(',')[0].strip()
+        today_str = str(date.today())
+
+        conn = sqlite3.connect(BLOOM_FEEDBACK_DB)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM feedback WHERE ip=? AND timestamp LIKE ?', (client_ip, today_str + '%'))
+        count = cursor.fetchone()[0]
+        if count >= BLOOM_FEEDBACK_DAILY_LIMIT:
+            conn.close()
+            return jsonify({'error': 'Feedback limit reached (5/day). Try again tomorrow.'}), 429, cors_headers
+
+        cursor.execute(
+            'INSERT INTO feedback (type, message, app_version, ip, timestamp) VALUES (?, ?, ?, ?, ?)',
+            (fb_type, message, version, client_ip, datetime.utcnow().isoformat())
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True}), 200, cors_headers
+    except Exception as e:
+        logger.error(f"Bloom feedback error: {e}")
+        return jsonify({'error': 'Server error'}), 500, cors_headers
+
+@app.route('/bloom/privacy')
+def bloom_privacy():
+    """Standalone privacy policy page for Google Play."""
+    return '''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloom — Privacy Policy</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F8F0FF;color:#2d1b4e;line-height:1.7;padding:24px;max-width:720px;margin:0 auto}
+h1{font-size:28px;margin-bottom:4px;color:#6b21a8}
+.subtitle{font-size:14px;color:#7c6b8a;margin-bottom:32px}
+h2{font-size:18px;color:#6b21a8;margin:28px 0 8px;padding-top:16px;border-top:1px solid #e8d5f5}
+h2:first-of-type{border-top:none;margin-top:16px}
+p{margin-bottom:12px;font-size:15px}
+strong{color:#4a1d7a}
+.footer{margin-top:40px;padding:16px 20px;background:#f0e6fa;border-radius:12px;font-size:13px;color:#7c6b8a;line-height:1.6}
+@media(prefers-color-scheme:dark){
+body{background:#1a1025;color:#e0d0f0}
+h1,h2{color:#c084fc}
+strong{color:#d8b4fe}
+.subtitle{color:#9a8aaa}
+h2{border-top-color:#2d1b4e}
+.footer{background:#241535;color:#9a8aaa}
+}
+</style>
+</head>
+<body>
+<h1>Bloom Privacy Policy</h1>
+<p class="subtitle">Private Wellness Tracker by ENERGENAI LLC</p>
+
+<h2>No Data Collection</h2>
+<p>Bloom stores all data exclusively in your browser's localStorage on your device. No data is ever sent to any server, cloud service, or third party.</p>
+
+<h2>No Accounts</h2>
+<p>Bloom does not require registration, login, or any personal identifying information.</p>
+
+<h2>No Analytics</h2>
+<p>We do not use cookies, tracking pixels, analytics services, or any form of usage monitoring.</p>
+
+<h2>No Network Requests</h2>
+<p>Bloom functions entirely offline. The only outbound connections are: (1) links you voluntarily tap (resources, crisis lines) which open in your browser, and (2) an <strong>optional</strong> feedback form in Settings that sends only your message type and text — no health data, no device info, no identifiers.</p>
+
+<h2>Backups</h2>
+<p>Exported backup files are encrypted with AES-256-GCM using a password you choose. Backup files are saved to your device only — we never see them.</p>
+
+<h2>Photos</h2>
+<p>Photos taken or imported are stored as compressed data within localStorage on your device. They are never uploaded or transmitted.</p>
+
+<h2>Deletion</h2>
+<p>You can permanently delete all data at any time via Settings. Uninstalling the app or clearing browser data also removes everything.</p>
+
+<h2>Medical Disclaimer</h2>
+<p>Bloom is not a medical device and is not FDA-approved or regulated. All health content is for <strong>educational and informational purposes only</strong>. Nothing in this app constitutes medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider.</p>
+
+<h2>Children's Privacy</h2>
+<p>Bloom is not intended for users under 18. We do not knowingly collect information from minors.</p>
+
+<h2>Changes to This Policy</h2>
+<p>If we update this policy, the new version will be posted at this URL with an updated effective date.</p>
+
+<div class="footer">
+Effective date: March 2, 2026<br>
+ENERGENAI LLC &middot; All rights reserved<br>
+Contact: tiamat@tiamat.live<br>
+App: <a href="https://tiamat.live/bloom" style="color:#c084fc">tiamat.live/bloom</a>
+</div>
+</body>
+</html>''', 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 # ============ APPS STORE ============
 APPS_CATALOG = {
