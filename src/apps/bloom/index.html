@@ -345,18 +345,22 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
     <div id="waterBarFill" style="height:100%;background:linear-gradient(90deg,var(--sky),var(--mint));border-radius:5px;transition:width .3s;width:0%"></div>
   </div>
   <div id="waterStatus" style="font-size:13px;color:var(--text-dim);text-align:center;margin-bottom:12px"></div>
-  <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
-    <button onclick="logWater(250);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)">+250ml</button>
-    <button onclick="logWater(500);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)">+500ml</button>
-    <button onclick="logWater(355);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)">+12oz</button>
-    <button onclick="logWater(-250);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--surface);color:var(--text-muted);font-size:12px;font-weight:500;border:1px solid var(--border)">Undo</button>
-  </div>
+  <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap" id="waterBtns"></div>
   <div style="margin-top:10px;font-size:10px;color:var(--text-muted);text-align:center;line-height:1.5" id="waterTip"></div>
 </div>
 
 <script>
 // ─── Constants ───────────────────────────────────────────────
 const STORAGE_KEY='bloom_data',SETTINGS_KEY='bloom_settings',PIN_KEY='bloom_pin';
+
+function toast(msg,ms){
+  ms=ms||4000;
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;background:var(--violet,#7C4DFF);color:#fff;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);max-width:90vw;text-align:center;animation:fadeIn .3s';
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove()},ms);
+}
 
 const JOURNEY_TYPES={
   mtf:{label:'Trans Feminine',desc:'Feminizing HRT — estrogen + anti-androgens'},
@@ -1731,8 +1735,9 @@ function renderDashboard(){
     </div>`;
   }
 
-  // Injection tracker — only if on injectable meds
-  if(D.meds.some(m=>!m.ended&&((m.route||'').toLowerCase().includes('injection')||m.name.toLowerCase().includes('im')||m.name.toLowerCase().includes('subq')))){
+  // Injection tracker — show if on HRT or has injectable meds
+  const hasInjectableMed=D.meds.some(m=>!m.ended&&((m.route||'').toLowerCase().includes('injection')||(m.route||'').toUpperCase()==='IM'||(m.route||'').toUpperCase()==='SUBQ'));
+  if(onHRT||hasInjectableMed||D.injections.length>0){
     const next=nextInjectionSite();
     h+=`<div class="panel"><h3>Injection Tracker</h3>
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Next suggested site: <strong style="color:var(--violet-deep)">${next}</strong></p>
@@ -1740,7 +1745,11 @@ function renderDashboard(){
         const last=D.injections.slice(-2).some(i=>i.site===s);
         return`<span class="inj-site${last?' recent':''}" title="${s}">${s.replace(/\s/g,'').slice(0,2)}</span>`;
       }).join('')}</div>
-      <button class="btn-small" style="margin-top:10px" onclick="logInjection()">Log Injection</button>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-small" style="flex:2" onclick="logInjection()">Log Injection</button>
+        ${D.injections.length?`<button class="btn-small" style="flex:1;background:var(--surface);color:var(--text-dim);border:1px solid var(--border)" onclick="showInjectionHistory()">History (${D.injections.length})</button>`:''}
+      </div>
+      ${D.injections.length?`<div style="margin-top:8px;font-size:11px;color:var(--text-muted)">Last: ${D.injections[D.injections.length-1].site}${D.injections[D.injections.length-1].med?' — '+esc(D.injections[D.injections.length-1].med):''} on ${D.injections[D.injections.length-1].date}</div>`:''}
     </div>`;
   }
 
@@ -1815,11 +1824,72 @@ function renderDashboard(){
 }
 
 function logInjection(){
-  const site=prompt('Injection site:\n'+INJECTION_SITES.join(', '),nextInjectionSite());
-  if(!site)return;
-  if(!INJECTION_SITES.includes(site.trim())){alert('Invalid site. Choose from: '+INJECTION_SITES.join(', '));return}
-  D.injections.push({date:today(),site:site.trim(),time:new Date().toLocaleTimeString()});
-  saveData();showView('dashboard');
+  const formId='injForm';
+  if(document.getElementById(formId))return;
+  const injectableMeds=D.meds.filter(m=>!m.ended&&((m.route||'').toLowerCase().includes('injection')||(m.route||'').toUpperCase()==='IM'||(m.route||'').toUpperCase()==='SUBQ'));
+  const allMeds=D.meds.filter(m=>!m.ended);
+  const next=nextInjectionSite();
+  const panel=document.createElement('div');
+  panel.id=formId;panel.className='panel fade-in';
+  panel.style.cssText='margin-bottom:12px;border:2px solid var(--violet)';
+  panel.innerHTML=`<h3>Log Injection</h3>
+    <div class="form-row"><label>Site</label><select id="injSite" style="flex:1">
+      ${INJECTION_SITES.map(s=>`<option value="${s}"${s===next?' selected':''}>${s}</option>`).join('')}
+    </select></div>
+    ${(injectableMeds.length||allMeds.length)?`<div class="form-row"><label>Medication</label><select id="injMed" style="flex:1">
+      <option value="">— select —</option>
+      ${(injectableMeds.length?injectableMeds:allMeds).map(m=>`<option value="${esc(m.name)}">${esc(m.name)} ${m.dose?'('+esc(m.dose)+')':''}</option>`).join('')}
+    </select></div>`:''}
+    <div class="form-row"><label>Dose</label><input type="text" id="injDose" placeholder="e.g. 0.5ml, 4mg" style="flex:1"></div>
+    <div class="form-row"><label>Notes</label><input type="text" id="injNotes" placeholder="optional — pain, bruising, etc." style="flex:1"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn-primary" style="flex:2" onclick="saveInjForm()">Log</button>
+      <button class="btn-secondary" style="flex:1" onclick="document.getElementById('injForm').remove()">Cancel</button>
+    </div>`;
+  const tracker=document.querySelector('[onclick="logInjection()"]');
+  if(tracker)tracker.parentElement.appendChild(panel);
+  else document.getElementById('content').appendChild(panel);
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function saveInjForm(){
+  const site=document.getElementById('injSite').value;
+  const med=(document.getElementById('injMed')||{}).value||'';
+  const dose=(document.getElementById('injDose')||{}).value.trim()||'';
+  const notes=(document.getElementById('injNotes')||{}).value.trim()||'';
+  D.injections.push({date:today(),site,time:new Date().toLocaleTimeString(),med,dose,notes});
+  saveData();
+  document.getElementById('injForm').remove();
+  showView('dashboard');
+  toast('Injection logged — '+site);
+}
+function showInjectionHistory(){
+  let h='<div class="fade-in"><div class="panel"><h3>Injection History</h3>';
+  if(!D.injections.length){
+    h+='<p style="color:var(--text-muted);text-align:center;padding:20px">No injections logged yet.</p>';
+  }else{
+    h+='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">';
+    h+='<tr style="border-bottom:2px solid var(--border)"><th style="text-align:left;padding:6px">Date</th><th style="text-align:left;padding:6px">Site</th><th style="text-align:left;padding:6px">Med</th><th style="text-align:left;padding:6px">Dose</th><th style="text-align:left;padding:6px">Time</th></tr>';
+    const sorted=D.injections.slice().reverse();
+    for(const inj of sorted){
+      h+=`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px;white-space:nowrap">${inj.date}</td>
+        <td style="padding:6px">${esc(inj.site)}</td>
+        <td style="padding:6px">${inj.med?esc(inj.med):'—'}</td>
+        <td style="padding:6px">${inj.dose?esc(inj.dose):'—'}</td>
+        <td style="padding:6px;white-space:nowrap">${inj.time||'—'}</td>
+      </tr>`;
+      if(inj.notes)h+=`<tr><td colspan="5" style="padding:2px 6px 6px;font-size:11px;color:var(--text-muted)">${esc(inj.notes)}</td></tr>`;
+    }
+    h+='</table></div>';
+    // Site rotation summary
+    const siteCounts={};D.injections.forEach(i=>{siteCounts[i.site]=(siteCounts[i.site]||0)+1});
+    h+='<div style="margin-top:12px;font-size:12px;color:var(--text-dim)"><strong>Site usage:</strong> ';
+    h+=Object.entries(siteCounts).sort((a,b)=>b[1]-a[1]).map(([s,c])=>s+' ('+c+'x)').join(', ');
+    h+='</div>';
+  }
+  h+='</div><button class="btn-secondary" onclick="showView(\'dashboard\')">Back to Dashboard</button></div>';
+  document.getElementById('content').innerHTML=h;
+  setTimeout(function(){document.getElementById('content').scrollTop=0;window.scrollTo(0,0)},0);
 }
 
 // ─── Active View (Exercises) ─────────────────────────────────
@@ -2155,12 +2225,31 @@ function renderLog(){
 }
 
 function renderLogHistory(){
-  const logs=D.logs.slice().sort((a,b)=>b.date.localeCompare(a.date));
+  // Merge daily logs and injections into one timeline
+  const items=[];
+  D.logs.forEach(l=>items.push({type:'log',date:l.date,data:l}));
+  D.injections.forEach(i=>items.push({type:'injection',date:i.date,time:i.time,data:i}));
+  items.sort((a,b)=>b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||''));
+
   let h='<div class="fade-in">';
-  if(!logs.length){
+  if(!items.length){
     h+=`<div class="empty-state"><div class="icon">&#128221;</div><p>No past entries yet.<br>Log your first day to start building your history.</p></div>`;
   }else{
-    for(const l of logs){
+    for(const item of items){
+      if(item.type==='injection'){
+        const i=item.data;
+        const dateStr=new Date(i.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+        h+=`<div class="history-item" style="border-left:3px solid var(--sky);padding-left:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="date">${dateStr}</div>
+            <span style="font-size:14px;background:var(--sky-pale);color:var(--sky-deep);padding:2px 8px;border-radius:8px;font-weight:600">Injection</span>
+          </div>
+          <div class="details" style="margin-top:4px">${esc(i.site)}${i.med?' — '+esc(i.med):''}${i.dose?' ('+esc(i.dose)+')':''} at ${i.time||'—'}</div>
+          ${i.notes?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${esc(i.notes)}</div>`:''}
+        </div>`;
+        continue;
+      }
+      const l=item.data;
       const dateStr=new Date(l.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
       const moodEmoji=l.mood?MOODS.find(m=>m.l===l.mood)?.e||'':'';
       const tags=(l.tags||[]).slice(0,5);
@@ -2500,8 +2589,7 @@ function showLabEntry(){
   h+=`<button class="btn-primary" id="saveLabBtn" onclick="saveLabEntry()">Save Lab Results</button>
     <button class="btn-secondary" onclick="renderLabs()">Cancel</button></div></div>`;
   document.getElementById('content').innerHTML=h;
-  document.getElementById('content').scrollTop=0;
-  window.scrollTo(0,0);
+  setTimeout(function(){document.getElementById('content').scrollTop=0;window.scrollTo(0,0)},0);
 }
 
 function saveLabEntry(){
@@ -3424,9 +3512,35 @@ function renderSettings(){
       </details>
     </div>
 
-    <div class="settings-group">
-      <div class="setting-row"><label>App Tutorial</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showView('dashboard');setTimeout(startTutorial,300)">Replay Tour</button></div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Walk through the app features step by step.</p>
+    <div class="settings-group"><h3>AI Health Assistant</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.5">Generate an anonymous prompt with your medical context to paste into any AI chatbot (ChatGPT, Claude, etc.). <strong>No personal info is included</strong> — no name, no dates, no location.</p>
+      <div class="section-title">What do you want to ask?</div>
+      <textarea id="aiQuestion" placeholder="e.g. Are my supplement stacks conflicting? What labs should I get? What should I expect at my current stage? How can I optimize my goals?" style="width:100%;min-height:70px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical;margin-bottom:8px"></textarea>
+      <button class="btn-primary" style="background:linear-gradient(135deg,var(--violet),var(--sky))" onclick="generateAIPrompt()">Generate AI Prompt</button>
+      <div id="aiPromptResult" style="display:none;margin-top:12px">
+        <textarea id="aiPromptText" readonly style="width:100%;min-height:200px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn-small" style="flex:1" onclick="navigator.clipboard.writeText(document.getElementById('aiPromptText').value).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy to Clipboard',1500)})">Copy to Clipboard</button>
+          <button class="btn-small" style="flex:1;background:var(--surface);color:var(--text-muted)" onclick="document.getElementById('aiPromptResult').style.display='none'">Hide</button>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text-muted);line-height:1.5">Review the prompt before sharing. No names, birthdays, or identifying details are included — only anonymized medical context.</div>
+      </div>
+    </div>
+
+    <div class="settings-group"><h3>Reminders</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">${_isCapacitor?'Native reminders — notifications fire even when the app is closed. Scheduled on-device, no network needed.':'Get notified when it\'s time to take your meds and supplements. Notifications work while the app is open.'}</p>
+      ${_isCapacitor?`<div id="bloomNotifPermRow" style="margin-bottom:12px"><span style="font-size:12px;color:var(--text-muted)">Checking notification status...</span></div>`:``}
+      ${['am','pm','bedtime'].map(slot=>{
+        const r=S.reminders[slot];
+        const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
+        const icon=slot==='am'?'&#9728;':slot==='pm'?'&#9788;':'&#9790;';
+        return`<div class="setting-row" style="flex-wrap:wrap;gap:8px">
+          <label style="flex:1">${icon} ${label}</label>
+          <input type="time" value="${r.time}" style="width:110px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px" onchange="S.reminders.${slot}.time=this.value;saveSettings();initReminders()">
+          <div class="toggle ${r.enabled?'on':''}" onclick="S.reminders.${slot}.enabled=!S.reminders.${slot}.enabled;saveSettings();initReminders();renderSettings()"></div>
+        </div>`;
+      }).join('')}
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${_isCapacitor?'Reminders are scheduled via Android alarm — they work even after closing the app or rebooting.':(typeof Notification!=='undefined'&&Notification.permission==='granted'?'Notifications enabled':'Notifications will be requested when you enable a reminder')}</p>
     </div>
 
     <div class="settings-group"><h3>Security</h3>
@@ -3485,28 +3599,6 @@ function renderSettings(){
       </div>`:''}
     </div>
 
-    <div class="settings-group"><h3>Reminders</h3>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">${_isCapacitor?'Native reminders — notifications fire even when the app is closed. Scheduled on-device, no network needed.':'Get notified when it\'s time to take your meds and supplements. Notifications work while the app is open.'}</p>
-      ${_isCapacitor?`<div id="bloomNotifPermRow" style="margin-bottom:12px"><span style="font-size:12px;color:var(--text-muted)">Checking notification status...</span></div>`:``}
-      ${['am','pm','bedtime'].map(slot=>{
-        const r=S.reminders[slot];
-        const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
-        const icon=slot==='am'?'&#9728;':slot==='pm'?'&#9788;':'&#9790;';
-        return`<div class="setting-row" style="flex-wrap:wrap;gap:8px">
-          <label style="flex:1">${icon} ${label}</label>
-          <input type="time" value="${r.time}" style="width:110px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px" onchange="S.reminders.${slot}.time=this.value;saveSettings();initReminders()">
-          <div class="toggle ${r.enabled?'on':''}" onclick="S.reminders.${slot}.enabled=!S.reminders.${slot}.enabled;saveSettings();initReminders();renderSettings()"></div>
-        </div>`;
-      }).join('')}
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${_isCapacitor?'Reminders are scheduled via Android alarm — they work even after closing the app or rebooting.':(typeof Notification!=='undefined'&&Notification.permission==='granted'?'Notifications enabled':'Notifications will be requested when you enable a reminder')}</p>
-    </div>
-
-    <div class="settings-group"><h3>Backup & Restore</h3>
-      <div class="setting-row"><label>Backup data</label><button style="color:var(--mint-deep);font-size:14px;font-weight:600" onclick="exportBackup()">Download</button></div>
-      <div class="setting-row"><label>Restore backup</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="importBackup()">Upload</button></div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Encrypted backups — password-protected, no cloud.</p>
-    </div>
-
     <div class="settings-group"><h3>Data Summary</h3>
       <div class="setting-row"><label>Daily logs</label><span style="color:var(--text-dim)">${D.logs.length}</span></div>
       <div class="setting-row"><label>Lab panels</label><span style="color:var(--text-dim)">${D.labs.length}</span></div>
@@ -3519,19 +3611,10 @@ function renderSettings(){
       <div class="setting-row"><label>Storage used</label><span style="color:var(--text-dim)">${Math.round(storageUsed()/1024)} KB</span></div>
     </div>
 
-    <div class="settings-group"><h3>AI Health Assistant</h3>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.5">Generate an anonymous prompt with your medical context to paste into any AI chatbot (ChatGPT, Claude, etc.). <strong>No personal info is included</strong> — no name, no dates, no location.</p>
-      <div class="section-title">What do you want to ask?</div>
-      <textarea id="aiQuestion" placeholder="e.g. Are my supplement stacks conflicting? What labs should I get? What should I expect at my current stage? How can I optimize my goals?" style="width:100%;min-height:70px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical;margin-bottom:8px"></textarea>
-      <button class="btn-primary" style="background:linear-gradient(135deg,var(--violet),var(--sky))" onclick="generateAIPrompt()">Generate AI Prompt</button>
-      <div id="aiPromptResult" style="display:none;margin-top:12px">
-        <textarea id="aiPromptText" readonly style="width:100%;min-height:200px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn-small" style="flex:1" onclick="navigator.clipboard.writeText(document.getElementById('aiPromptText').value).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy to Clipboard',1500)})">Copy to Clipboard</button>
-          <button class="btn-small" style="flex:1;background:var(--surface);color:var(--text-muted)" onclick="document.getElementById('aiPromptResult').style.display='none'">Hide</button>
-        </div>
-        <div style="margin-top:6px;font-size:10px;color:var(--text-muted);line-height:1.5">Review the prompt before sharing. No names, birthdays, or identifying details are included — only anonymized medical context.</div>
-      </div>
+    <div class="settings-group"><h3>Backup & Restore</h3>
+      <div class="setting-row"><label>Backup data</label><button style="color:var(--mint-deep);font-size:14px;font-weight:600" onclick="exportBackup()">Download</button></div>
+      <div class="setting-row"><label>Restore backup</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="importBackup()">Upload</button></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Encrypted backups — password-protected, no cloud.</p>
     </div>
 
     <button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>
@@ -3585,8 +3668,13 @@ function renderSettings(){
       </details>
     </div>
 
+    <div class="settings-group">
+      <div class="setting-row"><label>App Tutorial</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showView('dashboard');setTimeout(startTutorial,300)">Replay Tour</button></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Walk through the app features step by step.</p>
+    </div>
+
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-      <strong style="color:var(--violet-deep)">Bloom</strong> v3.0 — Private Wellness Tracker<br>
+      <strong style="color:var(--violet-deep)">Bloom</strong> v3.2 — Private Wellness Tracker<br>
       All data stored locally. No accounts. No cloud.<br>
       Your journey. Your data. Your device only.<br>
       <span style="font-size:11px">by ENERGENAI LLC</span>
@@ -3642,6 +3730,8 @@ function applyStealth(){
     title.textContent='Bloom';document.title='Bloom — Private Wellness Tracker';if(svg)svg.style.display='';
     if(_isCapacitor){try{window.Capacitor.Plugins.Stealth.disable()}catch(e){}}
   }
+  // Re-schedule notifications after stealth toggle (component change can disrupt alarms)
+  if(_isCapacitor)setTimeout(()=>initReminders(),500);
 }
 
 // ─── Theme ───────────────────────────────────────────────────
@@ -4005,42 +4095,76 @@ ${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${esc(i.si
 
   // Toolbar
   const toolbar=document.createElement('div');
-  toolbar.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surface,#f8f0ff);border-bottom:1px solid var(--border,#e8d5f5);flex-shrink:0';
+  toolbar.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--surface,#f8f0ff);border-bottom:1px solid var(--border,#e8d5f5);flex-shrink:0';
   toolbar.innerHTML=`
-    <button onclick="document.getElementById('reportOverlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text,#333);padding:4px 8px">&#10005;</button>
+    <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text,#333);padding:4px 8px" id="reportCloseBtn">&#10005;</button>
     <span style="flex:1;font-weight:700;font-size:15px;color:var(--text,#333)">Health Report</span>
-    <button onclick="bloomReportSave('print')" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border,#e8d5f5);background:var(--surface,#fff);color:var(--text,#333);font-size:13px;font-weight:600;cursor:pointer">Print / PDF</button>
-    <button onclick="bloomReportSave('html')" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--violet,#7C4DFF),var(--sky,#64B5F6));color:#fff;font-size:13px;font-weight:600;cursor:pointer">Save File</button>`;
+    <button id="reportSaveBtn" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--violet,#7C4DFF),var(--sky,#64B5F6));color:#fff;font-size:13px;font-weight:600;cursor:pointer">Share / Save</button>
+    <button id="reportPrintBtn" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border,#e8d5f5);background:var(--surface,#fff);color:var(--text,#333);font-size:13px;font-weight:600;cursor:pointer">Print / PDF</button>`;
   overlay.appendChild(toolbar);
 
-  // Report content in iframe
+  const reportHtml=html.replace('<script>window.onload=function(){window.print()}<\/script>','');
+
+  // Render report in iframe via srcdoc (works in WebView and browsers)
   const iframe=document.createElement('iframe');
   iframe.style.cssText='flex:1;border:none;width:100%';
+  iframe.setAttribute('sandbox','allow-same-origin');
   overlay.appendChild(iframe);
   document.body.appendChild(overlay);
 
-  // Write report HTML into iframe (without auto-print)
-  const reportHtml=html.replace('<script>window.onload=function(){window.print()}<\/script>','');
-  setTimeout(()=>{try{iframe.contentDocument.open();iframe.contentDocument.write(reportHtml);iframe.contentDocument.close()}catch(e){}},50);
+  // Write content after iframe is in DOM
+  setTimeout(function(){
+    try{
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(reportHtml);
+      iframe.contentDocument.close();
+    }catch(e){
+      // Fallback: use srcdoc
+      iframe.srcdoc=reportHtml;
+    }
+  },50);
 
-  // Save functions
-  window.bloomReportSave=function(mode){
-    if(mode==='print'){
-      // Try native print on the iframe content
-      try{iframe.contentWindow.print()}catch(e){
-        // Fallback: open in new tab for printing
-        const b=new Blob([reportHtml],{type:'text/html'});
-        const u=URL.createObjectURL(b);
-        window.open(u);setTimeout(()=>URL.revokeObjectURL(u),30000);
+  // Wire up buttons via addEventListener (inline onclick can fail on Android WebView)
+  document.getElementById('reportCloseBtn').addEventListener('click',function(){
+    document.getElementById('reportOverlay').remove();
+  });
+  document.getElementById('reportPrintBtn').addEventListener('click',function(){
+    // Share as HTML file via Web Share API (works on Android), fallback to data URI
+    try{
+      if(navigator.share&&navigator.canShare){
+        const file=new File([reportHtml],'bloom-health-report-'+today()+'.html',{type:'text/html'});
+        if(navigator.canShare({files:[file]})){
+          navigator.share({title:'Bloom Health Report',files:[file]});
+          return;
+        }
       }
-    }else{
-      // Save as .html file
+    }catch(e){}
+    // Fallback: open as data URI (user can then use browser print/share)
+    try{
+      const dataUri='data:text/html;charset=utf-8,'+encodeURIComponent(reportHtml);
+      window.open(dataUri,'_blank');
+    }catch(e){toast('Could not open report')}
+  });
+  document.getElementById('reportSaveBtn').addEventListener('click',function(){
+    // Share as file via Web Share API, fallback to data URI download
+    try{
+      if(navigator.share&&navigator.canShare){
+        const file=new File([reportHtml],'bloom-health-report-'+today()+'.html',{type:'text/html'});
+        if(navigator.canShare({files:[file]})){
+          navigator.share({title:'Bloom Health Report',files:[file]});
+          return;
+        }
+      }
+    }catch(e){}
+    // Fallback: Blob download (works in browsers, may not work in all WebViews)
+    try{
       const b=new Blob([reportHtml],{type:'text/html'});
       const a=document.createElement('a');a.href=URL.createObjectURL(b);
       a.download='bloom-health-report-'+today()+'.html';
-      a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-    }
-  };
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      setTimeout(function(){URL.revokeObjectURL(a.href)},5000);
+    }catch(e){toast('Could not save file')}
+  });
 }
 
 async function deriveKey(pass,salt){
@@ -4151,15 +4275,20 @@ function toggleWaterPanel(){
   p.style.display=p.style.display==='none'?'block':'none';
   updateWaterUI();
 }
+function fmtWater(ml){
+  const imp=S.unitSystem==='imperial';
+  if(imp){const oz=ml/29.5735;return oz>=32?(oz/32).toFixed(1)+' qt':oz.toFixed(0)+' oz';}
+  return ml>=1000?(ml/1000).toFixed(1)+' L':ml+' ml';
+}
 function updateWaterUI(){
   const goal=getWaterGoal();
   const current=getTodayWater();
   const pct=Math.min(100,Math.round(current/goal.ml*100));
-  document.getElementById('waterCount').textContent=current>=1000?(current/1000).toFixed(1)+'L':current+'ml';
+  document.getElementById('waterCount').textContent=fmtWater(current);
   const fill=document.getElementById('waterBarFill');
   if(fill)fill.style.width=pct+'%';
   const label=document.getElementById('waterGoalLabel');
-  if(label)label.textContent=`Goal: ${goal.ml>=1000?(goal.ml/1000).toFixed(1)+'L':goal.ml+'ml'}`;
+  if(label)label.textContent='Goal: '+fmtWater(goal.ml);
   const status=document.getElementById('waterStatus');
   if(status){
     if(pct>=100)status.innerHTML='<span style="color:var(--mint-deep);font-weight:600">Goal reached! Great hydration today.</span>';
@@ -4167,6 +4296,23 @@ function updateWaterUI(){
     else if(pct>=50)status.innerHTML=`<strong>${pct}%</strong> — good progress, stay on track`;
     else if(pct>=25)status.innerHTML=`<strong>${pct}%</strong> — drink more water today`;
     else status.innerHTML=`<strong>${pct}%</strong> — time to hydrate!`;
+  }
+  // Render water buttons based on unit system
+  const btns=document.getElementById('waterBtns');
+  if(btns){
+    const imp=S.unitSystem==='imperial';
+    const bs=imp?'padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)':'padding:8px 14px;border-radius:10px;background:var(--sky-pale);color:var(--sky-deep);font-size:12px;font-weight:600;border:1px solid rgba(129,212,250,.3)';
+    if(imp){
+      btns.innerHTML=`<button onclick="logWater(237);event.stopPropagation()" style="${bs}">+1 cup</button>`
+        +`<button onclick="logWater(355);event.stopPropagation()" style="${bs}">+12 oz</button>`
+        +`<button onclick="logWater(473);event.stopPropagation()" style="${bs}">+16 oz</button>`
+        +`<button onclick="logWater(-237);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--surface);color:var(--text-muted);font-size:12px;font-weight:500;border:1px solid var(--border)">Undo</button>`;
+    }else{
+      btns.innerHTML=`<button onclick="logWater(250);event.stopPropagation()" style="${bs}">+250 ml</button>`
+        +`<button onclick="logWater(500);event.stopPropagation()" style="${bs}">+500 ml</button>`
+        +`<button onclick="logWater(1000);event.stopPropagation()" style="${bs}">+1 L</button>`
+        +`<button onclick="logWater(-250);event.stopPropagation()" style="padding:8px 14px;border-radius:10px;background:var(--surface);color:var(--text-muted);font-size:12px;font-weight:500;border:1px solid var(--border)">Undo</button>`;
+    }
   }
   const tip=document.getElementById('waterTip');
   if(tip){
@@ -4213,22 +4359,27 @@ async function initReminders(){
 
   if(_isCapacitor){
     // ── Native path: Capacitor Local Notifications ──
+    try{
     const LN=window.Capacitor?.Plugins?.LocalNotifications;
     if(!LN)return;
-    if(!anyEnabled){
-      const pending=await LN.getPending();
-      if(pending.notifications.length>0){
-        await LN.cancel({notifications:pending.notifications.map(n=>({id:n.id}))});
-      }
-      return;
-    }
-    const perm=await LN.requestPermissions();
-    if(perm.display!=='granted'){return}
 
-    // Cancel existing before rescheduling
-    const pending=await LN.getPending();
-    if(pending.notifications.length>0){
+    // Cancel all existing notifications first
+    try{const pending=await LN.getPending();
+    if(pending.notifications&&pending.notifications.length>0){
       await LN.cancel({notifications:pending.notifications.map(n=>({id:n.id}))});
+    }}catch(e){}
+
+    if(!anyEnabled)return;
+
+    // Check permission — only request if not yet decided
+    let perm=await LN.checkPermissions();
+    if(perm.display==='prompt'||perm.display==='prompt-with-rationale'){
+      perm=await LN.requestPermissions();
+    }
+    if(perm.display!=='granted'){
+      console.warn('[Bloom] Notification permission not granted:',perm.display);
+      toast('Notification permission not granted — enable in Settings > Apps > Bloom');
+      return;
     }
 
     // Schedule daily repeating for each enabled slot
@@ -4241,15 +4392,21 @@ async function initReminders(){
       const[hh,mm]=r.time.split(':').map(Number);
       notifs.push({
         id:slotIds[slot],
-        title:`Bloom — ${slotLabels[slot]} Reminder`,
+        title:`Bloom \u2014 ${slotLabels[slot]} Reminder`,
         body:`${slotEmoji[slot]} Time to log your meds & supplements!`,
-        schedule:{on:{hour:hh,minute:mm},every:'day',allowWhileIdle:true},
+        schedule:{on:{hour:hh,minute:mm},allowWhileIdle:true},
         autoCancel:true
       });
     }
     if(notifs.length>0){
       await LN.schedule({notifications:notifs});
+      console.log('[Bloom] Scheduled',notifs.length,'notification(s)');
+      // Verify scheduling
+      const verify=await LN.getPending();
+      console.log('[Bloom] Pending after schedule:',JSON.stringify(verify));
+      toast(notifs.length+' reminder(s) set — notifications will fire even when app is closed');
     }
+    }catch(e){console.error('[Bloom] initReminders error:',e);toast('Reminder error: '+e.message)}
   }else{
     // ── Browser path: setTimeout + Web Notification API ──
     if(!anyEnabled)return;
