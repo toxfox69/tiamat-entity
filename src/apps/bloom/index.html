@@ -554,7 +554,7 @@ const FTM_MEDS={
 const SUPPLEMENT_STACKS={
   'Skin & Hair':{
     desc:'Support healthy skin, hair, and nails',
-    items:['Biotin 5000mcg','Vitamin E 400IU','Vitamin C 1000mg','Zinc 30mg','Collagen peptides 10g','MSM 1000mg']
+    items:['Biotin 5000mcg','Vitamin E 400IU','Vitamin C 1000mg','Zinc 30mg','Copper 2mg','Collagen peptides 10g','MSM 1000mg']
   },
   'Bone Health':{
     desc:'Maintain bone density (important on HRT)',
@@ -570,11 +570,11 @@ const SUPPLEMENT_STACKS={
   },
   'Masculinization Support':{
     desc:'Natural supplements (not a replacement for HRT)',
-    items:['Zinc 30mg','Vitamin D3 5000IU','Ashwagandha 600mg','Fenugreek 600mg','D-Aspartic acid 3g','Magnesium 400mg']
+    items:['Zinc 30mg','Copper 2mg','Vitamin D3 5000IU','Ashwagandha 600mg','Fenugreek 600mg','D-Aspartic acid 3g','Magnesium 400mg']
   },
   'Recovery & Healing':{
     desc:'Post-procedure or general healing support',
-    items:['Vitamin C 2000mg','Zinc 50mg','Arnica montana','Bromelain 500mg','Protein 30g+','Iron 18mg']
+    items:['Vitamin C 2000mg','Zinc 50mg','Copper 2mg','Arnica montana','Bromelain 500mg','Protein 30g+','Iron 18mg']
   },
   'Heart & Circulation':{
     desc:'Cardiovascular support (monitor on HRT)',
@@ -582,7 +582,7 @@ const SUPPLEMENT_STACKS={
   },
   'Fluid & Seminal Production':{
     desc:'Increase volume and fluid production',
-    items:['Zinc picolinate 50mg','Lecithin (Phosphatidylcholine) 1200mg','L-Arginine 1000mg','Pygeum africanum 100mg','d-Alpha-tocopherol (Vit E) 400IU','Selenomethionine (Selenium) 200mcg','L-Carnitine 500mg','Bromelain 500mg']
+    items:['Zinc picolinate 50mg','Copper 2mg','Lecithin (Phosphatidylcholine) 1200mg','L-Arginine 1000mg','Pygeum africanum 100mg','d-Alpha-tocopherol (Vit E) 400IU','Selenomethionine (Selenium) 200mcg','L-Carnitine 500mg','Bromelain 500mg']
   },
   'Lactation Induction':{
     desc:'Support milk production (requires adequate E2 + progesterone priming)',
@@ -610,6 +610,7 @@ const SUPPLEMENT_STACKS={
 const SUPP_ALIASES={
   'd-alpha-tocopherol':'vitamin e','tocopherol':'vitamin e','vit e':'vitamin e',
   'zinc picolinate':'zinc','zinc citrate':'zinc','zinc gluconate':'zinc',
+  'copper bisglycinate':'copper','copper gluconate':'copper','copper citrate':'copper','cupric':'copper',
   'trigonella foenum-graecum':'fenugreek',
   'foeniculum vulgare':'fennel','fennel seed':'fennel',
   'trifolium pratense':'red clover','red clover extract':'red clover',
@@ -681,7 +682,8 @@ const SUPP_SCHEDULE={
   'vitamin k2':{time:'PM',context:'with dinner',note:'Fat-soluble — synergizes with D3'},
   'omega-3':{time:'PM',context:'with dinner',note:'Fat-soluble — take with food to reduce reflux'},
   'calcium':{time:'PM',context:'with dinner',note:'Separate from iron/zinc by 2+ hours'},
-  'zinc':{time:'PM',context:'with dinner',note:'Take with food; separate from calcium if possible'},
+  'zinc':{time:'PM',context:'with dinner',note:'Take with food; separate from calcium if possible; pair with copper'},
+  'copper':{time:'AM',context:'with breakfast',note:'Take 2+ hours away from zinc for best absorption'},
   'saw palmetto':{time:'PM',context:'with dinner',note:'Fat-soluble anti-androgen'},
   'evening primrose':{time:'PM',context:'with dinner',note:'GLA is fat-soluble'},
   'borage':{time:'PM',context:'with dinner',note:'GLA source — take with fat'},
@@ -883,10 +885,10 @@ function getMedTypes(){
 
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
-function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],water:{}}}
+function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{}}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
-function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[]}}
+function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[],reminders:{am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}}}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
 function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
 
@@ -895,7 +897,9 @@ if(!D.photos)D.photos=[];
 if(!D.supplements)D.supplements=[];
 if(!D.phases)D.phases=[];
 if(!D.supplementLog)D.supplementLog=[];
+if(!D.medLog)D.medLog=[];
 if(!S.journeyType)S.journeyType='mtf';
+if(!S.reminders)S.reminders={am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}};
 
 // ─── Calculations ────────────────────────────────────────────
 function daysOnHRT(){if(!D.startDate)return 0;return Math.floor((new Date()-new Date(D.startDate))/864e5)}
@@ -949,6 +953,12 @@ function generateAlerts(){
     if(bicalMed){const bicalDays=Math.floor((new Date()-new Date(bicalMed.started))/864e5);
       if(bicalDays<180){const lastALT=D.labs.filter(l=>l.results.some(r=>r.name==='ALT')).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
         if(!lastALT||Math.floor((new Date()-new Date(lastALT.date))/864e5)>35)alerts.push({type:'warning',msg:'Monthly liver function tests recommended during first 6 months of bicalutamide.'})}}
+  }
+
+  // Zinc without copper
+  const activeSupps=D.supplements.filter(s=>!s.ended).map(s=>normalizeSuppName(s.name));
+  if(activeSupps.includes('zinc')&&!activeSupps.includes('copper')){
+    alerts.push({type:'warning',msg:'You\'re taking zinc without copper. Zinc depletes copper over time — add Copper 2mg (take AM, separate from zinc).'});
   }
 
   const prl=latestLab('Prolactin');if(prl&&prl.value>50)alerts.push({type:'warning',msg:`Prolactin is ${prl.value} ng/mL (elevated). Discuss imaging with your provider.`});
@@ -1184,24 +1194,85 @@ function renderDashboard(){
   const alerts=generateAlerts();
   if(alerts.length){for(const a of alerts)h+=`<div class="alert-box ${a.type}">${a.msg}</div>`}
 
-  // My Goals panel
-  const goals=S.goals||[];
-  if(goals.length){
-    h+=`<div class="panel"><h3>My Goals</h3><div style="display:flex;flex-wrap:wrap;gap:4px">`;
-    for(const[cat,items]of Object.entries(BODY_GOALS)){
-      for(const g of items){
-        if(goals.includes(g.id))h+=`<span style="display:inline-block;padding:4px 10px;border-radius:10px;font-size:12px;font-weight:500;background:var(--violet-pale);color:var(--violet-deep)">${g.label}</span>`;
+  // ── Today's Plan ──
+  const td=today();
+  const activeMeds=D.meds.filter(m=>!m.ended);
+  const activeSups=D.supplements.filter(s=>!s.ended);
+  const hasPlan=activeMeds.length||activeSups.length;
+
+  if(hasPlan){
+    const medLogToday=D.medLog.find(l=>l.date===td)||{date:td,taken:[]};
+    const suppLogToday=D.supplementLog.find(l=>l.date===td)||{date:td,taken:[]};
+    h+=`<div class="panel"><h3>Today's Plan</h3>
+      <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>`;
+
+    // Medications checklist
+    if(activeMeds.length){
+      const medsTaken=activeMeds.filter(m=>medLogToday.taken.includes(m.id||m.name)).length;
+      h+=`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--violet-deep)">Medications</div>
+        <div style="font-size:11px;color:var(--text-muted)">${medsTaken}/${activeMeds.length} taken</div></div>`;
+      for(const m of activeMeds){
+        const mid=m.id||m.name;
+        const taken=medLogToday.taken.includes(mid);
+        h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?'var(--violet)':'var(--border)'};background:${taken?'var(--violet-pale)':'transparent'};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleMed('${mid.replace(/'/g,"\\'")}')">${taken?'&#10003;':''}</button>
+          <div style="flex:1"><div style="font-size:14px;font-weight:500">${m.name}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${m.dose||''} ${m.frequency?'— '+m.frequency:''}</div></div>
+        </div>`;
+      }
+      h+=`</div>`;
+    }
+
+    // Supplements checklist
+    if(activeSups.length){
+      const suppsTaken=activeSups.filter(s=>suppLogToday.taken.includes(s.id)).length;
+      h+=`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--mint-deep)">Supplements</div>
+        <div style="font-size:11px;color:var(--text-muted)">${suppsTaken}/${activeSups.length} taken</div></div>`;
+      for(const s of activeSups){
+        const taken=suppLogToday.taken.includes(s.id);
+        h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?'var(--mint)':'var(--border)'};background:${taken?'var(--mint-pale)':'transparent'};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleSupp('${s.id}')">${taken?'&#10003;':''}</button>
+          <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${s.dose||''} ${s.timing?'— '+s.timing:''}</div></div>
+        </div>`;
+      }
+      h+=`</div>`;
+    }
+
+    // Daily Schedule
+    if(activeSups.length){
+      const schedule=generateSchedule();
+      const hasItems=Object.values(schedule).some(g=>g.length>0);
+      if(hasItems){
+        const timeGroups=[
+          {key:'am_empty',label:'AM — Empty Stomach',color:'#FFB74D',time:'30 min before breakfast'},
+          {key:'am_food',label:'AM — With Breakfast',color:'#FF8A65',time:'With your first meal'},
+          {key:'pm',label:'PM — With Dinner',color:'#7E57C2',time:'With your evening meal'},
+          {key:'bedtime',label:'Bedtime',color:'#5C6BC0',time:'30 min before sleep'},
+          {key:'split',label:'Split Throughout Day',color:'#26A69A',time:'Divide across meals'},
+          {key:'anytime',label:'Flexible Timing',color:'#78909C',time:'Take when convenient'}
+        ];
+        h+=`<div style="margin-top:4px"><div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">Daily Schedule</div>`;
+        for(const tg of timeGroups){
+          const items=schedule[tg.key];
+          if(!items.length)continue;
+          h+=`<div style="margin:6px 0;padding:8px 10px;background:${tg.color}11;border-left:3px solid ${tg.color};border-radius:0 10px 10px 0">
+            <div style="font-size:12px;font-weight:600;color:${tg.color};margin-bottom:2px">${tg.label}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">${tg.time}</div>`;
+          for(const item of items){
+            h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:12px">
+              <span>${item.supp.name} <span style="color:var(--text-muted);font-size:10px">${item.supp.dose||''}</span></span>
+              ${item.note?`<span style="font-size:10px;color:var(--text-dim);max-width:50%;text-align:right">${item.note}</span>`:''}
+            </div>`;
+          }
+          h+=`</div>`;
+        }
+        h+=`</div>`;
       }
     }
     h+=`</div>`;
-    const stacks=getGoalStacks();
-    if(stacks.length){
-      h+=`<div style="margin-top:8px;font-size:11px;color:var(--text-muted)">Suggested stacks: ${stacks.map(s=>`<span style="color:var(--violet-deep);font-weight:500">${s}</span>`).join(' · ')}</div>`;
-    }
-    h+=`</div>`;
-  }else{
-    h+=`<div class="panel" style="cursor:pointer" onclick="showView('settings')"><h3>Set Your Goals</h3>
-      <p style="font-size:13px;color:var(--text-dim)">Tap to choose what you're working toward — personalizes tracking, supplements, and AI prompts.</p></div>`;
   }
 
   // Quick stats — labs, measurements, vitals
@@ -1236,27 +1307,6 @@ function renderDashboard(){
       <div style="display:flex;gap:4px;margin-top:10px">${TANNER_STAGES.map((_,i)=>`<button style="flex:1;height:6px;border-radius:3px;background:${i<S.tannerStage?'var(--violet)':'var(--border)'};cursor:pointer" onclick="S.tannerStage=${i+1};saveSettings();showView('dashboard')"></button>`).join('')}</div>
       <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:4px">Tap to update stage</p>
     </div>`;
-  }
-
-  // Active medications — only if they have any
-  const activeMeds=D.meds.filter(m=>!m.ended);
-  if(activeMeds.length){
-    h+=`<div class="panel"><h3>Active Medications</h3>`;
-    for(const m of activeMeds){
-      h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div><div style="font-size:14px;font-weight:500">${m.name}</div><div style="font-size:12px;color:var(--text-muted)">${m.dose} — ${m.frequency}</div></div>
-        <div style="font-size:11px;color:var(--text-muted)">${m.route||''}</div>
-      </div>`;
-    }
-    h+=`</div>`;
-  }
-
-  // Active supplements
-  const activeSups=D.supplements.filter(s=>s.active!==false);
-  if(activeSups.length){
-    h+=`<div class="panel"><h3>Active Supplements (${activeSups.length})</h3>`;
-    h+=`<div style="display:flex;flex-wrap:wrap;gap:4px">${activeSups.map(s=>`<span style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:12px;background:var(--mint-pale);color:var(--mint-deep)">${s.name}</span>`).join('')}</div>`;
-    h+=`</div>`;
   }
 
   // Injection tracker — only if on injectable meds
@@ -1339,7 +1389,7 @@ function renderDashboard(){
   </div>`;
 
   h+=`<div style="text-align:center;padding:12px;font-size:11px;color:var(--text-muted)">
-    ${jLabel}${onHRT?' · On HRT':' · No HRT'}${goals.length?' · '+goals.length+' goals':''} · <span style="cursor:pointer;color:var(--violet-deep)" onclick="showView('settings')">Edit</span>
+    ${jLabel}${onHRT?' · On HRT':' · No HRT'}${(S.goals||[]).length?' · '+(S.goals||[]).length+' goals':''} · <span style="cursor:pointer;color:var(--violet-deep)" onclick="showView('settings')">Edit</span>
   </div>`;
 
   h+='</div>';
@@ -1865,7 +1915,13 @@ const DOSE_DB={
     reasons:{low:'General maintenance',high:'Increased need detected'},
     adjust(ctx){let d=30;if(ctx.weight>200)d=50;if(ctx.weight<130)d=25;if(ctx.hasLowT&&ctx.isFtm)d=50;return d},
     why(ctx){const parts=['Supports immune function, wound healing, and hormone metabolism'];if(ctx.weight>200)parts.push('Higher dose for body weight >200lbs');if(ctx.hasLowT&&ctx.isFtm)parts.push('Zinc supports testosterone production');return parts},
-    interactions:['Monitor potassium if on spironolactone','Take with food to avoid nausea','Competes with copper absorption — consider copper 2mg if >3 months at 50mg']
+    interactions:['Monitor potassium if on spironolactone','Take with food to avoid nausea','Competes with copper absorption — copper auto-paired when zinc is active']
+  },
+  'Copper':{
+    base:2,unit:'mg',max:2,
+    adjust(ctx){return 2},
+    why(ctx){return['Essential trace mineral — zinc depletes copper stores over time','2mg balances zinc intake at any dose up to 50mg','Deficiency causes anemia, bone loss, and neurological issues']},
+    interactions:['Take 2+ hours away from zinc (they compete for absorption)','Morning with breakfast while zinc is taken at dinner','Safe and necessary at 2mg when supplementing zinc']
   },
   'Lecithin (Phosphatidylcholine)':{
     base:1200,unit:'mg',max:2400,
@@ -2072,71 +2128,22 @@ function renderSupps(){
   h+=`<div style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,rgba(255,167,38,.1),rgba(239,83,80,.08));border:1px solid rgba(255,167,38,.25);border-radius:14px;font-size:12px;color:var(--peach-deep);line-height:1.6">
     <strong>&#9888; Not medical advice</strong> — Dosing ranges shown are community-reported and from published research. Individual needs vary. Always consult your healthcare provider before starting or changing supplements, especially while on HRT.</div>`;
 
-  // Daily checklist
+  // Active supplements list (management only — checklist is on Dashboard)
   if(D.supplements.filter(s=>!s.ended).length){
-    h+=`<div class="panel"><h3>Today's Supplements</h3>
-      <div class="panel-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>`;
+    h+=`<div class="panel"><h3>Active Supplements</h3>
+      <div class="panel-sub">${D.supplements.filter(s=>!s.ended).length} active — check off daily doses on the Dashboard</div>`;
     for(const s of D.supplements.filter(s=>!s.ended)){
-      const taken=todayLog.taken.includes(s.id);
       const doseCard=renderDoseCard(s.name);
       h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:10px">
-          <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?"var(--mint)":"var(--border)"};background:${taken?"var(--mint-pale)":"transparent"};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center" onclick="toggleSupp('${s.id}')">${taken?"&#10003;":""}</button>
+        <div style="display:flex;align-items:center;justify-content:space-between">
           <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${s.dose||""} ${s.timing||""}</div></div>
+            <div style="font-size:11px;color:var(--text-muted)">${s.dose||""} ${s.timing?'— '+s.timing:""}</div></div>
           <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderStack()">Stop</button>
         </div>
         ${doseCard?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--violet-deep);cursor:pointer;font-weight:600;padding:4px 0">View personalized dosing</summary>${doseCard}</details>`:""}
       </div>`;
     }
-    const taken=todayLog.taken.length,total=D.supplements.filter(s=>!s.ended).length;
-    h+=`<div style="margin-top:10px;font-size:12px;color:var(--text-muted)">${taken}/${total} taken today</div></div>`;
-  }
-
-  // Daily Schedule
-  if(D.supplements.filter(s=>!s.ended).length){
-    const schedule=generateSchedule();
-    const hasItems=Object.values(schedule).some(g=>g.length>0);
-    if(hasItems){
-      const timeGroups=[
-        {key:'am_empty',label:'AM \u2014 Empty Stomach',color:'#FFB74D',time:'30 min before breakfast'},
-        {key:'am_food',label:'AM \u2014 With Breakfast',color:'#FF8A65',time:'With your first meal'},
-        {key:'pm',label:'PM \u2014 With Dinner',color:'#7E57C2',time:'With your evening meal'},
-        {key:'bedtime',label:'Bedtime',color:'#5C6BC0',time:'30 min before sleep'},
-        {key:'split',label:'Split Throughout Day',color:'#26A69A',time:'Divide across meals'},
-        {key:'anytime',label:'Flexible Timing',color:'#78909C',time:'Take when convenient'}
-      ];
-      h+=`<div class="panel"><h3>Your Daily Schedule</h3>
-        <div class="panel-sub">Optimized timing based on absorption and interactions</div>`;
-      for(const tg of timeGroups){
-        const items=schedule[tg.key];
-        if(!items.length)continue;
-        h+=`<div style="margin:8px 0;padding:10px 12px;background:${tg.color}11;border-left:3px solid ${tg.color};border-radius:0 10px 10px 0">
-          <div style="font-size:13px;font-weight:600;color:${tg.color};margin-bottom:3px">${tg.label}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">${tg.time}</div>`;
-        for(const item of items){
-          h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:13px">
-            <span>${item.supp.name} <span style="color:var(--text-muted);font-size:11px">${item.supp.dose||''}</span></span>
-            ${item.note?`<span style="font-size:10px;color:var(--text-dim);max-width:50%;text-align:right">${item.note}</span>`:''}
-          </div>`;
-        }
-        h+=`</div>`;
-      }
-      const cycling=getActiveCycling();
-      if(cycling.length){
-        h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">Cycling Recommendations</div>`;
-        for(const c of cycling){
-          h+=`<div style="margin:6px 0;padding:8px 10px;background:rgba(255,167,38,.06);border-radius:8px;font-size:12px">
-            <div style="font-weight:600;color:var(--peach-deep)">${c.label}: ${c.pattern}</div>
-            <div style="color:var(--text-dim);margin-top:2px">${c.reason}</div>
-            <div style="color:var(--text-muted);margin-top:2px;font-size:11px">Applies to: ${c.active.join(', ')}</div>
-          </div>`;
-        }
-        h+=`</div>`;
-      }
-      h+=`</div>`;
-    }
+    h+=`</div>`;
   }
 
   // Add supplement
@@ -2210,7 +2217,18 @@ function addSupplement(){
   const dose=document.getElementById('suppDose').value.trim();
   const timing=document.getElementById('suppTiming').value;
   D.supplements.push({id:Date.now().toString(36),name,dose,timing,started:today(),ended:null});
+  autoAddCopper(name);
   saveData();renderStack();
+}
+
+function autoAddCopper(addedName){
+  const canonical=normalizeSuppName(addedName);
+  if(canonical!=='zinc')return;
+  const activeNames=D.supplements.filter(s=>!s.ended).map(s=>normalizeSuppName(s.name));
+  if(activeNames.includes('copper'))return;
+  if(confirm('Zinc depletes copper over time. Add Copper 2mg (take AM, away from zinc)?')){
+    D.supplements.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:'Copper',dose:'2mg',timing:'Morning',started:today(),ended:null});
+  }
 }
 
 function toggleSupp(id){
@@ -2219,7 +2237,16 @@ function toggleSupp(id){
   if(!log){log={date:td,taken:[]};D.supplementLog.push(log)}
   const idx=log.taken.indexOf(id);
   if(idx>=0)log.taken.splice(idx,1);else log.taken.push(id);
-  saveData();renderStack();
+  saveData();if(currentView==='dashboard')renderDashboard();else renderStack();
+}
+
+function toggleMed(id){
+  const td=today();
+  let log=D.medLog.find(l=>l.date===td);
+  if(!log){log={date:td,taken:[]};D.medLog.push(log)}
+  const idx=log.taken.indexOf(id);
+  if(idx>=0)log.taken.splice(idx,1);else log.taken.push(id);
+  saveData();if(currentView==='dashboard')renderDashboard();else renderStack();
 }
 
 function addStack(name){
@@ -2554,6 +2581,21 @@ function renderSettings(){
         <div style="font-size:12px;color:var(--text-dim);line-height:1.6">${getGoalStacks().map(s=>`<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:8px;background:var(--surface);border:1px solid var(--border)">${s}</span>`).join('')}</div>
         <div style="font-size:10px;color:var(--text-muted);margin-top:6px">Go to Supps tab to activate these stacks</div>
       </div>`:''}
+    </div>
+
+    <div class="settings-group"><h3>Reminders</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Get notified when it's time to take your meds and supplements. Notifications work while the app is open.</p>
+      ${['am','pm','bedtime'].map(slot=>{
+        const r=S.reminders[slot];
+        const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
+        const icon=slot==='am'?'&#9728;':slot==='pm'?'&#9788;':'&#9790;';
+        return`<div class="setting-row" style="flex-wrap:wrap;gap:8px">
+          <label style="flex:1">${icon} ${label}</label>
+          <input type="time" value="${r.time}" style="width:110px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px" onchange="S.reminders.${slot}.time=this.value;saveSettings();initReminders()">
+          <div class="toggle ${r.enabled?'on':''}" onclick="S.reminders.${slot}.enabled=!S.reminders.${slot}.enabled;saveSettings();initReminders();renderSettings()"></div>
+        </div>`;
+      }).join('')}
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${typeof Notification!=='undefined'&&Notification.permission==='granted'?'Notifications enabled':'Notifications will be requested when you enable a reminder'}</p>
     </div>
 
     <div class="settings-group"><h3>Backup & Restore</h3>
@@ -3047,6 +3089,63 @@ document.addEventListener('click',e=>{if(!e.target.closest('#waterPanel')&&!e.ta
 // Init water UI on load
 setTimeout(updateWaterUI,100);
 
+// ─── Reminders ───────────────────────────────────────────────
+let _reminderTimers=[];
+function initReminders(){
+  _reminderTimers.forEach(t=>clearTimeout(t));
+  _reminderTimers=[];
+  const rem=S.reminders;if(!rem)return;
+  const anyEnabled=Object.values(rem).some(r=>r.enabled);
+  if(!anyEnabled)return;
+  if(typeof Notification!=='undefined'&&Notification.permission==='default'){Notification.requestPermission()}
+  const now=new Date();
+  for(const[slot,r]of Object.entries(rem)){
+    if(!r.enabled)continue;
+    const[hh,mm]=r.time.split(':').map(Number);
+    const target=new Date(now);target.setHours(hh,mm,0,0);
+    const ms=target-now;
+    if(ms<=0)continue;
+    _reminderTimers.push(setTimeout(()=>showReminder(slot),ms));
+  }
+}
+
+function showReminder(slot){
+  const td=today();
+  const activeMeds=D.meds.filter(m=>!m.ended);
+  const activeSups=D.supplements.filter(s=>!s.ended);
+  const medLog=D.medLog.find(l=>l.date===td)||{date:td,taken:[]};
+  const suppLog=D.supplementLog.find(l=>l.date===td)||{date:td,taken:[]};
+
+  // Map schedule groups to reminder slots
+  const slotGroups={am:['am_empty','am_food'],pm:['pm'],bedtime:['bedtime']};
+  const schedule=generateSchedule();
+  const groups=slotGroups[slot]||[];
+  const scheduledSuppIds=new Set();
+  for(const g of groups){if(schedule[g])schedule[g].forEach(item=>scheduledSuppIds.add(item.supp.id))}
+
+  // Count untaken
+  const untakenMeds=activeMeds.filter(m=>!medLog.taken.includes(m.id||m.name));
+  const untakenSupps=activeSups.filter(s=>scheduledSuppIds.has(s.id)&&!suppLog.taken.includes(s.id));
+  const total=untakenMeds.length+untakenSupps.length;
+  if(total===0)return;
+
+  const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
+  const names=[...untakenMeds.map(m=>m.name),...untakenSupps.map(s=>s.name)].slice(0,5).join(', ');
+  const msg=`${total} untaken: ${names}${total>5?'...':''}`;
+
+  // Browser notification
+  if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+    new Notification(`Bloom — ${label} Reminder`,{body:msg,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌸</text></svg>'});
+  }
+
+  // In-app toast
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;background:var(--violet);color:#fff;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s;max-width:90vw;text-align:center';
+  toast.innerHTML=`${label}: ${msg}`;
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(),6000);
+}
+
 function showView(v){
   if(currentView==='log')tempLogInited=false;
   currentView=v;
@@ -3066,6 +3165,7 @@ function showView(v){
 checkOnboarding();
 checkPinLock();
 applyStealth();
+initReminders();
 showView('dashboard');
 </script>
 </body>
