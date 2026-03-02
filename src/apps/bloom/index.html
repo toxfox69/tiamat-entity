@@ -1428,7 +1428,7 @@ function showPinUI(expected,isSetup){
   function pad(){
     const p=document.getElementById('pinPad');p.innerHTML='';
     for(let i=1;i<=9;i++){const b=document.createElement('button');b.className='pin-key';b.textContent=i;b.onclick=()=>press(i+'');p.appendChild(b)}
-    p.innerHTML+='<div></div>';
+    p.appendChild(document.createElement('div'));
     const z=document.createElement('button');z.className='pin-key';z.textContent='0';z.onclick=()=>press('0');p.appendChild(z);
     const d=document.createElement('button');d.className='pin-key del';d.textContent='DEL';d.onclick=()=>{entered=entered.slice(0,-1);dots()};p.appendChild(d);
   }
