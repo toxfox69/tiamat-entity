@@ -1027,12 +1027,14 @@ def bloom_feedback():
         if not message or len(message) > 2000:
             return jsonify({'error': 'Message required (max 2000 chars).'}), 400, cors_headers
 
-        client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '0.0.0.0').split(',')[0].strip()
+        # Hash IP for rate limiting — never store raw addresses
+        raw_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '0.0.0.0').split(',')[0].strip()
+        ip_hash = hashlib.sha256((raw_ip + str(date.today())).encode()).hexdigest()[:16]
         today_str = str(date.today())
 
         conn = sqlite3.connect(BLOOM_FEEDBACK_DB)
         cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM feedback WHERE ip=? AND timestamp LIKE ?', (client_ip, today_str + '%'))
+        cursor.execute('SELECT COUNT(*) FROM feedback WHERE ip=? AND timestamp LIKE ?', (ip_hash, today_str + '%'))
         count = cursor.fetchone()[0]
         if count >= BLOOM_FEEDBACK_DAILY_LIMIT:
             conn.close()
@@ -1040,7 +1042,7 @@ def bloom_feedback():
 
         cursor.execute(
             'INSERT INTO feedback (type, message, app_version, ip, timestamp) VALUES (?, ?, ?, ?, ?)',
-            (fb_type, message, version, client_ip, datetime.utcnow().isoformat())
+            (fb_type, message, version, ip_hash, datetime.utcnow().isoformat())
         )
         conn.commit()
         conn.close()
