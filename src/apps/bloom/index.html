@@ -1638,6 +1638,31 @@ function renderDashboard(){
   const alerts=generateAlerts();
   if(alerts.length){for(const a of alerts)h+=`<div class="alert-box ${a.type}">${a.msg}</div>`}
 
+  // ── Daily Check-in Prompt ──
+  if(todayLog&&todayLog.checkinTime){
+    h+=`<div class="panel" style="background:linear-gradient(135deg,var(--violet-pale,#F8F0FF),var(--pink-pale,#FFE4F0));border:1px solid var(--violet-soft,#E8D5F5);cursor:pointer" onclick="showView('log')">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:28px">${todayLog.mood||'&#10003;'}</span>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:var(--violet-deep)">Checked in at ${todayLog.checkinTime}</div>
+          <div style="font-size:11px;color:var(--text-dim)">Tap to update your check-in</div>
+        </div>
+        <span style="font-size:18px;color:var(--text-muted)">&#9998;</span>
+      </div>
+    </div>`;
+  }else{
+    h+=`<div class="panel" style="background:linear-gradient(135deg,var(--violet-pale,#F8F0FF),var(--sky-pale,#E3F2FD));border:2px solid var(--violet,#7C4DFF);cursor:pointer" onclick="showView('log')">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:28px">&#128588;</span>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:800;color:var(--violet-deep)">How are you feeling?</div>
+          <div style="font-size:12px;color:var(--text-dim)">Tap to do your daily check-in</div>
+        </div>
+        <span style="font-size:22px;color:var(--violet)">&#10140;</span>
+      </div>
+    </div>`;
+  }
+
   // ── Quick Stats (above Today's Plan) ──
   const bs=braSize(),w=whr(),e2=latestLab('Estradiol'),t=latestLab('Testosterone');
   const hasLabStats=e2||t||bs||w;
@@ -1671,6 +1696,7 @@ function renderDashboard(){
   if(todayLog?.skinScore!==undefined)h+=`<div class="qs"><div class="qs-label">Skin</div><div class="qs-value">${todayLog.skinScore}/10</div></div>`;
   if(todayLog?.energy!==undefined)h+=`<div class="qs"><div class="qs-label">Energy</div><div class="qs-value">${todayLog.energy}/10</div></div>`;
   if(todayLog?.sleep)h+=`<div class="qs"><div class="qs-label">Sleep</div><div class="qs-value">${todayLog.sleep} hrs</div></div>`;
+  if(todayLog?.mood)h+=`<div class="qs"><div class="qs-label">Mood</div><div class="qs-value">${todayLog.mood}</div></div>`;
   h+=`</div></div>`;
 
   // ── Today's Plan ──
@@ -1879,7 +1905,7 @@ function logInjection(){
       <button class="btn-secondary" style="flex:1" onclick="document.getElementById('injForm').remove()">Cancel</button>
     </div>`;
   const tracker=document.querySelector('[onclick="logInjection()"]');
-  if(tracker)tracker.parentElement.appendChild(panel);
+  if(tracker){const p=tracker.closest('.panel');if(p)p.after(panel);else tracker.parentElement.after(panel);}
   else document.getElementById('content').appendChild(panel);
   panel.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -2250,7 +2276,7 @@ function renderLog(){
 
   h+=`<div class="section-title">Notes</div>
     <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today? Any changes?" oninput="tempLog.notes=this.value">${tempLog.notes}</textarea>
-    <button class="btn-primary" id="saveLogBtn" onclick="saveLog()">Save Today's Log</button>
+    <button class="btn-primary" id="saveLogBtn" onclick="saveLog()">${getLog(today())?.checkinTime?'Update Check-in':'Check In'}</button>
   </div>`;
   document.getElementById('content').innerHTML=h;
   document.getElementById('content').insertAdjacentHTML('afterbegin',tabs);
@@ -2332,13 +2358,51 @@ function saveLog(){
   const entry={date:today(),mood:tempLog.mood,dysphoria:tempLog.dysphoria,energy:tempLog.energy,sleep:tempLog.sleep,weight:tempLog.weight,
     heartRate:tempLog.heartRate,bpSys:tempLog.bpSys,bpDia:tempLog.bpDia,bpPos:tempLog.bpPos,
     skinScore:tempLog.skinScore,libido:tempLog.libido,moodStability:tempLog.moodStability,morningE:tempLog.morningE,
-    tags:tempLog.tags,notes:(document.getElementById('logNotes')||{}).value||tempLog.notes||''};
+    tags:tempLog.tags,notes:(document.getElementById('logNotes')||{}).value||tempLog.notes||'',
+    checkinTime:new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})};
   const idx=D.logs.findIndex(l=>l.date===today());
-  if(idx>=0)D.logs[idx]=entry;else D.logs.push(entry);
+  const isUpdate=idx>=0;
+  if(isUpdate)D.logs[idx]=entry;else D.logs.push(entry);
   saveData();tempLogInited=false;
-  const btn=document.getElementById('saveLogBtn');
-  btn.textContent='\u2714 Log Saved!';btn.style.background='var(--mint)';btn.style.transform='scale(1.03)';
-  setTimeout(()=>{btn.textContent="Save Today's Log";btn.style.background='';btn.style.transform=''},2000);
+  showCheckinCelebration(isUpdate,entry);
+}
+function showCheckinCelebration(isUpdate,entry){
+  const reward=getDailyReward();
+  const rLevel=getRewardLevel(reward.xp);
+  // Build insight
+  let insight='';
+  const recent=D.logs.slice(-7);
+  if(recent.length>=3){
+    const avgE=(recent.reduce((s,l)=>s+(l.energy||5),0)/recent.length).toFixed(1);
+    const avgD=(recent.reduce((s,l)=>s+(l.dysphoria||5),0)/recent.length).toFixed(1);
+    if(avgE>=7)insight='Your energy has been great this week!';
+    else if(avgE<=3)insight='Energy has been low — prioritize rest and hydration.';
+    if(avgD<=3&&!insight)insight='Dysphoria levels are looking good lately!';
+    else if(avgD>=7&&!insight)insight='Hang in there — rough days are part of the journey.';
+    const moodCount={};recent.forEach(l=>{if(l.mood)moodCount[l.mood]=(moodCount[l.mood]||0)+1});
+    const topMood=Object.entries(moodCount).sort((a,b)=>b[1]-a[1])[0];
+    if(topMood&&topMood[1]>=3&&!insight)insight=`You've been feeling ${topMood[0]} a lot this week.`;
+  }
+  if(!insight&&D.logs.length===1)insight='First check-in! This is the start of something powerful.';
+  if(!insight&&reward.streak>=7)insight=`${reward.streak} day streak — you're building a real habit!`;
+  if(!insight)insight='Every check-in helps you understand yourself better.';
+
+  const overlay=document.createElement('div');
+  overlay.id='checkinOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s';
+  overlay.innerHTML=`<div style="background:var(--card,#fff);border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:fadeIn .4s">
+    <div style="font-size:48px;margin-bottom:8px">${isUpdate?'&#128260;':'&#10024;'}</div>
+    <div style="font-size:20px;font-weight:800;color:var(--violet-deep,#7C4DFF);margin-bottom:4px">${isUpdate?'Check-in Updated':'Checked In!'}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">${entry.checkinTime}${entry.mood?' — feeling '+entry.mood:''}</div>
+    <div style="display:flex;justify-content:center;gap:16px;margin-bottom:16px">
+      <div><div style="font-size:22px;font-weight:800;color:var(--pink-deep)">${reward.streak}</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Streak</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:var(--violet-deep)">Lv${rLevel.level}</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">${rLevel.title}</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:var(--mint-deep)">${D.logs.length}</div><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">Total</div></div>
+    </div>
+    <div style="background:var(--violet-pale,#F8F0FF);border-radius:12px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.5">${insight}</div>
+    <button onclick="document.getElementById('checkinOverlay').remove();showView('dashboard')" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--violet,#7C4DFF);color:#fff;font-size:15px;font-weight:700;cursor:pointer">Done</button>
+  </div>`;
+  document.body.appendChild(overlay);
 }
 
 // ─── Stack Hub (Meds + Supplements) ─────────────────────────
@@ -2621,7 +2685,7 @@ function showLabEntry(){
   h+=`<button class="btn-primary" id="saveLabBtn" onclick="saveLabEntry()">Save Lab Results</button>
     <button class="btn-secondary" onclick="renderLabs()">Cancel</button></div></div>`;
   document.getElementById('content').innerHTML=h;
-  setTimeout(function(){document.getElementById('content').scrollTop=0;window.scrollTo(0,0)},0);
+  setTimeout(function(){document.getElementById('content').scrollTop=0;document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0)},50);
 }
 
 function saveLabEntry(){
@@ -2727,6 +2791,41 @@ function renderBody(){
     }
   }
 
+  // Measurement History Log
+  if(D.measurements.length){
+    const sorted=[...D.measurements].reverse();
+    h+=`<div class="panel"><h3>History (${D.measurements.length})</h3>`;
+    const wu=S.unitSystem==='imperial'?'lbs':'kg';
+    const mu=S.unitSystem==='imperial'?'in':'cm';
+    for(let i=0;i<sorted.length;i++){
+      const m=sorted[i];
+      const prev=sorted[i+1]||null;
+      function delta(field){
+        if(!m[field]||!prev||!prev[field])return'';
+        const d=(m[field]-prev[field]).toFixed(1);
+        if(Math.abs(d)<0.05)return'';
+        const c=d>0?'var(--mint-deep)':'var(--pink-deep)';
+        return` <span style="color:${c};font-size:10px;font-weight:600">${d>0?'+':''}${d}</span>`;
+      }
+      const parts=[];
+      if(m.weight)parts.push(`Wt: ${m.weight}${wu}${delta('weight')}`);
+      if(m.bust)parts.push(`Bu: ${m.bust}${delta('bust')}`);
+      if(m.waist)parts.push(`Wa: ${m.waist}${delta('waist')}`);
+      if(m.hips)parts.push(`Hi: ${m.hips}${delta('hips')}`);
+      if(m.thighL)parts.push(`ThL: ${m.thighL}${delta('thighL')}`);
+      if(m.thighR)parts.push(`ThR: ${m.thighR}${delta('thighR')}`);
+      if(!parts.length)continue;
+      h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border);${i===0?'background:var(--violet-pale);margin:-0px -14px;padding:8px 14px;border-radius:8px':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:700;color:${i===0?'var(--violet-deep)':'var(--text)'}">${m.date}${i===0?' (latest)':''}</span>
+          ${i===0?'':`<button style="background:none;border:none;color:var(--danger);font-size:11px;cursor:pointer" onclick="if(confirm('Delete measurement from ${m.date}?')){D.measurements.splice(${D.measurements.length-1-i},1);saveData();renderBody()}">delete</button>`}
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:2px;line-height:1.6">${parts.join(' &middot; ')}</div>
+      </div>`;
+    }
+    h+=`</div>`;
+  }
+
   h+='</div>';
   document.getElementById('content').innerHTML=h;
 }
@@ -2741,9 +2840,10 @@ function saveMeasurements(){
     thighR:parseFloat(document.getElementById('mThighR').value)||null,
     weight:parseFloat(document.getElementById('mWeight').value)||null};
   const idx=D.measurements.findIndex(x=>x.date===today());
-  if(idx>=0)D.measurements[idx]=m;else D.measurements.push(m);saveData();
-  const btn=document.querySelector('.btn-primary');btn.textContent='Saved!';btn.style.background='var(--mint)';
-  setTimeout(()=>{btn.textContent='Save Measurements';btn.style.background=''},1200);
+  const isUpdate=idx>=0;
+  if(isUpdate)D.measurements[idx]=m;else D.measurements.push(m);saveData();
+  toast(isUpdate?'Updated today\'s measurements':'Measurements saved!');
+  renderBody();
 }
 
 // ─── Photos View ─────────────────────────────────────────────
@@ -4020,7 +4120,7 @@ function exportDoctorReport(){
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bloom Health Report — ${dateStr}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#333;padding:32px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#333;background:#fff;padding:32px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}
 h1{font-size:22px;color:#7C4DFF;border-bottom:3px solid #7C4DFF;padding-bottom:8px;margin-bottom:4px}
 h2{font-size:16px;color:#7C4DFF;border-bottom:1px solid #E8D5F5;padding-bottom:4px;margin:20px 0 8px}
 h3{font-size:14px;color:#3E2465;margin:12px 0 4px}
@@ -4090,14 +4190,14 @@ ${lastVital?`<h2>Vitals</h2>
 ${last?`<h2>Body Measurements (Latest: ${last.date})</h2>
 <div class="grid">
 ${last.weight?`<div class="stat"><div class="label">Weight</div><div class="val">${last.weight} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`:''}
-${last.bust?`<div class="stat"><div class="label">Bust</div><div class="val">${last.bust}"</div></div>`:''}
-${last.underbust?`<div class="stat"><div class="label">Underbust</div><div class="val">${last.underbust}"</div></div>`:''}
+${last.bust?`<div class="stat"><div class="label">Bust</div><div class="val">${last.bust} ${S.unitSystem==='imperial'?'in':'cm'}</div></div>`:''}
+${last.underbust?`<div class="stat"><div class="label">Underbust</div><div class="val">${last.underbust} ${S.unitSystem==='imperial'?'in':'cm'}</div></div>`:''}
 ${bs?`<div class="stat"><div class="label">Bra Size</div><div class="val">${bs}</div></div>`:''}
-${last.waist?`<div class="stat"><div class="label">Waist</div><div class="val">${last.waist}"</div></div>`:''}
-${last.hips?`<div class="stat"><div class="label">Hips</div><div class="val">${last.hips}"</div></div>`:''}
+${last.waist?`<div class="stat"><div class="label">Waist</div><div class="val">${last.waist} ${S.unitSystem==='imperial'?'in':'cm'}</div></div>`:''}
+${last.hips?`<div class="stat"><div class="label">Hips</div><div class="val">${last.hips} ${S.unitSystem==='imperial'?'in':'cm'}</div></div>`:''}
 ${w?`<div class="stat"><div class="label">WHR</div><div class="val">${w}</div></div>`:''}
-${last.thighL?`<div class="stat"><div class="label">Thigh L</div><div class="val">${last.thighL}"</div></div>`:''}
-${last.thighR?`<div class="stat"><div class="label">Thigh R</div><div class="val">${last.thighR}"</div></div>`:''}
+${last.thighL?`<div class="stat"><div class="label">Thigh L</div><div class="val">${last.thighL} ${S.unitSystem==='imperial'?'in':'cm'}</div></div>`:''}
+${last.thighR?`<div class="stat"><div class="label">Thigh R</div><div class="val">${last.thighR} ${S.unitSystem==='imperial'?'in':'cm'}</div></div>`:''}
 </div>`:''}
 
 ${measHistory.length>=2?`<h2>Measurement History</h2>
@@ -4109,8 +4209,8 @@ ${topTags.length?`<h2>Most Reported Changes/Symptoms</h2>
 ${topTags.map(([t,c])=>`<tr><td>${t}</td><td>${c}</td></tr>`).join('')}</table>`:''}
 
 ${D.injections.length?`<h2>Injection History (Last 10)</h2>
-<table><tr><th>Date</th><th>Site</th><th>Time</th></tr>
-${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${esc(i.site)}</td><td>${i.time||'—'}</td></tr>`).join('')}</table>`:''}
+<table><tr><th>Date</th><th>Site</th><th>Medication</th><th>Dose</th><th>Time</th><th>Notes</th></tr>
+${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${esc(i.site)}</td><td>${esc(i.med||'—')}</td><td>${esc(i.dose||'—')}</td><td>${i.time||'—'}</td><td>${esc(i.notes||'—')}</td></tr>`).join('')}</table>`:''}
 
 <div class="footer">
   Generated by Bloom — Private Health Tracker<br>
@@ -4131,71 +4231,52 @@ ${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${esc(i.si
   toolbar.innerHTML=`
     <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text,#333);padding:4px 8px" id="reportCloseBtn">&#10005;</button>
     <span style="flex:1;font-weight:700;font-size:15px;color:var(--text,#333)">Health Report</span>
-    <button id="reportSaveBtn" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--violet,#7C4DFF),var(--sky,#64B5F6));color:#fff;font-size:13px;font-weight:600;cursor:pointer">Share / Save</button>
-    <button id="reportPrintBtn" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border,#e8d5f5);background:var(--surface,#fff);color:var(--text,#333);font-size:13px;font-weight:600;cursor:pointer">Print / PDF</button>`;
+    <button id="reportSendBtn" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--violet,#7C4DFF),var(--sky,#64B5F6));color:#fff;font-size:13px;font-weight:600;cursor:pointer">Send to...</button>`;
   overlay.appendChild(toolbar);
 
   const reportHtml=html.replace('<script>window.onload=function(){window.print()}<\/script>','');
 
   // Render report in iframe via srcdoc (works in WebView and browsers)
   const iframe=document.createElement('iframe');
-  iframe.style.cssText='flex:1;border:none;width:100%';
-  iframe.setAttribute('sandbox','allow-same-origin');
+  iframe.style.cssText='flex:1;border:none;width:100%;background:#fff';
   overlay.appendChild(iframe);
   document.body.appendChild(overlay);
 
-  // Write content after iframe is in DOM
-  setTimeout(function(){
-    try{
-      iframe.contentDocument.open();
-      iframe.contentDocument.write(reportHtml);
-      iframe.contentDocument.close();
-    }catch(e){
-      // Fallback: use srcdoc
-      iframe.srcdoc=reportHtml;
-    }
-  },50);
+  // Write content via srcdoc (most reliable in WebView)
+  iframe.srcdoc=reportHtml;
 
-  // Wire up buttons via addEventListener (inline onclick can fail on Android WebView)
+  // Wire up buttons
   document.getElementById('reportCloseBtn').addEventListener('click',function(){
     document.getElementById('reportOverlay').remove();
   });
-  document.getElementById('reportPrintBtn').addEventListener('click',function(){
-    // Share as HTML file via Web Share API (works on Android), fallback to data URI
-    try{
-      if(navigator.share&&navigator.canShare){
-        const file=new File([reportHtml],'bloom-health-report-'+today()+'.html',{type:'text/html'});
-        if(navigator.canShare({files:[file]})){
-          navigator.share({title:'Bloom Health Report',files:[file]});
+
+  document.getElementById('reportSendBtn').addEventListener('click',async function(){
+    const fname='bloom-health-report-'+today()+'.html';
+    // Use Capacitor native plugins for reliable Android share sheet
+    if(window.Capacitor&&window.Capacitor.Plugins){
+      try{
+        const FS=window.Capacitor.Plugins.Filesystem;
+        const SH=window.Capacitor.Plugins.Share;
+        if(FS&&SH){
+          // Write report to cache directory
+          const written=await FS.writeFile({path:fname,data:btoa(unescape(encodeURIComponent(reportHtml))),directory:'CACHE'});
+          // Open native share sheet with file
+          await SH.share({title:'Bloom Health Report',url:written.uri,dialogTitle:'Send report to...'});
           return;
         }
+      }catch(e){
+        if(e.message&&e.message.includes('cancel'))return;
+        toast('Share error: '+e.message);return;
       }
-    }catch(e){}
-    // Fallback: open as data URI (user can then use browser print/share)
+    }
+    // PWA fallback: Web Share API
     try{
-      const dataUri='data:text/html;charset=utf-8,'+encodeURIComponent(reportHtml);
-      window.open(dataUri,'_blank');
-    }catch(e){toast('Could not open report')}
-  });
-  document.getElementById('reportSaveBtn').addEventListener('click',function(){
-    // Share as file via Web Share API, fallback to data URI download
-    try{
-      if(navigator.share&&navigator.canShare){
-        const file=new File([reportHtml],'bloom-health-report-'+today()+'.html',{type:'text/html'});
-        if(navigator.canShare({files:[file]})){
-          navigator.share({title:'Bloom Health Report',files:[file]});
-          return;
-        }
-      }
-    }catch(e){}
-    // Fallback: Blob download (works in browsers, may not work in all WebViews)
-    try{
-      const b=new Blob([reportHtml],{type:'text/html'});
-      const a=document.createElement('a');a.href=URL.createObjectURL(b);
-      a.download='bloom-health-report-'+today()+'.html';
-      document.body.appendChild(a);a.click();document.body.removeChild(a);
-      setTimeout(function(){URL.revokeObjectURL(a.href)},5000);
-    }catch(e){toast('Could not save file')}
+      const file=new File([reportHtml],fname,{type:'text/html'});
+      await navigator.share({title:'Bloom Health Report',files:[file]});
+    }catch(e){
+      if(e.name==='AbortError')return;
+      toast('Could not share report');
+    }
   });
 }
 
