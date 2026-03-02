@@ -1370,6 +1370,21 @@ function renderOB(){
   if(obStep===0){
     // Welcome
     el.innerHTML=`${dots}
+      <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:12px">
+        <circle cx="50" cy="32" r="16" fill="url(#op1)" opacity=".85"/>
+        <circle cx="35" cy="45" r="16" fill="url(#op2)" opacity=".8"/>
+        <circle cx="65" cy="45" r="16" fill="url(#op3)" opacity=".8"/>
+        <circle cx="38" cy="62" r="16" fill="url(#op4)" opacity=".75"/>
+        <circle cx="62" cy="62" r="16" fill="url(#op5)" opacity=".75"/>
+        <circle cx="50" cy="50" r="10" fill="#FFD54F"/>
+        <defs>
+          <linearGradient id="op1" x1="34" y1="16" x2="66" y2="48"><stop stop-color="#E1BEE7"/><stop offset="1" stop-color="#CE93D8"/></linearGradient>
+          <linearGradient id="op2" x1="19" y1="29" x2="51" y2="61"><stop stop-color="#F8BBD0"/><stop offset="1" stop-color="#F48FB1"/></linearGradient>
+          <linearGradient id="op3" x1="49" y1="29" x2="81" y2="61"><stop stop-color="#D1C4E9"/><stop offset="1" stop-color="#B39DDB"/></linearGradient>
+          <linearGradient id="op4" x1="22" y1="46" x2="54" y2="78"><stop stop-color="#F8BBD0"/><stop offset="1" stop-color="#F06292"/></linearGradient>
+          <linearGradient id="op5" x1="46" y1="46" x2="78" y2="78"><stop stop-color="#E1BEE7"/><stop offset="1" stop-color="#AB47BC"/></linearGradient>
+        </defs>
+      </svg>
       <h2>Welcome to Bloom</h2>
       <p>Your private body &amp; wellness tracker. Everything stays on your device — zero data collection, zero network requests.</p>
       <div class="feature-list">
