@@ -47,10 +47,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 
 .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(62,36,101,.04)}
 .panel h3{font-size:15px;font-weight:600;margin-bottom:12px;text-align:center}
-.qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 0}
 .qs-grid .qs{padding:6px 0}
-.qs-grid .qs:nth-child(odd){text-align:left}
-.qs-grid .qs:nth-child(even){text-align:right}
+.qs-grid .qs:nth-child(odd){text-align:right;padding-right:16px;border-right:1px solid var(--border)}
+.qs-grid .qs:nth-child(even){text-align:left;padding-left:16px}
 .qs .qs-label{font-size:11px;color:var(--text-muted);margin-bottom:1px}
 .qs .qs-value{font-size:16px;font-weight:700}
 .panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:10px;text-align:center}
