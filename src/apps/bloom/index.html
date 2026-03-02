@@ -1206,6 +1206,9 @@ function getMedTypes(){
   return MED_TYPES;
 }
 
+// ─── HTML Escaper ────────────────────────────────────────────
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
 function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{},exerciseLog:[],dailyReward:{lastClaim:'',streak:0,xp:0,level:1,history:[]}}}
@@ -1213,7 +1216,13 @@ function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
 function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[],reminders:{am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}}}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(S))}
-function hashPin(p){let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h+p.charCodeAt(i))|0;return h.toString(36)}
+async function hashPin(p){
+  const enc=new TextEncoder();
+  const salt=enc.encode('bloom-pin-salt');
+  const key=await crypto.subtle.importKey('raw',enc.encode(p),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},key,256);
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+}
 
 let D=loadData(),S=loadSettings(),currentView='dashboard',tempLog={},tempLogInited=false;
 if(!D.photos)D.photos=[];
@@ -1342,7 +1351,7 @@ function deletePhoto(idx){
 }
 
 // ─── PIN ─────────────────────────────────────────────────────
-function checkPinLock(){const h=localStorage.getItem(PIN_KEY);if(!h||!S.pinEnabled)return;showPinUI(h,false)}
+function checkPinLock(){const h=localStorage.getItem(PIN_KEY);if(!h||!S.pinEnabled)return false;if(h.length<20){localStorage.removeItem(PIN_KEY);S.pinEnabled=false;saveSettings();return false}showPinUI(h,false);return true}
 function showPinUI(expected,isSetup){
   const o=document.getElementById('pinOverlay');o.style.display='flex';
   document.getElementById('pinTitle').textContent=isSetup?'Set New PIN':'Enter PIN';
@@ -1356,12 +1365,12 @@ function showPinUI(expected,isSetup){
     const z=document.createElement('button');z.className='pin-key';z.textContent='0';z.onclick=()=>press('0');p.appendChild(z);
     const d=document.createElement('button');d.className='pin-key del';d.textContent='DEL';d.onclick=()=>{entered=entered.slice(0,-1);dots()};p.appendChild(d);
   }
-  function press(k){
+  async function press(k){
     if(entered.length>=4)return;entered+=k;dots();
     if(entered.length===4){
-      if(!isSetup){if(hashPin(entered)===expected){o.style.display='none'}else{document.getElementById('pinMsg').textContent='Wrong PIN';entered='';setTimeout(dots,300)}}
+      if(!isSetup){const h=await hashPin(entered);if(h===expected){o.style.display='none';showView('dashboard')}else{document.getElementById('pinMsg').textContent='Wrong PIN';entered='';setTimeout(dots,300)}}
       else if(!confirming){first=entered;confirming=true;entered='';document.getElementById('pinTitle').textContent='Confirm PIN';document.getElementById('pinMsg').textContent='Enter same PIN again';setTimeout(dots,200)}
-      else{if(entered===first){localStorage.setItem(PIN_KEY,hashPin(entered));S.pinEnabled=true;saveSettings();o.style.display='none';showView('settings')}else{document.getElementById('pinMsg').textContent='PINs didn\'t match';entered='';first='';confirming=false;document.getElementById('pinTitle').textContent='Set New PIN';setTimeout(dots,300)}}
+      else{if(entered===first){const h=await hashPin(entered);localStorage.setItem(PIN_KEY,h);S.pinEnabled=true;saveSettings();o.style.display='none';showView('settings')}else{document.getElementById('pinMsg').textContent='PINs didn\'t match';entered='';first='';confirming=false;document.getElementById('pinTitle').textContent='Set New PIN';setTimeout(dots,300)}}
     }
   }
   dots();pad();
@@ -1577,8 +1586,8 @@ function renderDashboard(){
         const taken=medLogToday.taken.includes(mid);
         h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
           <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?'var(--violet)':'var(--border)'};background:${taken?'var(--violet-pale)':'transparent'};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleMed('${mid.replace(/'/g,"\\'")}')">${taken?'&#10003;':''}</button>
-          <div style="flex:1"><div style="font-size:14px;font-weight:500">${m.name}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${m.dose||''} ${m.frequency?'— '+m.frequency:''}</div></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(m.name)}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${esc(m.dose)} ${m.frequency?'— '+esc(m.frequency):''}</div></div>
         </div>`;
       }
       h+=`</div>`;
@@ -1594,8 +1603,8 @@ function renderDashboard(){
         const taken=suppLogToday.taken.includes(s.id);
         h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
           <button style="width:28px;height:28px;border-radius:50%;border:2px solid ${taken?'var(--mint)':'var(--border)'};background:${taken?'var(--mint-pale)':'transparent'};font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toggleSupp('${s.id}')">${taken?'&#10003;':''}</button>
-          <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${s.dose||''} ${s.timing?'— '+s.timing:''}</div></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(s.name)}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${esc(s.dose)} ${s.timing?'— '+esc(s.timing):''}</div></div>
         </div>`;
       }
       h+=`</div>`;
@@ -1623,7 +1632,7 @@ function renderDashboard(){
             <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">${tg.time}</div>`;
           for(const item of items){
             h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:12px">
-              <span>${item.supp.name} <span style="color:var(--text-muted);font-size:10px">${item.supp.dose||''}</span></span>
+              <span>${esc(item.supp.name)} <span style="color:var(--text-muted);font-size:10px">${esc(item.supp.dose)}</span></span>
               ${item.note?`<span style="font-size:10px;color:var(--text-dim);max-width:50%;text-align:right">${item.note}</span>`:''}
             </div>`;
           }
@@ -1732,7 +1741,8 @@ function renderDashboard(){
 function logInjection(){
   const site=prompt('Injection site:\n'+INJECTION_SITES.join(', '),nextInjectionSite());
   if(!site)return;
-  D.injections.push({date:today(),site:site,time:new Date().toLocaleTimeString()});
+  if(!INJECTION_SITES.includes(site.trim())){alert('Invalid site. Choose from: '+INJECTION_SITES.join(', '));return}
+  D.injections.push({date:today(),site:site.trim(),time:new Date().toLocaleTimeString()});
   saveData();showView('dashboard');
 }
 
@@ -2049,7 +2059,7 @@ function renderLog(){
   }
 
   if(D.customSymptoms.length){
-    h+=`<div class="section-title">Custom</div><div class="chips">${D.customSymptoms.map(s=>`<button class="chip${tempLog.tags.includes(s)?' active-mint':''}" onclick="const i=tempLog.tags.indexOf('${s}');if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push('${s}');this.classList.toggle('active-mint')">${s}</button>`).join('')}</div>`;
+    h+=`<div class="section-title">Custom</div><div class="chips">${D.customSymptoms.map((s,idx)=>`<button class="chip${tempLog.tags.includes(s)?' active-mint':''}" onclick="toggleCustomSymptom(${idx});this.classList.toggle('active-mint')">${esc(s)}</button>`).join('')}</div>`;
   }
   h+=`<button class="btn-small" onclick="const t=prompt('Custom symptom:');if(t&&t.trim()){D.customSymptoms.push(t.trim());saveData();tempLog.tags.push(t.trim());const n=document.getElementById('logNotes');if(n)tempLog.notes=n.value;renderLog()}">+ Custom</button>`;
 
@@ -2058,6 +2068,11 @@ function renderLog(){
     <button class="btn-primary" id="saveLogBtn" onclick="saveLog()">Save Today's Log</button>
   </div>`;
   document.getElementById('content').innerHTML=h;
+}
+
+function toggleCustomSymptom(idx){
+  const s=D.customSymptoms[idx];if(!s)return;
+  const i=tempLog.tags.indexOf(s);if(i>=0)tempLog.tags.splice(i,1);else tempLog.tags.push(s);
 }
 
 function saveLog(){
@@ -2095,8 +2110,8 @@ function renderMeds(){
       const days=Math.floor((new Date()-new Date(m.started))/864e5);
       h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:start">
-          <div><div style="font-size:14px;font-weight:600">${m.name}</div>
-            <div style="font-size:12px;color:var(--text-muted)">${m.dose} — ${m.frequency}${m.route?' — '+m.route:''}</div>
+          <div><div style="font-size:14px;font-weight:600">${esc(m.name)}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${esc(m.dose)} — ${esc(m.frequency)}${m.route?' — '+esc(m.route):''}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Started ${m.started} (${days} days)</div></div>
           <button class="btn-small" style="flex-shrink:0" onclick="D.meds.find(x=>x.id==='${m.id}').ended=today();saveData();renderStack()">Stop</button>
         </div>
@@ -2109,7 +2124,7 @@ function renderMeds(){
     h+=`<div class="panel"><h3>Past Medications</h3>`;
     for(const m of past){
       h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-dim)">
-        <strong>${m.name}</strong> ${m.dose} — ${m.started} to ${m.ended}
+        <strong>${esc(m.name)}</strong> ${esc(m.dose)} — ${m.started} to ${m.ended}
       </div>`;
     }
     h+=`</div>`;
@@ -2419,7 +2434,8 @@ function saveMeasurements(){
     thighL:parseFloat(document.getElementById('mThighL').value)||null,
     thighR:parseFloat(document.getElementById('mThighR').value)||null,
     weight:parseFloat(document.getElementById('mWeight').value)||null};
-  D.measurements.push(m);saveData();
+  const idx=D.measurements.findIndex(x=>x.date===today());
+  if(idx>=0)D.measurements[idx]=m;else D.measurements.push(m);saveData();
   const btn=document.querySelector('.btn-primary');btn.textContent='Saved!';btn.style.background='var(--mint)';
   setTimeout(()=>{btn.textContent='Save Measurements';btn.style.background=''},1200);
 }
@@ -2491,9 +2507,9 @@ function viewPhoto(idx){
   overlay.innerHTML=`
     <img src="${p.data}" style="max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain">
     <div style="color:#fff;text-align:center;margin-top:12px">
-      <div style="font-size:16px;font-weight:600">${p.category}</div>
+      <div style="font-size:16px;font-weight:600">${esc(p.category)}</div>
       <div style="font-size:13px;opacity:.7">${p.date}${p.time?' at '+p.time:''}</div>
-      ${p.note?`<div style="font-size:13px;margin-top:4px;opacity:.8">${p.note}</div>`:''}
+      ${p.note?`<div style="font-size:13px;margin-top:4px;opacity:.8">${esc(p.note)}</div>`:''}
     </div>
     <button style="margin-top:16px;padding:10px 24px;border-radius:12px;background:rgba(255,255,255,.15);color:#fff;font-size:14px;font-weight:500;border:1px solid rgba(255,255,255,.2)" onclick="this.parentElement.remove()">Close</button>
   `;
@@ -2743,8 +2759,8 @@ function renderSupps(){
       const doseCard=renderDoseCard(s.name);
       h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="flex:1"><div style="font-size:14px;font-weight:500">${s.name}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${s.dose||""} ${s.timing?'— '+s.timing:""}</div></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:500">${esc(s.name)}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${esc(s.dose)} ${s.timing?'— '+esc(s.timing):''}</div></div>
           <button style="font-size:11px;color:var(--danger);font-weight:500" onclick="D.supplements.find(x=>x.id==='${s.id}').ended=today();saveData();renderStack()">Stop</button>
         </div>
         ${doseCard?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--violet-deep);cursor:pointer;font-weight:600;padding:4px 0">View personalized dosing</summary>${doseCard}</details>`:""}
@@ -2812,7 +2828,7 @@ function renderSupps(){
   if(stopped.length){
     h+=`<div class="panel"><h3>Past Supplements</h3>`;
     for(const s of stopped){
-      h+=`<div style="padding:6px 0;font-size:13px;color:var(--text-dim);border-bottom:1px solid var(--border)">${s.name} ${s.dose||''} — stopped ${s.ended}</div>`;
+      h+=`<div style="padding:6px 0;font-size:13px;color:var(--text-dim);border-bottom:1px solid var(--border)">${esc(s.name)} ${esc(s.dose)} — stopped ${s.ended}</div>`;
     }
     h+=`</div>`;
   }
@@ -3346,7 +3362,7 @@ function generateAIPrompt(){
   }
 
   // Active supplements
-  const activeSups=D.supplements.filter(s=>s.active!==false);
+  const activeSups=D.supplements.filter(s=>!s.ended);
   if(activeSups.length){
     p+=`\n=== ACTIVE SUPPLEMENTS ===\n`;
     for(const s of activeSups)p+=`• ${s.name}${s.dose?' — '+s.dose:''}${s.frequency?' — '+s.frequency:''}\n`;
@@ -3622,7 +3638,7 @@ ${topTags.map(([t,c])=>`<tr><td>${t}</td><td>${c}</td></tr>`).join('')}</table>`
 
 ${D.injections.length?`<h2>Injection History (Last 10)</h2>
 <table><tr><th>Date</th><th>Site</th><th>Time</th></tr>
-${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${i.site}</td><td>${i.time||'—'}</td></tr>`).join('')}</table>`:''}
+${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${esc(i.site)}</td><td>${i.time||'—'}</td></tr>`).join('')}</table>`:''}
 
 <div class="footer">
   Generated by Bloom — Private Health Tracker<br>
@@ -3634,15 +3650,29 @@ ${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${i.site}<
 
   const blob=new Blob([html],{type:'text/html'});
   const url=URL.createObjectURL(blob);
-  window.open(url,'_blank');
+  window.open(url,'_blank','noopener,noreferrer');
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
 
-function exportBackup(){
-  const backup={version:2,app:'bloom',exportedAt:new Date().toISOString(),data:D,settings:S};
+async function deriveKey(pass,salt){
+  const enc=new TextEncoder();
+  const key=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},key,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function exportBackup(){
+  const backup={version:3,app:'bloom',exportedAt:new Date().toISOString(),data:D,settings:S};
   const json=JSON.stringify(backup);
   const pass=prompt('Set a backup password (leave empty for unencrypted):');
   let output=json;
-  if(pass){let enc='';for(let i=0;i<json.length;i++)enc+=String.fromCharCode(json.charCodeAt(i)^pass.charCodeAt(i%pass.length));output='BLOOM_ENC:'+btoa(enc)}
+  if(pass){
+    const salt=crypto.getRandomValues(new Uint8Array(16));
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const key=await deriveKey(pass,salt);
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(json));
+    const buf=new Uint8Array(salt.length+iv.length+ct.byteLength);
+    buf.set(salt,0);buf.set(iv,16);buf.set(new Uint8Array(ct),28);
+    output='BLOOM_AES:'+btoa(String.fromCharCode(...buf));
+  }
   downloadFile(output,'application/json',`bloom-backup-${today()}.bloom`);
 }
 
@@ -3651,10 +3681,18 @@ function importBackup(){
   input.onchange=function(e){
     const file=e.target.files[0];if(!file)return;
     const reader=new FileReader();
-    reader.onload=function(ev){
+    reader.onload=async function(ev){
       let content=ev.target.result;
       try{
-        if(content.startsWith('BLOOM_ENC:')){
+        if(content.startsWith('BLOOM_AES:')){
+          const pass=prompt('Enter backup password:');if(!pass){alert('Password required.');return}
+          const raw=atob(content.slice(10));
+          const buf=Uint8Array.from(raw,c=>c.charCodeAt(0));
+          const salt=buf.slice(0,16),iv=buf.slice(16,28),ct=buf.slice(28);
+          const key=await deriveKey(pass,salt);
+          const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+          content=new TextDecoder().decode(pt);
+        }else if(content.startsWith('BLOOM_ENC:')){
           const pass=prompt('Enter backup password:');if(!pass){alert('Password required.');return}
           const decoded=atob(content.slice(10));let dec='';
           for(let i=0;i<decoded.length;i++)dec+=String.fromCharCode(decoded.charCodeAt(i)^pass.charCodeAt(i%pass.length));
@@ -3702,7 +3740,7 @@ function getWaterGoal(){
   let extras=[];
   const onSpiro=D.meds.some(m=>!m.ended&&m.name&&m.name.toLowerCase().includes('spironolactone'));
   if(onSpiro){ml+=500;extras.push('+500ml spironolactone');}
-  const activeSups=D.supplements.filter(s=>s.active!==false).length;
+  const activeSups=D.supplements.filter(s=>!s.ended).length;
   if(activeSups>=3){ml+=250;extras.push('+250ml supplements');}
   ml=Math.round(ml/50)*50;// round to 50
   return{ml,reason:`${Math.round(weightKg)}kg × 35ml/kg${extras.length?' + '+extras.join(', '):''}`};
@@ -3815,7 +3853,7 @@ function showReminder(slot){
   // In-app toast
   const toast=document.createElement('div');
   toast.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;background:var(--violet);color:#fff;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s;max-width:90vw;text-align:center';
-  toast.innerHTML=`${label}: ${msg}`;
+  toast.textContent=`${label}: ${msg}`;
   document.body.appendChild(toast);
   setTimeout(()=>toast.remove(),6000);
 }
@@ -3870,9 +3908,7 @@ function updateMoodHeader(){
 }
 updateHeaderQuote();
 updateMoodHeader();
-showView('dashboard');
-// Daily login reward — fires after dashboard renders
-setTimeout(checkDailyReward,800);
+if(!checkPinLock()){showView('dashboard');setTimeout(checkDailyReward,800)}
 </script>
 </body>
 </html>
