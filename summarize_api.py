@@ -1010,7 +1010,7 @@ def bloom_manifest():
         with open('/root/entity/src/apps/bloom/manifest.json', 'r') as f:
             return f.read(), 200, {'Content-Type': 'application/manifest+json'}
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        return "Server error", 500
 
 @app.route('/bloom/sw.js')
 def bloom_sw():
@@ -1018,7 +1018,7 @@ def bloom_sw():
         with open('/root/entity/src/apps/bloom/sw.js', 'r') as f:
             return f.read(), 200, {'Content-Type': 'application/javascript', 'Service-Worker-Allowed': '/bloom/'}
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        return "Server error", 500
 
 # ============ BLOOM FEEDBACK + PRIVACY ============
 
@@ -1101,13 +1101,7 @@ def bloom_download():
         return 'APK not available', 503
     return send_file(apk_path, mimetype='application/vnd.android.package-archive', as_attachment=True, download_name='Bloom-v3.2.5.apk')
 
-@app.route('/bloom/download/aab')
-def bloom_download_aab():
-    """Direct AAB download for Bloom (Play Store upload)."""
-    aab_path = '/root/bloom-app/bloom-v3.2.6-release.aab'
-    if not os.path.exists(aab_path):
-        return 'AAB not available', 503
-    return send_file(aab_path, mimetype='application/octet-stream', as_attachment=True, download_name='bloom-v3.2.6-release.aab')
+## AAB download removed — signed bundle should not be publicly accessible
 
 @app.route('/bloom/screenshots')
 def bloom_screenshots():
