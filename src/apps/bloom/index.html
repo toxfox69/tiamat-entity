@@ -1692,8 +1692,7 @@ function renderDashboard(){
 
   // Export buttons + footer
   h+=`<div style="display:flex;gap:8px;margin-top:4px">
-    <button class="btn-small" style="flex:1" onclick="exportDoctorReport()">Doctor Report</button>
-    <button class="btn-small" style="flex:1" onclick="exportCSV()">Export CSV</button>
+    <button class="btn-small" style="width:100%" onclick="exportDoctorReport()">Health Report</button>
   </div>`;
 
   h+=`<div style="text-align:center;padding:12px;font-size:11px;color:var(--text-muted)">
@@ -3006,8 +3005,7 @@ function renderInsights(){
     }
   }
 
-  h+=`<button class="btn-primary" onclick="exportDoctorReport()">Export Doctor Report (PDF-ready)</button>`;
-  h+=`<button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>`;
+  h+=`<button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>`;
 
   if(!D.logs.length)h+=`<div class="empty-state"><div class="icon">&#128300;</div><p>Start logging daily entries to see patterns, trends, and insights about your journey.</p></div>`;
   h+='</div>';
@@ -3191,8 +3189,7 @@ function renderSettings(){
       </div>
     </div>
 
-    <button class="btn-primary" onclick="exportDoctorReport()">Export Doctor Report (PDF-ready)</button>
-    <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
+    <button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
 
     <div class="settings-group">
