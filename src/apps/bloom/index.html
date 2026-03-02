@@ -1337,19 +1337,48 @@ function nextInjectionSite(){
 }
 function generateAlerts(){
   const alerts=[];const meds=D.meds.filter(m=>!m.ended);
+  const onHRT=S.onHRT!==false;
+  const days=daysOnHRT();
   const hasSpiro=meds.some(m=>m.name.toLowerCase().includes('spironolactone'));
   const hasBical=meds.some(m=>m.name.toLowerCase().includes('bicalutamide'));
 
+  // Getting started alerts for new HRT users
+  if(onHRT&&!D.startDate){
+    alerts.push({type:'info',msg:'Set your HRT start date in Settings > Profile to unlock timeline tracking and personalized alerts.'});
+  }
+  if(onHRT&&!meds.length){
+    alerts.push({type:'info',msg:'Add your medications in the Meds tab so Bloom can track adherence and generate health reports.'});
+  }
+
+  // Lab reminders
   if(D.labs.length){
     const lastLab=D.labs.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
     const daysSince=Math.floor((new Date()-new Date(lastLab.date))/864e5);
-    const months=daysOnHRT()/30;
+    const months=days/30;
     if(months<12&&daysSince>90)alerts.push({type:'info',msg:'Lab work may be due (recommended every 3 months in first year).'});
     else if(months>=12&&daysSince>180)alerts.push({type:'info',msg:'Lab work may be due (recommended every 6 months).'});
-  }else if(daysOnHRT()>30){
-    alerts.push({type:'warning',msg:'No labs recorded yet. Baseline labs are recommended before or shortly after starting HRT.'});
+  }else if(onHRT&&days>0){
+    if(days<=30)alerts.push({type:'info',msg:'Get baseline labs soon if you haven\'t already — they help track your progress on HRT.'});
+    else alerts.push({type:'warning',msg:'No labs recorded yet. Baseline labs are recommended before or shortly after starting HRT.'});
   }
 
+  // Injectable med reminders
+  const injectables=meds.filter(m=>((m.route||'').toLowerCase().includes('injection')||(m.route||'').toUpperCase()==='IM'||(m.route||'').toUpperCase()==='SUBQ'));
+  if(injectables.length&&D.injections.length){
+    const lastInj=D.injections[D.injections.length-1];
+    const daysSinceInj=Math.floor((new Date()-new Date(lastInj.date))/864e5);
+    for(const m of injectables){
+      const freq=(m.frequency||'').toLowerCase();
+      let interval=14;// default 2 weeks
+      if(freq.includes('week')&&!freq.includes('2')&&!freq.includes('bi'))interval=7;
+      if(freq.includes('5 day')||freq.includes('every 5'))interval=5;
+      if(freq.includes('3 day')||freq.includes('every 3'))interval=3;
+      if(daysSinceInj>=interval)alerts.push({type:'warning',msg:`Injection may be due — last was ${daysSinceInj} day${daysSinceInj!==1?'s':''} ago (${lastInj.site}). ${esc(m.name)} frequency: ${esc(m.frequency)}.`});
+      else if(daysSinceInj>=interval-1)alerts.push({type:'info',msg:`Injection coming up tomorrow — ${esc(m.name)} (${esc(m.frequency)}). Last: ${lastInj.site} ${daysSinceInj} day${daysSinceInj!==1?'s':''} ago.`});
+    }
+  }
+
+  // Dangerous lab values
   if(hasSpiro){const k=latestLab('Potassium');if(k&&k.value>5.0)alerts.push({type:'urgent',msg:`Potassium is ${k.value} mEq/L (elevated). Contact your provider — risk with spironolactone.`})}
 
   if(hasBical){
@@ -1369,7 +1398,7 @@ function generateAlerts(){
   const prl=latestLab('Prolactin');if(prl&&prl.value>50)alerts.push({type:'warning',msg:`Prolactin is ${prl.value} ng/mL (elevated). Discuss imaging with your provider.`});
 
   const e2=latestLab('Estradiol');
-  if(e2&&e2.value<50&&daysOnHRT()>90)alerts.push({type:'warning',msg:`Estradiol ${e2.value} pg/mL may be subtherapeutic. Discuss dosing with provider.`});
+  if(e2&&e2.value<50&&days>90)alerts.push({type:'warning',msg:`Estradiol ${e2.value} pg/mL may be subtherapeutic. Discuss dosing with provider.`});
   if(e2&&e2.value>500)alerts.push({type:'info',msg:`Estradiol ${e2.value} pg/mL is above typical target range.`});
 
   return alerts;
@@ -1832,18 +1861,21 @@ function logInjection(){
   const panel=document.createElement('div');
   panel.id=formId;panel.className='panel fade-in';
   panel.style.cssText='margin-bottom:12px;border:2px solid var(--violet)';
+  const fs='display:block;margin-bottom:10px';
+  const ls='display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px';
+  const is='width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px';
   panel.innerHTML=`<h3>Log Injection</h3>
-    <div class="form-row"><label>Site</label><select id="injSite" style="flex:1">
+    <div style="${fs}"><label style="${ls}">Injection Site</label><select id="injSite" style="${is}">
       ${INJECTION_SITES.map(s=>`<option value="${s}"${s===next?' selected':''}>${s}</option>`).join('')}
     </select></div>
-    ${(injectableMeds.length||allMeds.length)?`<div class="form-row"><label>Medication</label><select id="injMed" style="flex:1">
+    ${(injectableMeds.length||allMeds.length)?`<div style="${fs}"><label style="${ls}">Medication</label><select id="injMed" style="${is}">
       <option value="">— select —</option>
       ${(injectableMeds.length?injectableMeds:allMeds).map(m=>`<option value="${esc(m.name)}">${esc(m.name)} ${m.dose?'('+esc(m.dose)+')':''}</option>`).join('')}
     </select></div>`:''}
-    <div class="form-row"><label>Dose</label><input type="text" id="injDose" placeholder="e.g. 0.5ml, 4mg" style="flex:1"></div>
-    <div class="form-row"><label>Notes</label><input type="text" id="injNotes" placeholder="optional — pain, bruising, etc." style="flex:1"></div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn-primary" style="flex:2" onclick="saveInjForm()">Log</button>
+    <div style="${fs}"><label style="${ls}">Dose</label><input type="text" id="injDose" placeholder="e.g. 0.5ml, 4mg" style="${is}"></div>
+    <div style="${fs}"><label style="${ls}">Notes (optional)</label><input type="text" id="injNotes" placeholder="pain, bruising, etc." style="${is}"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn-primary" style="flex:2" onclick="saveInjForm()">Log Injection</button>
       <button class="btn-secondary" style="flex:1" onclick="document.getElementById('injForm').remove()">Cancel</button>
     </div>`;
   const tracker=document.querySelector('[onclick="logInjection()"]');
