@@ -1142,7 +1142,33 @@ const LAB_SCHEDULE={
     {time:'6 Months',desc:'Dose optimization',labs:['Testosterone','Estradiol','Free T','Hemoglobin','ALT','AST','LDL','HDL']},
     {time:'12 Months',desc:'Full annual panel',labs:['Testosterone','Estradiol','Free T','Hemoglobin','ALT','AST','LDL','HDL','Triglycerides','A1C','Vitamin D']},
     {time:'Ongoing',desc:'Every 6-12mo once stable',labs:['Testosterone','Hemoglobin','ALT','AST','LDL','HDL','Triglycerides']}
+  ],
+  femboy:[
+    {time:'Baseline',desc:'Before starting supplements',labs:['Testosterone','Estradiol','ALT','AST','Vitamin D','TSH','LDL','HDL']},
+    {time:'3 Months',desc:'Liver check + hormone baseline shift?',labs:['ALT','AST','Testosterone','Estradiol']},
+    {time:'6 Months',desc:'Full check-in',labs:['Testosterone','Estradiol','ALT','AST','Vitamin D','LDL','HDL','Triglycerides']},
+    {time:'Ongoing',desc:'Every 6-12mo',labs:['ALT','AST','Testosterone','Estradiol','LDL','HDL','Vitamin D']}
+  ],
+  tomboy:[
+    {time:'Baseline',desc:'Before starting supplements',labs:['Testosterone','Estradiol','Hemoglobin','ALT','AST','Vitamin D','TSH']},
+    {time:'3 Months',desc:'Liver + blood counts',labs:['ALT','AST','Hemoglobin','Testosterone']},
+    {time:'6 Months',desc:'Full check-in',labs:['Testosterone','Estradiol','Hemoglobin','ALT','AST','Vitamin D','LDL','HDL']},
+    {time:'Ongoing',desc:'Every 6-12mo',labs:['ALT','AST','Hemoglobin','Testosterone','LDL','HDL','Vitamin D']}
+  ],
+  wellness:[
+    {time:'Baseline',desc:'Get your starting numbers',labs:['Testosterone','Estradiol','ALT','AST','Hemoglobin','LDL','HDL','Triglycerides','A1C','TSH','Vitamin D']},
+    {time:'6 Months',desc:'Check supplement impact',labs:['ALT','AST','Vitamin D','LDL','HDL','Triglycerides']},
+    {time:'Ongoing',desc:'Annual wellness panel',labs:['ALT','AST','Hemoglobin','LDL','HDL','Triglycerides','A1C','Vitamin D','TSH']}
   ]
+};
+
+const LAB_SCHEDULE_META={
+  mtf:{label:'Trans Feminine',sub:'Estrogen-based HRT monitoring'},
+  ftm:{label:'Trans Masculine',sub:'Testosterone-based HRT monitoring'},
+  femboy:{label:'Selective Feminization',sub:'Supplement & anti-androgen monitoring'},
+  tomboy:{label:'Selective Masculinization',sub:'Supplement & wellness monitoring'},
+  nonbinary:{label:'Non-Binary',sub:'Custom hormone & wellness monitoring'},
+  custom:{label:'Custom',sub:'General wellness monitoring'}
 };
 
 const INJECTION_SITES=['L Thigh','R Thigh','L VG','R VG','L Delt','R Delt','L Abd','R Abd'];
@@ -2111,11 +2137,13 @@ function renderLabs(){
   const targets=getLabTargets();
   const j=S.journeyType||'mtf';
   const isFtm=j==='ftm'||j==='tomboy';
-  const sched=isFtm?LAB_SCHEDULE.ftm:LAB_SCHEDULE.mtf;
+  const schedKey=LAB_SCHEDULE[j]?j:isFtm?'ftm':j==='nonbinary'||j==='custom'?'wellness':'mtf';
+  const sched=LAB_SCHEDULE[schedKey];
+  const meta=LAB_SCHEDULE_META[j]||LAB_SCHEDULE_META.custom;
 
   // Testing Schedule
   h+=`<div class="panel"><h3>When to Test</h3>
-    <div class="panel-sub">${isFtm?'Testosterone':'Estrogen'}-based HRT monitoring schedule</div>`;
+    <div class="panel-sub">${meta.sub}</div>`;
   for(const s of sched){
     h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
