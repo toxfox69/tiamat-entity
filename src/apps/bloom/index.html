@@ -331,12 +331,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 </div>
 
 <!-- Water tracker floating widget -->
-<div id="waterFloat" onclick="toggleWaterPanel()" role="button" aria-label="Log water intake" tabindex="0" style="position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--mint));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(129,212,250,.4);cursor:pointer;z-index:100;transition:all .2s;font-size:11px;font-weight:700;line-height:1.1">
+<div id="waterFloat" onclick="toggleWaterPanel()" role="button" aria-label="Log water intake" tabindex="0" style="position:fixed;bottom:72px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--mint));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(129,212,250,.4);cursor:pointer;z-index:100;transition:all .2s;font-size:11px;font-weight:700;line-height:1.1">
   <span style="font-size:18px">&#128167;</span>
   <span id="waterCount">0</span>
 </div>
 
-<div id="waterPanel" style="display:none;position:fixed;bottom:84px;right:16px;width:280px;background:var(--surface);border-radius:18px;box-shadow:0 8px 32px rgba(62,36,101,.15);border:1px solid var(--border);z-index:101;padding:16px;animation:fadeUp .2s ease">
+<div id="waterPanel" style="display:none;position:fixed;bottom:136px;right:16px;width:280px;background:var(--surface);border-radius:18px;box-shadow:0 8px 32px rgba(62,36,101,.15);border:1px solid var(--border);z-index:101;padding:16px;animation:fadeUp .2s ease">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
     <div style="font-size:15px;font-weight:700;color:var(--sky-deep)">&#128167; Hydration</div>
     <span id="waterGoalLabel" style="font-size:11px;color:var(--text-muted)"></span>
@@ -1290,6 +1290,7 @@ async function hashPin(p){
 }
 
 let D=loadData(),S=loadSettings(),currentView='dashboard',tempLog={},tempLogInited=false;
+const _isCapacitor=typeof window!=='undefined'&&window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform();
 if(!D.photos)D.photos=[];
 if(!D.supplements)D.supplements=[];
 if(!D.phases)D.phases=[];
@@ -1306,7 +1307,7 @@ function monthsOnHRT(){return Math.round(daysOnHRT()/30.44*10)/10}
 function yearsOnHRT(){return Math.round(daysOnHRT()/365.25*10)/10}
 function getLog(d){return D.logs.find(l=>l.date===d)}
 function today(){return new Date().toISOString().split('T')[0]}
-function latestLab(name){const results=D.labs.flatMap(l=>l.results.filter(r=>r.name===name)).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));return results[0]}
+function latestLab(name){const results=D.labs.flatMap(l=>l.results.filter(r=>r.name===name).map(r=>({...r,date:l.date}))).sort((a,b)=>new Date(b.date)-new Date(a.date));return results[0]}
 function labHistory(name){return D.labs.flatMap(l=>l.results.filter(r=>r.name===name).map(r=>({...r,date:l.date}))).sort((a,b)=>new Date(a.date)-new Date(b.date))}
 function flagLab(name,value){
   const t=getLabTargets()[name];if(!t)return'normal';
@@ -1335,7 +1336,7 @@ function generateAlerts(){
   const hasBical=meds.some(m=>m.name.toLowerCase().includes('bicalutamide'));
 
   if(D.labs.length){
-    const lastLab=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+    const lastLab=D.labs.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
     const daysSince=Math.floor((new Date()-new Date(lastLab.date))/864e5);
     const months=daysOnHRT()/30;
     if(months<12&&daysSince>90)alerts.push({type:'info',msg:'Lab work may be due (recommended every 3 months in first year).'});
@@ -2483,7 +2484,9 @@ function saveLabEntry(){
     if(el&&el.value&&el.value.trim())results.push({name,value:parseFloat(el.value),unit:targets[name].unit});
   }
   if(!results.length){const btn=document.getElementById('saveLabBtn');btn.textContent='Enter at least one value';btn.style.background='var(--warn)';setTimeout(()=>{btn.textContent='Save Lab Results';btn.style.background=''},2000);return;}
-  D.labs.push({date,results});
+  const existingIdx=D.labs.findIndex(l=>l.date===date);
+  if(existingIdx>=0)D.labs[existingIdx]={date,results};
+  else D.labs.push({date,results});
   saveData();renderLabs();
 }
 
@@ -3420,7 +3423,7 @@ function renderSettings(){
       ${S.onHRT?`<div class="setting-row"><label>HRT Start Date</label><div style="display:flex;align-items:center;gap:8px"><input type="date" value="${D.startDate||''}" style="width:140px;padding:6px" onchange="D.startDate=this.value;saveData()"></div></div>
       ${(S.journeyType==='mtf'||S.journeyType==='femboy'||S.journeyType==='nonbinary')?`<div class="setting-row"><label>Tanner Stage</label>`:`<div class="setting-row" style="display:none"><label>Tanner Stage</label>`}
         <select style="width:80px;padding:6px" onchange="S.tannerStage=+this.value;saveSettings()">
-          ${TANNER_STAGES.map(t=>`<option value="${t.stage}"${parseInt(t.stage)===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
+          ${TANNER_STAGES.map((t,i)=>`<option value="${i+1}"${i+1===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
         </select></div>
       <div class="setting-row"><label id="lowDoseLabel">Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" role="switch" aria-checked="${S.lowDose}" aria-labelledby="lowDoseLabel" tabindex="0" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>`:''}
       <div class="setting-row"><label>Height</label>
@@ -3449,7 +3452,10 @@ function renderSettings(){
     </div>
 
     <div class="settings-group"><h3>Reminders</h3>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Get notified when it's time to take your meds and supplements. Notifications work while the app is open.</p>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">${_isCapacitor?'Native reminders — notifications fire even when the app is closed. Scheduled on-device, no network needed.':'Get notified when it\'s time to take your meds and supplements. Notifications work while the app is open.'}</p>
+      ${_isCapacitor?`<div id="bloomNotifPermRow" style="margin-bottom:12px">
+        <button class="btn-small" style="width:100%;padding:10px;font-weight:600;background:linear-gradient(135deg,var(--violet),var(--sky));color:#fff;border:none;border-radius:10px" onclick="(async()=>{const LN=window.Capacitor.Plugins.LocalNotifications;const p=await LN.requestPermissions();this.parentElement.innerHTML=p.display==='granted'?'<div style=\\'font-size:12px;color:var(--mint-deep);font-weight:600\\'>&#10003; Notifications enabled</div>':'<div style=\\'font-size:12px;color:var(--rose)\\'>Notifications denied — enable in Android Settings &gt; Apps &gt; Bloom</div>'})()">Enable Notifications</button>
+      </div>`:``}
       ${['am','pm','bedtime'].map(slot=>{
         const r=S.reminders[slot];
         const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
@@ -3460,7 +3466,7 @@ function renderSettings(){
           <div class="toggle ${r.enabled?'on':''}" onclick="S.reminders.${slot}.enabled=!S.reminders.${slot}.enabled;saveSettings();initReminders();renderSettings()"></div>
         </div>`;
       }).join('')}
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${typeof Notification!=='undefined'&&Notification.permission==='granted'?'Notifications enabled':'Notifications will be requested when you enable a reminder'}</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px">${_isCapacitor?'Reminders are scheduled via Android alarm — they work even after closing the app or rebooting.':(typeof Notification!=='undefined'&&Notification.permission==='granted'?'Notifications enabled':'Notifications will be requested when you enable a reminder')}</p>
     </div>
 
     <div class="settings-group"><h3>Backup & Restore</h3>
@@ -3497,7 +3503,19 @@ function renderSettings(){
     </div>
 
     <button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>
-    <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
+    <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data including settings and PIN? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(SETTINGS_KEY);localStorage.removeItem(PIN_KEY);D=defaultData();S=defaultSettings();showView('dashboard')}">Delete All Data</button>
+
+    <div class="settings-group"><h3>Feedback</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Found a bug or have a suggestion? Let us know anonymously — no contact info needed.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px" id="feedbackTypeChips">
+        <button class="goal-chip active" data-fbtype="bug" onclick="selectFeedbackType(this)" style="font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid var(--violet);background:var(--violet);color:#fff;cursor:pointer">Bug</button>
+        <button class="goal-chip" data-fbtype="feature" onclick="selectFeedbackType(this)" style="font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer">Feature</button>
+        <button class="goal-chip" data-fbtype="other" onclick="selectFeedbackType(this)" style="font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer">Other</button>
+      </div>
+      <textarea id="feedbackMsg" placeholder="Describe the issue or suggestion..." style="width:100%;min-height:80px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-family:inherit;line-height:1.5;color:var(--text);resize:vertical;margin-bottom:8px"></textarea>
+      <button class="btn-primary" onclick="submitFeedback()" id="feedbackSubmitBtn">Send Feedback</button>
+      <div id="feedbackStatus" style="display:none;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:8px;line-height:1.4"></div>
+    </div>
 
     <div class="settings-group">
       <details><summary style="font-size:16px;font-weight:700;cursor:pointer;color:var(--text);padding:4px 0">Legal</summary>
@@ -3512,10 +3530,11 @@ function renderSettings(){
         <p style="margin-top:6px"><strong>Data ownership.</strong> All data you enter belongs to you. We never access, collect, or transmit your data. See Privacy Policy below.</p>
 
         <div style="font-size:14px;font-weight:700;margin:16px 0 6px">Privacy Policy</div>
+        <p style="margin-bottom:8px"><a href="https://tiamat.live/bloom/privacy" target="_blank" rel="noopener" style="color:var(--violet-deep);text-decoration:underline;font-weight:600">View full privacy policy &rarr;</a></p>
         <p><strong>No data collection.</strong> Bloom stores all data exclusively in your browser's localStorage on your device. No data is ever sent to any server, cloud service, or third party.</p>
         <p style="margin-top:6px"><strong>No accounts.</strong> Bloom does not require registration, login, or any personal identifying information.</p>
         <p style="margin-top:6px"><strong>No analytics.</strong> We do not use cookies, tracking pixels, analytics services, or any form of usage monitoring.</p>
-        <p style="margin-top:6px"><strong>No network requests.</strong> Bloom functions entirely offline. The only outbound connections are links you voluntarily tap (resources, crisis lines) which open in your browser.</p>
+        <p style="margin-top:6px"><strong>No network requests.</strong> Bloom functions entirely offline except for the optional feedback form in Settings, which sends only your message — no health data, no device info, no identifiers. All other outbound connections are links you voluntarily tap (resources, crisis lines) which open in your browser.</p>
         <p style="margin-top:6px"><strong>Backups.</strong> Exported backup files are encrypted with AES-256-GCM using a password you choose. Backup files are saved to your device only — we never see them.</p>
         <p style="margin-top:6px"><strong>Photos.</strong> Photos taken or imported are stored as compressed data within localStorage on your device. They are never uploaded or transmitted.</p>
         <p style="margin-top:6px"><strong>Deletion.</strong> You can permanently delete all data at any time via Settings. Uninstalling the app or clearing browser data also removes everything.</p>
@@ -3544,13 +3563,43 @@ function renderSettings(){
   document.getElementById('content').innerHTML=h;
 }
 
+// ─── Feedback ────────────────────────────────────────────────
+function selectFeedbackType(el){
+  document.querySelectorAll('#feedbackTypeChips button').forEach(b=>{
+    b.style.background='var(--surface)';b.style.color='var(--text-muted)';b.style.borderColor='var(--border)';b.classList.remove('active');
+  });
+  el.style.background='var(--violet)';el.style.color='#fff';el.style.borderColor='var(--violet)';el.classList.add('active');
+}
+function submitFeedback(){
+  const typeEl=document.querySelector('#feedbackTypeChips button.active');
+  const msg=document.getElementById('feedbackMsg').value.trim();
+  const status=document.getElementById('feedbackStatus');
+  const btn=document.getElementById('feedbackSubmitBtn');
+  if(!msg){status.style.display='block';status.style.background='var(--danger-pale,#ffe0e0)';status.style.color='var(--danger)';status.textContent='Please enter a message.';return;}
+  btn.disabled=true;btn.textContent='Sending...';
+  fetch('https://tiamat.live/api/bloom/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:typeEl?.dataset.fbtype||'other',message:msg,version:'3.0'})})
+  .then(r=>r.json().then(d=>({ok:r.ok,status:r.status,data:d})))
+  .then(({ok,status:s,data})=>{
+    status.style.display='block';
+    if(ok){status.style.background='var(--violet-pale)';status.style.color='var(--violet-deep)';status.textContent='Thank you! Feedback received.';document.getElementById('feedbackMsg').value='';}
+    else{status.style.background='var(--danger-pale,#ffe0e0)';status.style.color='var(--danger)';status.textContent=data.error||'Failed to send.';}
+  })
+  .catch(()=>{status.style.display='block';status.style.background='var(--danger-pale,#ffe0e0)';status.style.color='var(--danger)';status.textContent='Network error — feedback not sent.';})
+  .finally(()=>{btn.disabled=false;btn.textContent='Send Feedback';});
+}
+
 // ─── Stealth Mode ────────────────────────────────────────────
 function applyStealth(){
   const title=document.getElementById('appTitle');
   const logo=document.getElementById('appLogo');
   const svg=logo?.querySelector('svg');
-  if(S.stealthMode){title.textContent=S.stealthName||'Wellness';document.title=S.stealthName||'Wellness';if(svg)svg.style.display='none'}
-  else{title.textContent='Bloom';document.title='Bloom — Private Wellness Tracker';if(svg)svg.style.display=''}
+  if(S.stealthMode){
+    title.textContent=S.stealthName||'Wellness';document.title=S.stealthName||'Wellness';if(svg)svg.style.display='none';
+    if(_isCapacitor){try{window.Capacitor.Plugins.Stealth.enable()}catch(e){}}
+  }else{
+    title.textContent='Bloom';document.title='Bloom — Private Wellness Tracker';if(svg)svg.style.display='';
+    if(_isCapacitor){try{window.Capacitor.Plugins.Stealth.disable()}catch(e){}}
+  }
 }
 
 // ─── Theme ───────────────────────────────────────────────────
@@ -3907,10 +3956,49 @@ ${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${esc(i.si
 <script>window.onload=function(){window.print()}<\/script>
 </body></html>`;
 
-  const blob=new Blob([html],{type:'text/html'});
-  const url=URL.createObjectURL(blob);
-  window.open(url,'_blank','noopener,noreferrer');
-  setTimeout(()=>URL.revokeObjectURL(url),30000);
+  // Show report in a full-screen overlay with close + save controls
+  const overlay=document.createElement('div');
+  overlay.id='reportOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:10000;background:var(--bg,#fff);display:flex;flex-direction:column';
+
+  // Toolbar
+  const toolbar=document.createElement('div');
+  toolbar.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--surface,#f8f0ff);border-bottom:1px solid var(--border,#e8d5f5);flex-shrink:0';
+  toolbar.innerHTML=`
+    <button onclick="document.getElementById('reportOverlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text,#333);padding:4px 8px">&#10005;</button>
+    <span style="flex:1;font-weight:700;font-size:15px;color:var(--text,#333)">Health Report</span>
+    <button onclick="bloomReportSave('print')" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border,#e8d5f5);background:var(--surface,#fff);color:var(--text,#333);font-size:13px;font-weight:600;cursor:pointer">Print / PDF</button>
+    <button onclick="bloomReportSave('html')" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--violet,#7C4DFF),var(--sky,#64B5F6));color:#fff;font-size:13px;font-weight:600;cursor:pointer">Save File</button>`;
+  overlay.appendChild(toolbar);
+
+  // Report content in iframe
+  const iframe=document.createElement('iframe');
+  iframe.style.cssText='flex:1;border:none;width:100%';
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+
+  // Write report HTML into iframe (without auto-print)
+  const reportHtml=html.replace('<script>window.onload=function(){window.print()}<\/script>','');
+  setTimeout(()=>{try{iframe.contentDocument.open();iframe.contentDocument.write(reportHtml);iframe.contentDocument.close()}catch(e){}},50);
+
+  // Save functions
+  window.bloomReportSave=function(mode){
+    if(mode==='print'){
+      // Try native print on the iframe content
+      try{iframe.contentWindow.print()}catch(e){
+        // Fallback: open in new tab for printing
+        const b=new Blob([reportHtml],{type:'text/html'});
+        const u=URL.createObjectURL(b);
+        window.open(u);setTimeout(()=>URL.revokeObjectURL(u),30000);
+      }
+    }else{
+      // Save as .html file
+      const b=new Blob([reportHtml],{type:'text/html'});
+      const a=document.createElement('a');a.href=URL.createObjectURL(b);
+      a.download='bloom-health-report-'+today()+'.html';
+      a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    }
+  };
 }
 
 async function deriveKey(pass,salt){
@@ -4062,31 +4150,84 @@ setTimeout(updateWaterUI,100);
 
 // ─── Reminders ───────────────────────────────────────────────
 let _reminderTimers=[];
-function initReminders(){
+// Register native notification listener once (not inside initReminders to avoid accumulation)
+if(_isCapacitor){
+  const _LN=window.Capacitor?.Plugins?.LocalNotifications;
+  if(_LN)_LN.addListener('localNotificationReceived',notification=>{
+    const toast=document.createElement('div');
+    toast.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;background:var(--violet);color:#fff;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s;max-width:90vw;text-align:center';
+    toast.textContent=notification.body||notification.title;
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),6000);
+  });
+}
+
+async function initReminders(){
   _reminderTimers.forEach(t=>clearTimeout(t));
   _reminderTimers=[];
   const rem=S.reminders;if(!rem)return;
   const anyEnabled=Object.values(rem).some(r=>r.enabled);
-  if(!anyEnabled)return;
-  if(typeof Notification!=='undefined'&&Notification.permission==='default'){Notification.requestPermission()}
-  const now=new Date();
-  for(const[slot,r]of Object.entries(rem)){
-    if(!r.enabled)continue;
-    const[hh,mm]=r.time.split(':').map(Number);
-    const target=new Date(now);target.setHours(hh,mm,0,0);
-    const ms=target-now;
-    if(ms<=0)continue;
-    _reminderTimers.push(setTimeout(()=>showReminder(slot),ms));
-    // Also schedule via SW for background delivery (best-effort)
-    if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
-      const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
-      navigator.serviceWorker.controller.postMessage({
-        type:'SCHEDULE_REMINDER',
-        delay:ms,
-        title:`Bloom — ${label} Reminder`,
-        body:'Time to check your meds & supplements!',
-        tag:'bloom-'+slot
+
+  if(_isCapacitor){
+    // ── Native path: Capacitor Local Notifications ──
+    const LN=window.Capacitor?.Plugins?.LocalNotifications;
+    if(!LN)return;
+    if(!anyEnabled){
+      const pending=await LN.getPending();
+      if(pending.notifications.length>0){
+        await LN.cancel({notifications:pending.notifications.map(n=>({id:n.id}))});
+      }
+      return;
+    }
+    const perm=await LN.requestPermissions();
+    if(perm.display!=='granted'){return}
+
+    // Cancel existing before rescheduling
+    const pending=await LN.getPending();
+    if(pending.notifications.length>0){
+      await LN.cancel({notifications:pending.notifications.map(n=>({id:n.id}))});
+    }
+
+    // Schedule daily repeating for each enabled slot
+    const slotIds={am:1,pm:2,bedtime:3};
+    const slotLabels={am:'Morning',pm:'Afternoon',bedtime:'Bedtime'};
+    const slotEmoji={am:'\u2600',pm:'\u263C',bedtime:'\u263E'};
+    const notifs=[];
+    for(const[slot,r]of Object.entries(rem)){
+      if(!r.enabled)continue;
+      const[hh,mm]=r.time.split(':').map(Number);
+      notifs.push({
+        id:slotIds[slot],
+        title:`Bloom — ${slotLabels[slot]} Reminder`,
+        body:`${slotEmoji[slot]} Time to log your meds & supplements!`,
+        schedule:{on:{hour:hh,minute:mm},every:'day',allowWhileIdle:true},
+        autoCancel:true
       });
+    }
+    if(notifs.length>0){
+      await LN.schedule({notifications:notifs});
+    }
+  }else{
+    // ── Browser path: setTimeout + Web Notification API ──
+    if(!anyEnabled)return;
+    if(typeof Notification!=='undefined'&&Notification.permission==='default'){Notification.requestPermission()}
+    const now=new Date();
+    for(const[slot,r]of Object.entries(rem)){
+      if(!r.enabled)continue;
+      const[hh,mm]=r.time.split(':').map(Number);
+      const target=new Date(now);target.setHours(hh,mm,0,0);
+      const ms=target-now;
+      if(ms<=0)continue;
+      _reminderTimers.push(setTimeout(()=>showReminder(slot),ms));
+      if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+        const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
+        navigator.serviceWorker.controller.postMessage({
+          type:'SCHEDULE_REMINDER',delay:ms,
+          title:`Bloom — ${label} Reminder`,
+          body:'Time to check your meds & supplements!',
+          tag:'bloom-'+slot
+        });
+      }
     }
   }
 }
@@ -4098,14 +4239,12 @@ function showReminder(slot){
   const medLog=D.medLog.find(l=>l.date===td)||{date:td,taken:[]};
   const suppLog=D.supplementLog.find(l=>l.date===td)||{date:td,taken:[]};
 
-  // Map schedule groups to reminder slots
   const slotGroups={am:['am_empty','am_food'],pm:['pm'],bedtime:['bedtime']};
   const schedule=generateSchedule();
   const groups=slotGroups[slot]||[];
   const scheduledSuppIds=new Set();
   for(const g of groups){if(schedule[g])schedule[g].forEach(item=>scheduledSuppIds.add(item.supp.id))}
 
-  // Count untaken
   const untakenMeds=activeMeds.filter(m=>!medLog.taken.includes(m.id||m.name));
   const untakenSupps=activeSups.filter(s=>scheduledSuppIds.has(s.id)&&!suppLog.taken.includes(s.id));
   const total=untakenMeds.length+untakenSupps.length;
@@ -4115,12 +4254,10 @@ function showReminder(slot){
   const names=[...untakenMeds.map(m=>m.name),...untakenSupps.map(s=>s.name)].slice(0,5).join(', ');
   const msg=`${total} untaken: ${names}${total>5?'...':''}`;
 
-  // Browser notification
   if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
     new Notification(`Bloom — ${label} Reminder`,{body:msg,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌸</text></svg>'});
   }
 
-  // In-app toast
   const toast=document.createElement('div');
   toast.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;background:var(--violet);color:#fff;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s;max-width:90vw;text-align:center';
   toast.textContent=`${label}: ${msg}`;
@@ -4225,7 +4362,6 @@ function endTutorial(){
 
 // ─── Init ────────────────────────────────────────────────────
 checkOnboarding();
-checkPinLock();
 applyStealth();
 applyTheme();
 initReminders();
