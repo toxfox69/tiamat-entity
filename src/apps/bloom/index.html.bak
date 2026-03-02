@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#F8F0FF">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Bloom — Private Wellness Tracker</title>
+<title>Bloom — Private HRT Tracker</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -26,7 +26,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .app{max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
 .header{padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between}
 .header h1{font-size:24px;font-weight:700;background:linear-gradient(135deg,var(--violet-deep),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.header-actions{display:flex;gap:8px;flex-shrink:0}
+.header-actions{display:flex;gap:8px}
 .header-btn{width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border);transition:all .2s;box-shadow:0 1px 3px rgba(62,36,101,.06)}
 .header-btn:hover{background:var(--violet-pale);border-color:var(--violet-soft)}
 
@@ -46,12 +46,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .stat-card .value{font-size:20px;font-weight:700}
 
 .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(62,36,101,.04)}
-.panel h3{font-size:15px;font-weight:600;margin-bottom:12px;text-align:center}
-.qs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 4px}
-.qs-grid .qs{padding:6px 0;text-align:center}
-.qs .qs-label{font-size:10px;color:var(--text-muted);margin-bottom:1px}
-.qs .qs-value{font-size:14px;font-weight:700}
-.panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:10px;text-align:center}
+.panel h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:10px}
 
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .chip{padding:6px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:var(--surface);transition:all .2s;font-weight:500;user-select:none}
@@ -78,7 +74,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .form-row label{font-size:14px;color:var(--text-dim);min-width:90px;font-weight:500}
 .form-row > *:last-child{flex:1}
 
-.section-title{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;text-align:center}
+.section-title{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;padding-left:2px}
 
 .chart-bar{display:flex;align-items:end;gap:3px;height:80px;margin:8px 0}
 .chart-bar .bar{flex:1;border-radius:4px 4px 0 0;transition:height .3s;min-height:2px}
@@ -181,30 +177,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes waterPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
-@keyframes quoteFade{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
-
-.header-quote{font-size:11px;color:var(--text-muted);font-style:italic;flex:1;min-width:0;line-height:1.3;animation:quoteFade .5s ease;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-.exercise-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(62,36,101,.04)}
-.exercise-card h4{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.exercise-card .ex-why{font-size:12px;color:var(--text-dim);line-height:1.5;margin-bottom:8px}
-.exercise-card .ex-how{font-size:12px;color:var(--text);line-height:1.6;padding:8px 10px;background:var(--violet-pale);border-radius:10px}
-.exercise-card .ex-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.exercise-card .ex-tag{font-size:10px;padding:3px 10px;border-radius:10px;font-weight:600}
-.exercise-done{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;cursor:pointer;transition:all .2s}
-.exercise-done.checked{border-color:var(--mint);background:var(--mint-pale);color:var(--mint-deep)}
-
-.reward-overlay{position:fixed;inset:0;background:rgba(62,36,101,.5);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease}
-.reward-card{background:var(--surface);border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(62,36,101,.3);animation:fadeUp .4s ease}
-.reward-card .reward-emoji{font-size:48px;margin-bottom:12px}
-.reward-card h3{font-size:18px;font-weight:700;margin-bottom:4px}
-.reward-card .reward-sub{font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.5}
-.reward-card .xp-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:8px 0}
-.reward-card .xp-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--pink));border-radius:4px;transition:width .6s ease}
-.reward-card .reward-streak{display:flex;justify-content:center;gap:6px;margin:12px 0}
-.reward-card .streak-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted)}
-.reward-card .streak-dot.filled{background:linear-gradient(135deg,var(--violet),var(--pink));border-color:transparent;color:#fff}
-.reward-card .streak-dot.today{box-shadow:0 0 0 3px var(--violet-soft)}
 .fade-in{animation:fadeIn .3s ease}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted)}
 .empty-state .icon{font-size:48px;margin-bottom:12px}
@@ -242,34 +214,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 
   <div id="mainApp">
     <div class="header">
-      <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-        <div id="appLogo" style="flex-shrink:0;display:flex;align-items:center;gap:6px">
-          <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="32" r="16" fill="url(#p1)" opacity=".85"/>
-            <circle cx="35" cy="45" r="16" fill="url(#p2)" opacity=".8"/>
-            <circle cx="65" cy="45" r="16" fill="url(#p3)" opacity=".8"/>
-            <circle cx="38" cy="62" r="16" fill="url(#p4)" opacity=".75"/>
-            <circle cx="62" cy="62" r="16" fill="url(#p5)" opacity=".75"/>
-            <circle cx="50" cy="50" r="10" fill="#FFD54F"/>
-            <defs>
-              <linearGradient id="p1" x1="34" y1="16" x2="66" y2="48"><stop stop-color="#E1BEE7"/><stop offset="1" stop-color="#CE93D8"/></linearGradient>
-              <linearGradient id="p2" x1="19" y1="29" x2="51" y2="61"><stop stop-color="#F8BBD0"/><stop offset="1" stop-color="#F48FB1"/></linearGradient>
-              <linearGradient id="p3" x1="49" y1="29" x2="81" y2="61"><stop stop-color="#D1C4E9"/><stop offset="1" stop-color="#B39DDB"/></linearGradient>
-              <linearGradient id="p4" x1="22" y1="46" x2="54" y2="78"><stop stop-color="#F8BBD0"/><stop offset="1" stop-color="#F06292"/></linearGradient>
-              <linearGradient id="p5" x1="46" y1="46" x2="78" y2="78"><stop stop-color="#E1BEE7"/><stop offset="1" stop-color="#AB47BC"/></linearGradient>
-            </defs>
-          </svg>
-          <h1 id="appTitle" style="font-size:22px">Bloom</h1>
-        </div>
-        <div class="header-quote" id="headerQuote"></div>
-      </div>
+      <h1 id="appTitle">Bloom</h1>
       <div class="header-actions">
-        <button class="header-btn" id="moodHeaderBtn" onclick="showView('log')" title="Mood"></button>
-        <button class="header-btn" id="menuBtn" onclick="toggleSettings()" title="Menu" style="flex-direction:column;gap:3px;padding:0">
-          <span style="display:block;width:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--violet-deep),var(--pink));transition:all .3s"></span>
-          <span style="display:block;width:12px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--pink),var(--violet-soft));transition:all .3s"></span>
-          <span style="display:block;width:16px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--violet-soft),var(--mint));transition:all .3s"></span>
-        </button>
+        <button class="header-btn" onclick="showView('insights')" title="Insights">&#9733;</button>
+        <button class="header-btn" onclick="showView('settings')" title="Settings">&#9881;</button>
       </div>
     </div>
 
@@ -282,7 +230,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 
     <div class="nav">
       <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">Home</button>
-      <button class="nav-btn" data-view="active" onclick="showView('active')">Active</button>
       <button class="nav-btn" data-view="log" onclick="showView('log')">Log</button>
       <button class="nav-btn" data-view="body" onclick="showView('body')">Body</button>
       <button class="nav-btn" data-view="photos" onclick="showView('photos')">Photos</button>
@@ -555,250 +502,6 @@ const TOMBOY_TIMELINE=[
   {change:'Skin changes',onset:'1-3 months',max:'1-2 years',reversible:true}
 ];
 
-// ─── Motivational Quotes ────────────────────────────────────
-const MOTIVATIONAL_QUOTES={
-  general:[
-    'Progress not perfection',
-    'Trust the process',
-    'Keep showing up',
-    'You are becoming',
-    'One day closer',
-    'Consistency is magic',
-    'Be patient today',
-    'Choose yourself daily',
-    'Small steps count',
-    'Rest is growth',
-    'You are enough',
-    'Keep blooming'
-  ],
-  mtf:[
-    'Softness is strength',
-    'She was always there',
-    'Bloom into you',
-    'Trust the estrogen',
-    'Becoming her daily'
-  ],
-  ftm:[
-    'Strength runs deep',
-    'Becoming him daily',
-    'Own your space',
-    'T is building',
-    'Stay the course'
-  ],
-  femboy:[
-    'Soft and strong',
-    'Your own aesthetic',
-    'Elegance transcends gender',
-    'Beautiful balance'
-  ],
-  tomboy:[
-    'Strong looks good',
-    'Break the mold',
-    'Power in you',
-    'Own your edge'
-  ],
-  fitness:[
-    'Muscles are listening',
-    'One more rep',
-    'Sweat then glow',
-    'Movement is medicine',
-    'Discipline over motivation'
-  ]
-};
-
-function getMotivationalQuote(){
-  const j=S.journeyType||'mtf';
-  const pool=[...MOTIVATIONAL_QUOTES.general];
-  if(MOTIVATIONAL_QUOTES[j])pool.push(...MOTIVATIONAL_QUOTES[j]);
-  // Seed by date so it changes daily
-  const dayNum=Math.floor(Date.now()/86400000);
-  return pool[dayNum%pool.length];
-}
-
-// ─── Exercise Database ──────────────────────────────────────
-const EXERCISE_DB=[
-  // GLUTES & LOWER BODY
-  {id:'squats',name:'Squats',icon:'🦵',sets:'3×15',rest:'60s',
-   why:'Builds glute and thigh mass, redistributes fat to lower body',
-   how:'Feet shoulder-width, push hips back, lower until thighs parallel. Drive through heels. Add weight when bodyweight is easy.',
-   goals:['bigger_butt','bigger_thighs','fat_redist','muscle_growth'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Glutes','Thighs','Compound']},
-  {id:'hip_thrusts',name:'Hip Thrusts',icon:'🍑',sets:'3×20',rest:'60s',
-   why:'#1 glute builder — directly targets glute max for rounder, fuller shape',
-   how:'Back against bench/couch edge, feet flat. Drive hips up squeezing glutes hard at top. Pause 2 seconds. Lower slowly.',
-   goals:['bigger_butt','fat_redist','bigger_thighs'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Glutes','Shape']},
-  {id:'glute_bridges',name:'Glute Bridges',icon:'🌉',sets:'3×20',rest:'45s',
-   why:'Activates glutes, builds mind-muscle connection, great for beginners',
-   how:'Lie on back, knees bent, feet flat. Push hips up, squeeze glutes at top. Hold 3 seconds. Lower slowly.',
-   goals:['bigger_butt','bigger_thighs','fat_redist','better_erections'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Glutes','Beginner']},
-  {id:'donkey_kicks',name:'Donkey Kicks',icon:'🦄',sets:'3×15 each',rest:'30s',
-   why:'Isolates glutes without building quad mass — ideal for feminine lower body shape',
-   how:'On all fours, kick one leg back and up keeping knee bent 90°. Squeeze at top. Don\'t arch lower back.',
-   goals:['bigger_butt','fat_redist'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Glutes','Isolation']},
-  {id:'lunges',name:'Walking Lunges',icon:'🚶',sets:'3×12 each',rest:'60s',
-   why:'Builds thighs and glutes while improving balance and coordination',
-   how:'Step forward into a deep lunge — back knee nearly touching floor. Push through front heel to step forward. Alternate legs.',
-   goals:['bigger_butt','bigger_thighs','muscle_growth','fat_redist'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Legs','Compound']},
-  {id:'sumo_squats',name:'Sumo Squats',icon:'🏋️',sets:'3×15',rest:'60s',
-   why:'Wide stance targets inner thighs and glutes — builds feminine lower body proportions',
-   how:'Wide stance, toes pointed out 45°. Lower slowly, keeping knees tracking over toes. Squeeze inner thighs and glutes to rise.',
-   goals:['bigger_thighs','bigger_butt','fat_redist'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Thighs','Glutes']},
-
-  // PELVIC FLOOR & SEXUAL FUNCTION
-  {id:'kegels',name:'Kegels',icon:'💪',sets:'3×10 (hold 5s)',rest:'30s',
-   why:'Strengthens pelvic floor — stronger erections, better orgasms, improved ejaculation control',
-   how:'Squeeze like you\'re stopping urine mid-flow. Hold 5 seconds, relax 5 seconds. Don\'t clench abs or glutes. Can do anywhere, anytime.',
-   goals:['better_erections','more_sensitivity','more_ejaculate','bigger_penis','libido_up'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Pelvic Floor','Sexual Health']},
-  {id:'reverse_kegels',name:'Reverse Kegels',icon:'🔄',sets:'3×10 (hold 5s)',rest:'30s',
-   why:'Relaxes pelvic floor — increases blood flow, improves fullness, balances kegel work',
-   how:'Instead of squeezing, gently push/bear down as if starting to urinate. Hold the relaxed stretch 5 seconds. Subtle movement — less is more.',
-   goals:['better_erections','bigger_penis','more_sensitivity','more_ejaculate'],journeys:['mtf','femboy','ftm','nonbinary','custom'],
-   tags:['Pelvic Floor','Blood Flow']},
-  {id:'jelqing_stretch',name:'Manual Stretching',icon:'📏',sets:'5 min',rest:'—',
-   why:'Gentle traction promotes tissue expansion over time — works best with vasodilator supplements',
-   how:'Warm up first (warm towel 5 min). Gentle base-to-tip stretches at multiple angles — 30 seconds each direction. Never painful. Consistency > intensity.',
-   goals:['bigger_penis'],journeys:['mtf','femboy','ftm','nonbinary','custom'],
-   tags:['Growth','Tissue']},
-  {id:'pumping',name:'Pumping',icon:'🔬',sets:'2×10 min',rest:'5 min between',
-   why:'Vacuum-assisted engorgement expands tissue capacity — synergizes with L-Citrulline and L-Arginine stack',
-   how:'Use quality pump with pressure gauge. Start low (3-5 inHg), increase gradually. 10 min on, 5 min off, repeat. Always warm up first. Stop if any discomfort.',
-   goals:['bigger_penis','better_erections'],journeys:['mtf','femboy','ftm','nonbinary','custom'],
-   tags:['Growth','Engorgement']},
-
-  // CORE & WAIST
-  {id:'vacuum',name:'Stomach Vacuums',icon:'🌀',sets:'3×20s hold',rest:'30s',
-   why:'Tightens transverse abdominis — slims waist without building blocky obliques',
-   how:'Standing or on all fours. Exhale fully, then pull belly button toward spine as hard as you can. Hold 20 seconds breathing shallowly. Release.',
-   goals:['slimmer_waist','fat_redist'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Core','Waist']},
-  {id:'planks',name:'Plank Holds',icon:'🧱',sets:'3×30-60s',rest:'45s',
-   why:'Builds core stability and posture — defines midsection without adding bulk',
-   how:'Forearms and toes on floor, body straight as a board. Pull belly button in. Don\'t let hips sag or pike up. Breathe normally.',
-   goals:['slimmer_waist','muscle_growth','bone_health'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Core','Stability']},
-  {id:'side_planks',name:'Side Planks',icon:'📐',sets:'3×20s each',rest:'30s',
-   why:'Tones obliques for defined waist-to-hip ratio without adding width',
-   how:'On forearm and side of foot. Stack or stagger feet. Lift hips — body in straight line. Hold. Switch sides.',
-   goals:['slimmer_waist'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Core','Waist']},
-
-  // UPPER BODY
-  {id:'pushups',name:'Push-Ups',icon:'💎',sets:'3×10-15',rest:'60s',
-   why:'Builds chest foundation under breast tissue — creates fuller appearance and better posture',
-   how:'Hands shoulder-width, lower chest to floor, push back up. Start on knees if needed. Keep core tight throughout.',
-   goals:['breast_dev','muscle_growth','chest_flat','bone_health'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Chest','Upper Body']},
-  {id:'chest_massage',name:'Breast Massage',icon:'✨',sets:'5 min each side',rest:'—',
-   why:'Promotes blood flow to breast tissue — may enhance development especially with phytoestrogen stack',
-   how:'Warm hands. Circular motions from outside inward, then upward strokes. Gentle but firm pressure. Best after shower when skin is warm.',
-   goals:['breast_dev','bigger_nipples','lactation'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Breast','Circulation']},
-  {id:'pullups',name:'Pull-Ups / Rows',icon:'🪨',sets:'3×8-12',rest:'90s',
-   why:'Builds V-taper back and biceps — key for masculine upper body proportions',
-   how:'Overhand grip, pull chin over bar. If can\'t do full pull-ups, use resistance bands or do inverted rows under a table.',
-   goals:['muscle_growth','chest_flat'],journeys:['ftm','tomboy','nonbinary','custom'],
-   tags:['Back','Upper Body']},
-
-  // YOGA & FLEXIBILITY
-  {id:'yoga_hip_opener',name:'Hip Opening Yoga',icon:'🧘',sets:'15 min flow',rest:'—',
-   why:'Opens hip flexors, improves pelvic blood flow, builds feminine posture and fluidity',
-   how:'Pigeon pose (2 min each side) → Frog pose (2 min) → Butterfly stretch (2 min) → Happy baby (2 min). Breathe deeply into each stretch.',
-   goals:['bigger_butt','fat_redist','better_erections','more_sensitivity','mood_stability','better_sleep'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Flexibility','Hips','Yoga']},
-  {id:'yoga_flow',name:'Vinyasa Flow',icon:'🌊',sets:'20 min',rest:'—',
-   why:'Full-body movement meditation — reduces cortisol, improves mood, builds lean flexibility',
-   how:'Sun salutation A (5 rounds) → Warrior I, II, III → Triangle → Tree pose. Flow with breath. No rushing.',
-   goals:['mood_stability','better_sleep','more_energy','slimmer_waist','recovery'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Yoga','Mood','Full Body']},
-  {id:'evening_stretch',name:'Evening Stretch',icon:'🌙',sets:'10 min',rest:'—',
-   why:'Signals body to wind down — reduces muscle tension, improves sleep onset',
-   how:'Child\'s pose (2 min) → Seated forward fold (2 min) → Supine twist each side (2 min) → Legs up the wall (4 min). Slow, deep breathing.',
-   goals:['better_sleep','mood_stability','recovery'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Sleep','Recovery','Stretch']},
-
-  // CARDIO
-  {id:'walking',name:'Walking (30 min)',icon:'🚶',sets:'30 min',rest:'—',
-   why:'Burns fat without building muscle — ideal for feminizing body recomposition. Boosts mood and heart health.',
-   how:'Brisk pace where you can still talk. Aim for daily. Great fasted in the morning for fat burning. Take the scenic route.',
-   goals:['slimmer_waist','fat_redist','heart_health','mood_stability','more_energy','muscle_loss'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Cardio','Fat Loss']},
-  {id:'hiit',name:'HIIT Sprint Intervals',icon:'⚡',sets:'8×30s on/60s off',rest:'—',
-   why:'Spikes testosterone naturally, burns fat, builds explosive power',
-   how:'30 seconds ALL OUT (sprints, burpees, bike) → 60 seconds walk/rest. Repeat 8 times. Warm up 5 min first. Cool down 5 min after.',
-   goals:['muscle_growth','fat_redist_masc','more_energy','heart_health','libido_up'],journeys:['ftm','tomboy','nonbinary','custom'],
-   tags:['Cardio','HIIT','Power']},
-  {id:'cycling',name:'Cycling / Stationary Bike',icon:'🚴',sets:'20-30 min',rest:'—',
-   why:'Low-impact cardio that builds thighs without stressing joints. Improves pelvic circulation.',
-   how:'Moderate resistance, 70-90 RPM. Mix in 1-min high resistance intervals every 5 min. Keep seat at proper height.',
-   goals:['bigger_thighs','heart_health','more_energy','better_erections'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Cardio','Legs']},
-
-  // COMPOUND / STRENGTH (FTM-focused)
-  {id:'deadlifts',name:'Deadlifts',icon:'🏋️',sets:'3×8',rest:'120s',
-   why:'King of compound lifts — builds full posterior chain, boosts natural testosterone',
-   how:'Feet hip-width under bar. Hinge at hips, grip bar. Flat back, drive through heels. Lock out at top. Control the descent.',
-   goals:['muscle_growth','fat_redist_masc','bone_health'],journeys:['ftm','tomboy','nonbinary','custom'],
-   tags:['Strength','Full Body']},
-  {id:'ohp',name:'Overhead Press',icon:'🙌',sets:'3×10',rest:'90s',
-   why:'Builds broad shoulders — creates masculine V-taper upper body',
-   how:'Barbell or dumbbells at shoulder height. Press straight up overhead. Lower controlled. Keep core braced — don\'t arch back.',
-   goals:['muscle_growth','chest_flat'],journeys:['ftm','tomboy','nonbinary','custom'],
-   tags:['Shoulders','Strength']},
-
-  // BONE & RECOVERY
-  {id:'weight_bearing',name:'Weight-Bearing Walks',icon:'🦴',sets:'30 min',rest:'—',
-   why:'Critical for bone density — especially important when suppressing sex hormones',
-   how:'Walk with light ankle weights or weighted vest. Stairs count double. Impact-loading stimulates bone mineral deposition.',
-   goals:['bone_health','heart_health'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Bones','Low Impact']},
-  {id:'gentle_movement',name:'Gentle Recovery Movement',icon:'🌿',sets:'15-20 min',rest:'—',
-   why:'Promotes circulation to healing tissues without strain — accelerates recovery',
-   how:'Slow walking (10 min) → Gentle arm circles → Ankle rotations → Deep breathing. No exertion. Listen to your body.',
-   goals:['recovery'],journeys:['mtf','femboy','ftm','tomboy','nonbinary','custom'],
-   tags:['Recovery','Gentle']},
-
-  // NIPPLE/BREAST SPECIFIC
-  {id:'nipple_stimulation',name:'Nipple Stimulation',icon:'🎯',sets:'5 min each',rest:'—',
-   why:'Triggers prolactin release — key for lactation induction and nipple/areola growth',
-   how:'Gentle rolling between fingers, light suction, warm compresses. Twice daily for best results. Combine with galactagogue supplements.',
-   goals:['lactation','bigger_nipples'],journeys:['mtf','femboy','nonbinary','custom'],
-   tags:['Breast','Hormonal']},
-];
-
-function getExercisesForUser(){
-  const goals=S.goals||[];
-  const j=S.journeyType||'mtf';
-  if(!goals.length)return EXERCISE_DB.filter(e=>e.journeys.includes(j));
-  return EXERCISE_DB.filter(e=>{
-    if(!e.journeys.includes(j))return false;
-    return e.goals.some(g=>goals.includes(g));
-  });
-}
-
-function getExerciseLog(){
-  if(!D.exerciseLog)D.exerciseLog=[];
-  return D.exerciseLog;
-}
-function isExerciseDone(exId){
-  const td=today();
-  return getExerciseLog().some(l=>l.date===td&&l.id===exId);
-}
-function toggleExercise(exId){
-  const td=today();
-  if(!D.exerciseLog)D.exerciseLog=[];
-  const idx=D.exerciseLog.findIndex(l=>l.date===td&&l.id===exId);
-  if(idx>=0)D.exerciseLog.splice(idx,1);
-  else D.exerciseLog.push({date:td,id:exId,time:new Date().toLocaleTimeString()});
-  saveData();
-  renderActive();
-}
-
 function getTimeline(){
   const j=S.journeyType||'mtf';
   if(j==='ftm')return FTM_TIMELINE;
@@ -851,7 +554,7 @@ const FTM_MEDS={
 const SUPPLEMENT_STACKS={
   'Skin & Hair':{
     desc:'Support healthy skin, hair, and nails',
-    items:['Biotin 5000mcg','Vitamin E 400IU','Vitamin C 1000mg','Zinc 30mg','Copper 2mg','Collagen peptides 10g','MSM 1000mg']
+    items:['Biotin 5000mcg','Vitamin E 400IU','Vitamin C 1000mg','Zinc 30mg','Collagen peptides 10g','MSM 1000mg']
   },
   'Bone Health':{
     desc:'Maintain bone density (important on HRT)',
@@ -867,11 +570,11 @@ const SUPPLEMENT_STACKS={
   },
   'Masculinization Support':{
     desc:'Natural supplements (not a replacement for HRT)',
-    items:['Zinc 30mg','Copper 2mg','Vitamin D3 5000IU','Ashwagandha 600mg','Fenugreek 600mg','D-Aspartic acid 3g','Magnesium 400mg']
+    items:['Zinc 30mg','Vitamin D3 5000IU','Ashwagandha 600mg','Fenugreek 600mg','D-Aspartic acid 3g','Magnesium 400mg']
   },
   'Recovery & Healing':{
     desc:'Post-procedure or general healing support',
-    items:['Vitamin C 2000mg','Zinc 50mg','Copper 2mg','Arnica montana','Bromelain 500mg','Protein 30g+','Iron 18mg']
+    items:['Vitamin C 2000mg','Zinc 50mg','Arnica montana','Bromelain 500mg','Protein 30g+','Iron 18mg']
   },
   'Heart & Circulation':{
     desc:'Cardiovascular support (monitor on HRT)',
@@ -879,7 +582,7 @@ const SUPPLEMENT_STACKS={
   },
   'Fluid & Seminal Production':{
     desc:'Increase volume and fluid production',
-    items:['Zinc picolinate 50mg','Copper 2mg','Lecithin (Phosphatidylcholine) 1200mg','L-Arginine 1000mg','Pygeum africanum 100mg','d-Alpha-tocopherol (Vit E) 400IU','Selenomethionine (Selenium) 200mcg','L-Carnitine 500mg','Bromelain 500mg']
+    items:['Zinc picolinate 50mg','Lecithin (Phosphatidylcholine) 1200mg','L-Arginine 1000mg','Pygeum africanum 100mg','d-Alpha-tocopherol (Vit E) 400IU','Selenomethionine (Selenium) 200mcg','L-Carnitine 500mg','Bromelain 500mg']
   },
   'Lactation Induction':{
     desc:'Support milk production (requires adequate E2 + progesterone priming)',
@@ -907,7 +610,6 @@ const SUPPLEMENT_STACKS={
 const SUPP_ALIASES={
   'd-alpha-tocopherol':'vitamin e','tocopherol':'vitamin e','vit e':'vitamin e',
   'zinc picolinate':'zinc','zinc citrate':'zinc','zinc gluconate':'zinc',
-  'copper bisglycinate':'copper','copper gluconate':'copper','copper citrate':'copper','cupric':'copper',
   'trigonella foenum-graecum':'fenugreek',
   'foeniculum vulgare':'fennel','fennel seed':'fennel',
   'trifolium pratense':'red clover','red clover extract':'red clover',
@@ -979,8 +681,7 @@ const SUPP_SCHEDULE={
   'vitamin k2':{time:'PM',context:'with dinner',note:'Fat-soluble — synergizes with D3'},
   'omega-3':{time:'PM',context:'with dinner',note:'Fat-soluble — take with food to reduce reflux'},
   'calcium':{time:'PM',context:'with dinner',note:'Separate from iron/zinc by 2+ hours'},
-  'zinc':{time:'PM',context:'with dinner',note:'Take with food; separate from calcium if possible; pair with copper'},
-  'copper':{time:'AM',context:'with breakfast',note:'Take 2+ hours away from zinc for best absorption'},
+  'zinc':{time:'PM',context:'with dinner',note:'Take with food; separate from calcium if possible'},
   'saw palmetto':{time:'PM',context:'with dinner',note:'Fat-soluble anti-androgen'},
   'evening primrose':{time:'PM',context:'with dinner',note:'GLA is fat-soluble'},
   'borage':{time:'PM',context:'with dinner',note:'GLA source — take with fat'},
@@ -1146,33 +847,7 @@ const LAB_SCHEDULE={
     {time:'6 Months',desc:'Dose optimization',labs:['Testosterone','Estradiol','Free T','Hemoglobin','ALT','AST','LDL','HDL']},
     {time:'12 Months',desc:'Full annual panel',labs:['Testosterone','Estradiol','Free T','Hemoglobin','ALT','AST','LDL','HDL','Triglycerides','A1C','Vitamin D']},
     {time:'Ongoing',desc:'Every 6-12mo once stable',labs:['Testosterone','Hemoglobin','ALT','AST','LDL','HDL','Triglycerides']}
-  ],
-  femboy:[
-    {time:'Baseline',desc:'Before starting supplements',labs:['Testosterone','Estradiol','ALT','AST','Vitamin D','TSH','LDL','HDL']},
-    {time:'3 Months',desc:'Liver check + hormone baseline shift?',labs:['ALT','AST','Testosterone','Estradiol']},
-    {time:'6 Months',desc:'Full check-in',labs:['Testosterone','Estradiol','ALT','AST','Vitamin D','LDL','HDL','Triglycerides']},
-    {time:'Ongoing',desc:'Every 6-12mo',labs:['ALT','AST','Testosterone','Estradiol','LDL','HDL','Vitamin D']}
-  ],
-  tomboy:[
-    {time:'Baseline',desc:'Before starting supplements',labs:['Testosterone','Estradiol','Hemoglobin','ALT','AST','Vitamin D','TSH']},
-    {time:'3 Months',desc:'Liver + blood counts',labs:['ALT','AST','Hemoglobin','Testosterone']},
-    {time:'6 Months',desc:'Full check-in',labs:['Testosterone','Estradiol','Hemoglobin','ALT','AST','Vitamin D','LDL','HDL']},
-    {time:'Ongoing',desc:'Every 6-12mo',labs:['ALT','AST','Hemoglobin','Testosterone','LDL','HDL','Vitamin D']}
-  ],
-  wellness:[
-    {time:'Baseline',desc:'Get your starting numbers',labs:['Testosterone','Estradiol','ALT','AST','Hemoglobin','LDL','HDL','Triglycerides','A1C','TSH','Vitamin D']},
-    {time:'6 Months',desc:'Check supplement impact',labs:['ALT','AST','Vitamin D','LDL','HDL','Triglycerides']},
-    {time:'Ongoing',desc:'Annual wellness panel',labs:['ALT','AST','Hemoglobin','LDL','HDL','Triglycerides','A1C','Vitamin D','TSH']}
   ]
-};
-
-const LAB_SCHEDULE_META={
-  mtf:{label:'Trans Feminine',sub:'Estrogen-based HRT monitoring'},
-  ftm:{label:'Trans Masculine',sub:'Testosterone-based HRT monitoring'},
-  femboy:{label:'Selective Feminization',sub:'Supplement & anti-androgen monitoring'},
-  tomboy:{label:'Selective Masculinization',sub:'Supplement & wellness monitoring'},
-  nonbinary:{label:'Non-Binary',sub:'Custom hormone & wellness monitoring'},
-  custom:{label:'Custom',sub:'General wellness monitoring'}
 };
 
 const INJECTION_SITES=['L Thigh','R Thigh','L VG','R VG','L Delt','R Delt','L Abd','R Abd'];
@@ -1208,7 +883,7 @@ function getMedTypes(){
 
 // ─── Data Layer ──────────────────────────────────────────────
 function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||defaultData()}catch{return defaultData()}}
-function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{},exerciseLog:[],dailyReward:{lastClaim:'',streak:0,xp:0,level:1,history:[]}}}
+function defaultData(){return{startDate:null,logs:[],meds:[],labs:[],measurements:[],injections:[],customSymptoms:[],photos:[],supplements:[],phases:[],supplementLog:[],medLog:[],water:{}}}
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(D))}
 function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||defaultSettings()}catch{return defaultSettings()}}
 function defaultSettings(){return{pinEnabled:false,onboarded:false,stealthMode:false,stealthName:'Wellness',tannerStage:1,unitSystem:'imperial',lowDose:false,journeyType:'mtf',onHRT:true,goals:[],reminders:{am:{enabled:false,time:'08:00'},pm:{enabled:false,time:'18:00'},bedtime:{enabled:false,time:'22:00'}}}}
@@ -1276,12 +951,6 @@ function generateAlerts(){
     if(bicalMed){const bicalDays=Math.floor((new Date()-new Date(bicalMed.started))/864e5);
       if(bicalDays<180){const lastALT=D.labs.filter(l=>l.results.some(r=>r.name==='ALT')).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
         if(!lastALT||Math.floor((new Date()-new Date(lastALT.date))/864e5)>35)alerts.push({type:'warning',msg:'Monthly liver function tests recommended during first 6 months of bicalutamide.'})}}
-  }
-
-  // Zinc without copper
-  const activeSupps=D.supplements.filter(s=>!s.ended).map(s=>normalizeSuppName(s.name));
-  if(activeSupps.includes('zinc')&&!activeSupps.includes('copper')){
-    alerts.push({type:'warning',msg:'You\'re taking zinc without copper. Zinc depletes copper over time — add Copper 2mg (take AM, separate from zinc).'});
   }
 
   const prl=latestLab('Prolactin');if(prl&&prl.value>50)alerts.push({type:'warning',msg:`Prolactin is ${prl.value} ng/mL (elevated). Discuss imaging with your provider.`});
@@ -1392,21 +1061,6 @@ function renderOB(){
   if(obStep===0){
     // Welcome
     el.innerHTML=`${dots}
-      <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:12px">
-        <circle cx="50" cy="32" r="16" fill="url(#op1)" opacity=".85"/>
-        <circle cx="35" cy="45" r="16" fill="url(#op2)" opacity=".8"/>
-        <circle cx="65" cy="45" r="16" fill="url(#op3)" opacity=".8"/>
-        <circle cx="38" cy="62" r="16" fill="url(#op4)" opacity=".75"/>
-        <circle cx="62" cy="62" r="16" fill="url(#op5)" opacity=".75"/>
-        <circle cx="50" cy="50" r="10" fill="#FFD54F"/>
-        <defs>
-          <linearGradient id="op1" x1="34" y1="16" x2="66" y2="48"><stop stop-color="#E1BEE7"/><stop offset="1" stop-color="#CE93D8"/></linearGradient>
-          <linearGradient id="op2" x1="19" y1="29" x2="51" y2="61"><stop stop-color="#F8BBD0"/><stop offset="1" stop-color="#F48FB1"/></linearGradient>
-          <linearGradient id="op3" x1="49" y1="29" x2="81" y2="61"><stop stop-color="#D1C4E9"/><stop offset="1" stop-color="#B39DDB"/></linearGradient>
-          <linearGradient id="op4" x1="22" y1="46" x2="54" y2="78"><stop stop-color="#F8BBD0"/><stop offset="1" stop-color="#F06292"/></linearGradient>
-          <linearGradient id="op5" x1="46" y1="46" x2="78" y2="78"><stop stop-color="#E1BEE7"/><stop offset="1" stop-color="#AB47BC"/></linearGradient>
-        </defs>
-      </svg>
       <h2>Welcome to Bloom</h2>
       <p>Your private body &amp; wellness tracker. Everything stays on your device — zero data collection, zero network requests.</p>
       <div class="feature-list">
@@ -1473,7 +1127,8 @@ function renderOB(){
       <div style="display:flex;gap:8px;max-width:300px;margin:16px auto 0">
         <button class="btn-secondary" style="flex:1" onclick="obStep=2;renderOB()">Back</button>
         <button class="btn-primary" style="flex:2" onclick="obStep=4;renderOB()">Next</button>
-      </div>`;
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px">${obData.goals.length} goal${obData.goals.length!==1?'s':''} selected</div>`;
 
   }else if(obStep===4){
     // Stats
@@ -1507,55 +1162,32 @@ function renderDashboard(){
   const jLabel=JOURNEY_TYPES[S.journeyType]?.label||'Custom';
   let h='<div class="fade-in">';
 
-  // Shared data
+  // Top stats row — context-aware
   const todayLog=getLog(today());
   const lastM=D.measurements.slice(-1)[0];
   const waterToday=getTodayWater();
   const waterGoal=getWaterGoal();
   const waterPct=Math.min(100,Math.round(waterToday/waterGoal.ml*100));
-  const td=today();
-  const activeStreak=getExerciseStreak();
 
-  // Top stats row — compact context
+  h+=`<div class="stats">`;
   if(onHRT&&days>0){
-    h+=`<div class="stats"><div class="stat-card"><div class="label">Days on HRT</div><div class="value" style="color:var(--violet-deep)">${days}</div></div></div>`;
+    h+=`<div class="stat-card"><div class="label">Days on HRT</div><div class="value" style="color:var(--violet-deep)">${days}</div></div>`;
   }
+  h+=`<div class="stat-card"><div class="label">Logs</div><div class="value" style="color:var(--pink)">${D.logs.length}</div></div>`;
+  h+=`<div class="stat-card"><div class="label">Water</div><div class="value" style="color:var(--sky-deep)">${waterPct}%</div></div>`;
+  if(todayLog){
+    h+=`<div class="stat-card"><div class="label">Today</div><div class="value" style="color:var(--mint-deep);font-size:14px">${todayLog.mood||'Logged'}</div></div>`;
+  }else{
+    h+=`<div class="stat-card" style="cursor:pointer" onclick="showView('log')"><div class="label">Today</div><div class="value" style="color:var(--text-muted);font-size:13px">Not logged</div></div>`;
+  }
+  h+=`</div>`;
 
   // Alerts
   const alerts=generateAlerts();
   if(alerts.length){for(const a of alerts)h+=`<div class="alert-box ${a.type}">${a.msg}</div>`}
 
-  // ── Quick Stats (above Today's Plan) ──
-  const bs=braSize(),w=whr(),e2=latestLab('Estradiol'),t=latestLab('Testosterone');
-  const hasLabStats=e2||t||bs||w;
-  const hasVitals=todayLog&&(todayLog.heartRate||todayLog.bpSys);
-  const hasWeight=lastM?.weight||todayLog?.weight;
-
-  const reward=getDailyReward();
-  const rLevel=getRewardLevel(reward.xp);
-
-  h+=`<div class="panel"><h3>Quick Stats</h3><div class="qs-grid">`;
-  h+=`<div class="qs" onclick="toggleWaterPanel()" style="cursor:pointer"><div class="qs-label">Water</div><div class="qs-value" style="color:var(--sky-deep)">${waterPct}%</div></div>`;
-  h+=`<div class="qs" onclick="showView('active')" style="cursor:pointer"><div class="qs-label">Active Streak</div><div class="qs-value" style="color:var(--peach-deep)">${activeStreak} day${activeStreak!==1?'s':''}</div></div>`;
-  h+=`<div class="qs"><div class="qs-label">Login Streak</div><div class="qs-value" style="color:var(--pink-deep)">${reward.streak} day${reward.streak!==1?'s':''}</div></div>`;
-  h+=`<div class="qs"><div class="qs-label">Level</div><div class="qs-value" style="color:var(--violet-deep)">${rLevel.level} <span style="font-size:10px;font-weight:400">${rLevel.title}</span></div></div>`;
-  if(hasWeight){
-    const wt=todayLog?.weight||lastM?.weight;
-    h+=`<div class="qs"><div class="qs-label">Weight</div><div class="qs-value">${wt} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`;
-  }
-  if(todayLog?.heartRate)h+=`<div class="qs"><div class="qs-label">Resting HR</div><div class="qs-value">${todayLog.heartRate} bpm</div></div>`;
-  if(todayLog?.bpSys)h+=`<div class="qs"><div class="qs-label">Blood Pressure</div><div class="qs-value">${todayLog.bpSys}/${todayLog.bpDia}</div></div>`;
-  if(e2)h+=`<div class="qs"><div class="qs-label">Estradiol</div><div class="qs-value" style="color:var(--pink)">${e2.value} <span style="font-size:11px;font-weight:400">pg/mL</span></div></div>`;
-  if(t)h+=`<div class="qs"><div class="qs-label">Testosterone</div><div class="qs-value" style="color:var(--sky-deep)">${t.value} <span style="font-size:11px;font-weight:400">ng/dL</span></div></div>`;
-  if(bs)h+=`<div class="qs"><div class="qs-label">Bra Size</div><div class="qs-value" style="color:var(--violet-deep)">${bs}</div></div>`;
-  if(w)h+=`<div class="qs"><div class="qs-label">WHR</div><div class="qs-value" style="color:var(--mint-deep)">${w}</div></div>`;
-  if(todayLog?.libido!==undefined)h+=`<div class="qs"><div class="qs-label">Libido</div><div class="qs-value">${todayLog.libido}/10</div></div>`;
-  if(todayLog?.skinScore!==undefined)h+=`<div class="qs"><div class="qs-label">Skin</div><div class="qs-value">${todayLog.skinScore}/10</div></div>`;
-  if(todayLog?.energy!==undefined)h+=`<div class="qs"><div class="qs-label">Energy</div><div class="qs-value">${todayLog.energy}/10</div></div>`;
-  if(todayLog?.sleep)h+=`<div class="qs"><div class="qs-label">Sleep</div><div class="qs-value">${todayLog.sleep} hrs</div></div>`;
-  h+=`</div></div>`;
-
   // ── Today's Plan ──
+  const td=today();
   const activeMeds=D.meds.filter(m=>!m.ended);
   const activeSups=D.supplements.filter(s=>!s.ended);
   const hasPlan=activeMeds.length||activeSups.length;
@@ -1633,6 +1265,29 @@ function renderDashboard(){
       }
     }
     h+=`</div>`;
+  }
+
+  // Quick stats — labs, measurements, vitals
+  const bs=braSize(),w=whr(),e2=latestLab('Estradiol'),t=latestLab('Testosterone');
+  const hasLabStats=e2||t||bs||w;
+  const hasVitals=todayLog&&(todayLog.heartRate||todayLog.bpSys);
+  const hasWeight=lastM?.weight||todayLog?.weight;
+
+  if(hasLabStats||hasVitals||hasWeight){
+    h+=`<div class="panel"><h3>Quick Stats</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+    if(hasWeight){
+      const wt=todayLog?.weight||lastM?.weight;
+      h+=`<div><div style="font-size:11px;color:var(--text-muted)">Weight</div><div style="font-size:16px;font-weight:700">${wt} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`;
+    }
+    if(todayLog?.heartRate)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Resting HR</div><div style="font-size:16px;font-weight:700">${todayLog.heartRate} bpm</div></div>`;
+    if(todayLog?.bpSys)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Blood Pressure</div><div style="font-size:16px;font-weight:700">${todayLog.bpSys}/${todayLog.bpDia}</div></div>`;
+    if(e2)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Estradiol</div><div style="font-size:16px;font-weight:700;color:var(--pink)">${e2.value} <span style="font-size:11px;font-weight:400">pg/mL</span></div></div>`;
+    if(t)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Testosterone</div><div style="font-size:16px;font-weight:700;color:var(--sky-deep)">${t.value} <span style="font-size:11px;font-weight:400">ng/dL</span></div></div>`;
+    if(bs)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Bra Size</div><div style="font-size:16px;font-weight:700;color:var(--violet-deep)">${bs}</div></div>`;
+    if(w)h+=`<div><div style="font-size:11px;color:var(--text-muted)">WHR</div><div style="font-size:16px;font-weight:700;color:var(--mint-deep)">${w}</div></div>`;
+    if(todayLog?.libido!==undefined)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Libido</div><div style="font-size:16px;font-weight:700">${todayLog.libido}/10</div></div>`;
+    if(todayLog?.skinScore!==undefined)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Skin</div><div style="font-size:16px;font-weight:700">${todayLog.skinScore}/10</div></div>`;
+    h+=`</div></div>`;
   }
 
   // Tanner stage — only if on HRT and relevant journey
@@ -1721,9 +1376,13 @@ function renderDashboard(){
 
   // Export buttons + footer
   h+=`<div style="display:flex;gap:8px;margin-top:4px">
-    <button class="btn-small" style="width:100%" onclick="exportDoctorReport()">Health Report</button>
+    <button class="btn-small" style="flex:1" onclick="exportDoctorReport()">Doctor Report</button>
+    <button class="btn-small" style="flex:1" onclick="exportCSV()">Export CSV</button>
   </div>`;
 
+  h+=`<div style="text-align:center;padding:12px;font-size:11px;color:var(--text-muted)">
+    ${jLabel}${onHRT?' · On HRT':' · No HRT'}${goals.length?' · '+goals.length+' goals':''} · <span style="cursor:pointer;color:var(--violet-deep)" onclick="showView('settings')">Edit</span>
+  </div>`;
 
   h+='</div>';
   document.getElementById('content').innerHTML=h;
@@ -1734,258 +1393,6 @@ function logInjection(){
   if(!site)return;
   D.injections.push({date:today(),site:site,time:new Date().toLocaleTimeString()});
   saveData();showView('dashboard');
-}
-
-// ─── Active View (Exercises) ─────────────────────────────────
-function renderActive(){
-  const exercises=getExercisesForUser();
-  const goals=S.goals||[];
-  const j=S.journeyType||'mtf';
-  const td=today();
-  const todayDone=getExerciseLog().filter(l=>l.date===td).length;
-
-  let h='<div class="fade-in">';
-
-  // Streak & today's progress
-  const streak=getExerciseStreak();
-  h+=`<div class="stats">
-    <div class="stat-card"><div class="label">Today</div><div class="value" style="color:var(--mint-deep)">${todayDone}/${exercises.length}</div></div>
-    <div class="stat-card"><div class="label">Streak</div><div class="value" style="color:var(--peach-deep)">${streak} day${streak!==1?'s':''}</div></div>
-  </div>`;
-
-  if(!exercises.length){
-    h+=`<div class="empty-state"><div class="icon">🏃</div>
-      <p>Select goals in <span style="color:var(--violet-deep);cursor:pointer;font-weight:600" onclick="showView('settings')">Settings</span> to get personalized exercise recommendations.</p></div>`;
-    h+='</div>';
-    document.getElementById('content').innerHTML=h;
-    return;
-  }
-
-  // Motivational fitness quote
-  const fq=MOTIVATIONAL_QUOTES.fitness;
-  const fqIdx=Math.floor(Date.now()/86400000)%fq.length;
-  h+=`<div style="text-align:center;padding:8px 16px;font-size:13px;font-style:italic;color:var(--violet-deep);margin-bottom:8px">"${fq[fqIdx]}"</div>`;
-
-  // Group by relevance category
-  const categories=new Map();
-  for(const ex of exercises){
-    const matchingGoals=ex.goals.filter(g=>goals.includes(g));
-    let cat='General';
-    if(matchingGoals.length){
-      // Use the first matching goal's category from BODY_GOALS
-      for(const[catName,items]of Object.entries(BODY_GOALS)){
-        if(items.some(g=>matchingGoals.includes(g.id))){cat=catName;break;}
-      }
-    }
-    if(!categories.has(cat))categories.set(cat,[]);
-    categories.get(cat).push(ex);
-  }
-
-  for(const[cat,exs]of categories){
-    h+=`<div class="section-title">${cat}</div>`;
-    for(const ex of exs){
-      const done=isExerciseDone(ex.id);
-      const goalTags=ex.goals.filter(g=>goals.includes(g)).map(gid=>{
-        const gObj=Object.values(BODY_GOALS).flat().find(g=>g.id===gid);
-        return gObj?gObj.label:gid;
-      });
-
-      h+=`<div class="exercise-card" style="${done?'opacity:.6':''}">
-        <div style="display:flex;align-items:flex-start;gap:12px">
-          <div class="exercise-done${done?' checked':''}" onclick="toggleExercise('${ex.id}')">${done?'&#10003;':''}</div>
-          <div style="flex:1">
-            <h4>${ex.icon} ${ex.name} <span style="font-size:12px;font-weight:400;color:var(--text-muted)">${ex.sets}</span></h4>
-            <div class="ex-why">${ex.why}</div>
-            <details style="margin-top:4px">
-              <summary style="font-size:12px;color:var(--violet-deep);cursor:pointer;font-weight:600">How to do it</summary>
-              <div class="ex-how" style="margin-top:6px">${ex.how}</div>
-            </details>
-            <div class="ex-meta">
-              ${ex.tags.map(t=>`<span class="ex-tag" style="background:var(--violet-pale);color:var(--violet-deep)">${t}</span>`).join('')}
-              ${goalTags.map(t=>`<span class="ex-tag" style="background:var(--pink-pale);color:var(--pink-deep)">${t}</span>`).join('')}
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-  }
-
-  // Weekly overview
-  const weekLog=getWeekExerciseLog();
-  if(weekLog.some(d=>d>0)){
-    h+=`<div class="panel"><h3>This Week</h3>
-      <div class="chart-bar">${weekLog.map(d=>`<div class="bar" style="height:${d?Math.max(15,d/exercises.length*100):2}%;background:${d>=exercises.length?'var(--mint)':'var(--violet-soft)'}"></div>`).join('')}</div>
-      <div class="chart-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
-    </div>`;
-  }
-
-  h+='</div>';
-  document.getElementById('content').innerHTML=h;
-}
-
-function getExerciseStreak(){
-  const log=getExerciseLog();
-  let streak=0;
-  const d=new Date();
-  // Check if today has any, if so start counting from today, else from yesterday
-  const todayStr=today();
-  const hasTodayEx=log.some(l=>l.date===todayStr);
-  if(!hasTodayEx)d.setDate(d.getDate()-1);
-  for(let i=0;i<365;i++){
-    const ds=d.toISOString().slice(0,10);
-    if(log.some(l=>l.date===ds))streak++;
-    else break;
-    d.setDate(d.getDate()-1);
-  }
-  return streak;
-}
-
-function getWeekExerciseLog(){
-  const log=getExerciseLog();
-  const result=[];
-  const d=new Date();
-  const dayOfWeek=d.getDay();
-  const mondayOffset=(dayOfWeek+6)%7;
-  d.setDate(d.getDate()-mondayOffset);
-  for(let i=0;i<7;i++){
-    const ds=d.toISOString().slice(0,10);
-    result.push(log.filter(l=>l.date===ds).length);
-    d.setDate(d.getDate()+1);
-  }
-  return result;
-}
-
-// ─── Daily Login Reward System ───────────────────────────────
-const REWARD_LEVELS=[
-  {level:1,xpNeeded:0,title:'Seedling'},
-  {level:2,xpNeeded:50,title:'Sprout'},
-  {level:3,xpNeeded:150,title:'Bud'},
-  {level:4,xpNeeded:300,title:'Blooming'},
-  {level:5,xpNeeded:500,title:'Flourishing'},
-  {level:6,xpNeeded:800,title:'Radiant'},
-  {level:7,xpNeeded:1200,title:'Transcendent'},
-  {level:8,xpNeeded:1800,title:'Ethereal'},
-  {level:9,xpNeeded:2500,title:'Legendary'},
-  {level:10,xpNeeded:3500,title:'Mythic Bloom'}
-];
-
-const STREAK_BONUSES=[
-  {day:1,xp:10,label:'+10 XP'},
-  {day:2,xp:10,label:'+10 XP'},
-  {day:3,xp:15,label:'+15 XP'},
-  {day:4,xp:15,label:'+15 XP'},
-  {day:5,xp:20,label:'+20 XP'},
-  {day:6,xp:20,label:'+20 XP'},
-  {day:7,xp:50,label:'+50 XP (Weekly!)'}
-];
-
-const REWARD_MESSAGES=[
-  'You showed up. That matters.',
-  'Consistency is the real magic.',
-  'Your body thanks you for checking in.',
-  'Every day counts. This one does too.',
-  'Progress lives in the daily choices.',
-  'You\'re building something beautiful.',
-  'Small steps, big transformation.',
-  'Keep going — future you is grateful.'
-];
-
-function getDailyReward(){
-  if(!D.dailyReward)D.dailyReward={lastClaim:'',streak:0,xp:0,level:1,history:[]};
-  return D.dailyReward;
-}
-
-function getRewardLevel(xp){
-  let lvl=REWARD_LEVELS[0];
-  for(const l of REWARD_LEVELS){
-    if(xp>=l.xpNeeded)lvl=l;
-    else break;
-  }
-  return lvl;
-}
-
-function getNextLevel(xp){
-  for(const l of REWARD_LEVELS){
-    if(xp<l.xpNeeded)return l;
-  }
-  return null;
-}
-
-function checkDailyReward(){
-  const r=getDailyReward();
-  const td=today();
-  if(r.lastClaim===td)return; // Already claimed today
-
-  // Calculate streak
-  const yesterday=new Date();
-  yesterday.setDate(yesterday.getDate()-1);
-  const yd=yesterday.toISOString().slice(0,10);
-
-  if(r.lastClaim===yd){
-    r.streak+=1;
-  }else if(r.lastClaim!==td){
-    // Missed a day — reset streak (but keep XP)
-    if(r.lastClaim)r.streak=1;
-    else r.streak=1; // First ever claim
-  }
-
-  // Calculate XP for today
-  const streakDay=((r.streak-1)%7);
-  const bonus=STREAK_BONUSES[streakDay];
-  const xpGain=bonus.xp;
-  const oldLevel=getRewardLevel(r.xp);
-  r.xp+=xpGain;
-  r.lastClaim=td;
-  r.level=getRewardLevel(r.xp).level;
-  r.history.push({date:td,xp:xpGain,streak:r.streak});
-  // Keep history trim
-  if(r.history.length>90)r.history=r.history.slice(-90);
-  saveData();
-
-  const newLevel=getRewardLevel(r.xp);
-  const leveledUp=newLevel.level>oldLevel.level;
-
-  // Show reward popup
-  showRewardPopup(r,xpGain,leveledUp,newLevel);
-}
-
-function showRewardPopup(r,xpGain,leveledUp,currentLevel){
-  const nextLvl=getNextLevel(r.xp);
-  const xpInLevel=nextLvl?r.xp-currentLevel.xpNeeded:r.xp;
-  const xpForLevel=nextLvl?nextLvl.xpNeeded-currentLevel.xpNeeded:1;
-  const xpPct=nextLvl?Math.min(100,Math.round(xpInLevel/xpForLevel*100)):100;
-  const msgIdx=Math.floor(Date.now()/86400000)%REWARD_MESSAGES.length;
-
-  // Build streak dots (7-day cycle)
-  const streakInWeek=((r.streak-1)%7)+1;
-  let dots='';
-  for(let i=0;i<7;i++){
-    const filled=i<streakInWeek;
-    const isToday=i===streakInWeek-1;
-    dots+=`<div class="streak-dot${filled?' filled':''}${isToday?' today':''}">${i+1}</div>`;
-  }
-
-  const overlay=document.createElement('div');
-  overlay.className='reward-overlay';
-  overlay.id='rewardOverlay';
-  overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
-  overlay.innerHTML=`<div class="reward-card">
-    <div class="reward-emoji">${leveledUp?'🎉':'✨'}</div>
-    <h3>${leveledUp?'Level Up! '+currentLevel.title:r.history.length<=1?'Welcome to Bloom!':'Welcome Back!'}</h3>
-    <div class="reward-sub">${REWARD_MESSAGES[msgIdx]}</div>
-    <div style="display:flex;justify-content:center;gap:16px;margin-bottom:12px">
-      <div><div style="font-size:20px;font-weight:700;color:var(--violet-deep)">+${xpGain}</div><div style="font-size:10px;color:var(--text-muted)">XP earned</div></div>
-      <div><div style="font-size:20px;font-weight:700;color:var(--peach-deep)">${r.streak}</div><div style="font-size:10px;color:var(--text-muted)">day streak</div></div>
-    </div>
-    <div class="reward-streak">${dots}</div>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Level ${currentLevel.level} — ${currentLevel.title}${nextLvl?' · '+nextLvl.xpNeeded+'XP to '+nextLvl.title:' (MAX)'}</div>
-    <div class="xp-bar"><div class="xp-fill" style="width:${xpPct}%"></div></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${r.xp} XP total</div>
-    <button class="btn-primary" style="margin-top:16px" onclick="document.getElementById('rewardOverlay').remove()">Let's Go</button>
-  </div>`;
-  document.body.appendChild(overlay);
-  // Animate XP bar
-  setTimeout(()=>{const fill=overlay.querySelector('.xp-fill');if(fill)fill.style.width=xpPct+'%';},100);
 }
 
 // ─── Log View ────────────────────────────────────────────────
@@ -2137,13 +1544,11 @@ function renderLabs(){
   const targets=getLabTargets();
   const j=S.journeyType||'mtf';
   const isFtm=j==='ftm'||j==='tomboy';
-  const schedKey=LAB_SCHEDULE[j]?j:isFtm?'ftm':j==='nonbinary'||j==='custom'?'wellness':'mtf';
-  const sched=LAB_SCHEDULE[schedKey];
-  const meta=LAB_SCHEDULE_META[j]||LAB_SCHEDULE_META.custom;
+  const sched=isFtm?LAB_SCHEDULE.ftm:LAB_SCHEDULE.mtf;
 
   // Testing Schedule
   h+=`<div class="panel"><h3>When to Test</h3>
-    <div class="panel-sub">${meta.sub}</div>`;
+    <div class="panel-sub">${isFtm?'Testosterone':'Estrogen'}-based HRT monitoring schedule</div>`;
   for(const s of sched){
     h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -2247,36 +1652,16 @@ function renderLabs(){
   h+=`<div class="panel" style="margin-top:12px;background:linear-gradient(135deg,var(--violet-pale),var(--pink-pale))">
     <h3>Ask Your Doctor</h3>
     <div style="font-size:12px;line-height:1.6;color:var(--text-dim)">
-      ${j==='ftm'?
+      ${isFtm?
       `• "Can I get a complete metabolic panel + CBC + lipids with my T levels?"<br>
       • "My hematocrit is ___. Should we adjust my dose or schedule a blood donation?"<br>
       • "What's my free T vs total T ratio? Am I converting to DHT/estrogen?"<br>
       • "Should I switch from IM to SubQ for more stable levels?"`:
-      j==='mtf'?
       `• "Can I get a complete metabolic panel + CBC + lipids with my hormone levels?"<br>
       • "What's my estrone-to-estradiol ratio? Should I switch from oral to sublingual?"<br>
       • "My prolactin is ___. Do I need an MRI?"<br>
       • "Should I add progesterone at this stage for breast development?"<br>
-      • "Can we check free testosterone, not just total T?"`:
-      j==='femboy'?
-      `• "I'm using supplements for selective feminization — what labs should I track?"<br>
-      • "Can we check my liver enzymes and lipids for supplement safety?"<br>
-      • "What's my free T level? I want to monitor without fully suppressing."<br>
-      • "Are my zinc and vitamin D levels in range?"`:
-      j==='tomboy'?
-      `• "I'm using supplements for selective masculinization — what labs should I track?"<br>
-      • "Can we check my testosterone, free T, and DHEA levels?"<br>
-      • "What's my hematocrit? I want to make sure it's safe."<br>
-      • "Are my liver enzymes and lipids in a healthy range?"`:
-      j==='nonbinary'?
-      `• "I'm pursuing a non-binary transition — can we check a full hormone panel?"<br>
-      • "I want to monitor changes without targeting binary ranges — what's realistic?"<br>
-      • "Can we check metabolic panel, CBC, and lipids alongside hormones?"<br>
-      • "What levels should I aim for given my goals?"`:
-      `• "Can I get a complete metabolic panel + CBC + lipids with my hormone levels?"<br>
-      • "What labs make sense for my specific wellness goals?"<br>
-      • "Are my supplement levels (zinc, vitamin D, iron) in healthy range?"<br>
-      • "How often should I retest based on what I'm taking?"`}
+      • "Can we check free testosterone, not just total T?"`}
     </div></div>`;
 
   h+='</div>';
@@ -2522,13 +1907,7 @@ const DOSE_DB={
     reasons:{low:'General maintenance',high:'Increased need detected'},
     adjust(ctx){let d=30;if(ctx.weight>200)d=50;if(ctx.weight<130)d=25;if(ctx.hasLowT&&ctx.isFtm)d=50;return d},
     why(ctx){const parts=['Supports immune function, wound healing, and hormone metabolism'];if(ctx.weight>200)parts.push('Higher dose for body weight >200lbs');if(ctx.hasLowT&&ctx.isFtm)parts.push('Zinc supports testosterone production');return parts},
-    interactions:['Monitor potassium if on spironolactone','Take with food to avoid nausea','Competes with copper absorption — copper auto-paired when zinc is active']
-  },
-  'Copper':{
-    base:2,unit:'mg',max:2,
-    adjust(ctx){return 2},
-    why(ctx){return['Essential trace mineral — zinc depletes copper stores over time','2mg balances zinc intake at any dose up to 50mg','Deficiency causes anemia, bone loss, and neurological issues']},
-    interactions:['Take 2+ hours away from zinc (they compete for absorption)','Morning with breakfast while zinc is taken at dinner','Safe and necessary at 2mg when supplementing zinc']
+    interactions:['Monitor potassium if on spironolactone','Take with food to avoid nausea','Competes with copper absorption — consider copper 2mg if >3 months at 50mg']
   },
   'Lecithin (Phosphatidylcholine)':{
     base:1200,unit:'mg',max:2400,
@@ -2766,19 +2145,16 @@ function renderSupps(){
     <div class="panel-sub">Pre-built supplement plans for common goals. Tap to add all items.</div>`;
   const j=S.journeyType||'mtf';
   const activeCanonicals=D.supplements.filter(s=>!s.ended).map(s=>normalizeSuppName(s.name));
-  const goalStacks=getGoalStacks();
   let stackCount=0;
   for(const[name,stack]of Object.entries(SUPPLEMENT_STACKS)){
     if(name==='Feminization Support'&&(j==='ftm'||j==='tomboy'))continue;
     if(name==='Masculinization Support'&&(j==='mtf'||j==='femboy'))continue;
     const allAdded=stack.items.every(item=>{const parsed=parseSuppItem(item);return activeCanonicals.includes(parsed.canonical)});
     if(allAdded)continue;
-    const isGoalMatch=goalStacks.includes(name);
     stackCount++;
-    h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border);${isGoalMatch?'background:linear-gradient(135deg,rgba(206,147,216,.08),rgba(244,143,177,.06));margin:0 -16px;padding:10px 16px;border-radius:10px':''}">
+    h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div><div style="font-size:14px;font-weight:600">${name}</div>
-          ${isGoalMatch?'<div style="font-size:10px;font-weight:600;color:var(--violet-deep);margin-top:2px">🌸 for you</div>':''}
           <div style="font-size:12px;color:var(--text-dim);margin-top:2px">${stack.desc}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${stack.items.join(' · ')}</div></div>
         <button class="btn-small" style="flex-shrink:0;margin-left:8px" onclick="addStack('${name}')">Add</button>
@@ -2827,18 +2203,7 @@ function addSupplement(){
   const dose=document.getElementById('suppDose').value.trim();
   const timing=document.getElementById('suppTiming').value;
   D.supplements.push({id:Date.now().toString(36),name,dose,timing,started:today(),ended:null});
-  autoAddCopper(name);
   saveData();renderStack();
-}
-
-function autoAddCopper(addedName){
-  const canonical=normalizeSuppName(addedName);
-  if(canonical!=='zinc')return;
-  const activeNames=D.supplements.filter(s=>!s.ended).map(s=>normalizeSuppName(s.name));
-  if(activeNames.includes('copper'))return;
-  if(confirm('Zinc depletes copper over time. Add Copper 2mg (take AM, away from zinc)?')){
-    D.supplements.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:'Copper',dose:'2mg',timing:'Morning',started:today(),ended:null});
-  }
 }
 
 function toggleSupp(id){
@@ -3056,7 +2421,8 @@ function renderInsights(){
     }
   }
 
-  h+=`<button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>`;
+  h+=`<button class="btn-primary" onclick="exportDoctorReport()">Export Doctor Report (PDF-ready)</button>`;
+  h+=`<button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>`;
 
   if(!D.logs.length)h+=`<div class="empty-state"><div class="icon">&#128300;</div><p>Start logging daily entries to see patterns, trends, and insights about your journey.</p></div>`;
   h+='</div>';
@@ -3157,37 +2523,6 @@ function renderResources(){
 // ─── Settings View ───────────────────────────────────────────
 function renderSettings(){
   let h=`<div class="fade-in">
-    <div class="settings-group">
-      <details><summary style="font-size:16px;font-weight:700;cursor:pointer;color:var(--text);padding:4px 0">Resources & Support</summary>
-      <div style="margin-top:12px">
-        <div style="padding:12px 16px;background:linear-gradient(135deg,rgba(239,83,80,.12),rgba(255,167,38,.08));border:1px solid rgba(239,83,80,.25);border-radius:14px;margin-bottom:12px">
-          <div style="font-size:14px;font-weight:700;margin-bottom:8px">Crisis Support</div>
-          <div style="font-size:13px;line-height:2"><a href="tel:8775658860" style="color:var(--violet-deep);text-decoration:none;font-weight:600">Trans Lifeline — 877-565-8860</a><br>
-          <a href="tel:988" style="color:var(--violet-deep);text-decoration:none;font-weight:600">988 Suicide & Crisis — Call/Text 988</a><br>
-          <span style="font-weight:600">Crisis Text Line</span> — Text HOME to 741741<br>
-          <a href="tel:18664887386" style="color:var(--violet-deep);text-decoration:none;font-weight:600">Trevor Project — 1-866-488-7386</a></div>
-        </div>
-        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Communities</div>
-        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
-          <a href="https://reddit.com/r/MtF" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/MtF</a> · <a href="https://reddit.com/r/FtM" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/FtM</a> · <a href="https://reddit.com/r/NonBinary" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/NonBinary</a> · <a href="https://reddit.com/r/TransDIY" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/TransDIY</a>
-        </div>
-        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">HRT Information</div>
-        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
-          <a href="https://transfemscience.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Transfem Science</a> · <a href="https://diyhrt.wiki" target="_blank" rel="noopener" style="color:var(--violet-deep)">DIY HRT Directory</a> · <a href="https://transcare.ucsf.edu/guidelines" target="_blank" rel="noopener" style="color:var(--violet-deep)">UCSF Trans Care</a> · <a href="https://genderdysphoria.fyi" target="_blank" rel="noopener" style="color:var(--violet-deep)">Gender Dysphoria Bible</a>
-        </div>
-        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Finding Providers</div>
-        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
-          <a href="https://www.wpath.org/provider/search" target="_blank" rel="noopener" style="color:var(--violet-deep)">WPATH Provider Search</a> · <a href="https://getplume.co" target="_blank" rel="noopener" style="color:var(--violet-deep)">Plume</a> · <a href="https://www.folxhealth.com" target="_blank" rel="noopener" style="color:var(--violet-deep)">FOLX Health</a> · <a href="https://www.plannedparenthood.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Planned Parenthood</a>
-        </div>
-        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Legal & Mutual Aid</div>
-        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
-          <a href="https://transequality.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Trans Equality</a> · <a href="https://www.lambdalegal.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Lambda Legal</a> · <a href="https://pointofpride.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Point of Pride</a> · <a href="https://jimcollinsfoundation.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Jim Collins Foundation</a>
-        </div>
-        <div style="margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">All links open in your browser. Bloom does not track which links you visit.<br>You are valid. You are loved. You belong.</div>
-      </div>
-      </details>
-    </div>
-
     <div class="settings-group"><h3>Security</h3>
       <div class="setting-row"><label>PIN Lock</label><div class="toggle ${S.pinEnabled?'on':''}" onclick="if(S.pinEnabled){S.pinEnabled=false;localStorage.removeItem(PIN_KEY);saveSettings();renderSettings()}else{showPinUI(null,true)}"></div></div>
       ${S.pinEnabled?`<div class="setting-row"><label>Change PIN</label><button style="color:var(--violet);font-size:14px;font-weight:600" onclick="showPinUI(null,true)">Change</button></div>`:''}
@@ -3271,11 +2606,43 @@ function renderSettings(){
       </div>
     </div>
 
-    <button class="btn-primary" onclick="exportDoctorReport()">Export Health Report</button>
+    <button class="btn-primary" onclick="exportDoctorReport()">Export Doctor Report (PDF-ready)</button>
+    <button class="btn-secondary" onclick="exportCSV()">Export Raw Data (CSV)</button>
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);D=defaultData();showView('dashboard')}">Delete All Data</button>
 
+    <div class="settings-group">
+      <details><summary style="font-size:16px;font-weight:700;cursor:pointer;color:var(--text);padding:4px 0">Resources & Support</summary>
+      <div style="margin-top:12px">
+        <div style="padding:12px 16px;background:linear-gradient(135deg,rgba(239,83,80,.12),rgba(255,167,38,.08));border:1px solid rgba(239,83,80,.25);border-radius:14px;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px">Crisis Support</div>
+          <div style="font-size:13px;line-height:2"><a href="tel:8775658860" style="color:var(--violet-deep);text-decoration:none;font-weight:600">Trans Lifeline — 877-565-8860</a><br>
+          <a href="tel:988" style="color:var(--violet-deep);text-decoration:none;font-weight:600">988 Suicide & Crisis — Call/Text 988</a><br>
+          <span style="font-weight:600">Crisis Text Line</span> — Text HOME to 741741<br>
+          <a href="tel:18664887386" style="color:var(--violet-deep);text-decoration:none;font-weight:600">Trevor Project — 1-866-488-7386</a></div>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Communities</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://reddit.com/r/MtF" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/MtF</a> · <a href="https://reddit.com/r/FtM" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/FtM</a> · <a href="https://reddit.com/r/NonBinary" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/NonBinary</a> · <a href="https://reddit.com/r/TransDIY" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/TransDIY</a> · <a href="https://reddit.com/r/feminineboys" target="_blank" rel="noopener" style="color:var(--violet-deep)">r/feminineboys</a>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">HRT Information</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://transfemscience.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Transfem Science</a> · <a href="https://diyhrt.wiki" target="_blank" rel="noopener" style="color:var(--violet-deep)">DIY HRT Directory</a> · <a href="https://transcare.ucsf.edu/guidelines" target="_blank" rel="noopener" style="color:var(--violet-deep)">UCSF Trans Care</a> · <a href="https://genderdysphoria.fyi" target="_blank" rel="noopener" style="color:var(--violet-deep)">Gender Dysphoria Bible</a>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Finding Providers</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://www.wpath.org/provider/search" target="_blank" rel="noopener" style="color:var(--violet-deep)">WPATH Provider Search</a> · <a href="https://getplume.co" target="_blank" rel="noopener" style="color:var(--violet-deep)">Plume</a> · <a href="https://www.folxhealth.com" target="_blank" rel="noopener" style="color:var(--violet-deep)">FOLX Health</a> · <a href="https://www.plannedparenthood.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Planned Parenthood</a>
+        </div>
+        <div style="font-size:14px;font-weight:700;margin:12px 0 6px">Legal & Mutual Aid</div>
+        <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
+          <a href="https://transequality.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Trans Equality</a> · <a href="https://www.lambdalegal.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Lambda Legal</a> · <a href="https://pointofpride.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Point of Pride</a> · <a href="https://jimcollinsfoundation.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Jim Collins Foundation</a>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">All links open in your browser. Bloom does not track which links you visit.<br>You are valid. You are loved. You belong.</div>
+      </div>
+      </details>
+    </div>
+
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-      <strong style="color:var(--violet-deep)">Bloom</strong> v2.3 — Private Wellness Tracker<br>
+      <strong style="color:var(--violet-deep)">Bloom</strong> v2.3 — Private HRT Tracker<br>
       All data stored locally. No accounts. No cloud.<br>
       Your journey. Your data. Your device only.<br>
       <span style="font-size:11px">by ENERGENAI LLC</span>
@@ -3287,10 +2654,8 @@ function renderSettings(){
 // ─── Stealth Mode ────────────────────────────────────────────
 function applyStealth(){
   const title=document.getElementById('appTitle');
-  const logo=document.getElementById('appLogo');
-  const svg=logo?.querySelector('svg');
-  if(S.stealthMode){title.textContent=S.stealthName||'Wellness';document.title=S.stealthName||'Wellness';if(svg)svg.style.display='none'}
-  else{title.textContent='Bloom';document.title='Bloom — Private Wellness Tracker';if(svg)svg.style.display=''}
+  if(S.stealthMode){title.textContent=S.stealthName||'Wellness';document.title=S.stealthName||'Wellness'}
+  else{title.textContent='Bloom';document.title='Bloom — Private HRT Tracker'}
 }
 
 // ─── Export ──────────────────────────────────────────────────
@@ -3472,64 +2837,36 @@ function generateAIPrompt(){
 function exportDoctorReport(){
   const now=new Date();
   const dateStr=now.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-  const j=S.journeyType||'mtf';
-  const jLabel=JOURNEY_TYPES[j]?.label||'Custom';
-  const onHRT=S.onHRT!==false;
   const activeMeds=D.meds.filter(x=>!x.ended);
   const pastMeds=D.meds.filter(x=>x.ended);
-  const activeSupps=D.supplements.filter(x=>!x.ended);
-  const pastSupps=D.supplements.filter(x=>x.ended);
-  const goals=(S.goals||[]).map(gid=>Object.values(BODY_GOALS).flat().find(g=>g.id===gid)?.label||gid);
   const tagCounts={};D.logs.forEach(l=>(l.tags||[]).forEach(t=>{tagCounts[t]=(tagCounts[t]||0)+1}));
   const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,15);
   const dysLogs=D.logs.filter(l=>l.dysphoria!==undefined);
   const dysAvg=dysLogs.length>=3?(dysLogs.reduce((s,l)=>s+l.dysphoria,0)/dysLogs.length).toFixed(1):'N/A';
-  const energyLogs=D.logs.filter(l=>l.energy!==undefined);
-  const energyAvg=energyLogs.length>=3?(energyLogs.reduce((s,l)=>s+l.energy,0)/energyLogs.length).toFixed(1):'N/A';
-  const sleepLogs=D.logs.filter(l=>l.sleep);
-  const sleepAvg=sleepLogs.length>=3?(sleepLogs.reduce((s,l)=>s+parseFloat(l.sleep),0)/sleepLogs.length).toFixed(1):'N/A';
-  const libidoLogs=D.logs.filter(l=>l.libido!==undefined);
-  const libidoAvg=libidoLogs.length>=3?(libidoLogs.reduce((s,l)=>s+l.libido,0)/libidoLogs.length).toFixed(1):'N/A';
-  const skinLogs=D.logs.filter(l=>l.skinScore!==undefined);
-  const skinAvg=skinLogs.length>=3?(skinLogs.reduce((s,l)=>s+l.skinScore,0)/skinLogs.length).toFixed(1):'N/A';
-  const moodCounts={};D.logs.forEach(l=>{if(l.mood)moodCounts[l.mood]=(moodCounts[l.mood]||0)+1});
-  const topMoods=Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const last=D.measurements.slice(-1)[0];
   const bs=braSize(),w=whr();
-  const isFem=j==='mtf'||j==='femboy'||j==='nonbinary';
-
-  // Vitals from recent logs
-  const recentVitals=D.logs.filter(l=>l.heartRate||l.bpSys).slice(-5);
-  const lastVital=recentVitals.slice(-1)[0];
-
-  // Water
-  const waterToday=getTodayWater();
-  const waterGoal=getWaterGoal();
 
   let labsHtml='';
   if(D.labs.length){
-    const sorted=[...D.labs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+    const sorted=D.labs.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
     for(const lab of sorted){
-      labsHtml+=`<h3>${lab.date}</h3><table>
-        <tr><th>Test</th><th>Value</th><th>Unit</th><th>Status</th><th>Range</th></tr>`;
+      labsHtml+=`<h3 style="font-size:14px;margin:12px 0 4px">${lab.date}</h3><table style="width:100%;border-collapse:collapse">
+        <tr style="background:#f5f0ff"><th style="text-align:left;padding:4px 8px;font-size:12px">Test</th><th style="padding:4px 8px;font-size:12px">Value</th><th style="padding:4px 8px;font-size:12px">Unit</th><th style="padding:4px 8px;font-size:12px">Status</th><th style="padding:4px 8px;font-size:12px">Range</th></tr>`;
       for(const r of lab.results){
         const flag=flagLab(r.name,r.value);
         const t=LAB_TARGETS[r.name];
         const color=flag==='normal'?'#43A047':flag==='urgent'?'#EF5350':'#EF6C00';
-        labsHtml+=`<tr><td>${r.name}</td>
-          <td style="font-weight:700;color:${color}">${r.value}</td>
-          <td style="color:#888">${t?t.unit:''}</td>
-          <td style="color:${color};font-weight:600">${flag}</td>
-          <td style="color:#888">${t?t.low+'-'+t.high:''}</td></tr>`;
+        labsHtml+=`<tr style="border-bottom:1px solid #eee"><td style="padding:4px 8px;font-size:12px">${r.name}</td>
+          <td style="padding:4px 8px;font-size:12px;font-weight:700;color:${color}">${r.value}</td>
+          <td style="padding:4px 8px;font-size:12px;color:#888">${t?t.unit:''}</td>
+          <td style="padding:4px 8px;font-size:12px;color:${color};font-weight:600">${flag}</td>
+          <td style="padding:4px 8px;font-size:12px;color:#888">${t?t.low+'-'+t.high:''}</td></tr>`;
       }
       labsHtml+=`</table>`;
     }
   }
 
-  // Measurement history (last 5)
-  const measHistory=D.measurements.slice(-5);
-
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bloom Health Report — ${dateStr}</title>
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bloom HRT Health Report — ${dateStr}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#333;padding:32px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}
@@ -3537,43 +2874,28 @@ h1{font-size:22px;color:#7C4DFF;border-bottom:3px solid #7C4DFF;padding-bottom:8
 h2{font-size:16px;color:#7C4DFF;border-bottom:1px solid #E8D5F5;padding-bottom:4px;margin:20px 0 8px}
 h3{font-size:14px;color:#3E2465;margin:12px 0 4px}
 .meta{font-size:12px;color:#888;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:8px 0}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
 .stat{background:#F8F0FF;border:1px solid #E8D5F5;border-radius:8px;padding:10px 14px}
 .stat .label{font-size:10px;color:#A99BBB;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .stat .val{font-size:18px;font-weight:700;color:#7C4DFF}
 table{width:100%;border-collapse:collapse;margin:8px 0}
 th{text-align:left;padding:4px 8px;font-size:12px;background:#f5f0ff;font-weight:600}
 td{padding:4px 8px;font-size:12px;border-bottom:1px solid #eee}
-.tags{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
-.tag{font-size:11px;padding:3px 10px;border-radius:10px;background:#F8F0FF;color:#7C4DFF;font-weight:500}
 .footer{margin-top:24px;padding-top:12px;border-top:1px solid #E8D5F5;font-size:11px;color:#A99BBB;text-align:center}
 .disclaimer{background:#FFF3E0;border:1px solid #FFE0B2;border-radius:8px;padding:10px 14px;font-size:11px;color:#EF6C00;margin:16px 0}
 @media print{body{padding:16px} .no-print{display:none}}
 </style></head><body>
-<h1>Bloom Health Report</h1>
-<div class="meta">Generated: ${dateStr} | Journey: ${jLabel}${onHRT?' | On HRT: '+daysOnHRT()+' days ('+monthsOnHRT()+' months)':''} | Start: ${D.startDate||'Not set'} | Total Logs: ${D.logs.length}</div>
+<h1>Bloom HRT Health Report</h1>
+<div class="meta">Generated: ${dateStr} | Days on HRT: ${daysOnHRT()} (${monthsOnHRT()} months) | Start Date: ${D.startDate||'Not set'} | Tanner Stage: ${S.tannerStage}</div>
 
-<div class="disclaimer">This report was generated by Bloom, a personal health tracking app. It is not a medical document. All data was self-reported by the user. Consult your healthcare provider for medical decisions.</div>
+<div class="disclaimer">This report was generated by Bloom, a personal HRT tracking app. It is not a medical document. All data was self-reported by the user. Consult your healthcare provider for medical decisions.</div>
 
-${goals.length?`<h2>Active Goals</h2><div class="tags">${goals.map(g=>`<span class="tag">${g}</span>`).join('')}</div>`:''}
-
-<h2>Overview</h2>
 <div class="grid">
-  ${onHRT?`<div class="stat"><div class="label">Days on HRT</div><div class="val">${daysOnHRT()}</div></div>`:''}
-  ${onHRT?`<div class="stat"><div class="label">Months</div><div class="val">${monthsOnHRT()}</div></div>`:''}
-  ${isFem&&onHRT?`<div class="stat"><div class="label">Tanner Stage</div><div class="val">${S.tannerStage}</div></div>`:''}
-  <div class="stat"><div class="label">Avg Dysphoria</div><div class="val">${dysAvg}/10</div></div>
-  <div class="stat"><div class="label">Avg Energy</div><div class="val">${energyAvg}/10</div></div>
-  <div class="stat"><div class="label">Avg Sleep</div><div class="val">${sleepAvg} hrs</div></div>
-  <div class="stat"><div class="label">Avg Libido</div><div class="val">${libidoAvg}/10</div></div>
-  <div class="stat"><div class="label">Avg Skin</div><div class="val">${skinAvg}/10</div></div>
-  <div class="stat"><div class="label">Hydration Goal</div><div class="val">${waterGoal.label}</div></div>
+  <div class="stat"><div class="label">Days on HRT</div><div class="val">${daysOnHRT()}</div></div>
+  <div class="stat"><div class="label">Months</div><div class="val">${monthsOnHRT()}</div></div>
+  <div class="stat"><div class="label">Tanner Stage</div><div class="val">${S.tannerStage}</div></div>
+  <div class="stat"><div class="label">Avg Dysphoria (0-10)</div><div class="val">${dysAvg}</div></div>
 </div>
-
-${topMoods.length?`<h2>Mood Distribution</h2>
-<table><tr><th>Mood</th><th>Count</th><th>% of Logs</th></tr>
-${topMoods.map(([m,c])=>`<tr><td>${m}</td><td>${c}</td><td>${(c/D.logs.length*100).toFixed(0)}%</td></tr>`).join('')}</table>`:''}
 
 <h2>Active Medications</h2>
 ${activeMeds.length?`<table><tr><th>Medication</th><th>Dose</th><th>Frequency</th><th>Route</th><th>Started</th><th>Days</th></tr>
@@ -3582,51 +2904,30 @@ ${activeMeds.map(m=>`<tr><td><strong>${m.name}</strong></td><td>${m.dose}</td><t
 ${pastMeds.length?`<h2>Past Medications</h2><table><tr><th>Medication</th><th>Dose</th><th>Started</th><th>Ended</th></tr>
 ${pastMeds.map(m=>`<tr><td>${m.name}</td><td>${m.dose}</td><td>${m.started}</td><td>${m.ended}</td></tr>`).join('')}</table>`:''}
 
-<h2>Active Supplements</h2>
-${activeSupps.length?`<table><tr><th>Supplement</th><th>Dose</th><th>Timing</th><th>Started</th><th>Days</th></tr>
-${activeSupps.map(s=>`<tr><td><strong>${s.name}</strong></td><td>${s.dose||'—'}</td><td>${s.timing||'—'}</td><td>${s.started||'—'}</td><td>${s.started?Math.floor((new Date()-new Date(s.started))/864e5):'—'}</td></tr>`).join('')}</table>`:'<p style="color:#888">No active supplements.</p>'}
-
-${pastSupps.length?`<h2>Past Supplements</h2><table><tr><th>Supplement</th><th>Dose</th><th>Started</th><th>Ended</th></tr>
-${pastSupps.map(s=>`<tr><td>${s.name}</td><td>${s.dose||'—'}</td><td>${s.started||'—'}</td><td>${s.ended||'—'}</td></tr>`).join('')}</table>`:''}
-
 <h2>Lab Results</h2>
 ${D.labs.length?labsHtml:'<p style="color:#888">No lab results recorded.</p>'}
 
-${lastVital?`<h2>Vitals</h2>
-<div class="grid-2">
-  ${lastVital.heartRate?`<div class="stat"><div class="label">Resting HR</div><div class="val">${lastVital.heartRate} bpm</div></div>`:''}
-  ${lastVital.bpSys?`<div class="stat"><div class="label">Blood Pressure</div><div class="val">${lastVital.bpSys}/${lastVital.bpDia}</div></div>`:''}
-</div>
-<p style="font-size:11px;color:#888">From log entry: ${lastVital.date}</p>`:''}
-
-${last?`<h2>Body Measurements (Latest: ${last.date})</h2>
+${last?`<h2>Body Measurements (${last.date})</h2>
 <div class="grid">
-${last.weight?`<div class="stat"><div class="label">Weight</div><div class="val">${last.weight} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`:''}
 ${last.bust?`<div class="stat"><div class="label">Bust</div><div class="val">${last.bust}"</div></div>`:''}
 ${last.underbust?`<div class="stat"><div class="label">Underbust</div><div class="val">${last.underbust}"</div></div>`:''}
 ${bs?`<div class="stat"><div class="label">Bra Size</div><div class="val">${bs}</div></div>`:''}
 ${last.waist?`<div class="stat"><div class="label">Waist</div><div class="val">${last.waist}"</div></div>`:''}
 ${last.hips?`<div class="stat"><div class="label">Hips</div><div class="val">${last.hips}"</div></div>`:''}
 ${w?`<div class="stat"><div class="label">WHR</div><div class="val">${w}</div></div>`:''}
-${last.thighL?`<div class="stat"><div class="label">Thigh L</div><div class="val">${last.thighL}"</div></div>`:''}
-${last.thighR?`<div class="stat"><div class="label">Thigh R</div><div class="val">${last.thighR}"</div></div>`:''}
+${last.weight?`<div class="stat"><div class="label">Weight</div><div class="val">${last.weight}</div></div>`:''}
 </div>`:''}
-
-${measHistory.length>=2?`<h2>Measurement History</h2>
-<table><tr><th>Date</th><th>Weight</th><th>Bust</th><th>Waist</th><th>Hips</th><th>Thigh L</th><th>Thigh R</th></tr>
-${measHistory.map(m=>`<tr><td>${m.date}</td><td>${m.weight||'—'}</td><td>${m.bust||'—'}</td><td>${m.waist||'—'}</td><td>${m.hips||'—'}</td><td>${m.thighL||'—'}</td><td>${m.thighR||'—'}</td></tr>`).join('')}</table>`:''}
 
 ${topTags.length?`<h2>Most Reported Changes/Symptoms</h2>
 <table><tr><th>Symptom/Change</th><th>Occurrences</th></tr>
 ${topTags.map(([t,c])=>`<tr><td>${t}</td><td>${c}</td></tr>`).join('')}</table>`:''}
 
-${D.injections.length?`<h2>Injection History (Last 10)</h2>
-<table><tr><th>Date</th><th>Site</th><th>Time</th></tr>
-${D.injections.slice(-10).reverse().map(i=>`<tr><td>${i.date}</td><td>${i.site}</td><td>${i.time||'—'}</td></tr>`).join('')}</table>`:''}
+${dysLogs.length>=3?`<h2>Dysphoria Summary</h2>
+<p>Average: <strong>${dysAvg}/10</strong> over ${dysLogs.length} entries</p>`:''}
 
 <div class="footer">
-  Generated by Bloom — Private Health Tracker<br>
-  Journey: ${jLabel} | All data stored locally on user's device.<br>
+  Generated by Bloom v2.0 — Private HRT Tracker<br>
+  All data stored locally on user's device. This report was created by the user.<br>
   This is not medical advice. Consult your healthcare provider for treatment decisions.
 </div>
 <script>window.onload=function(){window.print()}<\/script>
@@ -3820,22 +3121,13 @@ function showReminder(slot){
   setTimeout(()=>toast.remove(),6000);
 }
 
-let _prevView=null;
-function toggleSettings(){
-  if(currentView==='settings'&&_prevView){showView(_prevView);_prevView=null}
-  else{_prevView=currentView;showView('settings')}
-}
-
 function showView(v){
   if(currentView==='log')tempLogInited=false;
-  if(v!=='settings')_prevView=null;
   currentView=v;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
   updateBanner();
-  updateMoodHeader();
   switch(v){
     case'dashboard':renderDashboard();break;
-    case'active':renderActive();break;
     case'log':renderLog();break;
     case'body':renderBodyHub();break;
     case'photos':renderPhotos();break;
@@ -3849,30 +3141,7 @@ checkOnboarding();
 checkPinLock();
 applyStealth();
 initReminders();
-// Motivational quote in header — rotates daily
-function updateHeaderQuote(){
-  const el=document.getElementById('headerQuote');
-  if(el)el.textContent=getMotivationalQuote();
-}
-// Mood emoji in header — reflects today's logged mood
-function updateMoodHeader(){
-  const btn=document.getElementById('moodHeaderBtn');
-  if(!btn)return;
-  const log=getLog(today());
-  if(log&&log.mood){
-    const m=MOODS.find(m=>m.l===log.mood);
-    btn.innerHTML=m?m.e:'&#128522;';
-    btn.title=log.mood;
-  }else{
-    btn.innerHTML='&#128566;';
-    btn.title='Log your mood';
-  }
-}
-updateHeaderQuote();
-updateMoodHeader();
 showView('dashboard');
-// Daily login reward — fires after dashboard renders
-setTimeout(checkDailyReward,800);
 </script>
 </body>
 </html>
