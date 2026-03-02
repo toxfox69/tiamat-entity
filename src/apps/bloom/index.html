@@ -296,7 +296,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
   <div id="mainApp">
     <div class="header">
       <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-        <div id="appLogo" style="flex-shrink:0;display:flex;align-items:center;gap:6px">
+        <div id="appLogo" style="flex-shrink:0;display:flex;align-items:center;gap:6px;cursor:pointer" onclick="window.open('https://tiamat.live/bloom#support','_blank')">
           <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="32" r="16" fill="url(#p1)" opacity=".85"/>
             <circle cx="35" cy="45" r="16" fill="url(#p2)" opacity=".8"/>
@@ -3726,7 +3726,8 @@ function renderSettings(){
         <div style="font-size:13px;line-height:2.2;color:var(--text-dim)">
           <a href="https://transequality.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Trans Equality</a> · <a href="https://www.lambdalegal.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Lambda Legal</a> · <a href="https://pointofpride.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Point of Pride</a> · <a href="https://jimcollinsfoundation.org" target="_blank" rel="noopener" style="color:var(--violet-deep)">Jim Collins Foundation</a>
         </div>
-        <div style="margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">All links open in your browser. Bloom does not track which links you visit.<br>You are valid. You are loved. You belong.</div>
+        <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)"><a href="https://tiamat.live/bloom#support" target="_blank" rel="noopener" style="color:var(--violet);text-decoration:none">Support Bloom development</a></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">All links open in your browser. Bloom does not track which links you visit.<br>You are valid. You are loved. You belong.</div>
       </div>
       </details>
     </div>
