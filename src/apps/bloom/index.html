@@ -1922,7 +1922,7 @@ function showRewardPopup(r,xpGain,leveledUp,currentLevel){
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove()};
   overlay.innerHTML=`<div class="reward-card">
     <div class="reward-emoji">${leveledUp?'🎉':'✨'}</div>
-    <h3>${leveledUp?'Level Up! '+currentLevel.title:'Welcome Back!'}</h3>
+    <h3>${leveledUp?'Level Up! '+currentLevel.title:r.history.length<=1?'Welcome to Bloom!':'Welcome Back!'}</h3>
     <div class="reward-sub">${REWARD_MESSAGES[msgIdx]}</div>
     <div style="display:flex;justify-content:center;gap:16px;margin-bottom:12px">
       <div><div style="font-size:20px;font-weight:700;color:var(--violet-deep)">+${xpGain}</div><div style="font-size:10px;color:var(--text-muted)">XP earned</div></div>
