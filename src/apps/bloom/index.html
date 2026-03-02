@@ -47,6 +47,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 
 .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(62,36,101,.04)}
 .panel h3{font-size:15px;font-weight:600;margin-bottom:12px;text-align:center}
+.qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+.qs-grid .qs{padding:6px 0}
+.qs-grid .qs:nth-child(odd){text-align:left}
+.qs-grid .qs:nth-child(even){text-align:right}
+.qs .qs-label{font-size:11px;color:var(--text-muted);margin-bottom:1px}
+.qs .qs-value{font-size:16px;font-weight:700}
 .panel-sub{font-size:12px;color:var(--text-dim);margin-bottom:10px;text-align:center}
 
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
@@ -1477,23 +1483,23 @@ function renderDashboard(){
   const reward=getDailyReward();
   const rLevel=getRewardLevel(reward.xp);
 
-  h+=`<div class="panel"><h3>Quick Stats</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
-  h+=`<div onclick="toggleWaterPanel()" style="cursor:pointer"><div style="font-size:11px;color:var(--text-muted)">Water</div><div style="font-size:16px;font-weight:700;color:var(--sky-deep)">${waterPct}%</div></div>`;
-  h+=`<div onclick="showView('active')" style="cursor:pointer"><div style="font-size:11px;color:var(--text-muted)">Active Streak</div><div style="font-size:16px;font-weight:700;color:var(--peach-deep)">${activeStreak} day${activeStreak!==1?'s':''}</div></div>`;
-  h+=`<div><div style="font-size:11px;color:var(--text-muted)">Login Streak</div><div style="font-size:16px;font-weight:700;color:var(--pink-deep)">${reward.streak} day${reward.streak!==1?'s':''}</div></div>`;
-  h+=`<div><div style="font-size:11px;color:var(--text-muted)">Level</div><div style="font-size:16px;font-weight:700;color:var(--violet-deep)">${rLevel.level} <span style="font-size:10px;font-weight:400">${rLevel.title}</span></div></div>`;
+  h+=`<div class="panel"><h3>Quick Stats</h3><div class="qs-grid">`;
+  h+=`<div class="qs" onclick="toggleWaterPanel()" style="cursor:pointer"><div class="qs-label">Water</div><div class="qs-value" style="color:var(--sky-deep)">${waterPct}%</div></div>`;
+  h+=`<div class="qs" onclick="showView('active')" style="cursor:pointer"><div class="qs-label">Active Streak</div><div class="qs-value" style="color:var(--peach-deep)">${activeStreak} day${activeStreak!==1?'s':''}</div></div>`;
+  h+=`<div class="qs"><div class="qs-label">Login Streak</div><div class="qs-value" style="color:var(--pink-deep)">${reward.streak} day${reward.streak!==1?'s':''}</div></div>`;
+  h+=`<div class="qs"><div class="qs-label">Level</div><div class="qs-value" style="color:var(--violet-deep)">${rLevel.level} <span style="font-size:10px;font-weight:400">${rLevel.title}</span></div></div>`;
   if(hasWeight){
     const wt=todayLog?.weight||lastM?.weight;
-    h+=`<div><div style="font-size:11px;color:var(--text-muted)">Weight</div><div style="font-size:16px;font-weight:700">${wt} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`;
+    h+=`<div class="qs"><div class="qs-label">Weight</div><div class="qs-value">${wt} ${S.unitSystem==='imperial'?'lbs':'kg'}</div></div>`;
   }
-  if(todayLog?.heartRate)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Resting HR</div><div style="font-size:16px;font-weight:700">${todayLog.heartRate} bpm</div></div>`;
-  if(todayLog?.bpSys)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Blood Pressure</div><div style="font-size:16px;font-weight:700">${todayLog.bpSys}/${todayLog.bpDia}</div></div>`;
-  if(e2)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Estradiol</div><div style="font-size:16px;font-weight:700;color:var(--pink)">${e2.value} <span style="font-size:11px;font-weight:400">pg/mL</span></div></div>`;
-  if(t)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Testosterone</div><div style="font-size:16px;font-weight:700;color:var(--sky-deep)">${t.value} <span style="font-size:11px;font-weight:400">ng/dL</span></div></div>`;
-  if(bs)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Bra Size</div><div style="font-size:16px;font-weight:700;color:var(--violet-deep)">${bs}</div></div>`;
-  if(w)h+=`<div><div style="font-size:11px;color:var(--text-muted)">WHR</div><div style="font-size:16px;font-weight:700;color:var(--mint-deep)">${w}</div></div>`;
-  if(todayLog?.libido!==undefined)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Libido</div><div style="font-size:16px;font-weight:700">${todayLog.libido}/10</div></div>`;
-  if(todayLog?.skinScore!==undefined)h+=`<div><div style="font-size:11px;color:var(--text-muted)">Skin</div><div style="font-size:16px;font-weight:700">${todayLog.skinScore}/10</div></div>`;
+  if(todayLog?.heartRate)h+=`<div class="qs"><div class="qs-label">Resting HR</div><div class="qs-value">${todayLog.heartRate} bpm</div></div>`;
+  if(todayLog?.bpSys)h+=`<div class="qs"><div class="qs-label">Blood Pressure</div><div class="qs-value">${todayLog.bpSys}/${todayLog.bpDia}</div></div>`;
+  if(e2)h+=`<div class="qs"><div class="qs-label">Estradiol</div><div class="qs-value" style="color:var(--pink)">${e2.value} <span style="font-size:11px;font-weight:400">pg/mL</span></div></div>`;
+  if(t)h+=`<div class="qs"><div class="qs-label">Testosterone</div><div class="qs-value" style="color:var(--sky-deep)">${t.value} <span style="font-size:11px;font-weight:400">ng/dL</span></div></div>`;
+  if(bs)h+=`<div class="qs"><div class="qs-label">Bra Size</div><div class="qs-value" style="color:var(--violet-deep)">${bs}</div></div>`;
+  if(w)h+=`<div class="qs"><div class="qs-label">WHR</div><div class="qs-value" style="color:var(--mint-deep)">${w}</div></div>`;
+  if(todayLog?.libido!==undefined)h+=`<div class="qs"><div class="qs-label">Libido</div><div class="qs-value">${todayLog.libido}/10</div></div>`;
+  if(todayLog?.skinScore!==undefined)h+=`<div class="qs"><div class="qs-label">Skin</div><div class="qs-value">${todayLog.skinScore}/10</div></div>`;
   h+=`</div></div>`;
 
   // ── Today's Plan ──
