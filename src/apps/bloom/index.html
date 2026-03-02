@@ -49,7 +49,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:15px;outline:none;width:100%}
 input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(179,136,255,.15)}
-.app{max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+@media(min-width:768px){.app{max-width:600px}}
 .header{padding:16px 20px 8px;padding-top:calc(16px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between}
 .header h1{font-size:24px;font-weight:700;background:linear-gradient(135deg,var(--violet-deep),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .header-actions{display:flex;gap:8px;flex-shrink:0}
@@ -3889,10 +3890,20 @@ function renderSettings(){
       <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Walk through the app features step by step.</p>
     </div>
 
+    <div class="settings-group" style="background:linear-gradient(135deg,rgba(179,136,255,.08),rgba(236,72,153,.06));border:1px solid var(--violet-soft)">
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:20px;margin-bottom:4px">&#127800;</div>
+        <h3 style="margin:0 0 6px;color:var(--violet-deep)">Support Bloom</h3>
+        <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">Bloom is free, private, and ad-free — forever.<br>If it helps you, consider becoming a Founding Supporter.</p>
+        <button class="btn-primary" style="width:100%;max-width:260px;margin:0 auto;display:block;background:linear-gradient(135deg,var(--violet),var(--pink))" onclick="window.open('https://tiamat.live/bloom#support','_blank')">Become a Founding Supporter</button>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px">Founding Supporters get their name in the app credits forever.</p>
+      </div>
+    </div>
+
     <button class="btn-secondary" style="color:var(--danger);border-color:var(--danger);margin-top:24px" onclick="if(confirm('Delete ALL data including settings and PIN? This cannot be undone.')){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(SETTINGS_KEY);localStorage.removeItem(PIN_KEY);D=defaultData();S=defaultSettings();showView('dashboard')}">Delete All Data</button>
 
     <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-      <strong style="color:var(--violet-deep)">Bloom</strong> v3.2 — Private Wellness Tracker<br>
+      <strong style="color:var(--violet-deep)">Bloom</strong> v3.2.5 — Private Wellness Tracker<br>
       All data stored locally. No accounts. No cloud.<br>
       Your journey. Your data. Your device only.<br>
       <span style="font-size:11px">by ENERGENAI LLC</span>
