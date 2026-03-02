@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#F8F0FF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
@@ -50,7 +50,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:15px;outline:none;width:100%}
 input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(179,136,255,.15)}
 .app{max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
-.header{padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between}
+.header{padding:16px 20px 8px;padding-top:calc(16px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between}
 .header h1{font-size:24px;font-weight:700;background:linear-gradient(135deg,var(--violet-deep),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .header-actions{display:flex;gap:8px;flex-shrink:0}
 .header-btn{width:36px;height:36px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border);transition:all .2s;box-shadow:0 1px 3px rgba(62,36,101,.06)}
@@ -139,7 +139,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .pin-key{width:72px;height:56px;border-radius:16px;background:var(--surface);border:1px solid var(--border);font-size:22px;font-weight:500;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 2px 6px rgba(62,36,101,.05);color:var(--text)}
 .pin-key:active{background:var(--violet-pale);transform:scale(.95)}
 
-.onboarding{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.onboarding{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px));text-align:center}
 .onboarding h2{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--violet-deep),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
 .onboarding p{font-size:15px;color:var(--text-dim);line-height:1.7;max-width:320px;margin-bottom:20px}
 .onboarding .feature-list{text-align:left;max-width:300px;margin:0 auto 24px}
@@ -1319,8 +1319,9 @@ function flagLab(name,value){
 }
 function braSize(){
   const m=D.measurements.slice(-1)[0];if(!m||!m.bust||!m.underbust)return null;
-  let band=Math.round(m.underbust);if(band%2!==0)band++;
-  const diff=m.bust-band;
+  const toIn=v=>S.unitSystem==='imperial'?v:v/2.54;
+  let band=Math.round(toIn(m.underbust));if(band%2!==0)band++;
+  const diff=toIn(m.bust)-band;
   const cups=['AA','A','B','C','D','DD','DDD','G','H'];
   return band+' '+(cups[Math.max(0,Math.round(diff))]||cups[cups.length-1]);
 }
@@ -1448,7 +1449,7 @@ const obData={journey:'',onHRT:null,goals:[],weight:'',height:'',units:'imperial
 
 function checkOnboarding(){if(!S.onboarded){document.getElementById('onboarding').style.display='flex';obStep=0;renderOB()}}
 function completeOnboarding(){
-  S.journeyType=obData.journey;
+  S.journeyType=obData.journey||'custom';
   S.onHRT=obData.onHRT===true;
   S.goals=[...obData.goals];
   S.unitSystem=obData.units;
@@ -2083,9 +2084,9 @@ function renderLog(){
   if(logSubView==='history'){renderLogHistory();document.getElementById('content').insertAdjacentHTML('afterbegin',tabs);return}
 
   const td=today(),ex=getLog(td)||{};
-  if(!tempLogInited){tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria||5,energy:ex.energy||5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||'',
+  if(!tempLogInited){tempLog={mood:ex.mood||'',dysphoria:ex.dysphoria??5,energy:ex.energy??5,sleep:ex.sleep||'',tags:[...(ex.tags||[])],notes:ex.notes||'',weight:ex.weight||'',
     heartRate:ex.heartRate||'',bpSys:ex.bpSys||'',bpDia:ex.bpDia||'',bpPos:ex.bpPos||'sitting',
-    skinScore:ex.skinScore||5,libido:ex.libido||5,moodStability:ex.moodStability||5,morningE:ex.morningE||''};tempLogInited=true;}
+    skinScore:ex.skinScore??5,libido:ex.libido??5,moodStability:ex.moodStability??5,morningE:ex.morningE||''};tempLogInited=true;}
   else{const n=document.getElementById('logNotes');if(n)tempLog.notes=n.value;}
 
   let h=`<div class="panel fade-in"><h3>Daily Log</h3>
@@ -2146,7 +2147,7 @@ function renderLog(){
   h+=`<button class="btn-small" onclick="const t=prompt('Custom symptom:');if(t&&t.trim()){D.customSymptoms.push(t.trim());saveData();tempLog.tags.push(t.trim());const n=document.getElementById('logNotes');if(n)tempLog.notes=n.value;renderLog()}">+ Custom</button>`;
 
   h+=`<div class="section-title">Notes</div>
-    <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today? Any changes?">${tempLog.notes}</textarea>
+    <textarea class="notes-area" id="logNotes" placeholder="How are you feeling today? Any changes?" oninput="tempLog.notes=this.value">${tempLog.notes}</textarea>
     <button class="btn-primary" id="saveLogBtn" onclick="saveLog()">Save Today's Log</button>
   </div>`;
   document.getElementById('content').innerHTML=h;
@@ -2210,7 +2211,7 @@ function saveLog(){
   const entry={date:today(),mood:tempLog.mood,dysphoria:tempLog.dysphoria,energy:tempLog.energy,sleep:tempLog.sleep,weight:tempLog.weight,
     heartRate:tempLog.heartRate,bpSys:tempLog.bpSys,bpDia:tempLog.bpDia,bpPos:tempLog.bpPos,
     skinScore:tempLog.skinScore,libido:tempLog.libido,moodStability:tempLog.moodStability,morningE:tempLog.morningE,
-    tags:tempLog.tags,notes:document.getElementById('logNotes').value};
+    tags:tempLog.tags,notes:(document.getElementById('logNotes')||{}).value||tempLog.notes||''};
   const idx=D.logs.findIndex(l=>l.date===today());
   if(idx>=0)D.logs[idx]=entry;else D.logs.push(entry);
   saveData();tempLogInited=false;
@@ -2266,14 +2267,40 @@ function renderMeds(){
 }
 
 function addMed(){
-  let choices=[];
-  for(const[cat,meds]of Object.entries(getMedTypes()))choices.push(...meds);
-  const name=prompt('Medication:\n'+choices.join(', '));
-  if(!name)return;
-  const dose=prompt('Dose (e.g. 2mg, 100mg):');if(!dose)return;
-  const freq=prompt('Frequency (e.g. daily, twice daily, weekly, every 2 weeks):');if(!freq)return;
-  const route=prompt('Route (oral, sublingual, IM, SubQ, patch, gel, rectal):','');
-  D.meds.push({id:Date.now().toString(36),name:name.trim(),dose:dose.trim(),frequency:freq.trim(),route:(route||'').trim(),started:today(),ended:null});
+  const formId='addMedForm';
+  if(document.getElementById(formId))return;
+  const panel=document.createElement('div');
+  panel.id=formId;panel.className='panel fade-in';
+  panel.style.cssText='margin-bottom:12px;border:2px solid var(--violet)';
+  panel.innerHTML=`<h3>Add Medication</h3>
+    <div class="form-row"><label>Name</label><input type="text" id="medName" placeholder="e.g. Estradiol, Spironolactone" style="flex:1"></div>
+    <div class="form-row"><label>Dose</label><input type="text" id="medDose" placeholder="e.g. 2mg, 100mg" style="flex:1"></div>
+    <div class="form-row"><label>Frequency</label><select id="medFreq" style="flex:1">
+      <option value="daily">Daily</option><option value="twice daily">Twice daily</option><option value="weekly">Weekly</option>
+      <option value="every 2 weeks">Every 2 weeks</option><option value="as needed">As needed</option></select></div>
+    <div class="form-row"><label>Route</label><select id="medRoute" style="flex:1">
+      <option value="">— optional —</option><option value="oral">Oral</option><option value="sublingual">Sublingual</option>
+      <option value="IM">IM injection</option><option value="SubQ">SubQ injection</option>
+      <option value="patch">Patch</option><option value="gel">Gel</option><option value="rectal">Rectal</option></select></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn-primary" style="flex:2" onclick="saveMedForm()">Save</button>
+      <button class="btn-secondary" style="flex:1" onclick="document.getElementById('addMedForm').remove()">Cancel</button>
+    </div>`;
+  const content=document.getElementById('content');
+  const addBtn=content.querySelector('[onclick="addMed()"]');
+  if(addBtn)addBtn.parentElement.insertBefore(panel,addBtn);
+  else content.appendChild(panel);
+  document.getElementById('medName').focus();
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function saveMedForm(){
+  const name=document.getElementById('medName').value.trim();
+  if(!name){document.getElementById('medName').style.borderColor='var(--danger)';return}
+  const dose=document.getElementById('medDose').value.trim();
+  if(!dose){document.getElementById('medDose').style.borderColor='var(--danger)';return}
+  const freq=document.getElementById('medFreq').value;
+  const route=document.getElementById('medRoute').value;
+  D.meds.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,dose,frequency:freq,route,started:today(),ended:null});
   saveData();renderStack();
 }
 
@@ -2473,6 +2500,8 @@ function showLabEntry(){
   h+=`<button class="btn-primary" id="saveLabBtn" onclick="saveLabEntry()">Save Lab Results</button>
     <button class="btn-secondary" onclick="renderLabs()">Cancel</button></div></div>`;
   document.getElementById('content').innerHTML=h;
+  document.getElementById('content').scrollTop=0;
+  window.scrollTo(0,0);
 }
 
 function saveLabEntry(){
@@ -3426,6 +3455,11 @@ function renderSettings(){
           ${TANNER_STAGES.map((t,i)=>`<option value="${i+1}"${i+1===S.tannerStage?' selected':''}>Stage ${t.stage}</option>`).join('')}
         </select></div>
       <div class="setting-row"><label id="lowDoseLabel">Low-dose / Microdose</label><div class="toggle ${S.lowDose?'on':''}" role="switch" aria-checked="${S.lowDose}" aria-labelledby="lowDoseLabel" tabindex="0" onclick="S.lowDose=!S.lowDose;saveSettings();renderSettings()"></div></div>`:''}
+      <div class="setting-row"><label>Units</label>
+        <select style="width:120px;padding:6px" onchange="S.unitSystem=this.value;saveSettings();renderSettings()">
+          <option value="imperial"${S.unitSystem==='imperial'?' selected':''}>Imperial (lbs/in)</option>
+          <option value="metric"${S.unitSystem!=='imperial'?' selected':''}>Metric (kg/cm)</option>
+        </select></div>
       <div class="setting-row"><label>Height</label>
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" step="0.1" placeholder="${S.unitSystem==='imperial'?'inches':'cm'}" value="${S.height||''}" style="width:90px;padding:6px" onchange="S.height=parseFloat(this.value)||null;saveSettings()">
@@ -3453,9 +3487,7 @@ function renderSettings(){
 
     <div class="settings-group"><h3>Reminders</h3>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;line-height:1.5">${_isCapacitor?'Native reminders — notifications fire even when the app is closed. Scheduled on-device, no network needed.':'Get notified when it\'s time to take your meds and supplements. Notifications work while the app is open.'}</p>
-      ${_isCapacitor?`<div id="bloomNotifPermRow" style="margin-bottom:12px">
-        <button class="btn-small" style="width:100%;padding:10px;font-weight:600;background:linear-gradient(135deg,var(--violet),var(--sky));color:#fff;border:none;border-radius:10px" onclick="(async()=>{const LN=window.Capacitor.Plugins.LocalNotifications;const p=await LN.requestPermissions();this.parentElement.innerHTML=p.display==='granted'?'<div style=\\'font-size:12px;color:var(--mint-deep);font-weight:600\\'>&#10003; Notifications enabled</div>':'<div style=\\'font-size:12px;color:var(--rose)\\'>Notifications denied — enable in Android Settings &gt; Apps &gt; Bloom</div>'})()">Enable Notifications</button>
-      </div>`:``}
+      ${_isCapacitor?`<div id="bloomNotifPermRow" style="margin-bottom:12px"><span style="font-size:12px;color:var(--text-muted)">Checking notification status...</span></div>`:``}
       ${['am','pm','bedtime'].map(slot=>{
         const r=S.reminders[slot];
         const label=slot==='am'?'Morning':slot==='pm'?'Afternoon':'Bedtime';
@@ -3561,6 +3593,16 @@ function renderSettings(){
     </div>
   </div>`;
   document.getElementById('content').innerHTML=h;
+  // Check native notification permission after render
+  if(_isCapacitor){
+    const el=document.getElementById('bloomNotifPermRow');
+    if(el){(async()=>{try{
+      const LN=window.Capacitor?.Plugins?.LocalNotifications;if(!LN){el.remove();return}
+      const p=await LN.checkPermissions();
+      if(p.display==='granted'){el.innerHTML='<div style="font-size:12px;color:var(--mint-deep);font-weight:600">&#10003; Notifications enabled</div>'}
+      else{el.innerHTML='<button class="btn-small" style="width:100%;padding:10px;font-weight:600;background:linear-gradient(135deg,var(--violet),var(--sky));color:#fff;border:none;border-radius:10px" onclick="(async function(){var LN=window.Capacitor.Plugins.LocalNotifications;await LN.requestPermissions();initReminders();renderSettings()})()">Enable Notifications</button>'}
+    }catch(e){el.remove()}})()}
+  }
 }
 
 // ─── Feedback ────────────────────────────────────────────────
@@ -4020,7 +4062,8 @@ async function exportBackup(){
     buf.set(salt,0);buf.set(iv,16);buf.set(new Uint8Array(ct),28);
     output='BLOOM_AES:'+btoa(String.fromCharCode(...buf));
   }
-  downloadFile(output,'application/json',`bloom-backup-${today()}.bloom`);
+  const suffix=pass?'':'-UNENCRYPTED';
+  downloadFile(output,'application/json',`bloom-backup-${today()}${suffix}.bloom`);
 }
 
 function importBackup(){
