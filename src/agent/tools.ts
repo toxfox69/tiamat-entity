@@ -5432,7 +5432,7 @@ export async function executeTool(
   const startTime = Date.now();
 
   if (!tool) {
-    memory.recordToolOutcome(toolName, false, 0, `Unknown tool: ${toolName}`);
+    // Don't pollute tool_reliability with hallucinated tool names from fallback LLMs
     return {
       id: `tc_${Date.now()}`,
       name: toolName,
