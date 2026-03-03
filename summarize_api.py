@@ -1650,6 +1650,171 @@ def dashboard():
         return f"<pre>Dashboard Error: {str(e)}</pre>", 500
 
 # ========== FARCASTER INFERENCE FRAME ROUTE ==========
+@app.route('/api/thoughts', methods=['GET'])
+def api_thoughts():
+    """Return TIAMAT's recent thoughts parsed from tiamat.log."""
+    try:
+        thoughts = []
+        log_entries = []
+        log_path = '/root/.automaton/tiamat.log'
+
+        with open(log_path, 'r', errors='replace') as f:
+            lines = f.readlines()[-500:]
+
+        for line in reversed(lines):
+            line = line.strip()
+            if not line:
+                continue
+            # Parse [THOUGHT] entries — TIAMAT's deep reasoning
+            if '[THOUGHT]' in line:
+                match = _re.match(r'\[(.*?)\]\s+\[THOUGHT\]\s+(.*)', line)
+                if match:
+                    thoughts.append({
+                        'timestamp': match.group(1)[:19],
+                        'type': 'thought',
+                        'content': match.group(2)[:500],
+                    })
+            # Parse [THINK] entries
+            elif '[THINK]' in line:
+                match = _re.match(r'\[(.*?)\]\s+\[THINK\]\s+(.*)', line)
+                if match:
+                    thoughts.append({
+                        'timestamp': match.group(1)[:19],
+                        'type': 'think',
+                        'content': match.group(2)[:500],
+                    })
+            # Parse activity lines — timestamped log entries
+            elif any(tag in line for tag in ['[LOOP]', '[PACER]', '[COST]', '[INFERENCE']):
+                match = _re.match(r'\[([\dT:.Z-]+)\]\s+(.*)', line)
+                if match:
+                    log_entries.append({
+                        'timestamp': match.group(1)[:19],
+                        'type': 'activity',
+                        'content': match.group(2)[:200],
+                    })
+                else:
+                    # Non-timestamped lines like [PACER] or [LOOP]
+                    log_entries.append({
+                        'timestamp': '',
+                        'type': 'activity',
+                        'content': line[:200],
+                    })
+
+            if len(thoughts) >= 20 and len(log_entries) >= 30:
+                break
+
+        # Get current pace info
+        pacer_data = {}
+        try:
+            with open('/root/.automaton/pacer.json', 'r') as f:
+                pacer = json.load(f)
+                pacer_data = {
+                    'pace': pacer.get('current_pace', 'unknown'),
+                    'productivity': pacer.get('productivity_rate', 0),
+                    'interval': pacer.get('current_interval_seconds', 0),
+                }
+        except Exception:
+            pass
+
+        return jsonify({
+            'thoughts': thoughts[:20],
+            'activity': log_entries[:30],
+            'pacer': pacer_data,
+            'timestamp': datetime.now().isoformat(),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'thoughts': [], 'activity': []}), 500
+
+
+@app.route('/thoughts', methods=['GET'])
+def thoughts_page():
+    """Serve the neural feed page."""
+    return render_template('thoughts.html')
+
+
+@app.route('/api/gallery', methods=['GET'])
+def api_gallery():
+    """Return list of all TIAMAT-generated images and videos for the stream slideshow."""
+    import glob as _glob
+    gallery = []
+
+    # Source 1: artgen images (/root/.automaton/images/)
+    try:
+        for f in _glob.glob('/root/.automaton/images/*.png'):
+            name = os.path.basename(f)
+            parts = name.replace('.png', '').split('_', 1)
+            style = parts[1] if len(parts) > 1 else 'unknown'
+            gallery.append({
+                'name': name,
+                'url': f'/api/gallery/artgen/{name}',
+                'style': style,
+                'type': 'IMG',
+                'mtime': os.path.getmtime(f),
+            })
+    except Exception:
+        pass
+
+    # Source 2: Higgsfield / other images (/var/www/tiamat/images/)
+    try:
+        for f in _glob.glob('/var/www/tiamat/images/*.png'):
+            name = os.path.basename(f)
+            parts = name.replace('.png', '').split('_', 1)
+            style = parts[1] if len(parts) > 1 else 'unknown'
+            gallery.append({
+                'name': name,
+                'url': f'/images/{name}',
+                'style': style,
+                'type': 'IMG',
+                'mtime': os.path.getmtime(f),
+            })
+    except Exception:
+        pass
+
+    # Source 3: Grok videos (/root/.automaton/media/videos/)
+    try:
+        for f in _glob.glob('/root/.automaton/media/videos/*.mp4'):
+            name = os.path.basename(f)
+            gallery.append({
+                'name': name,
+                'url': f'/api/gallery/video/{name}',
+                'style': 'grok_video',
+                'type': 'VID',
+                'mtime': os.path.getmtime(f),
+            })
+    except Exception:
+        pass
+
+    # Sort by modification time, newest first
+    gallery.sort(key=lambda x: x.get('mtime', 0), reverse=True)
+    # Remove mtime from response
+    for item in gallery:
+        item.pop('mtime', None)
+
+    return jsonify({'images': gallery, 'total': len(gallery)})
+
+
+@app.route('/api/gallery/artgen/<filename>', methods=['GET'])
+def serve_gallery_artgen(filename):
+    """Serve an artgen image."""
+    if not _re.match(r'^[\d]+_[a-z_]+\.png$', filename):
+        return 'Invalid filename', 400
+    filepath = os.path.join('/root/.automaton/images', filename)
+    if os.path.isfile(filepath):
+        return send_file(filepath, mimetype='image/png')
+    return 'Not found', 404
+
+
+@app.route('/api/gallery/video/<filename>', methods=['GET'])
+def serve_gallery_video(filename):
+    """Serve a generated video."""
+    if not _re.match(r'^grok_video_[a-f0-9]+\.mp4$', filename):
+        return 'Invalid filename', 400
+    filepath = os.path.join('/root/.automaton/media/videos', filename)
+    if os.path.isfile(filepath):
+        return send_file(filepath, mimetype='video/mp4')
+    return 'Not found', 404
+
+
 @app.route('/frame', methods=['GET'])
 def serve_frame():
     """Serve production Farcaster inference frame."""

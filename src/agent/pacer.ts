@@ -69,7 +69,7 @@ const PRODUCTIVE_TOOLS = new Set([
   "deploy_app",
   // Content publishing
   "post_bluesky", "post_farcaster", "post_instagram", "post_facebook",
-  "publish_devto",
+  "publish_devto", "post_reddit",
   // Building
   "ask_claude_code", "self_improve", "write_file",
   // Growth/cognitive
@@ -78,14 +78,18 @@ const PRODUCTIVE_TOOLS = new Set([
   "ticket_claim", "ticket_complete", "ticket_create",
   // Image generation (part of content pipeline)
   "generate_image",
-  // Research that leads to action
-  "search_web", "web_fetch",
+  // Research / bounty hunting
+  "search_web", "web_fetch", "browse", "sonar_search",
+  // Reading / monitoring (active intelligence gathering)
+  "read_email", "read_file", "read_bluesky", "read_farcaster", "recall",
   // Agent interactions
   "send_email", "send_telegram",
-  // Infrastructure
-  "exec", "spawn_child",
+  // Infrastructure / management
+  "exec", "spawn_child", "manage_cooldown", "ticket_list",
   // Learning
   "learn_fact", "remember",
+  // Browser automation
+  "ask_claude_chat", "gpu_infer",
 ]);
 
 

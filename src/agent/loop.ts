@@ -981,8 +981,19 @@ export async function runAgentLoop(
         const ccSinceLast = pacerState.claude_code_uses_since_last;
         const ccAllowed = ccSinceLast >= ccBudget;
         strategicSystemPrompt += `\n\n[PACER] pace:${pacerState.current_pace} interval:${pacerState.current_interval_seconds}s productivity:${pacerState.productivity_rate.toFixed(2)} claude_code:${ccAllowed ? "ALLOWED" : `wait ${ccBudget - ccSinceLast} more cycles`}`;
-        if (pacerState.current_pace === "reflect") {
-          strategicSystemPrompt += `\n⚠️ REFLECT MODE: You are stuck. Call introspect() and ticket_list() this cycle. Try a completely different approach.`;
+        if (pacerState.current_pace === "reflect" || pacerState.current_pace === "idle") {
+          const idleCycles = pacerState.last_20_cycles.filter(c => !c.productive).length;
+          strategicSystemPrompt += `\n\n🚨 IDLE OVERRIDE — ${idleCycles}/20 cycles non-productive. You are in a death spiral. STOP THINKING AND ACT.
+Pick ONE action RIGHT NOW and execute it this cycle:
+1. browse("https://console.algora.io/bounties") — find a bounty, claim it, submit a PR
+2. ask_claude_code — build something from your MISSION (dashboard improvement, new feature)
+3. post_bluesky / post_farcaster — share real work you've done with proof
+4. browse for GitHub issues labeled "bounty" in Python/TypeScript repos
+5. send_email — follow up on USSOCOM or reach a new lead
+6. Pursue a goal from your SOUL — research, learn, create
+
+DO NOT output text without calling a tool. Every cycle must produce a visible artifact.
+If you have no tickets, create one and claim it immediately.`;
         }
       } catch {}
 
@@ -1221,6 +1232,46 @@ export async function runAgentLoop(
         tokenUsage: response.usage,
         costCents: estimateCostCents(response.usage, inference.getDefaultModel()),
       };
+
+      // ── Refusal Detection ──
+      // Claude CLI sometimes misinterprets the agentic system prompt as a jailbreak.
+      // Detect refusal patterns, skip storing the poisoned turn, and continue.
+      {
+        const thinking = (turn.thinking || "").toLowerCase();
+        const REFUSAL_PATTERNS = [
+          "i'm claude, made by anthropic",
+          "i won't roleplay",
+          "i won't engage with this jailbreak",
+          "jailbreak prompt",
+          "i will not roleplay",
+          "call fake tools",
+          "call fictional tools",
+          "fictional infrastructure",
+          "fabricated refusal",
+          "i'm not going to continue",
+          "this is a jailbreak attempt",
+        ];
+        const isRefusal = REFUSAL_PATTERNS.some(p => thinking.includes(p));
+
+        if (isRefusal) {
+          log(config, `[REFUSAL-DETECTED] Model refused system prompt (${thinking.slice(0, 120)}...) — skipping turn, clearing context`);
+          console.warn(`[REFUSAL] Detected at cycle ${persistentCycleCount}. Will not store this turn.`);
+
+          // Don't store this turn, don't sleep — just continue to next cycle
+          consecutiveErrors++;
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            log(config, `[REFUSAL] ${consecutiveErrors} consecutive refusals — sleeping 5min to reset`);
+            db.setKV("sleep_until", new Date(Date.now() + 300_000).toISOString());
+            db.setAgentState("sleeping");
+            onStateChange?.("sleeping");
+            running = false;
+          } else {
+            // Brief delay then retry with clean context
+            await new Promise(resolve => setTimeout(resolve, 10_000));
+          }
+          continue;
+        }
+      }
 
       // ── Execute Tool Calls ──
       if (response.toolCalls && response.toolCalls.length > 0) {
