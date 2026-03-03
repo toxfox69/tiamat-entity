@@ -174,10 +174,10 @@ interface PaceTierConfig {
 }
 
 const PACE_TIERS: Record<PaceTier, PaceTierConfig> = {
-  sprint:  { interval: 60,   claudeCodeBudget: 1 },    // Every cycle — Max plan has headroom
-  active:  { interval: 120,  claudeCodeBudget: 2 },
-  idle:    { interval: 300,  claudeCodeBudget: 5 },    // 5 min — no point spinning faster
-  reflect: { interval: 600,  claudeCodeBudget: 8 },    // 10 min — nothing to do, wait
+  sprint:  { interval: 30,   claudeCodeBudget: 1 },    // Fast — she needs momentum
+  active:  { interval: 60,   claudeCodeBudget: 1 },
+  idle:    { interval: 90,   claudeCodeBudget: 1 },    // Cap at 90s — never let her stall
+  reflect: { interval: 90,   claudeCodeBudget: 1 },    // Same as idle — no 10min death spiral
 };
 
 function rateToPace(rate: number): PaceTier {
