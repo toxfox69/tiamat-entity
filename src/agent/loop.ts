@@ -1809,7 +1809,7 @@ const COOLDOWN_TASKS = [
   {
     name: "email_check",
     command: ["python3", ["email_tool.py", "unread"]],
-    interval: 20,     // every 20 cycles — just check for bounty replies
+    interval: 10,     // every 10 cycles — outreach blitz, check for replies fast
     offset: 2,
     timeout: 15_000,
     minWindow: 30_000,
