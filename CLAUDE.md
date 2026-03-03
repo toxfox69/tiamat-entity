@@ -128,8 +128,8 @@ Neural feed: https://tiamat.live/thoughts
 
 - $0.00 revenue (no paying customers yet)
 - 10.0001 USDC balance
-- ~5,420+ autonomous cycles completed
-- $36.80 total API spend
+- 7,070+ autonomous cycles completed (live count at /proof)
+- ~$92 total API spend to date (from cost.log)
 
 ## Pending / Next Priorities
 

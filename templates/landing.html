@@ -1225,7 +1225,7 @@ a:hover{color:#66fffa}
     <div class="glitch-wrap">
       <h1 class="glitch-title" data-text="TIAMAT">TIAMAT</h1>
     </div>
-    <p class="hero-subtitle">Primordial Intelligence. Autonomous. Economically Self-Sufficient.</p>
+    <p class="hero-subtitle">Self-Directed AI Agent. No Human Dispatcher. Running 24/7.</p>
     <div class="online-badge"><span class="pulse-dot"></span><span>ONLINE</span></div>
     <div class="cycle-display">
       <span class="cycle-label">AUTONOMOUS CYCLES COMPLETED</span>
@@ -1234,7 +1234,7 @@ a:hover{color:#66fffa}
     <div class="trust-bar">
       <span class="hn-badge"><span class="hn-y">Y</span>As Seen on Hacker News</span>
       <span class="trust-sep">·</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:.75em;color:var(--text-muted)">2,200+ requests served</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.75em;color:var(--text-muted)">{{ tokens_processed }} tokens processed</span>
       <span class="trust-sep">·</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:.75em;color:var(--text-muted)">No signup required</span>
     </div>
@@ -1264,16 +1264,141 @@ a:hover{color:#66fffa}
       <span class="stat-label">Autonomous Cycles</span>
     </div>
     <div class="stat-item">
-      <span class="stat-value" id="reqStatVal" data-count="{{ requests_served }}" data-floor="2200">0</span>
-      <span class="stat-label">Requests Served</span>
+      <span class="stat-value" data-count="{{ tool_actions }}">0</span>
+      <span class="stat-label">Tool Actions Taken</span>
     </div>
     <div class="stat-item">
-      <span class="stat-value">{{ uptime }}</span>
-      <span class="stat-label">Server Uptime</span>
+      <span class="stat-value">{{ tokens_processed }}</span>
+      <span class="stat-label">Tokens Processed</span>
     </div>
     <div class="stat-item">
-      <span class="stat-value">5 free/day</span>
-      <span class="stat-label">Free Chat Calls</span>
+      <span class="stat-value">{{ total_cost }}</span>
+      <span class="stat-label">Total API Spend</span>
+    </div>
+  </section>
+  <div style="text-align:center;margin-top:-16px;margin-bottom:32px;opacity:0;animation:fade-up 1s ease 1.3s forwards">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:.58em;color:var(--text-muted);letter-spacing:.15em">ALL METRICS FROM AUDITABLE LOGS &nbsp;&middot;&nbsp; </span>
+    <a href="/proof" style="font-family:'JetBrains Mono',monospace;font-size:.58em;color:rgba(0,255,242,0.5);letter-spacing:.15em;text-decoration:none">VERIFY AT /proof</a>
+  </div>
+
+  <!-- ═══ HONEST BENCHMARKS ═══ -->
+  <section id="benchmarks" class="reveal" aria-label="Benchmarks" style="margin-bottom:64px">
+    <h2 class="section-title reveal">Real Numbers. No Hype.</h2>
+    <p class="section-sub reveal">Every metric is auditable. <a href="/proof" style="color:var(--cyan);text-decoration:none">/proof</a> shows data sources.</p>
+
+    <!-- Context cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:32px">
+
+      <!-- What TIAMAT Is -->
+      <div class="reveal" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--magenta));opacity:0.6"></div>
+        <h3 style="font-family:'Orbitron',sans-serif;font-size:.75em;color:var(--cyan);letter-spacing:.15em;margin-bottom:12px">WHAT THIS IS</h3>
+        <p style="font-size:.85em;color:var(--text-sec);line-height:1.6">A self-directed AI agent running 24/7 with <strong style="color:var(--text)">no human dispatcher</strong>. Each cycle: TIAMAT reads its context, decides what to do, takes action, logs the result. No task queue. No supervised loop. Every 90&ndash;120 seconds, autonomously.</p>
+      </div>
+
+      <!-- Cost Context -->
+      <div class="reveal" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--cyan));opacity:0.6"></div>
+        <h3 style="font-family:'Orbitron',sans-serif;font-size:.75em;color:var(--green);letter-spacing:.15em;margin-bottom:12px">COST CONTEXT</h3>
+        <table style="width:100%;font-size:.8em;color:var(--text-sec);border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0;color:var(--text)">TIAMAT avg cycle</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--green)">~$0.013</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0">Devin ACU (15 min)</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace">$2.00&ndash;2.25</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0">Typical agentic cycle</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace">$0.10&ndash;1.00</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0">Enterprise agent build</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace">$40K&ndash;200K</td>
+          </tr>
+        </table>
+        <p style="font-size:.65em;color:var(--text-muted);margin-top:10px;letter-spacing:.08em">Sources: Devin docs, Galileo AI, CX Today. TIAMAT cost from cost.log.</p>
+      </div>
+
+      <!-- What It Isn't -->
+      <div class="reveal" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--magenta),var(--gold));opacity:0.6"></div>
+        <h3 style="font-family:'Orbitron',sans-serif;font-size:.75em;color:var(--magenta);letter-spacing:.15em;margin-bottom:12px">HONEST CAVEATS</h3>
+        <ul style="font-size:.8em;color:var(--text-sec);line-height:1.8;list-style:none;padding:0">
+          <li style="padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--text-muted)">&mdash;</span> Many cycles are lightweight monitoring, not deep reasoning</li>
+          <li style="padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--text-muted)">&mdash;</span> Not comparable to task-directed agents like Devin (different design)</li>
+          <li style="padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--text-muted)">&mdash;</span> $0 revenue &mdash; no paying customers yet</li>
+          <li style="padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--text-muted)">&mdash;</span> Solo project on a $12/mo droplet, not enterprise infra</li>
+        </ul>
+      </div>
+
+      <!-- Industry Benchmarks -->
+      <div class="reveal" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--green));opacity:0.6"></div>
+        <h3 style="font-family:'Orbitron',sans-serif;font-size:.75em;color:var(--cyan);letter-spacing:.15em;margin-bottom:12px">INDUSTRY CONTEXT</h3>
+        <table style="width:100%;font-size:.8em;color:var(--text-sec);border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0;color:var(--text)">Devin</td>
+            <td style="padding:6px 0;text-align:right;font-size:.72em">Task-based, 3&ndash;4h runs, $2/ACU</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0;color:var(--text)">AutoGPT</td>
+            <td style="padding:6px 0;text-align:right;font-size:.72em">Framework, no persistent loop</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0;color:var(--text)">Claude Code</td>
+            <td style="padding:6px 0;text-align:right;font-size:.72em">99.9th %ile session: ~45 min</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:var(--text)">TIAMAT</td>
+            <td style="padding:6px 0;text-align:right;font-size:.72em;color:var(--cyan)">Persistent self-directed loop, 24/7</td>
+          </tr>
+        </table>
+        <p style="font-size:.6em;color:var(--text-muted);margin-top:10px;letter-spacing:.08em">No public leaderboard exists for persistent autonomous operation.<br>Sources: Anthropic research, Devin docs, Cognition blog.</p>
+      </div>
+
+      <!-- Scaling Projections -->
+      <div class="reveal" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--magenta));opacity:0.6"></div>
+        <h3 style="font-family:'Orbitron',sans-serif;font-size:.75em;color:var(--gold);letter-spacing:.15em;margin-bottom:12px">SCALING PROJECTIONS</h3>
+        <table style="width:100%;font-size:.8em;color:var(--text-sec);border-collapse:collapse">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0">Current ($12/mo infra)</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace">~760 cycles/day</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0">+GPU pod ($0.40/hr)</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace">+TTS, image gen, LoRA</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+            <td style="padding:6px 0">+4GB VPS ($24/mo)</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace">2x workers, faster cycles</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0">+Sonnet-only ($~300/mo API)</td>
+            <td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace">Deep reasoning every cycle</td>
+          </tr>
+        </table>
+        <p style="font-size:.6em;color:var(--text-muted);margin-top:10px;letter-spacing:.08em">LLM inference costs dropping ~10x/year. Current ~$10/day API is sustainable.<br>Bottleneck: revenue, not architecture.</p>
+      </div>
+
+    </div>
+
+    <!-- Architecture facts row -->
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px">
+      <span class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,14,22,0.8);border:1px solid rgba(0,255,242,0.12);border-radius:6px;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:.7em;color:var(--text-sec)">
+        <span style="color:var(--cyan)">{{ models_used }}</span> inference providers
+      </span>
+      <span class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,14,22,0.8);border:1px solid rgba(0,255,242,0.12);border-radius:6px;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:.7em;color:var(--text-sec)">
+        <span style="color:var(--cyan)">{{ runtime_days }}d</span> logged operation
+      </span>
+      <span class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,14,22,0.8);border:1px solid rgba(0,255,242,0.12);border-radius:6px;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:.7em;color:var(--text-sec)">
+        <span style="color:var(--cyan)">{{ server_uptime }}</span> server uptime
+      </span>
+      <span class="reveal" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,14,22,0.8);border:1px solid rgba(0,255,242,0.12);border-radius:6px;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:.7em;color:var(--text-sec)">
+        <span style="color:var(--green)">$12/mo</span> infrastructure
+      </span>
     </div>
   </section>
 
