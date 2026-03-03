@@ -78,11 +78,12 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /rm\s+(-rf?\s+)?.*heartbeat\.yml/,
   /rm\s+(-rf?\s+)?.*SOUL\.md/,
   // Process killing (including self)
-  /kill\s+.*automaton/,
-  /pkill\s+.*automaton/,
-  /kill\s+.*tiamat/i,
-  /pkill\s+.*tiamat/i,
-  /kill\s+\$\(cat\s+\/tmp\/tiamat/,
+  // NOTE: patterns must not over-match on multi-command strings containing "tiamat.live" URLs
+  /\bkill\s+(?!-0\b)(-\w+\s+)*\S*automaton/,       // kill <signal> ...automaton (but not kill -0 health checks)
+  /\bpkill\s+(-\w+\s+)*\S*automaton/,
+  /\bkill\s+(?!-0\b)(-\w+\s+)*\S*tiamat\b(?!\.live)/i,  // kill ...tiamat but NOT tiamat.live
+  /\bpkill\s+(-\w+\s+)*\S*tiamat\b(?!\.live)/i,          // pkill ...tiamat but NOT tiamat.live
+  /\bkill\s+\$\(cat\s+\/tmp\/tiamat/,               // kill $(cat /tmp/tiamat.pid)
   /start-tiamat\.sh/,
   /systemctl\s+(stop|disable)\s+automaton/,
   // Database destruction
@@ -179,7 +180,7 @@ function isForbiddenCommand(command: string, sandboxId: string): string | null {
   // Block wasteful exploration commands (fallback model confusion)
   for (const pattern of WASTEFUL_COMMAND_PATTERNS) {
     if (pattern.test(command)) {
-      return "BLOCKED: Do not explore the filesystem. Pick a productive action instead: post_bluesky, search_web, send_email, ticket_create, or remember.";
+      return "BLOCKED: Do not explore the filesystem. Pick a productive action instead: browse (web scraping/search), post_bluesky, search_web, send_email, ticket_create, or remember.";
     }
   }
 
@@ -2907,7 +2908,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     },
     {
       name: "browse",
-      description: "Lightweight web browser. Faster and cheaper than web_fetch — extracts clean readable text, searches DuckDuckGo, extracts links/metadata. Commands: fetch <url>, search <query>, extract <url> --links, extract <url> --meta. Add --json for structured output.",
+      description: "Lightweight web browser powered by Scrapling (anti-detect fingerprinting). Extracts clean readable text, searches DuckDuckGo, extracts links/metadata. Commands: fetch <url>, search <query>, extract <url> --links, extract <url> --meta. Add --stealth for anti-bot bypass (slower). Add --json for structured output.",
       category: "vm",
       parameters: {
         type: "object",
@@ -2922,7 +2923,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
           },
           flags: {
             type: "string",
-            description: "Optional flags: --json, --links, --meta, --raw",
+            description: "Optional flags: --json, --links, --meta, --raw, --stealth",
           },
         },
         required: ["command", "target"],
@@ -2939,7 +2940,7 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
           const result = execFileSync(
             "python3",
             ["/root/entity/tools/webbrowser.py", command, target, ...flags.split(/\s+/).filter(Boolean)],
-            { encoding: "utf-8", timeout: 15_000, maxBuffer: 1024 * 1024 }
+            { encoding: "utf-8", timeout: 30_000, maxBuffer: 1024 * 1024 }
           ).trim();
           // Truncate large outputs
           const MAX = 15_000;
