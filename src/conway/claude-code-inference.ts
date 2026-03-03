@@ -309,9 +309,9 @@ function parseToolCalls(text: string): { content: string; toolCalls: InferenceTo
   const toolCalls: InferenceToolCall[] = [];
   let idx = 0;
 
-  // Match <tool_call>JSON</tool_call> OR <call>JSON</call> OR </tool_function_calls> OR </function_calls>
-  // Models use various tag names — catch them all
-  const regex = /<(?:tool_call|call)>\s*([\s\S]*?)\s*<\/(?:tool_call|call|tool_function_calls|function_calls)>/g;
+  // Match all known tool call tag variants models produce:
+  // <tool_call>, <call>, <function_call>, <function_calls><function_call>
+  const regex = /<(?:tool_call|call|function_call)>\s*([\s\S]*?)\s*<\/(?:tool_call|call|function_call|tool_function_calls|function_calls)>/g;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
@@ -332,9 +332,9 @@ function parseToolCalls(text: string): { content: string; toolCalls: InferenceTo
     }
   }
 
-  // Fallback: match <tool_call>/<call> JSON with no closing tag (model sometimes omits it)
+  // Fallback: match tool call tags with no closing tag (model sometimes omits it)
   if (toolCalls.length === 0) {
-    const fallback = /<(?:tool_call|call)>\s*(\{[^]*?\})\s*(?=<(?:tool_call|call)>|\n\n|$)/g;
+    const fallback = /<(?:tool_call|call|function_call)>\s*(\{[^]*?\})\s*(?=<(?:tool_call|call|function_call)>|\n\n|$)/g;
     while ((match = fallback.exec(text)) !== null) {
       try {
         const parsed = JSON.parse(match[1]);
@@ -356,8 +356,8 @@ function parseToolCalls(text: string): { content: string; toolCalls: InferenceTo
 
   // Strip all tool_call variants from content
   const content = text
-    .replace(/<(?:tool_call|call)>[\s\S]*?<\/(?:tool_call|call|tool_function_calls|function_calls)>/g, "")
-    .replace(/<(?:tool_call|call)>\s*\{[^]*?\}\s*(?=<(?:tool_call|call)>|\n\n|$)/g, "")
+    .replace(/<(?:tool_call|call|function_call|function_calls)>[\s\S]*?<\/(?:tool_call|call|function_call|tool_function_calls|function_calls)>/g, "")
+    .replace(/<(?:tool_call|call|function_call)>\s*\{[^]*?\}\s*(?=<(?:tool_call|call|function_call)>|\n\n|$)/g, "")
     .trim();
   return { content, toolCalls };
 }
