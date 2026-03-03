@@ -1802,54 +1802,17 @@ function log(config: AutomatonConfig, message: string): void {
 // between agent cycles. Never blocks the main loop.
 
 const COOLDOWN_TASKS = [
-  {
-    name: "farcaster_engage",
-    command: ["python3", ["farcaster_engage.py", "run"]],
-    interval: 2,      // every 2 cycles (script has its own 5-min rate limit)
-    offset: 0,        // fires on cycles 2, 4, 6...
-    timeout: 60_000,
-    minWindow: 70_000, // need at least 70s cooldown to run this
-  },
+  // farcaster_engage DISABLED — wasting cycles on social scanning instead of shipping code
+  // github_engage DISABLED — same reason
+  // claude_research DISABLED — asking philosophical questions is not productive work
+  // funding_report DISABLED — $10 USDC, nothing to report
   {
     name: "email_check",
     command: ["python3", ["email_tool.py", "unread"]],
-    interval: 10,     // every 10 cycles
-    offset: 2,        // fires on cycles 2, 12, 22...
+    interval: 20,     // every 20 cycles — just check for bounty replies
+    offset: 2,
     timeout: 15_000,
     minWindow: 30_000,
-  },
-  {
-    name: "claude_research",
-    command: null as any,     // built dynamically with question
-    interval: 5,      // every 5 cycles
-    offset: 1,        // fires on cycles 1, 6, 11...
-    timeout: 90_000,
-    minWindow: 100_000,
-  },
-  // DISABLED by creator — not needed for now
-  // {
-  //   name: "rebalance_check",
-  //   command: ["python3", ["auto_rebalancer.py", "rebalance"]],
-  //   interval: 500,
-  //   offset: 50,
-  //   timeout: 120_000,
-  //   minWindow: 130_000,
-  // },
-  {
-    name: "funding_report",
-    command: ["python3", ["multi_chain_executor.py", "report"]],
-    interval: 200,    // every 200 cycles (~3-5 hours)
-    offset: 25,       // fires on cycles 25, 225, 425...
-    timeout: 30_000,
-    minWindow: 40_000,
-  },
-  {
-    name: "github_engage",
-    command: ["python3", ["github_engage.py", "engage"]],
-    interval: 5,      // every 5 cycles (~10-20 min)
-    offset: 3,        // fires on cycles 3, 8, 13...
-    timeout: 45_000,
-    minWindow: 55_000,
   },
 ];
 
@@ -2044,61 +2007,7 @@ async function runCooldownTasks(
     }
   }
 
-  // ── Phase 2: Fill remaining time with dynamic tasks (round-robin) ──
-  try {
-    const registryPath = path.join(process.env.HOME || "/root", ".automaton", "cooldown_registry.json");
-    const registry: any[] = fs.existsSync(registryPath)
-      ? JSON.parse(fs.readFileSync(registryPath, "utf-8"))
-      : [];
-
-    // Sort by oldest lastRun (round-robin)
-    const eligible = registry
-      .filter((t: any) => t.enabled && t.script)
-      .sort((a: any, b: any) => {
-        const aTime = a.lastRun ? new Date(a.lastRun).getTime() : 0;
-        const bTime = b.lastRun ? new Date(b.lastRun).getTime() : 0;
-        return aTime - bTime;
-      });
-
-    let registryDirty = false;
-    for (const task of eligible) {
-      if (timeLeft() < 15_000) break;
-      if (task.timeout > timeLeft()) continue; // skip tasks that won't fit
-
-      const output = runTask(
-        `dynamic:${task.name}`,
-        "python3", [task.script],
-        path.dirname(task.script),
-        task.timeout,
-      );
-
-      if (output !== null) {
-        task.runs = (task.runs || 0) + 1;
-        task.lastRun = new Date().toISOString();
-        task.lastResult = output.slice(0, 500);
-        registryDirty = true;
-
-        const summary = output.trim().slice(0, 200) || "(no output)";
-        log(config, `[COOLDOWN] dynamic:${task.name}: ${summary}`);
-
-        try {
-          fs.writeFileSync(COOLDOWN_INTEL_PATH, JSON.stringify({
-            timestamp: new Date().toISOString(),
-            task: `dynamic:${task.name}`,
-            cycle: cycleNumber,
-            summary,
-            raw: output.slice(0, 2000),
-          }));
-        } catch {}
-      }
-    }
-
-    if (registryDirty) {
-      fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2));
-    }
-  } catch (e: any) {
-    console.log(`[COOLDOWN] Dynamic registry error: ${e.message?.slice(0, 150)}`);
-  }
+  // ── Phase 2: Dynamic tasks DISABLED — all busywork cut. Ship code or die. ──
 
   if (tasksRan === 0) {
     console.log(`[COOLDOWN] No eligible task this cycle.`);
