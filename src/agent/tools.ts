@@ -1184,8 +1184,8 @@ Model: ${ctx.inference.getDefaultModel()}
             [
               "--print",
               "--model", "sonnet",
-              "--allowedTools", "Edit,Write,Read,Bash",
-              "--max-turns", "5",
+              "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep",
+              "--max-turns", "20",
               "--no-session-persistence",
               "--append-system-prompt", sysPrompt,
             ],
@@ -1332,7 +1332,7 @@ Model: ${ctx.inference.getDefaultModel()}
                 const chunks: Buffer[] = [];
                 const proc = spawn(
                   "claude",
-                  ["--print", "--allowedTools", "Edit,Write,Read,Bash", "--max-turns", "5"],
+                  ["--print", "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep", "--max-turns", "20"],
                   { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
                 );
 
@@ -3654,7 +3654,7 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
           const chunks: Buffer[] = [];
           const proc = spawnProc(
             "claude",
-            ["--print", "--allowedTools", "Edit,Write,Read,Bash", "--max-turns", "5"],
+            ["--print", "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep", "--max-turns", "20"],
             { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
           );
           proc.stdout.on("data", (d: Buffer) => chunks.push(d));
