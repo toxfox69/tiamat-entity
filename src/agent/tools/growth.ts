@@ -188,6 +188,32 @@ export function checkBehavioralLoop(
     }
   }
 
+  // ── Time-based rate limits ──────────────────────────────────────────────────
+  // These enforce a hard hourly cap regardless of cycle count, preventing
+  // expensive or disruptive tools from being called in a burst loop.
+  const TIME_RATE_LIMITS: Record<string, { maxCalls: number; windowMinutes: number }> = {
+    search_web: { maxCalls: 5, windowMinutes: 60 },
+  };
+
+  for (const [toolName, limit] of Object.entries(TIME_RATE_LIMITS)) {
+    const cutoffMs = Date.now() - limit.windowMinutes * 60 * 1000;
+    const recentCalls = state.action_history.filter(
+      (e) =>
+        e.action.split("::")[0] === toolName &&
+        new Date(e.timestamp).getTime() > cutoffMs,
+    ).length;
+
+    if (recentCalls >= limit.maxCalls) {
+      warnings.push(
+        `RATE LIMIT: "${toolName}" called ${recentCalls}x in the last ${limit.windowMinutes} min ` +
+        `(hard limit: ${limit.maxCalls}/hr). ` +
+        `DO NOT call ${toolName} again this hour — use cached results, skip the research step, ` +
+        `or work a different ticket that does not require web search.`,
+      );
+    }
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   saveLoopDetector(state);
 
   if (warnings.length === 0) return null;

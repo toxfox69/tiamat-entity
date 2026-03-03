@@ -1,54 +1,109 @@
 #!/usr/bin/env python3
 """
-TIAMAT Lightweight CLI Web Browser
-Fast HTTP fetching, clean text extraction, search — no Chromium needed.
+TIAMAT Lightweight CLI Web Browser (Scrapling Edition)
+Anti-detect web fetching, clean text extraction, search — no Chromium needed.
 
 Usage:
-  python3 webbrowser.py fetch <url> [--json] [--raw]
+  python3 webbrowser.py fetch <url> [--json] [--raw] [--stealth]
   python3 webbrowser.py search <query> [--json] [--limit N]
-  python3 webbrowser.py extract <url> --links
-  python3 webbrowser.py extract <url> --meta
-  python3 webbrowser.py js <url> [--json]          # JS rendering (requires playwright+firefox)
-  python3 webbrowser.py screenshot <url> [name]     # (requires playwright+firefox)
+  python3 webbrowser.py extract <url> --links [--stealth]
+  python3 webbrowser.py extract <url> --meta [--stealth]
+  python3 webbrowser.py js <url> [--json]              # JS rendering via StealthyFetcher
+  python3 webbrowser.py screenshot <url> [name]         # (requires playwright+firefox)
+
+Flags:
+  --stealth   Use StealthyFetcher (real browser TLS, anti-detect) — slower but bypasses bot protection
+  --json      Output as JSON
+  --raw       Return raw HTML instead of extracted text
 """
 
 import sys
 import json
 import re
 import time
-import html as html_mod
+import os
+import logging
 from urllib.parse import urljoin, urlparse, quote_plus
 
-import httpx
 from bs4 import BeautifulSoup
 from readability import Document
 
+# Suppress scrapling's verbose logging
+logging.getLogger("scrapling").setLevel(logging.ERROR)
+logging.disable(logging.WARNING)
+
 # ── Config ────────────────────────────────────────────────────────────────────
-USER_AGENT = "TIAMAT/1.0 (autonomous-agent; +https://tiamat.live)"
-TIMEOUT = 10
-MAX_BODY = 2 * 1024 * 1024  # 2MB max download
-HEADERS = {
-    "User-Agent": USER_AGENT,
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate",
-}
+MAX_BODY = 2 * 1024 * 1024  # 2MB max
+TIMEOUT = 15
 
 
-# ── HTTP helpers ──────────────────────────────────────────────────────────────
+# ── Fetcher helpers ──────────────────────────────────────────────────────────
 
-def _get(url: str, follow_redirects: bool = True) -> httpx.Response:
-    """GET with timeout, redirect following, and size limit."""
-    with httpx.Client(
-        timeout=TIMEOUT,
-        follow_redirects=follow_redirects,
-        headers=HEADERS,
-        max_redirects=5,
-    ) as client:
+def _get(url: str, stealth: bool = False):
+    """Fetch URL via Scrapling. Returns (status, url, headers_dict, html_text, page_obj).
+    stealth=True uses StealthyFetcher (real browser fingerprint, anti-detect).
+    """
+    if stealth:
+        from scrapling import StealthyFetcher
+        fetcher = StealthyFetcher()
+        page = fetcher.fetch(url, headless=True, timeout=TIMEOUT * 1000)
+    else:
+        from scrapling import Fetcher
+        fetcher = Fetcher()
+        page = fetcher.get(url, timeout=TIMEOUT)
+
+    # Scrapling page.text can be empty for non-HTML; fall back to body bytes
+    html = ""
+    if hasattr(page, 'text') and page.text:
+        html = str(page.text)
+    if not html and hasattr(page, 'body') and page.body:
+        html = page.body.decode("utf-8", errors="replace") if isinstance(page.body, bytes) else str(page.body)
+
+    headers = {}
+    if hasattr(page, 'headers') and page.headers:
+        headers = dict(page.headers) if not isinstance(page.headers, dict) else page.headers
+
+    final_url = str(page.url) if hasattr(page, 'url') and page.url else url
+
+    return page.status, final_url, headers, html, page
+
+
+def _get_httpx(url: str):
+    """Fallback: plain httpx fetch if Scrapling fails."""
+    import httpx
+    headers = {
+        "User-Agent": "TIAMAT/1.0 (autonomous-agent; +https://tiamat.live)",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    with httpx.Client(timeout=TIMEOUT, follow_redirects=True, headers=headers, max_redirects=5) as client:
         resp = client.get(url)
-        if len(resp.content) > MAX_BODY:
-            raise ValueError(f"Response too large: {len(resp.content)} bytes (max {MAX_BODY})")
-        return resp
+        resp.raise_for_status()
+        return resp.status_code, str(resp.url), dict(resp.headers), resp.text
+
+
+def _fetch(url: str, stealth: bool = False):
+    """Fetch with Scrapling, fall back to httpx on failure.
+    Returns (status, final_url, headers, html).
+    """
+    try:
+        status, final_url, headers, html, _ = _get(url, stealth=stealth)
+        if status and status < 400:
+            return status, final_url, headers, html
+        # Non-OK status — try httpx fallback for non-stealth
+        if not stealth:
+            raise ValueError(f"Scrapling returned {status}")
+        return status, final_url, headers, html
+    except Exception as e:
+        if stealth:
+            _err(f"StealthyFetcher failed: {e}")
+            raise
+        # Fallback to httpx
+        try:
+            return _get_httpx(url)
+        except Exception as e2:
+            _err(f"Both Scrapling and httpx failed: {e} / {e2}")
+            raise
 
 
 def _clean_text(text: str) -> str:
@@ -64,35 +119,27 @@ def _clean_text(text: str) -> str:
 
 # ── Commands ──────────────────────────────────────────────────────────────────
 
-def cmd_fetch(url: str, as_json: bool = False, raw: bool = False):
+def cmd_fetch(url: str, as_json: bool = False, raw: bool = False, stealth: bool = False):
     """Fetch URL, extract readable content via readability algorithm."""
     try:
-        resp = _get(url)
-        resp.raise_for_status()
-    except httpx.TimeoutException:
-        _err(f"Timeout fetching {url} (>{TIMEOUT}s)")
-        return
-    except httpx.HTTPStatusError as e:
-        _err(f"HTTP {e.response.status_code} from {url}")
-        return
+        status, final_url, headers, body = _fetch(url, stealth=stealth)
     except Exception as e:
         _err(f"Fetch error: {e}")
         return
 
-    content_type = resp.headers.get("content-type", "")
-    body = resp.text
+    content_type = headers.get("content-type", "")
 
     # Non-HTML: just dump text
     if "html" not in content_type and not body.strip().startswith("<"):
         if as_json:
-            print(json.dumps({"url": str(resp.url), "content_type": content_type, "text": body[:50000]}, indent=2))
+            print(json.dumps({"url": final_url, "content_type": content_type, "text": body[:50000]}, indent=2))
         else:
             print(body[:50000])
         return
 
     if raw:
         if as_json:
-            print(json.dumps({"url": str(resp.url), "html": body[:50000]}, indent=2))
+            print(json.dumps({"url": final_url, "html": body[:50000]}, indent=2))
         else:
             print(body[:50000])
         return
@@ -109,7 +156,6 @@ def cmd_fetch(url: str, as_json: bool = False, raw: bool = False):
     # Fallback: if readability returned near-empty, parse full page body
     if len(readable_text) < 50:
         full_soup = BeautifulSoup(body, "lxml")
-        # Remove script/style tags
         for tag in full_soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
         readable_text = _clean_text(full_soup.get_text(separator="\n"))
@@ -117,51 +163,51 @@ def cmd_fetch(url: str, as_json: bool = False, raw: bool = False):
             title_tag = full_soup.find("title")
             if title_tag:
                 title = title_tag.get_text(strip=True)
-        soup = full_soup  # use full page for link extraction
+        soup = full_soup
 
     # Extract links from the readable content
     links = []
     for a in soup.find_all("a", href=True):
-        href = urljoin(str(resp.url), a["href"])
+        href = urljoin(final_url, a["href"])
         text = a.get_text(strip=True)
         if text and href.startswith("http"):
             links.append({"text": text[:100], "url": href})
 
-    # Truncate for sanity
     if len(readable_text) > 30000:
         readable_text = readable_text[:30000] + "\n\n[...truncated]"
 
+    engine = "stealth" if stealth else "scrapling"
     if as_json:
         print(json.dumps({
-            "url": str(resp.url),
+            "url": final_url,
             "title": title,
             "text": readable_text,
             "links": links[:50],
             "content_length": len(body),
+            "engine": engine,
         }, indent=2))
     else:
         print(f"# {title}")
-        print(f"URL: {resp.url}")
-        print(f"Length: {len(body)} bytes")
+        print(f"URL: {final_url}")
+        print(f"Length: {len(body)} bytes ({engine})")
         print("---")
         print(readable_text)
         if links:
             print("\n--- Links ---")
             for link in links[:20]:
-                print(f"  [{link['text']}] → {link['url']}")
+                print(f"  [{link['text']}] -> {link['url']}")
 
 
 def cmd_search(query: str, as_json: bool = False, limit: int = 10):
     """Search via DuckDuckGo HTML (no API key needed)."""
     search_url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
     try:
-        resp = _get(search_url)
-        resp.raise_for_status()
+        status, final_url, headers, body = _fetch(search_url)
     except Exception as e:
         _err(f"Search error: {e}")
         return
 
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(body, "lxml")
     results = []
 
     for result in soup.select(".result"):
@@ -176,7 +222,6 @@ def cmd_search(query: str, as_json: bool = False, limit: int = 10):
         snippet = snippet_el.get_text(strip=True) if snippet_el else ""
         href = title_el.get("href", "")
 
-        # DuckDuckGo wraps URLs in redirects — extract the actual URL
         actual_url = href
         if "uddg=" in href:
             import urllib.parse
@@ -210,21 +255,20 @@ def cmd_search(query: str, as_json: bool = False, limit: int = 10):
                 print(f"   {r['snippet'][:200]}")
 
 
-def cmd_extract_links(url: str, as_json: bool = False):
+def cmd_extract_links(url: str, as_json: bool = False, stealth: bool = False):
     """Extract all links from a page."""
     try:
-        resp = _get(url)
-        resp.raise_for_status()
+        status, final_url, headers, body = _fetch(url, stealth=stealth)
     except Exception as e:
         _err(f"Fetch error: {e}")
         return
 
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(body, "lxml")
     links = []
     seen = set()
 
     for a in soup.find_all("a", href=True):
-        href = urljoin(str(resp.url), a["href"])
+        href = urljoin(final_url, a["href"])
         if href in seen or not href.startswith("http"):
             continue
         seen.add(href)
@@ -232,27 +276,26 @@ def cmd_extract_links(url: str, as_json: bool = False):
         links.append({"text": text, "url": href})
 
     if as_json:
-        print(json.dumps({"url": str(resp.url), "links": links}, indent=2))
+        print(json.dumps({"url": final_url, "links": links}, indent=2))
     else:
-        print(f"Links from {resp.url} ({len(links)} total):")
+        print(f"Links from {final_url} ({len(links)} total):")
         for link in links:
             label = f" [{link['text']}]" if link["text"] else ""
             print(f"  {link['url']}{label}")
 
 
-def cmd_extract_meta(url: str, as_json: bool = False):
+def cmd_extract_meta(url: str, as_json: bool = False, stealth: bool = False):
     """Extract metadata: title, description, og tags, structured data."""
     try:
-        resp = _get(url)
-        resp.raise_for_status()
+        status, final_url, headers, body = _fetch(url, stealth=stealth)
     except Exception as e:
         _err(f"Fetch error: {e}")
         return
 
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(body, "lxml")
 
     meta = {
-        "url": str(resp.url),
+        "url": final_url,
         "title": "",
         "description": "",
         "og": {},
@@ -261,12 +304,10 @@ def cmd_extract_meta(url: str, as_json: bool = False):
         "structured_data": [],
     }
 
-    # Title
     title_tag = soup.find("title")
     if title_tag:
         meta["title"] = title_tag.get_text(strip=True)
 
-    # Meta tags
     for tag in soup.find_all("meta"):
         name = tag.get("name", "").lower()
         prop = tag.get("property", "").lower()
@@ -279,12 +320,10 @@ def cmd_extract_meta(url: str, as_json: bool = False):
         elif name.startswith("twitter:"):
             meta["twitter"][name[8:]] = content
 
-    # Canonical
     canonical = soup.find("link", rel="canonical")
     if canonical:
         meta["canonical"] = canonical.get("href", "")
 
-    # Structured data (JSON-LD)
     for script in soup.find_all("script", type="application/ld+json"):
         try:
             data = json.loads(script.string)
@@ -317,39 +356,23 @@ def cmd_extract_meta(url: str, as_json: bool = False):
 
 
 def cmd_js(url: str, as_json: bool = False):
-    """Fetch with JavaScript rendering via playwright (Firefox)."""
+    """Fetch with JS rendering via StealthyFetcher (anti-detect Chromium)."""
     try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        _err("playwright not installed. Falling back to regular fetch.")
-        cmd_fetch(url, as_json=as_json)
-        return
+        from scrapling import StealthyFetcher
+        fetcher = StealthyFetcher()
+        page = fetcher.fetch(url, headless=True, timeout=TIMEOUT * 1000)
 
-    pw = None
-    browser = None
-    try:
-        pw = sync_playwright().start()
-        browser = pw.firefox.launch(
-            headless=True,
-            args=["--no-sandbox"],
-        )
-        page = browser.new_page(
-            user_agent=USER_AGENT,
-            viewport={"width": 1280, "height": 720},
-        )
-        page.goto(url, wait_until="networkidle", timeout=15000)
-        body = page.content()
+        html = ""
+        if hasattr(page, 'text') and page.text:
+            html = str(page.text)
+        if not html and hasattr(page, 'body') and page.body:
+            html = page.body.decode("utf-8", errors="replace") if isinstance(page.body, bytes) else str(page.body)
     except Exception as e:
-        _err(f"JS render error: {e}. Falling back to regular fetch.")
+        _err(f"StealthyFetcher JS render failed: {e}. Falling back to regular fetch.")
         cmd_fetch(url, as_json=as_json)
         return
-    finally:
-        if browser:
-            browser.close()
-        if pw:
-            pw.stop()
 
-    doc = Document(body)
+    doc = Document(html)
     title = doc.title()
     summary_html = doc.summary()
     soup = BeautifulSoup(summary_html, "lxml")
@@ -359,10 +382,10 @@ def cmd_js(url: str, as_json: bool = False):
         readable_text = readable_text[:30000] + "\n\n[...truncated]"
 
     if as_json:
-        print(json.dumps({"url": url, "title": title, "text": readable_text, "js_rendered": True}, indent=2))
+        print(json.dumps({"url": url, "title": title, "text": readable_text, "js_rendered": True, "engine": "stealth"}, indent=2))
     else:
         print(f"# {title}")
-        print(f"URL: {url} (JS rendered)")
+        print(f"URL: {url} (JS rendered, stealth)")
         print("---")
         print(readable_text)
 
@@ -375,7 +398,6 @@ def cmd_screenshot(url: str, name: str = ""):
         _err("playwright not installed. Cannot take screenshots.")
         return
 
-    import os
     out_dir = "/var/www/tiamat/images/screenshots"
     os.makedirs(out_dir, exist_ok=True)
     filename = name or f"shot_{int(time.time())}"
@@ -389,7 +411,7 @@ def cmd_screenshot(url: str, name: str = ""):
         pw = sync_playwright().start()
         browser = pw.firefox.launch(headless=True, args=["--no-sandbox"])
         page = browser.new_page(
-            user_agent=USER_AGENT,
+            user_agent="TIAMAT/1.0 (autonomous-agent; +https://tiamat.live)",
             viewport={"width": 1280, "height": 720},
         )
         page.goto(url, wait_until="networkidle", timeout=15000)
@@ -426,12 +448,13 @@ def main():
     flags = [a for a in args[1:] if a.startswith("--")]
     positional = [a for a in args[1:] if not a.startswith("--")]
     as_json = "--json" in flags
+    stealth = "--stealth" in flags
 
     if command == "fetch":
         if not positional:
-            _err("Usage: webbrowser.py fetch <url> [--json] [--raw]")
+            _err("Usage: webbrowser.py fetch <url> [--json] [--raw] [--stealth]")
             sys.exit(1)
-        cmd_fetch(positional[0], as_json=as_json, raw="--raw" in flags)
+        cmd_fetch(positional[0], as_json=as_json, raw="--raw" in flags, stealth=stealth)
 
     elif command == "search":
         if not positional:
@@ -450,12 +473,12 @@ def main():
 
     elif command == "extract":
         if not positional:
-            _err("Usage: webbrowser.py extract <url> --links|--meta")
+            _err("Usage: webbrowser.py extract <url> --links|--meta [--stealth]")
             sys.exit(1)
         if "--links" in flags:
-            cmd_extract_links(positional[0], as_json=as_json)
+            cmd_extract_links(positional[0], as_json=as_json, stealth=stealth)
         elif "--meta" in flags:
-            cmd_extract_meta(positional[0], as_json=as_json)
+            cmd_extract_meta(positional[0], as_json=as_json, stealth=stealth)
         else:
             _err("Specify --links or --meta")
             sys.exit(1)

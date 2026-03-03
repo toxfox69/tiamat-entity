@@ -63,34 +63,33 @@ interface CronState {
 
 // ─── Productive Action Sets ───────────────────────────────────
 
-/** Tools that count as productive when used in a cycle */
-const PRODUCTIVE_TOOLS = new Set([
-  // Revenue / customer actions
-  "deploy_app",
-  // Content publishing
+/** High-value tools — at least one required per cycle for it to count as productive */
+const HIGH_VALUE_TOOLS = new Set([
+  // Building (the real work)
+  "ask_claude_code", "self_improve", "write_file",
+  // Content publishing (visible artifacts)
   "post_bluesky", "post_farcaster", "post_instagram", "post_facebook",
   "publish_devto", "post_reddit",
-  // Building
-  "ask_claude_code", "self_improve", "write_file",
-  // Growth/cognitive
-  "grow", "evolve_era",
-  // Ticket progress
-  "ticket_claim", "ticket_complete", "ticket_create",
-  // Image generation (part of content pipeline)
+  // Revenue / outreach
+  "deploy_app", "send_email", "send_telegram",
+  // Research / bounty hunting (real exploration)
+  "browse", "sonar_search",
+  // Image generation
   "generate_image",
-  // Research / bounty hunting
-  "search_web", "web_fetch", "browse", "sonar_search",
-  // Reading / monitoring (active intelligence gathering)
-  "read_email", "read_file", "read_bluesky", "read_farcaster", "recall",
-  // Agent interactions
-  "send_email", "send_telegram",
-  // Infrastructure / management
-  "exec", "spawn_child", "manage_cooldown", "ticket_list",
-  // Learning
-  "learn_fact", "remember",
-  // Browser automation
-  "ask_claude_chat", "gpu_infer",
 ]);
+
+/** Support tools — not enough on their own, but don't disqualify a cycle.
+ *  A cycle is productive if it has HIGH_VALUE + any mix of these. */
+const _SUPPORT_TOOLS = new Set([
+  "search_web", "web_fetch",
+  "read_email", "read_file", "read_bluesky", "read_farcaster", "recall",
+  "ticket_claim", "ticket_complete", "ticket_create",
+  "grow", "evolve_era", "spawn_child",
+  "learn_fact", "remember",
+  "ask_claude_chat", "gpu_infer", "ticket_list",
+  "exec", "manage_cooldown",
+]);
+// _SUPPORT_TOOLS exists for documentation — scoring only checks HIGH_VALUE_TOOLS
 
 
 // ─── Pacer State I/O ─────────────────────────────────────────
@@ -134,12 +133,37 @@ export function saveCronTasks(state: CronState): void {
 // ─── Productivity Scoring ─────────────────────────────────────
 
 /**
- * Score a cycle as productive or not based on the tools used.
- * A cycle is productive if it used ANY productive tool.
+ * Score a cycle as productive based on:
+ * 1. Must use at least one HIGH_VALUE tool (diversity requirement)
+ * 2. Tool pattern must not repeat 3+ times in recent history (anti-gaming)
+ *
+ * This prevents busywork loops like spamming exec(tail cost.log)
+ * while still rewarding real work (browse, build, post, email).
  */
-export function scoreCycle(toolNames: string[]): boolean {
+export function scoreCycle(
+  toolNames: string[],
+  recentCycles?: CycleRecord[],
+): boolean {
   if (toolNames.length === 0) return false;
-  return toolNames.some(name => PRODUCTIVE_TOOLS.has(name));
+
+  // Rule 1: Must include at least one high-value tool
+  const hasHighValue = toolNames.some(name => HIGH_VALUE_TOOLS.has(name));
+  if (!hasHighValue) return false;
+
+  // Rule 2: Check for repetition (anti-gaming)
+  if (recentCycles && recentCycles.length > 0) {
+    // Create a signature for this cycle's tool pattern
+    const signature = toolNames.slice().sort().join(",");
+    let repeatCount = 0;
+    for (const cycle of recentCycles) {
+      const prevSig = cycle.actions.slice().sort().join(",");
+      if (prevSig === signature) repeatCount++;
+    }
+    // If the exact same tool pattern appeared 3+ times recently, it's busywork
+    if (repeatCount >= 3) return false;
+  }
+
+  return true;
 }
 
 // ─── Pace Tier Calculation ────────────────────────────────────
@@ -190,7 +214,7 @@ export function updatePacer(
 ): PacerUpdate {
   const state = loadPacer();
   const now = new Date().toISOString();
-  const productive = !blocked && scoreCycle(toolNames);
+  const productive = !blocked && scoreCycle(toolNames, state.last_20_cycles);
 
   // Skip recording fully-blocked cycles: they don't reflect actual agent decisions.
   if (!blocked) {
