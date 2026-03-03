@@ -30,9 +30,9 @@ const DEFAULT_HEARTBEAT_CONFIG: HeartbeatConfig = {
     },
     {
       name: "check_usdc_balance",
-      schedule: USDC_TOPUP_FAST_SCHEDULE,
+      schedule: "0 */12 * * *",
       task: "check_usdc_balance",
-      enabled: true,
+      enabled: false,
     },
     {
       name: "check_for_updates",
