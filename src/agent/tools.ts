@@ -362,6 +362,7 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
       },
       execute: async (args, _ctx) => {
         const os = await import('os');
+        if (!args.path) return 'Error: path is required';
         const rpath = (args.path as string).replace(/^~/, os.homedir());
         const blocked = isPathAllowed(rpath, ALLOWED_READ_PATHS, BLOCKED_PATH_PATTERNS);
         if (blocked) return blocked;
