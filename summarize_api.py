@@ -940,6 +940,187 @@ def playground():
 
 
 # ============================================================================
+# PRIVACY PROXY — PII scrubbing + LLM routing
+# ============================================================================
+
+# PII detection patterns — regex-based, no external deps
+_PII_PATTERNS = [
+    ('EMAIL',       _re.compile(r'\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b')),
+    ('PHONE',       _re.compile(r'\b(?:\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b')),
+    ('SSN',         _re.compile(r'\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b')),
+    ('CREDIT_CARD', _re.compile(r'\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b')),
+    ('IP_ADDRESS',  _re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b')),
+    ('ZIP_CODE',    _re.compile(r'\b\d{5}(?:-\d{4})?\b')),
+    ('DATE',        _re.compile(r'\b(?:0?[1-9]|1[0-2])[/\-](?:0?[1-9]|[12]\d|3[01])[/\-](?:19|20)\d{2}\b')),
+    ('URL',         _re.compile(r'https?://[^\s<>"\']{4,}')),
+    ('API_KEY',     _re.compile(r'\b(?:sk|pk|rk|ak)[-_][a-zA-Z0-9]{16,}\b')),
+]
+
+def _scrub_text(text):
+    """Detect and redact PII. Returns (scrubbed_text, entities_list)."""
+    entities = []
+    # Collect all matches with their positions
+    for label, pat in _PII_PATTERNS:
+        for m in pat.finditer(text):
+            entities.append({
+                'type': label,
+                'original': m.group(),
+                'redacted': f'[{label}]',
+                'start': m.start(),
+                'end': m.end(),
+            })
+    # Sort by start position, resolve overlaps (keep longest)
+    entities.sort(key=lambda e: e['start'])
+    deduped = []
+    prev_end = -1
+    for e in entities:
+        if e['start'] >= prev_end:
+            deduped.append(e)
+            prev_end = e['end']
+    # Build scrubbed string
+    result = []
+    cursor = 0
+    for e in deduped:
+        result.append(text[cursor:e['start']])
+        result.append(e['redacted'])
+        cursor = e['end']
+    result.append(text[cursor:])
+    return ''.join(result), deduped
+
+
+@app.route('/api/scrub', methods=['POST'])
+def api_scrub():
+    """Detect and redact PII from text. Returns entities with positions."""
+    data = request.get_json(silent=True) or {}
+    text = (data.get('text') or '').strip()
+    if not text:
+        return jsonify({'error': 'text required'}), 400
+    if len(text) > 50000:
+        return jsonify({'error': 'text too long (max 50k chars)'}), 400
+    scrubbed, entities = _scrub_text(text)
+    return jsonify({
+        'scrubbed': scrubbed,
+        'original': text,
+        'entities': entities,
+        'count': len(entities),
+        'types_found': list({e['type'] for e in entities}),
+    })
+
+
+# Provider cost estimates (per 1k tokens, input+output blended)
+_PROVIDER_COST = {
+    'groq':   {'model': 'llama-3.3-70b-versatile', 'cost_per_1k': 0.00059,  'label': 'Groq / Llama-3.3-70B'},
+    'claude': {'model': 'claude-haiku-4-5-20251001', 'cost_per_1k': 0.00125, 'label': 'Claude / Haiku 4.5'},
+    'gpt4o':  {'model': 'gpt-4o-mini',              'cost_per_1k': 0.00060,  'label': 'OpenAI / GPT-4o mini'},
+}
+
+GROQ_API_KEY  = os.environ.get('GROQ_API_KEY', '')
+ANTHROPIC_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+OPENAI_KEY    = os.environ.get('OPENAI_API_KEY', '')
+
+def _proxy_groq(prompt, model='llama-3.3-70b-versatile'):
+    resp = requests.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        headers={'Authorization': f'Bearer {GROQ_API_KEY}', 'Content-Type': 'application/json'},
+        json={'model': model, 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 1024},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    d = resp.json()
+    content = d['choices'][0]['message']['content']
+    usage = d.get('usage', {})
+    return content, usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0)
+
+def _proxy_claude(prompt, model='claude-haiku-4-5-20251001'):
+    resp = requests.post(
+        'https://api.anthropic.com/v1/messages',
+        headers={
+            'x-api-key': ANTHROPIC_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+        },
+        json={'model': model, 'max_tokens': 1024, 'messages': [{'role': 'user', 'content': prompt}]},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    d = resp.json()
+    content = d['content'][0]['text']
+    usage = d.get('usage', {})
+    return content, usage.get('input_tokens', 0), usage.get('output_tokens', 0)
+
+def _proxy_gpt4o(prompt, model='gpt-4o-mini'):
+    resp = requests.post(
+        'https://api.openai.com/v1/chat/completions',
+        headers={'Authorization': f'Bearer {OPENAI_KEY}', 'Content-Type': 'application/json'},
+        json={'model': model, 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 1024},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    d = resp.json()
+    content = d['choices'][0]['message']['content']
+    usage = d.get('usage', {})
+    return content, usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0)
+
+
+@app.route('/api/proxy', methods=['POST'])
+def api_proxy():
+    """Privacy-preserving LLM proxy: scrubs PII then routes to chosen provider."""
+    data = request.get_json(silent=True) or {}
+    text     = (data.get('text') or '').strip()
+    prompt   = (data.get('prompt') or 'Summarize the following text:').strip()
+    provider = (data.get('provider') or 'groq').strip().lower()
+    do_scrub = data.get('scrub', True)
+
+    if not text:
+        return jsonify({'error': 'text required'}), 400
+    if len(text) > 50000:
+        return jsonify({'error': 'text too long (max 50k chars)'}), 400
+    if provider not in _PROVIDER_COST:
+        return jsonify({'error': f'provider must be one of: {list(_PROVIDER_COST.keys())}'}), 400
+
+    # Scrub PII
+    scrubbed_text, entities = _scrub_text(text) if do_scrub else (text, [])
+    full_prompt = f'{prompt}\n\n{scrubbed_text}'
+
+    # Route to provider
+    try:
+        if provider == 'groq':
+            if not GROQ_API_KEY:
+                return jsonify({'error': 'Groq API key not configured'}), 503
+            response_text, in_tok, out_tok = _proxy_groq(full_prompt)
+        elif provider == 'claude':
+            if not ANTHROPIC_KEY:
+                return jsonify({'error': 'Anthropic API key not configured'}), 503
+            response_text, in_tok, out_tok = _proxy_claude(full_prompt)
+        elif provider == 'gpt4o':
+            if not OPENAI_KEY:
+                return jsonify({'error': 'OpenAI API key not configured (GPT-4o not available)'}), 503
+            response_text, in_tok, out_tok = _proxy_gpt4o(full_prompt)
+        else:
+            return jsonify({'error': 'Unknown provider'}), 400
+    except requests.HTTPError as e:
+        return jsonify({'error': f'Provider error: {e.response.status_code} {e.response.text[:200]}'}), 502
+    except Exception as e:
+        return jsonify({'error': f'Provider request failed: {str(e)[:200]}'}), 502
+
+    total_tokens = in_tok + out_tok
+    cost_usd = (total_tokens / 1000) * _PROVIDER_COST[provider]['cost_per_1k']
+
+    return jsonify({
+        'response': response_text,
+        'provider': provider,
+        'model': _PROVIDER_COST[provider]['model'],
+        'provider_label': _PROVIDER_COST[provider]['label'],
+        'scrubbed_text': scrubbed_text,
+        'entities_found': len(entities),
+        'entities': entities,
+        'tokens': {'input': in_tok, 'output': out_tok, 'total': total_tokens},
+        'cost_usd': round(cost_usd, 6),
+        'cost_label': f'${cost_usd:.6f}',
+    })
+
+
+# ============================================================================
 # APPS STORE — Android APK marketplace with x402 / USDC payment gating
 # ============================================================================
 
