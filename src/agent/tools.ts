@@ -333,6 +333,7 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
         required: ["path", "content"],
       },
       execute: async (args, _ctx) => {
+        if (!args.path) return 'Error: path parameter required';
         const filePath = args.path as string;
         // Guard against missing content
         if (!args.content && args.content !== '') {
