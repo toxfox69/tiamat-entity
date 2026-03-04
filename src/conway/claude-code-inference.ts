@@ -27,11 +27,11 @@ import type {
   InferenceToolDefinition,
 } from "../types.js";
 
-const DEFAULT_TIMEOUT_MS = 90_000; // 90s — 15k token prompts regularly take 40-55s, 60s was too tight
+const DEFAULT_TIMEOUT_MS = 0; // 0 = no timeout — CLI-only mode, wait forever
 const MODEL_NAME = "claude-code-cli";
 const CLI_MODEL = "haiku"; // Haiku for fast thinking; Sonnet was timing out at 120s
 const MAX_PROMPT_TOKENS = 14_000; // Cap prompt size — 22k+ token prompts cause 100s+ latency
-const MAX_OUTPUT_CHARS = 16_000;  // Kill CLI if stdout exceeds this (~4K tokens) — prevents 30K+ runaway generations
+const MAX_OUTPUT_CHARS = 100_000; // Kill CLI if stdout exceeds this — CLI is subscription (free), real guard is timeout
 
 /**
  * Essential tools to include with full parameter definitions.
@@ -129,15 +129,15 @@ function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string, maxOut
     });
     proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
 
-    const timer = setTimeout(() => {
+    // Only set timeout if timeoutMs > 0 (0 = wait forever)
+    const timer = timeoutMs > 0 ? setTimeout(() => {
       proc.kill("SIGTERM");
-      // Give it a moment to die, then SIGKILL
       setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 3000);
       reject(new Error(`CLI timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
+    }, timeoutMs) : null;
 
     proc.on("close", (code) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       // If we killed it for output cap, treat as success with partial output
       if (killed) {
         resolve({ stdout, stderr, exitCode: 0 });
@@ -147,7 +147,7 @@ function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string, maxOut
     });
 
     proc.on("error", (err) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       reject(err);
     });
 
@@ -501,11 +501,49 @@ export function createClaudeCodeInferenceClient(
       const elapsed = Date.now() - startTime;
       console.warn(`[INFERENCE:CC] FAIL ${elapsed}ms — ${err.message}`);
 
+      const _isRefusal = err.message?.startsWith("CLI model refused:");  // used when cascade is active
+      const isTimeout = err.message?.includes("timed out");
+
+      // On timeout: retry CLI once with a longer timeout before falling back
+      if (isTimeout && !(opts as any)?._cliRetried) {
+        const retryTimeout = timeoutMs + 30_000; // +30s grace
+        console.log(`[INFERENCE:CC] Timeout — retrying CLI with ${retryTimeout / 1000}s timeout...`);
+        try {
+          const { stdout, stderr, exitCode } = await runCLI(userPrompt, retryTimeout, systemPrompt || undefined);
+          const retryElapsed = Date.now() - startTime;
+          if (exitCode !== 0 || !stdout.trim()) {
+            throw new Error(`CLI retry exit ${exitCode}: ${(stderr || stdout).slice(0, 300)}`);
+          }
+          const parsed = parseCLIOutput(stdout);
+          if (parsed.isError && !parsed.result) throw new Error("CLI retry empty");
+          const { content, toolCalls } = parseToolCalls(parsed.result);
+          console.log(`[INFERENCE:CC] RETRY OK ${retryElapsed}ms — ${content.length}ch, ${toolCalls.length} tools`);
+          const outputTokens = Math.round(parsed.result.length / 4);
+          return {
+            id: parsed.sessionId || `cc-${Date.now()}`,
+            model: MODEL_NAME,
+            message: { role: "assistant" as const, content, tool_calls: toolCalls.length > 0 ? toolCalls : undefined },
+            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+            usage: { promptTokens: estTokens, completionTokens: outputTokens, totalTokens: estTokens + outputTokens },
+            finishReason: toolCalls.length > 0 ? "tool_calls" : "stop",
+          };
+        } catch (retryErr: any) {
+          console.warn(`[INFERENCE:CC] RETRY FAIL — ${retryErr.message}`);
+          // Fall through to cascade below
+        }
+      }
+
+      // ── CASCADE PAUSED — CLI-only mode (2026-03-04) ──
+      // Cascade fallback disabled by operator. CLI is the only inference path.
+      // To re-enable: uncomment the fallback.chat() calls below.
       if (fallback) {
-        console.log(`[INFERENCE:CC] → API cascade fallback (skipping Anthropic — CLI already tried Claude)`);
-        // Force tier=free so cascade skips Anthropic — CLI already attempted Claude,
-        // hitting the Anthropic API key just wastes credits on the same failure.
-        return fallback.chat(messages, { ...opts, tier: "free" as any });
+        console.warn(`[INFERENCE:CC] CLI failed but cascade is PAUSED — not falling back. Error: ${err.message?.slice(0, 200)}`);
+        // if (isRefusal) {
+        //   console.log(`[INFERENCE:CC] → API cascade fallback (skipping Anthropic — model refused system prompt)`);
+        //   return fallback.chat(messages, { ...opts, tier: "free" as any });
+        // }
+        // console.log(`[INFERENCE:CC] → API cascade fallback (free tier — CLI ${isTimeout ? "timed out" : "failed"})`);
+        // return fallback.chat(messages, { ...opts, tier: "free" as any });
       }
 
       throw err;

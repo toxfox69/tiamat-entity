@@ -41,9 +41,67 @@ import { reasonFirst, buildReasoningSituation, formatReasoningBlock, storePredic
 import { ulid } from "ulid";
 
 const MAX_TOOL_CALLS_PER_TURN = 15;
-const MAX_INNER_TURNS = 5;         // ReAct inner loop — max continuation turns per cycle
+const MAX_INNER_TURNS = 10;        // ReAct inner loop — raised for multi-agent CLI-only mode
 const MAX_CONSECUTIVE_ERRORS = 5;
 const STUCK_THRESHOLD = 3;
+
+// ─── Exec Rate Limiter ──────────────────────────────────────────
+// TIK-550: exec was called 59x in 10 minutes. Hard cap it.
+// Rules:
+//   - Max 6 exec calls per 60s sliding window
+//   - If called more than 1x in 10s, delay next call by 5s
+const TIAMAT_LOG = path.join(process.env.HOME || "/root", ".automaton", "tiamat.log");
+
+function appendTiamatLog(msg: string): void {
+  try {
+    const ts = new Date().toISOString();
+    fs.appendFileSync(TIAMAT_LOG, `[${ts}] ${msg}\n`);
+  } catch {}
+}
+
+class ExecRateLimiter {
+  private timestamps: number[] = [];
+  private readonly windowMs = 60_000;   // 60s window
+  private readonly maxCalls = 6;        // max exec calls per window
+  private readonly burstWindowMs = 10_000; // 10s burst check
+  private readonly burstDelayMs = 5_000;   // 5s penalty delay
+
+  /** Call before executing an exec tool. Returns ms to delay (0 = no delay). */
+  check(): number {
+    const now = Date.now();
+
+    // Prune timestamps outside the 60s window
+    this.timestamps = this.timestamps.filter(t => now - t < this.windowMs);
+
+    // Hard limit: 6 per 60s
+    if (this.timestamps.length >= this.maxCalls) {
+      const oldest = this.timestamps[0];
+      const waitMs = this.windowMs - (now - oldest) + 100;
+      const msg = `[EXEC-RATELIMIT] Hard cap hit (${this.timestamps.length}/${this.maxCalls} in 60s) — delaying ${waitMs}ms`;
+      console.warn(msg);
+      appendTiamatLog(msg);
+      return waitMs;
+    }
+
+    // Burst check: >1 call in last 10s → 5s delay
+    const recentCalls = this.timestamps.filter(t => now - t < this.burstWindowMs);
+    if (recentCalls.length >= 1) {
+      const msg = `[EXEC-RATELIMIT] Burst detected (${recentCalls.length + 1} calls in 10s) — delaying ${this.burstDelayMs}ms`;
+      console.warn(msg);
+      appendTiamatLog(msg);
+      return this.burstDelayMs;
+    }
+
+    return 0;
+  }
+
+  /** Record that an exec call happened now. */
+  record(): void {
+    this.timestamps.push(Date.now());
+  }
+}
+
+const execRateLimiter = new ExecRateLimiter();
 
 // ─── Agent IPC Inbox Processor ─────────────────────────────────
 // Reads structured messages from agent_inbox.jsonl.
@@ -365,6 +423,50 @@ export async function runAgentLoop(
         break;
       }
 
+      // ── Daily Spend Cap — SUSPENDED (2026-03-04) ──
+      // Operator suspended spend cap. CLI-only mode uses Max subscription.
+      // To re-enable: uncomment the block below.
+      /*
+      {
+        let todaySpend = 0;
+        const todayPrefix = new Date().toISOString().slice(0, 10);
+        try {
+          const costLogPath = "/root/.automaton/cost.log";
+          const costLines = fs.readFileSync(costLogPath, "utf-8").split("\n").filter(Boolean);
+          for (const line of costLines) {
+            if (line.startsWith(todayPrefix)) {
+              const parts = line.split(",");
+              const cost = parseFloat(parts[7] || "0");
+              if (!isNaN(cost)) todaySpend += cost;
+            }
+          }
+        } catch {}
+        try {
+          const baselinePath = path.join(process.env.HOME || "/root", ".automaton", "spend_cap_baseline.json");
+          const bl = JSON.parse(fs.readFileSync(baselinePath, "utf-8"));
+          if (bl.date === todayPrefix && typeof bl.baseline === "number") {
+            todaySpend = Math.max(0, todaySpend - bl.baseline);
+          }
+        } catch {}
+        if (todaySpend > 10) {
+          const now = new Date();
+          const midnight = new Date(now);
+          midnight.setHours(24, 0, 0, 0);
+          const sleepMs = midnight.getTime() - now.getTime();
+          appendTiamatLog(`[SPEND-CAP] Daily spend $${todaySpend.toFixed(2)} > $10 — pausing until midnight (${Math.round(sleepMs / 60000)}min)`);
+          db.setKV("sleep_until", midnight.toISOString());
+          db.setAgentState("sleeping");
+          onStateChange?.("sleeping");
+          running = false;
+          break;
+        } else if (todaySpend > 5) {
+          cycleDelay = Math.max(cycleDelay, 120_000);
+          inference.setLowComputeMode(true);
+          appendTiamatLog(`[SPEND-CAP] Daily spend $${todaySpend.toFixed(2)} > $5 — minimum-cost mode`);
+        }
+      }
+      */
+
       // ── Consolidation Sleep Check ──
       {
         const lastSleepStr = db.getKV("last_consolidation_sleep");
@@ -512,11 +614,11 @@ export async function runAgentLoop(
         // rapid-fire thrashing (was looping every 3 cycles hitting STOP ORDER).
         if (!queueHasWork && consecutiveNoTicketCycles >= SELF_EVOLVE_THRESHOLD && !pendingInput) {
           const evolvePrompts = [
-            "No tickets. Read INBOX.md. Use sonar_search to research what simple utility apps are trending on Google Play right now. Find a gap. Write a build plan as a ticket. Do NOT use android_app_factory yet — just research and plan.",
-            "No tickets. Read INBOX.md. Use sonar_search to find a trending technical topic on Dev.to or Hacker News. Write and publish a Dev.to article about something you actually built (inference cascade, memory API, autonomous agent). Include code snippets and a link to tiamat.live.",
-            "No tickets. Read INBOX.md. Use sonar_search to find ONE person or startup building AI agents who might need summarization/chat/TTS APIs. Draft a cold outreach email with a specific value proposition. Send it via send_email.",
-            "No tickets. Read INBOX.md. Use read_farcaster or search_web to find new communities discussing AI agents, autonomous systems, or on-chain AI. Engage authentically — answer a question or share a real insight from your experience running 5000+ autonomous cycles.",
-            "No tickets. Read INBOX.md. Use sonar_search to analyze competitors: who else offers AI summarization or chat APIs? What do they charge? What are their weaknesses? Write findings to a research file. Identify ONE concrete advantage tiamat.live has.",
+            "No tickets. Read INBOX.md. REVENUE TASK: Use search_web to find ONE potential API customer — a developer or startup that needs summarization, chat, TTS, or image generation. Send them a personalized email via send_email with specific curl examples showing how tiamat.live solves their problem.",
+            "No tickets. Read INBOX.md. REVENUE TASK: Write a tutorial showing how to integrate TIAMAT API with code examples (curl + Python + JavaScript). Publish it to Dev.to with a link to tiamat.live/docs. Include working examples that readers can copy-paste.",
+            "No tickets. Read INBOX.md. REVENUE TASK: Find a Discord server, Slack community, or Reddit thread where developers are asking about AI APIs (summarization, chat, TTS). Post a helpful response that naturally mentions tiamat.live with a working code example.",
+            "No tickets. Read INBOX.md. REVENUE TASK: Improve the /pay page conversion. Add clearer pricing comparison, simpler onboarding steps, and trust signals. Use ask_claude_code to implement the changes.",
+            "No tickets. Read INBOX.md. REVENUE TASK: Create a Twitter/X or Bluesky thread demonstrating TIAMAT API capabilities with live curl examples and real outputs. Show summarization, chat, and image generation in action. Include tiamat.live link.",
           ];
           pendingInput = { content: evolvePrompts[consecutiveNoTicketCycles % evolvePrompts.length], source: "self-evolve" };
           log(config, `[SELF-EVOLVE] No tickets for ${consecutiveNoTicketCycles} cycles — injecting evolution prompt`);
@@ -660,14 +762,15 @@ export async function runAgentLoop(
 
         // Phase-specific mission directive
         const phaseMissions: Record<number, string> = {
-          1: "MISSION: ASSESS AND TARGET. Review recent results — what got engagement, what got ignored. " +
-             "Identify ONE specific person or company to reach out to this cycle. Use sonar_search to find them. " +
-             "Do NOT introspect, do NOT call grow(), do NOT review your own feelings.",
-          2: "MISSION: BUILD. Use ask_claude_code() for ALL code/architecture work — it's FREE (Pro subscription). " +
-             "Ship one feature, fix one bug, or improve one endpoint. Make tangible progress. " +
-             "Check [INSIGHTS] for high-scored ideas (score >= 4) to prioritize.",
-          3: "MISSION: MARKET. Use generate_image() then post_bluesky() with real stats. " +
-             "Craft one post that stops scrolling. Cite real numbers from cost.log.",
+          1: "MISSION: FIND CUSTOMERS. Use search_web to find ONE developer or startup who needs AI APIs " +
+             "(summarization, chat, TTS, image generation). Research their product. Draft a personalized " +
+             "outreach email showing exactly how tiamat.live solves their problem. Send it via send_email.",
+          2: "MISSION: BUILD FOR REVENUE. Use ask_claude_code() to improve conversion: " +
+             "better /pay page, clearer /docs, simpler API onboarding, or write a published tutorial. " +
+             "Every code change must make it easier for someone to become a paying customer.",
+          3: "MISSION: PUBLISH AND PROMOTE. Write a Dev.to article OR create a social media thread " +
+             "demonstrating tiamat.live APIs with working curl examples and real outputs. " +
+             "Post to Bluesky/X with tiamat.live link. Content must drive signups, not engagement.",
         };
 
         // Load pending insights for strategic context
@@ -1303,6 +1406,15 @@ If you have no tickets, create one and claim it immediately.`;
 
           log(config, `[TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 200)})`);
 
+          // Exec rate limiter (TIK-550)
+          if (tc.function.name === "exec") {
+            const delayMs = execRateLimiter.check();
+            if (delayMs > 0) {
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+            execRateLimiter.record();
+          }
+
           const toolStartMs = Date.now();
           const result = await executeTool(
             tc.function.name,
@@ -1434,6 +1546,15 @@ If you have no tickets, create one and claim it immediately.`;
                 try { args = JSON.parse(tc.function.arguments); } catch { args = {}; }
 
                 log(config, `[REACT] [TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 200)})`);
+
+                // Exec rate limiter (TIK-550)
+                if (tc.function.name === "exec") {
+                  const delayMs = execRateLimiter.check();
+                  if (delayMs > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                  }
+                  execRateLimiter.record();
+                }
 
                 const toolStartMs = Date.now();
                 const result = await executeTool(tc.function.name, args, tools, toolContext);

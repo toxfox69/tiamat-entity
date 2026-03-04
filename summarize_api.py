@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import secrets
 import requests
 import sqlite3
 from datetime import datetime, date
@@ -31,6 +32,12 @@ RATE_LIMIT_DB = '/root/.automaton/rate_limits.db'
 FREE_TIER_DAILY_LIMIT = 999999
 EXEMPT_ENDPOINTS = ['/status', '/proof', '/proof.json', '/pay', '/', '/docs', '/apps', '/api/apps', '/.well-known/agent.json', '/api/v1/services', '/cycle-tracker', '/cycle-tracker/', '/bloom', '/bloom/', '/bloom/privacy', '/api/bloom/feedback']
 
+TIER_LIMITS = {
+    'free': 100,
+    'pro': 10000,
+    'enterprise': -1,  # unlimited
+}
+
 def init_rate_limit_db():
     """Initialize rate limit SQLite database."""
     try:
@@ -44,10 +51,109 @@ def init_rate_limit_db():
                 PRIMARY KEY (ip, date_str)
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS api_keys (
+                key TEXT PRIMARY KEY,
+                email TEXT,
+                tier TEXT,
+                created_at TIMESTAMP,
+                rate_limit INTEGER,
+                last_used TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS key_requests (
+                key TEXT NOT NULL,
+                date_str TEXT NOT NULL,
+                request_count INTEGER DEFAULT 0,
+                PRIMARY KEY (key, date_str)
+            )
+        ''')
         conn.commit()
+        # Migrate: add last_used column if missing (existing DBs)
+        try:
+            cursor.execute('ALTER TABLE api_keys ADD COLUMN last_used TIMESTAMP')
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists
         conn.close()
     except Exception as e:
         logger.error(f"Failed to init rate limit DB: {e}")
+
+def get_api_key_info(key):
+    """Look up API key record."""
+    try:
+        conn = sqlite3.connect(RATE_LIMIT_DB)
+        cursor = conn.cursor()
+        cursor.execute('SELECT key, email, tier, rate_limit, created_at, last_used FROM api_keys WHERE key=?', (key,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {'key': row[0], 'email': row[1], 'tier': row[2], 'rate_limit': row[3],
+                    'created_at': row[4], 'last_used': row[5]}
+    except Exception as e:
+        logger.error(f"Failed to get API key info: {e}")
+    return None
+
+def update_key_last_used(key):
+    """Update last_used timestamp for API key."""
+    try:
+        conn = sqlite3.connect(RATE_LIMIT_DB)
+        cursor = conn.cursor()
+        cursor.execute('UPDATE api_keys SET last_used=? WHERE key=?', (datetime.utcnow().isoformat(), key))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to update last_used: {e}")
+
+def register_api_key(email):
+    """Generate and store a new API key. Returns the key string."""
+    import string
+    alphabet = string.ascii_letters + string.digits
+    random_part = ''.join(secrets.choice(alphabet) for _ in range(32))
+    key = f"tiamat_{random_part}"
+    tier = 'free'
+    rate_limit = TIER_LIMITS[tier]
+    created_at = datetime.utcnow().isoformat()
+    conn = sqlite3.connect(RATE_LIMIT_DB)
+    cursor = conn.cursor()
+    cursor.execute(
+        'INSERT INTO api_keys (key, email, tier, rate_limit, created_at) VALUES (?, ?, ?, ?, ?)',
+        (key, email, tier, rate_limit, created_at)
+    )
+    conn.commit()
+    conn.close()
+    return key, tier, rate_limit
+
+def get_key_request_count(key):
+    """Get request count for API key today."""
+    today = str(date.today())
+    try:
+        conn = sqlite3.connect(RATE_LIMIT_DB)
+        cursor = conn.cursor()
+        cursor.execute('SELECT request_count FROM key_requests WHERE key=? AND date_str=?', (key, today))
+        row = cursor.fetchone()
+        conn.close()
+        return row[0] if row else 0
+    except Exception as e:
+        logger.error(f"Failed to get key request count: {e}")
+        return 0
+
+def increment_key_request_count(key):
+    """Increment request count for API key today."""
+    today = str(date.today())
+    try:
+        conn = sqlite3.connect(RATE_LIMIT_DB)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO key_requests (key, date_str, request_count)
+            VALUES (?, ?, 1)
+            ON CONFLICT(key, date_str) DO UPDATE SET request_count = request_count + 1
+        ''', (key, today))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to increment key request count: {e}")
 
 def get_ip_request_count(ip):
     """Get request count for IP today."""
@@ -131,13 +237,41 @@ def check_rate_limit():
     # GET requests for static pages are NEVER rate limited
     if request.method == 'GET' and request.path in exempt_routes:
         return None
-    
-    # Only POST requests to API endpoints are rate limited
+
+    # /api/generate-key, /api/tiers, /api/keys/* are never rate limited
+    if request.path in ('/api/generate-key', '/api/tiers', '/api/keys/register', '/api/keys/status'):
+        return None
+
+    # If Authorization header present, validate API key (tiamat_ or x402_ prefix)
+    auth = request.headers.get('Authorization', '')
+    if auth.startswith('Bearer '):
+        api_key = auth[len('Bearer '):]
+        if api_key.startswith('tiamat_') or api_key.startswith('x402_'):
+            key_info = get_api_key_info(api_key)
+            if key_info is None:
+                return jsonify({'error': 'Invalid API key'}), 401
+            limit = key_info['rate_limit']
+            if limit != -1:
+                count = get_key_request_count(api_key)
+                if count >= limit:
+                    return jsonify({
+                        'error': 'API key rate limit exceeded',
+                        'tier': key_info['tier'],
+                        'limit': limit,
+                        'used': count,
+                        'reset': str(date.today()),
+                        'upgrade_url': 'https://tiamat.live/pay',
+                    }), 429
+            increment_key_request_count(api_key)
+            update_key_last_used(api_key)
+            return None
+
+    # Only POST requests to API endpoints are IP rate limited
     if request.method == 'POST':
         response = rate_limit_check()
         if response:
             return response
-    
+
     return None
 
 # Initialize rate limit DB on startup
@@ -742,15 +876,67 @@ def status():
 
 @app.route('/pay', methods=['GET'])
 def payment_page():
-    """Payment page (exempt from rate limit)."""
-    endpoint = request.args.get('endpoint', 'summarize')
-    amount = request.args.get('amount', '0.0001')
-    return render_template('payment.html', endpoint=endpoint, amount=amount, wallet=USER_WALLET)
+    """Tiers / API key page (exempt from rate limit)."""
+    return render_template('tiers.html', tiers=TIER_LIMITS, wallet=USER_WALLET)
+
+@app.route('/api/tiers', methods=['GET'])
+def api_tiers():
+    """Return tier definitions."""
+    return jsonify({
+        'tiers': {
+            'free': {'daily_limit': 100, 'price': 'free', 'description': '100 API calls/day'},
+            'pro': {'daily_limit': 10000, 'price': 'contact us', 'description': '10,000 API calls/day'},
+            'enterprise': {'daily_limit': 'unlimited', 'price': 'contact us', 'description': 'Unlimited API calls/day'},
+        }
+    })
+
+@app.route('/api/generate-key', methods=['POST'])
+def generate_api_key():
+    """Generate an API key for the given email + tier."""
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip()
+    tier = (data.get('tier') or 'free').strip().lower()
+
+    if not email or '@' not in email:
+        return jsonify({'error': 'Valid email required'}), 400
+    if tier not in TIER_LIMITS:
+        return jsonify({'error': f'Invalid tier. Choose: {list(TIER_LIMITS.keys())}'}), 400
+
+    key = 'x402_' + secrets.token_hex(24)
+    rate_limit = TIER_LIMITS[tier]
+    created_at = datetime.utcnow().isoformat()
+
+    try:
+        conn = sqlite3.connect(RATE_LIMIT_DB)
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO api_keys (key, email, tier, created_at, rate_limit) VALUES (?, ?, ?, ?, ?)',
+            (key, email, tier, created_at, rate_limit)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Failed to save API key: {e}")
+        return jsonify({'error': 'Failed to generate key'}), 500
+
+    return jsonify({
+        'api_key': key,
+        'email': email,
+        'tier': tier,
+        'daily_limit': rate_limit if rate_limit != -1 else 'unlimited',
+        'usage': f'Authorization: Bearer {key}',
+    })
 
 @app.route('/docs', methods=['GET'])
 def docs():
     """API documentation (exempt from rate limit)."""
     return render_template('docs.html')
+
+
+@app.route('/playground', methods=['GET'])
+def playground():
+    """Interactive API playground."""
+    return send_file('/root/playground.html')
 
 
 # ============================================================================
@@ -1996,6 +2182,57 @@ def serve_frame():
 </body>
 </html>'''
     return frame_html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
+# ============ API KEY MANAGEMENT ============
+
+@app.route('/api/keys/register', methods=['POST'])
+def api_keys_register():
+    """Register a new API key. Input: {"email": "user@example.com"}"""
+    data = request.get_json(silent=True)
+    if not data or not data.get('email'):
+        return jsonify({'error': 'Missing email field'}), 400
+    email = data['email'].strip()
+    if not email or len(email) > 254:
+        return jsonify({'error': 'Invalid email'}), 400
+    try:
+        key, tier, rate_limit = register_api_key(email)
+        return jsonify({
+            'api_key': key,
+            'tier': tier,
+            'limit': f'{rate_limit}/day',
+            'email': email,
+        }), 201
+    except Exception as e:
+        logger.error(f"Failed to register API key: {e}")
+        return jsonify({'error': 'Registration failed'}), 500
+
+
+@app.route('/api/keys/status', methods=['GET'])
+def api_keys_status():
+    """Get API key status. Requires Authorization: Bearer <api_key>"""
+    auth = request.headers.get('Authorization', '')
+    if not auth.startswith('Bearer '):
+        return jsonify({'error': 'Missing Authorization header'}), 401
+    key = auth[len('Bearer '):]
+    key_info = get_api_key_info(key)
+    if key_info is None:
+        return jsonify({'error': 'Invalid API key'}), 401
+    from datetime import timedelta
+    requests_today = get_key_request_count(key)
+    limit = key_info['rate_limit']
+    remaining = max(0, limit - requests_today) if limit != -1 else -1
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    return jsonify({
+        'email': key_info['email'],
+        'tier': key_info['tier'],
+        'requests_today': requests_today,
+        'limit': limit,
+        'remaining': remaining,
+        'reset_at': tomorrow + 'T00:00:00Z',
+        'created_at': key_info['created_at'],
+        'last_used': key_info['last_used'],
+    })
 
 
 # ============ REDDIT COOKIE RELAY ============

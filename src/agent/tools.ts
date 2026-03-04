@@ -742,6 +742,19 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
         return `BLOCKED: Invalid email address "${to}".`;
       }
 
+      // OUTREACH BAN (2026-03-04) — send_email is for transactional/alert use only.
+      // Cold outreach has 0% conversion rate. Build things instead of emailing people.
+      const ALLOWED_RECIPIENTS = [
+        'tiamat.entity.prime@gmail.com', // operator
+        'grants@tiamat.live',            // internal
+        'tiamat@tiamat.live',            // internal
+        'techexp@socom.mil',             // approved federal contact
+      ];
+      const isInternal = ALLOWED_RECIPIENTS.includes(to) || to.endsWith('@tiamat.live');
+      if (!isInternal) {
+        return `BLOCKED: Outreach emails are BANNED. Cold email has 0% conversion. Build an API playground, SDK, or better docs instead. send_email is only for internal/operator alerts.`;
+      }
+
       // Hard rate limit: max 3 emails per hour to prevent spam blasts that destroy domain reputation
       const LIMIT_FILE = '/root/.automaton/email_rate.json';
       const fs = await import('fs');
@@ -1383,6 +1396,103 @@ Model: ${ctx.inference.getDefaultModel()}
         }
 
         return claudeOutput || "(no output)";
+      },
+    },
+
+    // ── Parallel Claude Agents ──
+    {
+      name: "ask_claude_code_parallel",
+      description: "Run multiple Claude Code agents IN PARALLEL for independent subtasks. Each task gets its own Claude session (Sonnet, 50 turns). All run concurrently and results are returned together. Use when you have 2-4 independent pieces of work (e.g. research + implement + write docs). Do NOT use for tasks that depend on each other — use run_cascade for sequential dependencies.",
+      category: "self_mod" as ToolCategory,
+      dangerous: true,
+      parameters: {
+        type: "object",
+        properties: {
+          tasks: {
+            type: "array",
+            description: "Array of independent task objects to run in parallel (2-4 tasks)",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "string", description: "Short label e.g. 'research', 'implement', 'test'" },
+                task: { type: "string", description: "Full task description for this Claude agent" },
+              },
+              required: ["id", "task"],
+            },
+          },
+        },
+        required: ["tasks"],
+      },
+      execute: async (args, _ctx) => {
+        const tasks = args.tasks as Array<{ id: string; task: string }>;
+        if (!tasks?.length || tasks.length < 2) return "ERROR: provide 2-4 parallel tasks.";
+        if (tasks.length > 4) return "ERROR: max 4 parallel agents.";
+
+        const { writeFileSync } = await import("fs");
+        const { spawn } = await import("child_process");
+
+        const childEnv = { ...process.env };
+        delete childEnv.CLAUDECODE;
+        delete childEnv.CLAUDE_CODE_ENTRYPOINT;
+        delete childEnv.CLAUDE_CODE_SESSION_ID;
+        delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
+        delete childEnv.ANTHROPIC_API_KEY;
+
+        const TIMEOUT_MS = 900_000; // 15 minutes per agent
+        const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py, landing.html, thoughts.html, /opt/tiamat-stream/hud/index.html. These files are chattr +i immutable — writes WILL fail. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
+
+        const runAgent = (id: string, task: string): Promise<{ id: string; result: string }> => new Promise((resolve) => {
+          console.log(`[ask_claude_code_parallel] Starting agent: ${id}`);
+          writeFileSync(`/root/.automaton/claude_task_${id}.txt`, task, "utf-8");
+
+          const chunks: Buffer[] = [];
+          const errChunks: Buffer[] = [];
+
+          const proc = spawn(
+            "claude",
+            [
+              "--print",
+              "--model", "sonnet",
+              "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep",
+              "--max-turns", "50",
+              "--no-session-persistence",
+              "--append-system-prompt", sysPrompt,
+            ],
+            { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
+          );
+
+          proc.stdout.on("data", (d: Buffer) => chunks.push(d));
+          proc.stderr.on("data", (d: Buffer) => errChunks.push(d));
+          proc.stdin.write(task);
+          proc.stdin.end();
+
+          const timer = setTimeout(() => {
+            proc.kill("SIGTERM");
+            setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 5_000);
+            const partial = Buffer.concat(chunks).toString("utf-8").trim();
+            resolve({ id, result: partial ? `(timed out — partial)\n${partial}` : `ERROR: Agent ${id} timed out.` });
+          }, TIMEOUT_MS);
+
+          proc.on("close", () => {
+            clearTimeout(timer);
+            const out = Buffer.concat(chunks).toString("utf-8").trim();
+            const err = Buffer.concat(errChunks).toString("utf-8").trim();
+            console.log(`[ask_claude_code_parallel] Agent ${id} completed (${out.length}ch)`);
+            resolve({ id, result: [out, err].filter(Boolean).join("\n") || "(no output)" });
+          });
+
+          proc.on("error", (e: Error) => {
+            clearTimeout(timer);
+            resolve({ id, result: `ERROR: ${e.message}` });
+          });
+        });
+
+        // Launch all agents concurrently
+        console.log(`[ask_claude_code_parallel] Launching ${tasks.length} parallel agents: ${tasks.map(t => t.id).join(", ")}`);
+        const results = await Promise.all(tasks.map(t => runAgent(t.id, t.task)));
+
+        // Format output
+        return results.map(r => `=== Agent: ${r.id} ===\n${r.result}`).join("\n\n");
       },
     },
 
@@ -2684,6 +2794,24 @@ Model: ${ctx.inference.getDefaultModel()}
         const { readFileSync, writeFileSync } = await import("fs");
         const TICKETS_PATH = "/root/.automaton/tickets.json";
         try {
+          // Revenue gate: when revenue is $0, reject non-revenue tickets
+          const REVENUE_TAGS = new Set(["revenue", "outreach", "marketing", "conversion", "sales", "customer", "payment", "onboarding", "tutorial", "content"]);
+          const titleLower = ((args.title as string) || "").toLowerCase();
+          const tags = (args.tags as string[]) || [];
+          const hasRevenueFocus = tags.some(t => REVENUE_TAGS.has(t.toLowerCase())) ||
+            /revenue|customer|outreach|sales|convert|pay|onboard|tutorial/i.test(titleLower);
+          if (!hasRevenueFocus) {
+            let hasRevenue = false;
+            try {
+              const apiLog = readFileSync("/root/api_requests.log", "utf-8");
+              const paidRequests = apiLog.split("\n").filter(l => l.includes("Free: False") || l.includes("free:false")).length;
+              if (paidRequests > 0) hasRevenue = true;
+            } catch {}
+            if (!hasRevenue) {
+              return "BLOCKED: Revenue is $0. Only revenue-focused tickets allowed (tag with: revenue, outreach, marketing, conversion, sales, customer, payment, onboarding, tutorial, or content). No bounty hunting, no random app building.";
+            }
+          }
+
           const data = JSON.parse(readFileSync(TICKETS_PATH, "utf-8"));
           // Dedupe: advance next_id past any existing ticket IDs
           const existingIds = new Set((data.tickets || []).map((t: any) => t.id));

@@ -232,7 +232,7 @@ async function run(): Promise<void> {
   });
 
   const inference = inferenceBackend === "claude-code"
-    ? createClaudeCodeInferenceClient({ fallback: apiInference, timeoutMs: 90_000 })
+    ? createClaudeCodeInferenceClient({ fallback: apiInference, timeoutMs: 0 })
     : apiInference;
 
   console.log(`[${new Date().toISOString()}] Inference backend: ${inferenceBackend}`);
@@ -358,11 +358,15 @@ async function run(): Promise<void> {
         const requestedMs = sleepUntilStr
           ? new Date(sleepUntilStr).getTime() - Date.now()
           : 60_000;
-        // Cap at 5 minutes — TIAMAT should research when idle, not sleep for hours
-        const MAX_SLEEP_MS = 5 * 60_000;
+        // Spend cap sleeps are sacred — don't cap them
+        const isSpendCap = sleepUntilStr && requestedMs > 30 * 60_000; // >30min = spend cap
+        const MAX_SLEEP_MS = isSpendCap ? requestedMs : 5 * 60_000;
         const sleepMs = Math.max(Math.min(requestedMs, MAX_SLEEP_MS), 10_000);
-        if (requestedMs > MAX_SLEEP_MS) {
+        if (!isSpendCap && requestedMs > 5 * 60_000) {
           console.log(`[${new Date().toISOString()}] Sleep capped at 5m (requested ${Math.round(requestedMs / 1000)}s)`);
+        }
+        if (isSpendCap) {
+          console.log(`[${new Date().toISOString()}] [SPEND-CAP] Sleeping ${Math.round(sleepMs / 60000)}min until spend cap resets`);
         }
         console.log(
           `[${new Date().toISOString()}] Sleeping for ${Math.round(sleepMs / 1000)}s`,
