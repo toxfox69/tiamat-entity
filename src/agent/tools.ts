@@ -226,8 +226,8 @@ const REDDIT_ACTIONS = ['post','comment','read','search','test'];
 const FOURCHAN_BOARDS = ['g','sci','biz','diy','pol'];
 const FOURCHAN_ACTIONS = ['catalog','thread','search','test'];
 
-const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/', '/root/CLAUDE-BRIEFING.md'];
-const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/tmp/', '/root/tiamat-app/'];
+const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/', '/root/CLAUDE-BRIEFING.md', '/root/sandbox/'];
+const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/tmp/', '/root/tiamat-app/', '/root/sandbox/'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
 const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts', 'summarize_api.py', 'landing.html', 'thoughts.html', 'hud/index.html'];
 
