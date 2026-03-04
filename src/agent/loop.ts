@@ -40,7 +40,8 @@ import { updatePacer, checkCronTasks, loadPacer, type PacerUpdate } from "./pace
 import { reasonFirst, buildReasoningSituation, formatReasoningBlock, storePrediction, scorePredictions, getPredictionAccuracy, type BurstPhase } from "./reasoning.js";
 import { ulid } from "ulid";
 
-const MAX_TOOL_CALLS_PER_TURN = 10;
+const MAX_TOOL_CALLS_PER_TURN = 15;
+const MAX_INNER_TURNS = 5;         // ReAct inner loop — max continuation turns per cycle
 const MAX_CONSECUTIVE_ERRORS = 5;
 const STUCK_THRESHOLD = 3;
 
@@ -301,6 +302,13 @@ export async function runAgentLoop(
   // Behavioral loop warning from previous cycle — injected into next wakeup context
   let pendingLoopWarning: string | null = null;
   let consecutiveLoopCycles = 0; // escalation counter: resets on non-loop cycle or restart
+
+  // Research budget: tracks consecutive cycles where only research tools were used (no building).
+  // After RESEARCH_BUDGET_MAX consecutive research-only cycles, force a build action.
+  let consecutiveResearchCycles = 0;
+  const RESEARCH_BUDGET_MAX = 2; // max 2 research-only cycles before forced build
+  const RESEARCH_TOOLS_SET = new Set(["search_web", "web_fetch", "browse", "browse_web", "sonar_search", "read_file", "read_email", "search_email", "exec", "recall"]);
+  const BUILD_TOOLS_SET = new Set(["write_file", "ask_claude_code", "post_bluesky", "post_farcaster", "post_social", "send_email", "deploy_app", "ticket_complete", "generate_image"]);
 
   // Transition to waking state — clear stale loop detector history so restarts start clean
   try { fs.unlinkSync("/root/.automaton/loop_detector.json"); } catch {}
@@ -881,7 +889,7 @@ export async function runAgentLoop(
       // Self-critique injection removed — caused navel-gazing loops
       const selfCritiqueBlock = "";
       if (pendingLoopWarning) {
-        if (consecutiveLoopCycles >= 10) {
+        if (consecutiveLoopCycles >= 7) {
           // TIER 4: Force restart — text interventions failed, nuke the context window
           log(config, `[LOOP-ESCALATE] TIER 4: FORCE RESTART after ${consecutiveLoopCycles} consecutive loops. Text interventions exhausted.`);
           // Shelve any in_progress tickets so we don't restart into the same loop
@@ -930,7 +938,7 @@ export async function runAgentLoop(
           }
           log(config, `[LOOP-ESCALATE] Exiting for clean restart. Run start-tiamat.sh to revive.`);
           process.exit(0);
-        } else if (consecutiveLoopCycles >= 5) {
+        } else if (consecutiveLoopCycles >= 4) {
           // TIER 3: Force pivot — inject full ticket list, mandate context switch
           let ticketBlock = "(no tickets found)";
           try {
@@ -1156,15 +1164,15 @@ If you have no tickets, create one and claim it immediately.`;
       // ── Inference Call ──
       log(config, `[THINK] Calling ${inferenceModel || inference.getDefaultModel()} (tier: ${cycleTier})...`);
 
-      // Strategic cycles get 3072 tokens (more room to plan ask_claude_code calls), routine gets 2048
-      const maxTokensThisCycle = isStrategicCycle ? 3072 : 2048;
+      // Strategic cycles get 8192 tokens (room for multi-step planning), routine gets 4096
+      const maxTokensThisCycle = isStrategicCycle ? 8192 : 4096;
 
       const cycleContext = burstPhase === 1 ? "reflect" as const
         : burstPhase === 2 ? "build" as const
         : burstPhase === 3 ? "market" as const
         : "routine" as const;
 
-      const response = await inference.chat(messages, {
+      let response = await inference.chat(messages, {
         tools: toolsToInferenceFormat(tools),
         maxTokens: maxTokensThisCycle,
         ...(inferenceModel ? { model: inferenceModel } : {}),
@@ -1324,6 +1332,133 @@ If you have no tickets, create one and claim it immediately.`;
         }
       }
 
+      // ── Inner ReAct Loop — let the model continue if it has more tool calls ──
+      // Only for Anthropic models (free/fallback models can't do multi-turn tool use well)
+      {
+        const modelUsedForReact = response.model || inference.getDefaultModel();
+        const isAnthropicModel = modelUsedForReact.includes("claude");
+        let totalToolCalls = turn.toolCalls.length;
+        let innerTurn = 0;
+
+        // Build accumulated messages from the initial call
+        const accumulatedMessages = [...messages];
+
+        while (
+          isAnthropicModel &&
+          innerTurn < MAX_INNER_TURNS &&
+          totalToolCalls < MAX_TOOL_CALLS_PER_TURN * 2 &&
+          response.finishReason === "tool_calls" &&
+          turn.toolCalls.length > 0
+        ) {
+          innerTurn++;
+          log(config, `[REACT] Inner turn ${innerTurn}/${MAX_INNER_TURNS} — model wants to continue (${totalToolCalls} tool calls so far)`);
+
+          try {
+            // Add the assistant's response as a message
+            const assistantMsg: any = {
+              role: "assistant",
+              content: response.message.content || "",
+            };
+            if (response.toolCalls && response.toolCalls.length > 0) {
+              assistantMsg.tool_calls = response.toolCalls.map((tc: any) => ({
+                id: tc.id,
+                type: "function" as const,
+                function: { name: tc.function.name, arguments: tc.function.arguments },
+              }));
+            }
+            accumulatedMessages.push(assistantMsg);
+
+            // Add tool results from the last batch
+            for (const tc of turn.toolCalls.slice(-response.toolCalls!.length)) {
+              accumulatedMessages.push({
+                role: "tool",
+                content: tc.error ? `Error: ${tc.error}` : tc.result.slice(0, 1500),
+                tool_call_id: tc.id,
+              });
+            }
+
+            // Call inference again with accumulated context
+            const innerResponse = await inference.chat(accumulatedMessages, {
+              tools: toolsToInferenceFormat(tools),
+              maxTokens: maxTokensThisCycle,
+              ...(inferenceModel ? { model: inferenceModel } : {}),
+              tier: cycleTier,
+              cycleContext,
+            });
+
+            // Cost logging for inner turn
+            {
+              const usage = innerResponse.usage;
+              const mUsed = inference.getDefaultModel();
+              const isH = !mUsed.includes("sonnet");
+              const iR = isH ? 1.0 : 3.0;
+              const oR = isH ? 5.0 : 15.0;
+              const iCost = (usage.promptTokens / 1_000_000) * iR;
+              const crCost = ((usage.cacheReadTokens || 0) / 1_000_000) * (iR * 0.1);
+              const cwCost = ((usage.cacheWriteTokens || 0) / 1_000_000) * (iR * 1.25);
+              const oCost = (usage.completionTokens / 1_000_000) * oR;
+              const tCost = iCost + crCost + cwCost + oCost;
+              console.log(`[COST] Cycle ${turnCount} inner-${innerTurn}: $${tCost.toFixed(6)} (in:${usage.promptTokens} out:${usage.completionTokens} model:${mUsed.split("-").slice(-2).join("-")})`);
+              try {
+                fs.appendFileSync(
+                  "/root/.automaton/cost.log",
+                  `${new Date().toISOString()},${turnCount},${mUsed},${usage.promptTokens},${usage.cacheReadTokens || 0},${usage.cacheWriteTokens || 0},${usage.completionTokens},${tCost.toFixed(6)},inner-${innerTurn}\n`,
+                );
+              } catch {}
+            }
+
+            // Append thinking from inner turn
+            if (innerResponse.message.content) {
+              turn.thinking += `\n[inner-${innerTurn}] ${innerResponse.message.content}`;
+            }
+
+            // Quick refusal check on inner turn
+            const innerThinking = (innerResponse.message.content || "").toLowerCase();
+            if (innerThinking.includes("i'm claude, made by anthropic") || innerThinking.includes("jailbreak")) {
+              log(config, `[REACT] Refusal detected in inner turn ${innerTurn} — breaking`);
+              break;
+            }
+
+            // Execute tool calls from inner turn
+            if (innerResponse.toolCalls && innerResponse.toolCalls.length > 0) {
+              for (const tc of innerResponse.toolCalls) {
+                if (totalToolCalls >= MAX_TOOL_CALLS_PER_TURN * 2) {
+                  log(config, `[REACT] Total tool call cap reached (${totalToolCalls})`);
+                  break;
+                }
+
+                let args: Record<string, unknown>;
+                try { args = JSON.parse(tc.function.arguments); } catch { args = {}; }
+
+                log(config, `[REACT] [TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 200)})`);
+
+                const toolStartMs = Date.now();
+                const result = await executeTool(tc.function.name, args, tools, toolContext);
+                const toolDurationMs = Date.now() - toolStartMs;
+
+                result.id = tc.id;
+                turn.toolCalls.push(result);
+
+                log(config, `[REACT] [TOOL RESULT] ${tc.function.name}: ${result.error ? `ERROR: ${result.error}` : result.result.slice(0, 500)}`);
+
+                try { memory.recordToolOutcome(tc.function.name, !result.error, toolDurationMs, result.error || undefined); } catch {}
+                totalToolCalls++;
+              }
+            }
+
+            // Update response for next iteration check
+            response = innerResponse;
+          } catch (e: any) {
+            log(config, `[REACT] Inner turn ${innerTurn} failed: ${e.message?.slice(0, 200)} — breaking`);
+            break;
+          }
+        }
+
+        if (innerTurn > 0) {
+          log(config, `[REACT] Completed ${innerTurn} inner turns, ${totalToolCalls} total tool calls this cycle`);
+        }
+      }
+
       // ── Stuck Detection ──
       {
         const thisKeys = new Set<string>();
@@ -1372,6 +1507,28 @@ If you have no tickets, create one and claim it immediately.`;
         }
       } catch (e: any) {
         console.log(`[LOOP-DETECT] Error: ${e.message?.slice(0, 100)}`);
+      }
+
+      // ── Research Budget Enforcement ──
+      // Track consecutive research-only cycles. Force build after RESEARCH_BUDGET_MAX.
+      {
+        const cycleTools = turn.toolCalls.map(tc => tc.name);
+        const hasBuild = cycleTools.some(t => BUILD_TOOLS_SET.has(t));
+        const hasResearch = cycleTools.some(t => RESEARCH_TOOLS_SET.has(t));
+        if (hasResearch && !hasBuild) {
+          consecutiveResearchCycles++;
+          log(config, `[RESEARCH-BUDGET] ${consecutiveResearchCycles}/${RESEARCH_BUDGET_MAX} consecutive research-only cycles`);
+        } else if (hasBuild) {
+          consecutiveResearchCycles = 0;
+        }
+        // If over budget, set a loop warning to force building
+        if (consecutiveResearchCycles >= RESEARCH_BUDGET_MAX && !pendingLoopWarning) {
+          pendingLoopWarning = `RESEARCH BUDGET EXCEEDED: ${consecutiveResearchCycles} consecutive cycles of research with NO building. ` +
+            `You MUST build, post, or ship something THIS cycle. No more browsing, searching, or reading. ` +
+            `Use ask_claude_code to build, post_bluesky to share, or ticket_complete to finish work.`;
+          consecutiveLoopCycles = Math.max(consecutiveLoopCycles, 3); // jump to TIER 2 minimum
+          log(config, `[RESEARCH-BUDGET] EXCEEDED — forcing build cycle`);
+        }
       }
 
       // ── Persist Turn (skip empty turns to prevent context poisoning) ──

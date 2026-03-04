@@ -1,0 +1,87 @@
+PATCH for platform/frontend/src/components/ai-elements/tool.tsx
+=============================================================
+
+1. Add import at the top of the file (after existing imports):
+
+```typescript
+import {
+  extractMcpAppHtml,
+  McpAppFrame,
+} from "@/components/chat/mcp-app-frame";
+```
+
+2. Extend ToolOutputProps (add agentId):
+
+```typescript
+// BEFORE:
+export type ToolOutputProps = ComponentProps<"div"> & {
+  output?: ToolUIPart["output"];
+  errorText?: ToolUIPart["errorText"];
+  label?: string;
+  conversations?: Array<{
+    role: "user" | "assistant";
+    content: string | unknown;
+  }>;
+};
+
+// AFTER:
+export type ToolOutputProps = ComponentProps<"div"> & {
+  output?: ToolUIPart["output"];
+  errorText?: ToolUIPart["errorText"];
+  label?: string;
+  /** Agent ID – required to proxy MCP App tool calls back to the backend */
+  agentId?: string;
+  conversations?: Array<{
+    role: "user" | "assistant";
+    content: string | unknown;
+  }>;
+};
+```
+
+3. In the ToolOutput function body, add MCP App detection RIGHT BEFORE
+   the existing conversations check (i.e., after the `if (!(output || errorText || conversations)) return null;` guard):
+
+```typescript
+// ── MCP App detection ─────────────────────────────────────────────────────
+// If the tool output contains a resource block with mimeType "text/html",
+// render it as an interactive MCP App instead of raw JSON.
+const mcpAppHtml = !errorText ? extractMcpAppHtml(output) : null;
+if (mcpAppHtml && agentId) {
+  return (
+    <div className={cn("p-4", className)} {...props}>
+      <McpAppFrame
+        htmlContent={mcpAppHtml}
+        toolName={label ?? "MCP App"}
+        toolResult={output}
+        agentId={agentId}
+      />
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────
+```
+
+4. In the ToolOutput function signature, destructure agentId:
+
+```typescript
+// BEFORE:
+export const ToolOutput = ({
+  className,
+  output,
+  errorText,
+  label,
+  conversations,
+  ...props
+}: ToolOutputProps) => {
+
+// AFTER:
+export const ToolOutput = ({
+  className,
+  output,
+  errorText,
+  label,
+  agentId,
+  conversations,
+  ...props
+}: ToolOutputProps) => {
+```

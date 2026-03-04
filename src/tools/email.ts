@@ -21,9 +21,10 @@ export async function sendEmail(config: any, params: {
   append_signature?: boolean;
 }): Promise<string> {
   const to = params.to || config.creatorEmail;
-  const apiKey = config.sendgridApiKey || process.env.SENDGRID_API_KEY;
+  const mailgunKey = process.env.MAILGUN_API_KEY;
+  const mailgunDomain = process.env.MAILGUN_DOMAIN || 'tiamat.live';
 
-  if (!apiKey) throw new Error('No SendGrid API key configured');
+  if (!mailgunKey) throw new Error('No Mailgun API key configured (MAILGUN_API_KEY)');
 
   const fromAddr = params.from_addr || FROM_EMAIL;
   const fromName = params.from_name || FROM_NAME;
@@ -33,36 +34,26 @@ export async function sendEmail(config: any, params: {
   // Auto-CC grants inbox for .mil and .gov recipients
   const cc = params.cc || (to.includes('.mil') || to.includes('.gov') ? GRANTS_EMAIL : undefined);
 
-  const personalizations: any = { to: [{ email: to }] };
-  if (cc) personalizations.cc = [{ email: cc }];
+  // Mailgun uses form-encoded params
+  const formData = new URLSearchParams();
+  formData.append('from', `${fromName} <${fromAddr}>`);
+  formData.append('to', to);
+  formData.append('subject', params.subject);
+  formData.append('text', fullBody);
+  if (cc) formData.append('cc', cc);
+  if (params.reply_to) formData.append('h:Reply-To', params.reply_to);
 
-  const payload: any = {
-    personalizations: [personalizations],
-    from: { email: fromAddr, name: fromName },
-    subject: params.subject,
-    content: [{ type: 'text/plain', value: fullBody }],
-    tracking_settings: {
-      click_tracking: { enable: false },
-      open_tracking: { enable: false },
-    },
-  };
-
-  if (params.reply_to) {
-    payload.reply_to = { email: params.reply_to };
-  }
-
-  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  const response = await fetch(`https://api.mailgun.net/v3/${mailgunDomain}/messages`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + Buffer.from(`api:${mailgunKey}`).toString('base64'),
     },
-    body: JSON.stringify(payload),
+    body: formData,
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`SendGrid error: ${response.status} ${err}`);
+    throw new Error(`Mailgun error: ${response.status} ${err}`);
   }
 
   // Log sent email

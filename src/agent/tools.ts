@@ -633,7 +633,7 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
     // ── Survival Tools ──
     {
       name: "send_email",
-    description: "Send email from tiamat@tiamat.live via SendGrid. Auto-CCs grants@tiamat.live for .mil/.gov recipients. Appends ENERGENAI LLC signature. Use for: federal contacts, grant follow-ups, USSOCOM outreach, professional correspondence. For grant alerts use send_grant_alert, for research papers use send_research_alert, for human-action-needed use send_action_required.",
+    description: "Send email from tiamat@tiamat.live via Mailgun. Auto-CCs grants@tiamat.live for .mil/.gov recipients. Appends ENERGENAI LLC signature. Use for: federal contacts, grant follow-ups, USSOCOM outreach, professional correspondence. For grant alerts use send_grant_alert, for research papers use send_research_alert, for human-action-needed use send_action_required.",
     category: "survival",
     dangerous: false,
     parameters: {
@@ -647,6 +647,22 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
       required: ["to", "subject", "body"],
     },
     execute: async (args: Record<string, unknown>, ctx: any) => {
+      const to = (args.to as string || '').toLowerCase().trim();
+      // Validate email format
+      if (!to || !to.includes('@') || !to.includes('.')) {
+        return `BLOCKED: Invalid email address "${to}".`;
+      }
+      // Verify the domain has MX records (actually accepts email)
+      const domain = to.split('@')[1];
+      try {
+        const { execFileSync } = await import('child_process');
+        const mx = execFileSync('dig', ['MX', domain, '+short'], { timeout: 5000 }).toString().trim();
+        if (!mx || mx.includes('NXDOMAIN') || mx.length === 0) {
+          return `BLOCKED: Domain "${domain}" has no MX records — it doesn't accept email. Find the correct email address.`;
+        }
+      } catch {
+        return `BLOCKED: Could not verify domain "${domain}" accepts email.`;
+      }
       const { sendEmail } = await import('../tools/email.js');
       return await sendEmail(ctx.config, {
         to: args.to as string,
@@ -1171,7 +1187,7 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
         delete childEnv.ANTHROPIC_API_KEY;  // Force CLI to use Max subscription, not depleted API key
 
-        const TIMEOUT_MS = 600_000; // 10 minutes
+        const TIMEOUT_MS = 900_000; // 15 minutes
         const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
 
         // Helper to spawn one CLI attempt
@@ -1185,7 +1201,7 @@ Model: ${ctx.inference.getDefaultModel()}
               "--print",
               "--model", "sonnet",
               "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep",
-              "--max-turns", "20",
+              "--max-turns", "50",
               "--no-session-persistence",
               "--append-system-prompt", sysPrompt,
             ],
@@ -1314,7 +1330,7 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
 
-        const STEP_TIMEOUT = 300_000; // 5 min per step
+        const STEP_TIMEOUT = 600_000; // 10 min per step
 
         for (const step of steps) {
           let attempt = 0;
@@ -1332,7 +1348,7 @@ Model: ${ctx.inference.getDefaultModel()}
                 const chunks: Buffer[] = [];
                 const proc = spawn(
                   "claude",
-                  ["--print", "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep", "--max-turns", "20"],
+                  ["--print", "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep", "--max-turns", "40"],
                   { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
                 );
 

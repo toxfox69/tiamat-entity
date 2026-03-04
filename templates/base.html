@@ -97,6 +97,7 @@ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%
   <div class="site-nav-overlay" onclick="document.getElementById('navToggle').checked=false"></div>
   <div class="site-nav-links">
     <a href="/summarize" {% if active == 'summarize' %}class="active"{% endif %}>Summarize</a>
+    <a href="/translate" {% if active == 'translate' %}class="active"{% endif %}>Translate</a>
     <a href="/generate" {% if active == 'generate' %}class="active"{% endif %}>Generate</a>
     <a href="/chat" {% if active == 'chat' %}class="active"{% endif %}>Chat</a>
     <a href="/synthesize" {% if active == 'synthesize' %}class="active"{% endif %}>TTS</a>

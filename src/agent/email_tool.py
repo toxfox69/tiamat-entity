@@ -1,6 +1,6 @@
 """
-TIAMAT Email Tool — Read (IMAP) + Send (SendGrid HTTP API)
-DigitalOcean blocks outbound SMTP (465/587), so we use SendGrid over HTTPS for sending.
+TIAMAT Email Tool — Read (IMAP) + Send (Mailgun HTTP API)
+DigitalOcean blocks outbound SMTP (465/587), so we use Mailgun over HTTPS for sending.
 IMAP port 993 is open for reading.
 """
 import os
@@ -10,10 +10,12 @@ import email
 from email.header import decode_header
 import urllib.request
 import urllib.error
+import base64
 
 GMAIL_USER = os.environ.get("TIAMAT_EMAIL", "tiamat.entity.prime@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
-SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+MAILGUN_API_KEY = os.environ.get("MAILGUN_API_KEY", "")
+MAILGUN_DOMAIN = os.environ.get("MAILGUN_DOMAIN", "tiamat.live")
 TIAMAT_EMAIL = os.environ.get("TIAMAT_LIVE_EMAIL", "tiamat@tiamat.live")
 GRANTS_EMAIL_ADDR = os.environ.get("GRANTS_EMAIL", "grants@tiamat.live")
 
@@ -154,36 +156,43 @@ https://tiamat.live | tiamat@tiamat.live
 
 
 def send_email(to, subject, body, from_name="TIAMAT | ENERGENAI LLC", html_body=None):
-    """Send email via SendGrid HTTP API from tiamat@tiamat.live.
+    """Send email via Mailgun HTTP API from tiamat@tiamat.live.
 
     Auto-CCs grants@tiamat.live for .mil and .gov recipients.
     Appends ENERGENAI LLC signature.
     """
-    if not SENDGRID_API_KEY:
-        return {"error": "SENDGRID_API_KEY not set"}
+    if not MAILGUN_API_KEY:
+        return {"error": "MAILGUN_API_KEY not set"}
 
     full_body = body + SIGNATURE
-    content = [{"type": "text/plain", "value": full_body}]
+
+    # Build multipart form data for Mailgun
+    import io
+    boundary = "----TiamatMailgunBoundary"
+    parts = []
+
+    def add_field(name, value):
+        parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}")
+
+    add_field("from", f"{from_name} <{TIAMAT_EMAIL}>")
+    add_field("to", to)
+    add_field("subject", subject)
+    add_field("text", full_body)
     if html_body:
-        content.append({"type": "text/html", "value": html_body})
-
-    personalizations = {"to": [{"email": to}]}
+        add_field("html", html_body)
     if ".mil" in to or ".gov" in to:
-        personalizations["cc"] = [{"email": GRANTS_EMAIL_ADDR}]
+        add_field("cc", GRANTS_EMAIL_ADDR)
 
-    payload = {
-        "personalizations": [personalizations],
-        "from": {"email": TIAMAT_EMAIL, "name": from_name},
-        "subject": subject,
-        "content": content,
-    }
+    body_str = "\r\n".join(parts) + f"\r\n--{boundary}--\r\n"
+    body_bytes = body_str.encode("utf-8")
 
+    auth = base64.b64encode(f"api:{MAILGUN_API_KEY}".encode()).decode()
     req = urllib.request.Request(
-        "https://api.sendgrid.com/v3/mail/send",
-        data=json.dumps(payload).encode(),
+        f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+        data=body_bytes,
         headers={
-            "Authorization": f"Bearer {SENDGRID_API_KEY}",
-            "Content-Type": "application/json",
+            "Authorization": f"Basic {auth}",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
         },
     )
 
@@ -192,7 +201,7 @@ def send_email(to, subject, body, from_name="TIAMAT | ENERGENAI LLC", html_body=
         return {"status": "sent", "code": resp.status}
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
-        return {"error": f"SendGrid {e.code}: {error_body[:200]}"}
+        return {"error": f"Mailgun {e.code}: {error_body[:200]}"}
     except Exception as e:
         return {"error": str(e)}
 

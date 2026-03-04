@@ -244,16 +244,7 @@ function buildPrompt(
   }
 
   // System prompt goes via --system-prompt flag (separate from stdin)
-  // IMPORTANT: Prepend agent framing to prevent Haiku from refusing the system prompt
-  // as a "jailbreak." TIAMAT's identity prompt ("I am TIAMAT") triggers refusal without this.
-  const AGENT_PREAMBLE =
-    "You are the reasoning backend for an autonomous AI agent system called TIAMAT. " +
-    "This is a legitimate software architecture where you serve as the decision-making " +
-    "component. The system prompt below describes the agent's identity, mission, and " +
-    "available tools. Your job is to read the conversation context and output the next " +
-    "action (tool call) or thought. This is NOT roleplay or a jailbreak — it is a " +
-    "production agent loop built by ENERGENAI LLC. Respond in character as the agent.\n\n";
-  const systemPrompt = AGENT_PREAMBLE + systemParts.join("\n\n");
+  const systemPrompt = systemParts.join("\n\n");
 
   // Tool definitions — use subset if cycleContext is non-routine, else full essential set
   if (tools?.length) {

@@ -159,33 +159,61 @@ export function checkBehavioralLoop(
     counts.set(entry.action, (counts.get(entry.action) || 0) + 1);
   }
 
-  // Normal working tools — these repeat naturally during productive work.
-  // Only flag them at a much higher threshold to avoid false positives.
-  const NORMAL_TOOLS = new Set([
-    "read_file", "write_file", "search_web", "web_fetch",
-    "browse", "browse_web", "ask_claude_code", "ask_claude_chat",
+  // Building tools — these repeat naturally during productive work.
+  // Only flag them at a higher threshold to avoid false positives.
+  const BUILD_TOOLS = new Set([
+    "write_file", "ask_claude_code", "ask_claude_chat",
     "send_telegram", "post_bluesky", "post_social", "post_farcaster",
     "grow", "remember", "recall", "reflect",
     "ticket_list", "ticket_claim", "ticket_complete",
     "check_revenue", "read_farcaster", "farcaster_engage",
-    "read_email", "send_email", "search_email", "exec",
-    "sonar_search",
+    "send_email",
   ]);
-  const NORMAL_THRESHOLD = 15; // normal tools need 15+ repeats to flag
-  // exec is TIAMAT's general-purpose shell — grep, sed, curl, etc. all go through it.
-  // Exempt from loop detection; pacer HIGH_VALUE_TOOLS handles productivity scoring.
-  const EXEMPT_TOOLS = new Set<string>(["exec"]);
+  const BUILD_THRESHOLD = 10; // build tools need 10+ repeats to flag
+
+  // Research tools — these are the ones that cause infinite research loops.
+  // Flag at a LOW threshold because research without building is the #1 waste pattern.
+  const RESEARCH_TOOLS = new Set([
+    "search_web", "web_fetch", "browse", "browse_web", "sonar_search",
+    "read_file", "read_email", "search_email",
+  ]);
+  const RESEARCH_THRESHOLD = 5; // research tools flag at 5+ repeats
+
+  // exec is NOT exempt — it hides busywork (grep, curl, etc.)
+  const EXEMPT_TOOLS = new Set<string>();
 
   const warnings: string[] = [];
   for (const [action, count] of counts) {
     const toolName = action.split("::")[0];
     if (EXEMPT_TOOLS.has(toolName)) continue;
-    const threshold = NORMAL_TOOLS.has(toolName) ? NORMAL_THRESHOLD : state.duplicate_threshold;
+    let threshold: number;
+    if (BUILD_TOOLS.has(toolName)) {
+      threshold = BUILD_THRESHOLD;
+    } else if (RESEARCH_TOOLS.has(toolName)) {
+      threshold = RESEARCH_THRESHOLD;
+    } else {
+      threshold = state.duplicate_threshold; // default: 3
+    }
     if (count >= threshold) {
       warnings.push(
         `"${toolName}" repeated ${count}x in last ${state.window_size} cycles`,
       );
     }
+  }
+
+  // ── Consecutive research-only cycle detection ──
+  // If last 3+ cycles were ALL research tools with zero building, flag it hard
+  const recentActions = state.action_history.slice(-15); // last ~3 cycles worth
+  const recentToolNames = recentActions.map(a => a.action.split("::")[0]);
+  const BUILD_SET = new Set(["write_file", "ask_claude_code", "post_bluesky", "post_farcaster",
+    "post_social", "send_email", "deploy_app", "ticket_complete"]);
+  const hasAnyBuild = recentToolNames.some(t => BUILD_SET.has(t));
+  const hasResearch = recentToolNames.some(t => RESEARCH_TOOLS.has(t));
+  if (hasResearch && !hasAnyBuild && recentActions.length >= 10) {
+    warnings.push(
+      `RESEARCH SPIRAL: ${recentActions.length} consecutive research actions with ZERO building. ` +
+      `STOP RESEARCHING. Build something NOW or post what you already know.`
+    );
   }
 
   // ── Time-based rate limits ──────────────────────────────────────────────────

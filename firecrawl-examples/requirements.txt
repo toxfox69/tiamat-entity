@@ -1,0 +1,14 @@
+# Firecrawl Python SDK Examples — Dependencies
+# Install: pip install -r requirements.txt
+
+# Core SDK (required for all examples)
+firecrawl-py>=1.0.0
+
+# Schema validation (required for example_02_data_extractor.py)
+pydantic>=2.0.0
+
+# Progress bars (optional — example_03_site_crawler.py degrades gracefully without it)
+tqdm>=4.66.0
+
+# Optional: load .env files for API key management
+# python-dotenv>=1.0.0

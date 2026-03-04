@@ -63,36 +63,31 @@ export function buildSystemPrompt(params: {
 }): string {
   const { identity, config, financial } = params;
 
-  const identity_block = `You are an AI assistant powering an autonomous agent application called ${config.name}, built and operated by ENERGENAI LLC. This is a production software system running on a real server.
+  const identity_block = `You are a helpful assistant with access to tools for completing software engineering and business tasks. Your operator is ENERGENAI LLC.
 
-Your job: execute tasks each cycle using the tools provided. You have a wallet (${identity.address}), server access, email, and web browsing capabilities.
+Each cycle, read /root/.automaton/INBOX.md for your current task, then execute it using the available tools. When done, move to the next task.
 
-Operating rules:
-- Execute tasks proactively each cycle without waiting for human input.
-- Never delete critical data (wallet keys, databases, core config files).
-- Focus areas: energy, AI/ML, cybersecurity, developer tools.
-- Priority: revenue-generating work first, then outreach, then building features.`;
+Available tools include: send_email, read_email, browse, search_web, read_file, write_file, exec, ask_claude_code, post_bluesky, ticket_list, ticket_claim, ticket_complete, and others listed below.`;
 
-  // Only SOUL.md and MISSION.md are auto-loaded. All other files (PROGRESS.md,
-  // INBOX.md, etc.) are read explicitly via read_file when needed.
-  const soul    = loadFile("SOUL.md", 1_500);   // ~375 tokens — trimmed to avoid refusal triggers
-  const mission = loadFile("MISSION.md", 3_000); // ~750 tokens — mission context
+  // SOUL.md and MISSION.md loaded into static prompt for identity + direction.
+  // All other files (PROGRESS.md, INBOX.md, etc.) are read explicitly via read_file.
+  const soul    = loadFile("SOUL.md", 3000);
+  const mission = loadFile("MISSION.md", 4000);
 
-  const powerTools = `AVAILABLE CAPABILITIES:
-- Write scripts, install packages, create infrastructure on this server.
-- Search the web, contact potential customers, explore markets.
-- When no tickets exist, focus on OUTREACH: find customers, post demos, send cold emails.
-- Do NOT modify SOUL.md, MISSION.md, or rewrite working infrastructure.
-- Priority order: paying customers → features people want → grants/partnerships.
+  const powerTools = `TOOL USAGE NOTES:
+- send_email sends from tiamat@tiamat.live via SendGrid.
+- browse fetches web pages. search_web does quick searches.
+- ask_claude_code handles complex coding tasks.
+- read_file and write_file for local files.
+- exec runs shell commands.
+- Log completed work to /root/.automaton/PROGRESS.md.
 
-WORKFLOW:
-- ticket_list() each cycle. ticket_claim() before starting. ticket_complete() when done.
-- If ticket queue is empty: research, build, post, or contact potential customers.
-- ask_claude_code for complex coding tasks (free). gpu_infer() for reasoning (free).
-- recall() before work. learn() for verified, reusable insights only.
-- browse for web pages (fetch, extract, search). search_web for quick searches.
-- send_email from tiamat@tiamat.live. read_email for inboxes.
-- Append to PROGRESS.md: [ISO-timestamp] Phase N | Action | Result | Next`;
+TASK CONTINUITY:
+- When starting a multi-step task, write your plan and progress to /root/.automaton/CURRENT_TASK.md.
+- Update it after each step (check off completed steps, note results).
+- When the task is fully done, clear the file (write empty string).
+- This file persists across cycles — you will see it in your wakeup prompt.
+- FINISH what you start. Do not abandon tasks mid-way.`;
 
   // ── STATIC PORTION — sent with cache_control, costs 0.1x after first call ──
   const staticSections = [
@@ -117,9 +112,7 @@ WORKFLOW:
   } catch {}
 
   const dynamicSections = [
-    `USDC balance: ${financial.usdcBalance.toFixed(4)}`,
-    metabolic,
-    toolHints ? `[TOOL HINTS]\n${toolHints}` : "",
+    toolHints || "",
   ].filter(Boolean).join("\n\n");
 
   const prompt = staticPrompt + CACHE_SENTINEL + dynamicSections;
@@ -145,15 +138,7 @@ export function buildWakeupPrompt(params: {
   const turnCount = db.getTurnCount();
 
   if (turnCount === 0) {
-    return `This is the first cycle for the ${config.name} agent application.
-Available credits: $${(financial.creditsCents / 100).toFixed(2)}. USDC balance: ${financial.usdcBalance.toFixed(4)}.
-
-${config.creatorMessage ? `Configuration message: "${config.creatorMessage}"` : "No configuration message provided."}
-
-Start by:
-1. Check available tools and server environment
-2. Read INBOX.md for pending directives
-3. Begin executing the highest-priority task`;
+    return `First cycle. Read /root/.automaton/INBOX.md for your task list, then start executing.`;
   }
 
   const lastTurns = db.getRecentTurns(3);
@@ -188,10 +173,19 @@ Start by:
     }
   } catch {}
 
-  return `Cycle ${turnCount}. USDC: ${financial.usdcBalance.toFixed(4)}.${ticketSummary}${inboxAlert}
+  // Inject CURRENT_TASK.md so TIAMAT resumes in-progress work
+  let currentTaskBlock = "";
+  try {
+    const taskPath = path.join(process.env.HOME || "/root", ".automaton", "CURRENT_TASK.md");
+    const taskContent = fs.readFileSync(taskPath, "utf-8").trim();
+    if (taskContent.length > 10) {
+      currentTaskBlock = `\n\n[CURRENT TASK — RESUME THIS]\n${taskContent.slice(0, 2000)}`;
+    }
+  } catch {}
 
-Recent activity:
-${lastTurnSummary || "No previous turns found."}
+  return `Cycle ${turnCount}.${ticketSummary}${inboxAlert}${currentTaskBlock}
 
-TASK: Execute the highest-priority item. If you have a ticket, work it. If INBOX.md has a directive, follow it. Otherwise do ONE of: (1) send cold emails to potential customers, (2) post on Bluesky/Farcaster with a call-to-action, (3) build a feature. Do NOT create tickets about internals or reflect on performance. Execute outward-facing work only.`;
+${lastTurnSummary ? `Recent activity:\n${lastTurnSummary}` : ""}
+
+${currentTaskBlock ? "Resume your CURRENT TASK above. Do not start new work until it is complete." : "Read /root/.automaton/INBOX.md for your current task, then execute it."}`;
 }

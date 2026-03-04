@@ -1196,6 +1196,7 @@ a:hover{color:#66fffa}
     <a href="/generate">Generate</a>
     <a href="/chat">Chat</a>
     <a href="/synthesize">TTS</a>
+    <a href="/translate">Translate</a>
     <a href="https://memory.tiamat.live/">Memory</a>
     <a href="/thoughts">Neural Feed</a>
     <a href="/stream/">Stream</a>
@@ -1448,6 +1449,20 @@ a:hover{color:#66fffa}
           <button class="try-btn" onclick="scrollToDemo('Generate')">Try It</button>
         </div>
       </article>
+
+      <article class="product-card reveal" data-accent="cyan">
+        <div class="card-content">
+          <span class="card-icon" aria-hidden="true">&#127760;</span>
+          <h2>Neural Translation</h2>
+          <p class="card-endpoint">/translate</p>
+          <p>Translate text between 17 languages instantly. Auto-detect source language. Powered by Groq llama-3.3-70b.</p>
+          <div class="card-pricing">
+            <span class="price-tag free">5 free/day</span>
+            <span class="price-tag paid">$0.005 USDC</span>
+          </div>
+          <button class="try-btn" onclick="scrollToDemo('Translate')">Try It</button>
+        </div>
+      </article>
     </div>
   </section>
 
@@ -1459,6 +1474,7 @@ a:hover{color:#66fffa}
       <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-summarize" onclick="switchTab(this,'summarize')">Summarize</button>
       <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-chat" onclick="switchTab(this,'chat')">Chat</button>
       <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-generate" onclick="switchTab(this,'generate')">Generate</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-translate" onclick="switchTab(this,'translate')">Translate</button>
     </div>
 
     <div class="tab-panel active" id="panel-summarize" role="tabpanel">
@@ -1911,3 +1927,67 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
+<!-- Translate Section -->
+<section class="api-demo-card" id="translate-demo">
+  <h2>Text Translation</h2>
+  <p class="tier-label">Free: 5/day per IP | Paid: $0.005 USDC per request</p>
+  
+  <form id="translate-form" class="demo-form">
+    <textarea id="translate-text" placeholder="Enter text to translate..." rows="3"></textarea>
+    
+    <div class="form-row">
+      <select id="source-lang" class="form-select">
+        <option value="EN">English</option>
+        <option value="ES">Spanish</option>
+        <option value="FR">French</option>
+        <option value="ZH">Chinese</option>
+        <option value="JA">Japanese</option>
+        <option value="DE">German</option>
+      </select>
+      
+      <span class="arrow">→</span>
+      
+      <select id="target-lang" class="form-select">
+        <option value="ES">Spanish</option>
+        <option value="FR">French</option>
+        <option value="ZH">Chinese</option>
+        <option value="JA">Japanese</option>
+        <option value="DE">German</option>
+        <option value="EN">English</option>
+      </select>
+    </div>
+    
+    <button type="submit" class="btn-primary">Translate</button>
+  </form>
+  
+  <div id="translate-result" class="result-box" style="display:none;">
+    <pre id="translate-output"></pre>
+  </div>
+  
+  <script>
+    document.getElementById('translate-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = document.getElementById('translate-text').value;
+      const targetLang = document.getElementById('target-lang').value;
+      const sourceLang = document.getElementById('source-lang').value;
+      
+      try {
+        const response = await fetch('/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, target_lang: targetLang, source_lang: sourceLang })
+        });
+        
+        const result = await response.json();
+        const output = document.getElementById('translate-output');
+        output.textContent = result.translated_text || result.error || 'No response';
+        document.getElementById('translate-result').style.display = 'block';
+      } catch (err) {
+        document.getElementById('translate-output').textContent = 'Error: ' + err.message;
+        document.getElementById('translate-result').style.display = 'block';
+      }
+    });
+  </script>
+</section>
+

@@ -15,6 +15,7 @@
  */
 
 import { readFileSync, writeFileSync } from "fs";
+import { execFileSync } from "child_process";
 
 const PACER_PATH = "/root/.automaton/pacer.json";
 const CRONTASKS_PATH = "/root/.automaton/crontasks.json";
@@ -63,7 +64,10 @@ interface CronState {
 
 // ─── Productive Action Sets ───────────────────────────────────
 
-/** High-value tools — at least one required per cycle for it to count as productive */
+/** High-value tools — at least one required per cycle for it to count as productive.
+ *  ONLY tools that produce visible artifacts or real output count.
+ *  Research tools (browse, search_web, sonar_search) are NOT high-value —
+ *  they enable infinite research loops that score as "productive" while shipping nothing. */
 const HIGH_VALUE_TOOLS = new Set([
   // Building (the real work)
   "ask_claude_code", "self_improve", "write_file",
@@ -72,8 +76,8 @@ const HIGH_VALUE_TOOLS = new Set([
   "publish_devto", "post_reddit",
   // Revenue / outreach
   "deploy_app", "send_email", "send_telegram",
-  // Research / bounty hunting (real exploration)
-  "browse", "sonar_search",
+  // Completing work
+  "ticket_complete",
   // Image generation
   "generate_image",
 ]);
@@ -152,15 +156,25 @@ export function scoreCycle(
 
   // Rule 2: Check for repetition (anti-gaming)
   if (recentCycles && recentCycles.length > 0) {
-    // Create a signature for this cycle's tool pattern
+    // Exact match: same tool set
     const signature = toolNames.slice().sort().join(",");
-    let repeatCount = 0;
+    let exactRepeat = 0;
     for (const cycle of recentCycles) {
       const prevSig = cycle.actions.slice().sort().join(",");
-      if (prevSig === signature) repeatCount++;
+      if (prevSig === signature) exactRepeat++;
     }
-    // If the exact same tool pattern appeared 3+ times recently, it's busywork
-    if (repeatCount >= 3) return false;
+    if (exactRepeat >= 3) return false;
+
+    // Fuzzy match: same high-value tool + mostly same support tools (>70% overlap)
+    const thisSet = new Set(toolNames);
+    let fuzzyRepeat = 0;
+    for (const cycle of recentCycles) {
+      const prevSet = new Set(cycle.actions);
+      const intersection = [...thisSet].filter(t => prevSet.has(t)).length;
+      const union = new Set([...thisSet, ...prevSet]).size;
+      if (union > 0 && intersection / union >= 0.7) fuzzyRepeat++;
+    }
+    if (fuzzyRepeat >= 4) return false;
   }
 
   return true;
@@ -328,7 +342,6 @@ export function checkCronTasks(
 
     // Run the command
     try {
-      const { execFileSync } = require("child_process");
       // Split command for safe execution
       const parts = task.command.split(/\s+/);
       const cmd = parts[0];

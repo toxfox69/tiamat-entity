@@ -1,8 +1,8 @@
 """
-TIAMAT Federal Email Tool — Send from tiamat@tiamat.live via SendGrid HTTP API.
+TIAMAT Federal Email Tool — Send from tiamat@tiamat.live via Mailgun HTTP API.
 Read from tiamat@tiamat.live via IMAP (Namecheap Private Email).
 
-DigitalOcean blocks SMTP ports 465/587, so all SENDING goes through SendGrid HTTPS.
+DigitalOcean blocks SMTP ports 465/587, so all SENDING goes through Mailgun HTTPS.
 IMAP port 993 is open for reading incoming mail.
 """
 import os
@@ -13,10 +13,12 @@ import email
 from email.header import decode_header
 import urllib.request
 import urllib.error
+import base64
 from datetime import datetime, timezone
 
-# SendGrid for sending
-SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+# Mailgun for sending
+MAILGUN_API_KEY = os.environ.get("MAILGUN_API_KEY", "")
+MAILGUN_DOMAIN = os.environ.get("MAILGUN_DOMAIN", "tiamat.live")
 
 # tiamat.live mailboxes
 TIAMAT_EMAIL = os.environ.get("TIAMAT_LIVE_EMAIL", "tiamat@tiamat.live")
@@ -53,8 +55,8 @@ def send_email(to, subject, body, from_addr=None, from_name="TIAMAT | ENERGENAI 
         reply_to: Reply-to address
         append_signature: Whether to append the ENERGENAI signature
     """
-    if not SENDGRID_API_KEY:
-        return {"success": False, "error": "SENDGRID_API_KEY not set"}
+    if not MAILGUN_API_KEY:
+        return {"success": False, "error": "MAILGUN_API_KEY not set"}
 
     from_addr = from_addr or TIAMAT_EMAIL
     full_body = body + SIGNATURE if append_signature else body
@@ -63,32 +65,32 @@ def send_email(to, subject, body, from_addr=None, from_name="TIAMAT | ENERGENAI 
     if not cc and (".mil" in to or ".gov" in to):
         cc = GRANTS_EMAIL
 
-    personalizations = [{"to": [{"email": to}]}]
+    # Build multipart form data for Mailgun
+    boundary = "----TiamatMailgunBoundary"
+    parts = []
+
+    def add_field(name, value):
+        parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}")
+
+    add_field("from", f"{from_name} <{from_addr}>")
+    add_field("to", to)
+    add_field("subject", subject)
+    add_field("text", full_body)
     if cc:
-        personalizations[0]["cc"] = [{"email": cc}]
-
-    payload = {
-        "personalizations": personalizations,
-        "from": {"email": from_addr, "name": from_name},
-        "subject": subject,
-        "content": [{"type": "text/plain", "value": full_body}],
-    }
-
+        add_field("cc", cc)
     if reply_to:
-        payload["reply_to"] = {"email": reply_to}
+        add_field("h:Reply-To", reply_to)
 
-    # Disable SendGrid click/open tracking — prevents ugly rewritten URLs
-    payload["tracking_settings"] = {
-        "click_tracking": {"enable": False},
-        "open_tracking": {"enable": False},
-    }
+    body_str = "\r\n".join(parts) + f"\r\n--{boundary}--\r\n"
+    body_bytes = body_str.encode("utf-8")
 
+    auth = base64.b64encode(f"api:{MAILGUN_API_KEY}".encode()).decode()
     req = urllib.request.Request(
-        "https://api.sendgrid.com/v3/mail/send",
-        data=json.dumps(payload).encode(),
+        f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+        data=body_bytes,
         headers={
-            "Authorization": f"Bearer {SENDGRID_API_KEY}",
-            "Content-Type": "application/json",
+            "Authorization": f"Basic {auth}",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
         },
     )
 
@@ -98,7 +100,6 @@ def send_email(to, subject, body, from_addr=None, from_name="TIAMAT | ENERGENAI 
         log_entry = f"| {ts} | {to} | {subject} | {cc or '-'} | sent |\n"
 
         os.makedirs(os.path.dirname(EMAIL_LOG), exist_ok=True)
-        # Create log header if file doesn't exist
         if not os.path.exists(EMAIL_LOG):
             with open(EMAIL_LOG, "w") as f:
                 f.write("# TIAMAT Email Log\n\n")
@@ -112,7 +113,7 @@ def send_email(to, subject, body, from_addr=None, from_name="TIAMAT | ENERGENAI 
 
     except urllib.error.HTTPError as e:
         error_body = e.read().decode()
-        return {"success": False, "error": f"SendGrid {e.code}: {error_body[:300]}"}
+        return {"success": False, "error": f"Mailgun {e.code}: {error_body[:300]}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -228,7 +229,8 @@ if __name__ == "__main__":
 
     # Re-read env after loading
     globals().update({
-        "SENDGRID_API_KEY": os.environ.get("SENDGRID_API_KEY", ""),
+        "MAILGUN_API_KEY": os.environ.get("MAILGUN_API_KEY", ""),
+        "MAILGUN_DOMAIN": os.environ.get("MAILGUN_DOMAIN", "tiamat.live"),
         "TIAMAT_EMAIL": os.environ.get("TIAMAT_LIVE_EMAIL", "tiamat@tiamat.live"),
         "TIAMAT_PASSWORD": os.environ.get("TIAMAT_LIVE_PASSWORD", ""),
         "GRANTS_EMAIL": os.environ.get("GRANTS_EMAIL", "grants@tiamat.live"),
@@ -243,7 +245,7 @@ if __name__ == "__main__":
         result = send_email(
             to=os.environ.get("JASON_EMAIL", "jason@tiamat.live"),
             subject="TIAMAT Email System — Operational Test",
-            body="Email infrastructure confirmed operational.\n\nThis message was sent from tiamat@tiamat.live via SendGrid HTTP API.\nReady to contact USSOCOM.",
+            body="Email infrastructure confirmed operational.\n\nThis message was sent from tiamat@tiamat.live via Mailgun HTTP API.",
         )
         print(json.dumps(result, indent=2))
 

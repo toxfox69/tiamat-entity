@@ -10,8 +10,8 @@ import type {
   AgentTurn,
 } from "../types.js";
 
-const MAX_CONTEXT_TURNS = 3;       // max turns kept in history (keep tight — each turn costs ~$0.002 uncached)
-const MAX_TOOL_RESULT_CHARS = 300; // Truncate tool results in history — full result used during the turn, not needed after
+const MAX_CONTEXT_TURNS = 8;       // max turns kept in history (more context = better task continuity)
+const MAX_TOOL_RESULT_CHARS = 1500; // Truncate tool results in history — enough to see meaningful output
 
 /**
  * Build the message array for the next inference call.
