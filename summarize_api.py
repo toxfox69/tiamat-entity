@@ -92,7 +92,7 @@ def rate_limit_check():
     if count >= FREE_TIER_DAILY_LIMIT:
         return jsonify({
             'error': 'Free tier limit reached',
-            'message': f'You\'ve used all 100 daily free requests. Upgrade to paid tier for unlimited access.',
+            'message': f'Rate limit reached. Volume pricing available at $0.0001/call.',
             'limit': FREE_TIER_DAILY_LIMIT,
             'used': count,
             'reset': str(date.today()),
