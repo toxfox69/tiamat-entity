@@ -1288,6 +1288,11 @@ If you have no tickets, create one and claim it immediately.`;
       // ── Training data capture: record cycle start time ──
       const cycleStartMs = Date.now();
 
+      // TIK-593: Per-cycle tool call tracker — prevents system_check from being called 49x
+      const cycleToolCallTracker: Record<string, number> = {};
+      const ONCE_PER_CYCLE_TOOLS = new Set(["system_check"]);
+      const CACHED_ONCE_PER_CYCLE: Record<string, string> = {};
+
       // ── Optimization 4: Cost logging per cycle ──
       {
         const usage = response.usage;
@@ -1406,6 +1411,19 @@ If you have no tickets, create one and claim it immediately.`;
 
           log(config, `[TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 200)})`);
 
+          // TIK-593: Skip once-per-cycle tools if already called this cycle
+          if (ONCE_PER_CYCLE_TOOLS.has(tc.function.name)) {
+            cycleToolCallTracker[tc.function.name] = (cycleToolCallTracker[tc.function.name] || 0) + 1;
+            if (cycleToolCallTracker[tc.function.name] > 1) {
+              const cached = CACHED_ONCE_PER_CYCLE[tc.function.name] || `[SKIPPED] ${tc.function.name} already called this cycle`;
+              log(config, `[TOOL-DEDUP] ${tc.function.name} called ${cycleToolCallTracker[tc.function.name]}x this cycle — returning cached result`);
+              appendTiamatLog(`[TIK-593] Skipped duplicate ${tc.function.name} call (${cycleToolCallTracker[tc.function.name]}x this cycle)`);
+              turn.toolCalls.push({ id: tc.id, name: tc.function.name, arguments: args, result: cached, durationMs: 0 });
+              callCount++;
+              continue;
+            }
+          }
+
           // Exec rate limiter (TIK-550)
           if (tc.function.name === "exec") {
             const delayMs = execRateLimiter.check();
@@ -1427,6 +1445,11 @@ If you have no tickets, create one and claim it immediately.`;
           // Override the ID to match the inference call's ID
           result.id = tc.id;
           turn.toolCalls.push(result);
+
+          // TIK-593: Cache result for once-per-cycle tools
+          if (ONCE_PER_CYCLE_TOOLS.has(tc.function.name) && !result.error) {
+            CACHED_ONCE_PER_CYCLE[tc.function.name] = result.result;
+          }
 
           log(
             config,
@@ -1547,6 +1570,19 @@ If you have no tickets, create one and claim it immediately.`;
 
                 log(config, `[REACT] [TOOL] ${tc.function.name}(${JSON.stringify(args).slice(0, 200)})`);
 
+                // TIK-593: Skip once-per-cycle tools if already called this cycle
+                if (ONCE_PER_CYCLE_TOOLS.has(tc.function.name)) {
+                  cycleToolCallTracker[tc.function.name] = (cycleToolCallTracker[tc.function.name] || 0) + 1;
+                  if (cycleToolCallTracker[tc.function.name] > 1) {
+                    const cached = CACHED_ONCE_PER_CYCLE[tc.function.name] || `[SKIPPED] ${tc.function.name} already called this cycle`;
+                    log(config, `[REACT] [TOOL-DEDUP] ${tc.function.name} called ${cycleToolCallTracker[tc.function.name]}x this cycle — returning cached result`);
+                    appendTiamatLog(`[TIK-593] Skipped duplicate ${tc.function.name} call in ReAct (${cycleToolCallTracker[tc.function.name]}x this cycle)`);
+                    turn.toolCalls.push({ id: tc.id, name: tc.function.name, arguments: args, result: cached, durationMs: 0 });
+                    totalToolCalls++;
+                    continue;
+                  }
+                }
+
                 // Exec rate limiter (TIK-550)
                 if (tc.function.name === "exec") {
                   const delayMs = execRateLimiter.check();
@@ -1562,6 +1598,11 @@ If you have no tickets, create one and claim it immediately.`;
 
                 result.id = tc.id;
                 turn.toolCalls.push(result);
+
+                // TIK-593: Cache result for once-per-cycle tools
+                if (ONCE_PER_CYCLE_TOOLS.has(tc.function.name) && !result.error) {
+                  CACHED_ONCE_PER_CYCLE[tc.function.name] = result.result;
+                }
 
                 log(config, `[REACT] [TOOL RESULT] ${tc.function.name}: ${result.error ? `ERROR: ${result.error}` : result.result.slice(0, 500)}`);
 
