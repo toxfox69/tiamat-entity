@@ -269,6 +269,7 @@ export async function runAgentLoop(
 
   let consecutiveErrors = 0;
   let consecutiveRateLimits = 0;
+  let retryCount = 0;
   let running = true;
   let consecutiveIdleCycles = 0;
   let cycleDelay = 30_000; // ms — adaptive, see pacing logic below (CC backend = free inference)
@@ -1136,11 +1137,14 @@ If you have no tickets, create one and claim it immediately.`;
       // ticket_list, ticket_claim, ticket_complete, send_telegram, generate_image,
       // grow, log_strategy, check_*, gpu_infer, etc.)
 
-      let cycleTier: "free" | "haiku" | "sonnet" = "free";
+      // CLI uses subscription (free), but fallback cascade needs a real tier.
+      // Default to haiku so fallback doesn't skip Anthropic API.
+      // "free" tier caused death spirals: CLI timeout → free cascade (all rate-limited) → no tools → free again.
+      let cycleTier: "free" | "haiku" | "sonnet" = "haiku";
       if (isStrategicCycle) {
         cycleTier = "sonnet";  // Strategic bursts use Sonnet for real reasoning quality
       } else if (forceBuildHaiku) {
-        cycleTier = "haiku";  // Build tickets always use Haiku — free models can't reason well enough to code
+        cycleTier = "haiku";  // Build tickets always use Haiku
       } else {
         // Classify based on last cycle's tool calls — highest tier wins
         const lastTurnTools = recentTurns.length > 0
@@ -1149,10 +1153,8 @@ If you have no tickets, create one and claim it immediately.`;
 
         if (lastTurnTools.some((t: string) => SONNET_TOOLS.has(t))) {
           cycleTier = "sonnet";
-        } else if (lastTurnTools.some((t: string) => HAIKU_TOOLS.has(t))) {
-          cycleTier = "haiku";
         } else {
-          cycleTier = "free";
+          cycleTier = "haiku"; // haiku baseline — free tier cascade is unreliable
         }
       }
 
@@ -1267,8 +1269,9 @@ If you have no tickets, create one and claim it immediately.`;
 
           // Don't store this turn, don't sleep — just continue to next cycle
           consecutiveErrors++;
-          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            log(config, `[REFUSAL] ${consecutiveErrors} consecutive refusals — sleeping 5min to reset`);
+          retryCount++;
+          if (retryCount >= 3 || consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            log(config, `[REFUSAL] ${retryCount} retries / ${consecutiveErrors} consecutive errors — sleeping 5min to reset`);
             db.setKV("sleep_until", new Date(Date.now() + 300_000).toISOString());
             db.setAgentState("sleeping");
             onStateChange?.("sleeping");
@@ -1834,6 +1837,7 @@ If you have no tickets, create one and claim it immediately.`;
 
       consecutiveErrors = 0;
       consecutiveRateLimits = 0;
+      retryCount = 0;
     } catch (err: any) {
       const isRateLimit = /\[rate_limit\]/i.test(err?.message || "");
 
