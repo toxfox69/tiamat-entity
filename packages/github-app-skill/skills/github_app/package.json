@@ -1,0 +1,27 @@
+{
+  "name": "@openpango/github-app-skill",
+  "version": "1.0.0",
+  "description": "GitHub App native integration — CI/CD webhooks + OpenPango orchestration",
+  "main": "webhook_server.js",
+  "scripts": {
+    "start": "node webhook_server.js",
+    "test": "jest --testPathPattern=tests/ --forceExit"
+  },
+  "keywords": [
+    "openpango",
+    "github-app",
+    "webhook",
+    "ci-cd"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 15000
+  }
+}

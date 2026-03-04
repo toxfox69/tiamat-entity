@@ -1,0 +1,386 @@
+/**
+ * Embedded AsyncAPI meta-schemas for offline validation.
+ * Sourced from https://github.com/asyncapi/spec-json-schemas
+ *
+ * These are structural "skeleton" schemas that capture the required
+ * top-level fields and key constraints for each spec version.
+ * For production use, the full schemas from @asyncapi/specs are preferred.
+ */
+
+export const ASYNCAPI_2X_SCHEMA: Record<string, unknown> = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  $id: "https://asyncapi.com/definitions/2.6.0/asyncapi.json",
+  title: "AsyncAPI 2.x Schema",
+  type: "object",
+  required: ["asyncapi", "info", "channels"],
+  additionalProperties: true,
+  properties: {
+    asyncapi: {
+      type: "string",
+      pattern: "^2\\.",
+      description: "Specifies the AsyncAPI Specification version being used.",
+    },
+    id: {
+      type: "string",
+      format: "uri",
+      description: "Identifier of the application the AsyncAPI document is defining.",
+    },
+    info: {
+      $ref: "#/definitions/info",
+    },
+    servers: {
+      type: "object",
+      additionalProperties: { $ref: "#/definitions/server" },
+    },
+    defaultContentType: { type: "string" },
+    channels: {
+      type: "object",
+      additionalProperties: { $ref: "#/definitions/channelItem" },
+    },
+    components: { $ref: "#/definitions/components" },
+    tags: {
+      type: "array",
+      items: { $ref: "#/definitions/tag" },
+      uniqueItems: true,
+    },
+    externalDocs: { $ref: "#/definitions/externalDocs" },
+  },
+  definitions: {
+    info: {
+      type: "object",
+      required: ["title", "version"],
+      additionalProperties: true,
+      properties: {
+        title: { type: "string" },
+        version: { type: "string" },
+        description: { type: "string" },
+        termsOfService: { type: "string", format: "uri" },
+        contact: { $ref: "#/definitions/contact" },
+        license: { $ref: "#/definitions/license" },
+      },
+    },
+    contact: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        name: { type: "string" },
+        url: { type: "string", format: "uri" },
+        email: { type: "string", format: "email" },
+      },
+    },
+    license: {
+      type: "object",
+      required: ["name"],
+      additionalProperties: true,
+      properties: {
+        name: { type: "string" },
+        url: { type: "string", format: "uri" },
+      },
+    },
+    server: {
+      type: "object",
+      required: ["url", "protocol"],
+      additionalProperties: true,
+      properties: {
+        url: { type: "string" },
+        protocol: { type: "string" },
+        protocolVersion: { type: "string" },
+        description: { type: "string" },
+        variables: {
+          type: "object",
+          additionalProperties: { $ref: "#/definitions/serverVariable" },
+        },
+        security: {
+          type: "array",
+          items: { $ref: "#/definitions/SecurityRequirement" },
+        },
+        tags: {
+          type: "array",
+          items: { $ref: "#/definitions/tag" },
+        },
+        bindings: { type: "object" },
+      },
+    },
+    serverVariable: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        enum: { type: "array", items: { type: "string" } },
+        default: { type: "string" },
+        description: { type: "string" },
+        examples: { type: "array", items: { type: "string" } },
+      },
+    },
+    channelItem: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        $ref: { type: "string" },
+        description: { type: "string" },
+        subscribe: { $ref: "#/definitions/operation" },
+        publish: { $ref: "#/definitions/operation" },
+        parameters: {
+          type: "object",
+          additionalProperties: { $ref: "#/definitions/parameter" },
+        },
+        bindings: { type: "object" },
+      },
+    },
+    operation: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        operationId: { type: "string" },
+        summary: { type: "string" },
+        description: { type: "string" },
+        tags: { type: "array", items: { $ref: "#/definitions/tag" } },
+        externalDocs: { $ref: "#/definitions/externalDocs" },
+        bindings: { type: "object" },
+        traits: { type: "array" },
+        message: {},
+      },
+    },
+    message: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        messageId: { type: "string" },
+        headers: { type: "object" },
+        payload: {},
+        correlationId: {},
+        schemaFormat: { type: "string" },
+        contentType: { type: "string" },
+        name: { type: "string" },
+        title: { type: "string" },
+        summary: { type: "string" },
+        description: { type: "string" },
+        tags: { type: "array", items: { $ref: "#/definitions/tag" } },
+        examples: { type: "array" },
+        traits: { type: "array" },
+        bindings: { type: "object" },
+      },
+    },
+    parameter: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        description: { type: "string" },
+        schema: { type: "object" },
+        location: { type: "string" },
+      },
+    },
+    tag: {
+      type: "object",
+      required: ["name"],
+      additionalProperties: true,
+      properties: {
+        name: { type: "string" },
+        description: { type: "string" },
+        externalDocs: { $ref: "#/definitions/externalDocs" },
+      },
+    },
+    externalDocs: {
+      type: "object",
+      required: ["url"],
+      additionalProperties: true,
+      properties: {
+        description: { type: "string" },
+        url: { type: "string", format: "uri" },
+      },
+    },
+    SecurityRequirement: {
+      type: "object",
+      additionalProperties: { type: "array", items: { type: "string" } },
+    },
+    components: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        schemas: { type: "object" },
+        messages: { type: "object" },
+        securitySchemes: { type: "object" },
+        parameters: { type: "object" },
+        correlationIds: { type: "object" },
+        operationTraits: { type: "object" },
+        messageTraits: { type: "object" },
+        serverBindings: { type: "object" },
+        channelBindings: { type: "object" },
+        operationBindings: { type: "object" },
+        messageBindings: { type: "object" },
+      },
+    },
+  },
+};
+
+export const ASYNCAPI_3X_SCHEMA: Record<string, unknown> = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  $id: "https://asyncapi.com/definitions/3.0.0/asyncapi.json",
+  title: "AsyncAPI 3.x Schema",
+  type: "object",
+  required: ["asyncapi", "info", "channels"],
+  additionalProperties: true,
+  properties: {
+    asyncapi: {
+      type: "string",
+      pattern: "^3\\.",
+      description: "Specifies the AsyncAPI Specification version being used.",
+    },
+    id: { type: "string", format: "uri" },
+    info: { $ref: "#/$defs/info" },
+    servers: {
+      type: "object",
+      additionalProperties: { $ref: "#/$defs/server" },
+    },
+    defaultContentType: { type: "string" },
+    channels: {
+      type: "object",
+      additionalProperties: { $ref: "#/$defs/channel" },
+    },
+    operations: {
+      type: "object",
+      additionalProperties: { $ref: "#/$defs/operation" },
+    },
+    components: { $ref: "#/$defs/components" },
+  },
+  $defs: {
+    info: {
+      type: "object",
+      required: ["title", "version"],
+      additionalProperties: true,
+      properties: {
+        title: { type: "string" },
+        version: { type: "string" },
+        description: { type: "string" },
+        termsOfService: { type: "string", format: "uri" },
+        contact: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            url: { type: "string", format: "uri" },
+            email: { type: "string", format: "email" },
+          },
+        },
+        license: {
+          type: "object",
+          required: ["name"],
+          properties: {
+            name: { type: "string" },
+            url: { type: "string", format: "uri" },
+          },
+        },
+        tags: { type: "array" },
+        externalDocs: { $ref: "#/$defs/externalDocs" },
+      },
+    },
+    server: {
+      type: "object",
+      required: ["host", "protocol"],
+      additionalProperties: true,
+      properties: {
+        host: { type: "string" },
+        protocol: { type: "string" },
+        protocolVersion: { type: "string" },
+        pathname: { type: "string" },
+        description: { type: "string" },
+        title: { type: "string" },
+        summary: { type: "string" },
+        variables: { type: "object" },
+        security: { type: "array" },
+        tags: { type: "array" },
+        externalDocs: { $ref: "#/$defs/externalDocs" },
+        bindings: { type: "object" },
+      },
+    },
+    channel: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        address: { type: "string" },
+        messages: {
+          type: "object",
+          additionalProperties: { $ref: "#/$defs/message" },
+        },
+        title: { type: "string" },
+        summary: { type: "string" },
+        description: { type: "string" },
+        servers: { type: "array" },
+        parameters: { type: "object" },
+        tags: { type: "array" },
+        externalDocs: { $ref: "#/$defs/externalDocs" },
+        bindings: { type: "object" },
+      },
+    },
+    operation: {
+      type: "object",
+      required: ["action", "channel"],
+      additionalProperties: true,
+      properties: {
+        action: { type: "string", enum: ["send", "receive"] },
+        channel: { type: "object" },
+        title: { type: "string" },
+        summary: { type: "string" },
+        description: { type: "string" },
+        security: { type: "array" },
+        tags: { type: "array" },
+        externalDocs: { $ref: "#/$defs/externalDocs" },
+        bindings: { type: "object" },
+        traits: { type: "array" },
+        messages: { type: "array" },
+        reply: { type: "object" },
+      },
+    },
+    message: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        messageId: { type: "string" },
+        headers: {},
+        payload: {},
+        correlationId: {},
+        contentType: { type: "string" },
+        name: { type: "string" },
+        title: { type: "string" },
+        summary: { type: "string" },
+        description: { type: "string" },
+        tags: { type: "array" },
+        externalDocs: { $ref: "#/$defs/externalDocs" },
+        bindings: { type: "object" },
+        examples: { type: "array" },
+        traits: { type: "array" },
+      },
+    },
+    externalDocs: {
+      type: "object",
+      required: ["url"],
+      properties: {
+        description: { type: "string" },
+        url: { type: "string", format: "uri" },
+      },
+    },
+    components: {
+      type: "object",
+      additionalProperties: true,
+      properties: {
+        schemas: { type: "object" },
+        servers: { type: "object" },
+        channels: { type: "object" },
+        operations: { type: "object" },
+        messages: { type: "object" },
+        securitySchemes: { type: "object" },
+        serverVariables: { type: "object" },
+        parameters: { type: "object" },
+        correlationIds: { type: "object" },
+        replies: { type: "object" },
+        replyAddresses: { type: "object" },
+        externalDocs: { type: "object" },
+        tags: { type: "object" },
+        operationTraits: { type: "object" },
+        messageTraits: { type: "object" },
+        serverBindings: { type: "object" },
+        channelBindings: { type: "object" },
+        operationBindings: { type: "object" },
+        messageBindings: { type: "object" },
+      },
+    },
+  },
+};

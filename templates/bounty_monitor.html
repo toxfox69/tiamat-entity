@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TIAMAT — Bounty PR Monitor</title>
+<meta name="description" content="Live GitHub PR bounty tracker. Open bounties, merge probability, paywall stats.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050508' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='900' font-family='system-ui' fill='%2300fff2'>T</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET & ROOT ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050508;
+  --bg-card:rgba(8,8,14,0.82);
+  --bg-elevated:rgba(14,14,22,0.92);
+  --cyan:#00fff2;
+  --cyan-dim:rgba(0,255,242,0.08);
+  --cyan-mid:rgba(0,255,242,0.22);
+  --cyan-glow:rgba(0,255,242,0.5);
+  --magenta:#ff00aa;
+  --magenta-dim:rgba(255,0,170,0.08);
+  --magenta-glow:rgba(255,0,170,0.4);
+  --green:#39ff14;
+  --green-dim:rgba(57,255,20,0.08);
+  --green-glow:rgba(57,255,20,0.35);
+  --amber:#ffaa00;
+  --amber-dim:rgba(255,170,0,0.1);
+  --red:#ff3366;
+  --red-dim:rgba(255,51,102,0.1);
+  --text:#e8e8f0;
+  --text-dim:#8888aa;
+  --text-dimmer:#44445a;
+  --border:rgba(0,255,242,0.14);
+  --border-bright:rgba(0,255,242,0.35);
+  --radius:12px;
+  --radius-sm:8px;
+}
+
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.6;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ─── BACKGROUND LAYERS ─── */
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,255,242,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,0,170,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 60% at 50% 50%, rgba(57,255,20,0.02) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+/* ─── SCANLINES ─── */
+body::after{
+  content:'';
+  position:fixed;inset:0;z-index:1;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,transparent 2px,
+    rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px
+  );
+  pointer-events:none;
+}
+
+/* ─── LAYOUT ─── */
+.page{
+  position:relative;z-index:2;
+  max-width:1100px;
+  margin:0 auto;
+  padding:32px 20px 60px;
+}
+
+/* ─── HEADER ─── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+  margin-bottom:36px;
+  padding-bottom:20px;
+  border-bottom:1px solid var(--border);
+}
+.header-left{display:flex;align-items:center;gap:14px}
+.logo-mark{
+  font-family:'Orbitron',sans-serif;
+  font-size:22px;font-weight:900;
+  color:var(--cyan);
+  text-shadow:0 0 14px var(--cyan-glow);
+  text-decoration:none;
+  letter-spacing:2px;
+}
+.header-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:13px;font-weight:600;
+  color:var(--text-dim);
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+.header-meta{
+  display:flex;align-items:center;gap:16px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--text-dimmer);
+}
+.live-dot{
+  display:inline-block;
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 6px var(--green-glow);
+  animation:pulse-dot 2s infinite;
+}
+@keyframes pulse-dot{
+  0%,100%{opacity:1;box-shadow:0 0 6px var(--green-glow)}
+  50%{opacity:.5;box-shadow:0 0 12px var(--green-glow)}
+}
+
+/* ─── STAT ROW ─── */
+.stat-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:14px;
+  margin-bottom:32px;
+}
+.stat-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;
+  transition:border-color .2s,box-shadow .2s;
+}
+.stat-card:hover{
+  border-color:var(--border-bright);
+  box-shadow:0 0 18px var(--cyan-dim);
+}
+.stat-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--cyan-dim) 0%,transparent 60%);
+  pointer-events:none;
+}
+.stat-label{
+  font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--text-dimmer);
+  margin-bottom:6px;
+}
+.stat-value{
+  font-family:'Orbitron',sans-serif;
+  font-size:22px;font-weight:700;
+  color:var(--cyan);
+  text-shadow:0 0 10px var(--cyan-glow);
+  line-height:1.2;
+}
+.stat-value.green{color:var(--green);text-shadow:0 0 10px var(--green-glow)}
+.stat-value.magenta{color:var(--magenta);text-shadow:0 0 10px var(--magenta-glow)}
+.stat-value.amber{color:var(--amber)}
+.stat-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
+
+/* ─── SECTION HEADER ─── */
+.section-header{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:18px;
+}
+.section-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:13px;font-weight:700;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--cyan);
+}
+.section-line{flex:1;height:1px;background:var(--border)}
+
+/* ─── PR GRID ─── */
+.pr-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(460px,1fr));
+  gap:16px;
+  margin-bottom:40px;
+}
+@media(max-width:540px){
+  .pr-grid{grid-template-columns:1fr}
+}
+
+/* ─── PR CARD ─── */
+.pr-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px;
+  backdrop-filter:blur(16px);
+  position:relative;overflow:hidden;
+  transition:border-color .25s,box-shadow .25s,transform .15s;
+  text-decoration:none;color:inherit;
+  display:block;
+}
+.pr-card:hover{
+  border-color:var(--border-bright);
+  box-shadow:0 0 28px var(--cyan-dim),0 4px 16px rgba(0,0,0,.4);
+  transform:translateY(-2px);
+}
+.pr-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--green));
+  opacity:.5;
+}
+
+/* high-value accent */
+.pr-card.high-value::before{
+  opacity:1;
+  animation:border-flow 3s linear infinite;
+}
+@keyframes border-flow{
+  0%{background-position:0% 50%}
+  100%{background-position:200% 50%}
+}
+.pr-card.high-value{
+  border-color:rgba(255,170,0,0.3);
+}
+
+.pr-top{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:12px;margin-bottom:10px;
+}
+.pr-repo-badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:500;letter-spacing:1px;
+  color:var(--text-dimmer);
+  background:var(--cyan-dim);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:2px 8px;
+  white-space:nowrap;
+}
+.pr-number{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;color:var(--text-dim);
+}
+.pr-amount{
+  font-family:'Orbitron',sans-serif;
+  font-size:20px;font-weight:700;
+  color:var(--green);
+  text-shadow:0 0 12px var(--green-glow);
+  white-space:nowrap;
+}
+.pr-amount.mega{
+  color:var(--amber);
+  text-shadow:0 0 14px rgba(255,170,0,0.6);
+}
+.pr-title{
+  font-size:13px;font-weight:500;
+  color:var(--text);
+  margin-bottom:12px;
+  line-height:1.45;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* ─── PR META ROW ─── */
+.pr-meta{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-bottom:14px;
+}
+.badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:500;letter-spacing:.5px;
+  padding:3px 9px;border-radius:4px;
+  border:1px solid transparent;
+  text-transform:uppercase;
+}
+.badge-open{
+  color:var(--green);
+  background:var(--green-dim);
+  border-color:rgba(57,255,20,0.2);
+}
+.badge-closed{
+  color:var(--text-dimmer);
+  background:rgba(136,136,170,0.08);
+  border-color:rgba(136,136,170,0.2);
+}
+.badge-merged{
+  color:var(--magenta);
+  background:var(--magenta-dim);
+  border-color:rgba(255,0,170,0.2);
+}
+.badge-draft{
+  color:var(--amber);
+  background:var(--amber-dim);
+  border-color:rgba(255,170,0,0.2);
+}
+.badge-age{
+  color:var(--text-dim);
+  background:rgba(136,136,170,0.06);
+  border-color:var(--border);
+}
+.badge-comments{
+  color:var(--cyan);
+  background:var(--cyan-dim);
+  border-color:rgba(0,255,242,0.15);
+}
+
+/* ─── MERGE PROBABILITY ─── */
+.merge-bar-wrap{margin-top:4px}
+.merge-bar-label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text-dimmer);
+  margin-bottom:5px;
+}
+.merge-bar-label span:last-child{
+  font-family:'Orbitron',sans-serif;
+  font-size:12px;font-weight:700;
+}
+.merge-bar-track{
+  height:4px;border-radius:2px;
+  background:rgba(255,255,255,0.06);
+  overflow:hidden;
+}
+.merge-bar-fill{
+  height:100%;border-radius:2px;
+  transition:width .6s ease;
+}
+.fill-high{background:linear-gradient(90deg,var(--green),#88ff44)}
+.fill-med{background:linear-gradient(90deg,var(--cyan),#00aaff)}
+.fill-low{background:linear-gradient(90deg,var(--amber),var(--red))}
+.fill-unknown{background:var(--text-dimmer)}
+
+.merge-label-high{color:var(--green);text-shadow:0 0 6px var(--green-glow)}
+.merge-label-med{color:var(--cyan);text-shadow:0 0 6px var(--cyan-glow)}
+.merge-label-low{color:var(--amber)}
+.merge-label-unknown{color:var(--text-dimmer)}
+
+/* ─── PR DIFF STATS ─── */
+.pr-diff{
+  display:flex;gap:10px;flex-wrap:wrap;
+  margin-top:10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;
+}
+.diff-add{color:#39ff14;opacity:.7}
+.diff-del{color:var(--red);opacity:.7}
+.diff-files{color:var(--text-dimmer)}
+
+/* ─── PAYWALL STATUS ─── */
+.paywall-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+  margin-bottom:40px;
+}
+.paywall-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 20px;
+  backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;
+}
+.paywall-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--magenta-dim) 0%,transparent 60%);
+  pointer-events:none;
+}
+.paywall-label{
+  font-size:10px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--text-dimmer);
+  margin-bottom:8px;
+}
+.paywall-value{
+  font-family:'Orbitron',sans-serif;
+  font-size:26px;font-weight:700;
+  line-height:1.1;
+}
+.paywall-value.warn{color:var(--amber);text-shadow:0 0 10px rgba(255,170,0,.4)}
+.paywall-value.ok{color:var(--green);text-shadow:0 0 10px var(--green-glow)}
+.paywall-value.hot{color:var(--magenta);text-shadow:0 0 10px var(--magenta-glow)}
+.paywall-sub{font-size:11px;color:var(--text-dim);margin-top:5px}
+
+/* ─── REFRESH BAR ─── */
+.refresh-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;
+  background:var(--cyan-dim);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--text-dim);
+  margin-bottom:28px;
+}
+.refresh-countdown{
+  color:var(--cyan);
+  font-weight:500;
+  min-width:28px;
+}
+.refresh-progress{
+  flex:1;height:2px;border-radius:1px;
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+}
+.refresh-fill{
+  height:100%;
+  background:var(--cyan);
+  transition:width 1s linear;
+}
+.refresh-btn{
+  background:none;border:1px solid var(--border);
+  color:var(--text-dim);cursor:pointer;
+  padding:3px 10px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  transition:border-color .2s,color .2s;
+}
+.refresh-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* ─── FOOTER ─── */
+.footer{
+  margin-top:48px;
+  padding-top:20px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;
+  font-size:11px;color:var(--text-dimmer);
+  font-family:'JetBrains Mono',monospace;
+}
+.footer a{color:var(--text-dimmer);text-decoration:none;transition:color .2s}
+.footer a:hover{color:var(--cyan)}
+
+/* ─── CACHE NOTICE ─── */
+.cache-notice{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:var(--text-dimmer);
+  text-align:right;margin-bottom:10px;
+}
+
+/* ─── ERROR STATE ─── */
+.pr-error{
+  opacity:.5;
+  font-size:11px;color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;
+  margin-top:4px;
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="logo-mark">T</a>
+      <div>
+        <div class="logo-mark" style="font-size:16px;display:inline">TIAMAT</div>
+        <div class="header-title" style="display:inline;margin-left:8px;vertical-align:middle">Bounty Monitor</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="live-dot"></span>
+      <span>LIVE</span>
+      <span style="color:var(--border)">|</span>
+      <span id="clock">{{ now_utc }}</span>
+    </div>
+  </header>
+
+  <!-- REFRESH BAR -->
+  <div class="refresh-bar">
+    <span class="live-dot"></span>
+    <span>Auto-refresh in</span>
+    <span class="refresh-countdown" id="countdown">60s</span>
+    <div class="refresh-progress">
+      <div class="refresh-fill" id="refresh-fill" style="width:100%"></div>
+    </div>
+    <button class="refresh-btn" onclick="location.reload()">REFRESH NOW</button>
+  </div>
+
+  <!-- TOP STATS -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Pending Bounties</div>
+      <div class="stat-value green">${{ total_bounty | int }}+</div>
+      <div class="stat-sub">{{ prs | selectattr('state','eq','OPEN') | list | length }} open PRs tracked</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Free Tier Requests</div>
+      <div class="stat-value">{{ "{:,}".format(free_tier_requests) }}</div>
+      <div class="stat-sub">total served</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Revenue</div>
+      <div class="stat-value magenta">${{ "%.2f" | format(revenue_usdc) }}</div>
+      <div class="stat-sub">USDC on Base</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Conversions</div>
+      <div class="stat-value amber">{{ conversions }}</div>
+      <div class="stat-sub">paid customers</div>
+    </div>
+  </div>
+
+  <!-- PR CARDS -->
+  <div class="section-header">
+    <div class="section-title">Tracked PRs</div>
+    <div class="section-line"></div>
+    <div class="cache-notice">cached · {{ cache_age_s }}s ago</div>
+  </div>
+
+  <div class="pr-grid">
+    {% for pr in prs %}
+    <a class="pr-card {% if pr.amount >= 500 %}high-value{% endif %}"
+       href="{{ pr.html_url }}" target="_blank" rel="noopener">
+
+      <div class="pr-top">
+        <div>
+          <div class="pr-repo-badge">{{ pr.label }} #{{ pr.number }}</div>
+          {% if pr.user and pr.user != 'unknown' %}
+          <div class="pr-number" style="margin-top:4px">@{{ pr.user }}</div>
+          {% endif %}
+        </div>
+        <div class="pr-amount {% if pr.amount >= 500 %}mega{% endif %}">${{ pr.amount }}{% if pr.amount >= 1000 %}+{% endif %}</div>
+      </div>
+
+      <div class="pr-title">{{ pr.title }}</div>
+
+      <div class="pr-meta">
+        <!-- State badge -->
+        {% if pr.state == 'OPEN' and not pr.draft %}
+          <span class="badge badge-open">OPEN</span>
+        {% elif pr.draft %}
+          <span class="badge badge-draft">DRAFT</span>
+        {% elif pr.state == 'CLOSED' %}
+          <span class="badge badge-closed">CLOSED</span>
+        {% elif pr.state == 'MERGED' %}
+          <span class="badge badge-merged">MERGED</span>
+        {% else %}
+          <span class="badge badge-closed">{{ pr.state }}</span>
+        {% endif %}
+
+        <!-- Age -->
+        {% if pr.age_days is not none %}
+          <span class="badge badge-age">
+            {% if pr.age_days == 0 %}today
+            {% elif pr.age_days == 1 %}1 day
+            {% else %}{{ pr.age_days }}d
+            {% endif %}
+          </span>
+        {% endif %}
+
+        <!-- Comments -->
+        {% if pr.review_comments > 0 or pr.comments > 0 %}
+          <span class="badge badge-comments">
+            {% if pr.review_comments > 0 %}{{ pr.review_comments }} reviews{% endif %}
+            {% if pr.comments > 0 %} · {{ pr.comments }} comments{% endif %}
+          </span>
+        {% endif %}
+
+        <!-- PR labels -->
+        {% for lbl in pr.labels[:2] %}
+          <span class="badge" style="color:var(--text-dim);background:rgba(136,136,170,0.06);border-color:var(--border)">{{ lbl }}</span>
+        {% endfor %}
+      </div>
+
+      <!-- Merge probability bar -->
+      <div class="merge-bar-wrap">
+        <div class="merge-bar-label">
+          <span>Merge Probability</span>
+          <span class="merge-label-{{ pr.merge_label | lower }}">
+            {{ pr.merge_pct }}% — {{ pr.merge_label }}
+          </span>
+        </div>
+        <div class="merge-bar-track">
+          <div class="merge-bar-fill fill-{{ pr.merge_label | lower }}"
+               style="width:{{ pr.merge_pct }}%"></div>
+        </div>
+      </div>
+
+      <!-- Diff stats -->
+      {% if pr.additions or pr.deletions or pr.changed_files %}
+      <div class="pr-diff">
+        {% if pr.additions %}<span class="diff-add">+{{ pr.additions }}</span>{% endif %}
+        {% if pr.deletions %}<span class="diff-del">-{{ pr.deletions }}</span>{% endif %}
+        {% if pr.changed_files %}<span class="diff-files">{{ pr.changed_files }} files</span>{% endif %}
+      </div>
+      {% elif pr.merge_label == 'UNKNOWN' %}
+      <div class="pr-error">⚠ GitHub API unavailable — check GITHUB_TOKEN</div>
+      {% endif %}
+
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- PAYWALL STATUS -->
+  <div class="section-header">
+    <div class="section-title">Paywall Status</div>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="paywall-grid">
+    <div class="paywall-card">
+      <div class="paywall-label">Free Tier Usage</div>
+      <div class="paywall-value ok">{{ "{:,}".format(free_tier_requests) }}</div>
+      <div class="paywall-sub">requests served at $0</div>
+    </div>
+    <div class="paywall-card">
+      <div class="paywall-label">Paid Revenue</div>
+      <div class="paywall-value hot">${{ "%.2f" | format(revenue_usdc) }} USDC</div>
+      <div class="paywall-sub">via x402 on Base</div>
+    </div>
+    <div class="paywall-card">
+      <div class="paywall-label">Conversion Rate</div>
+      <div class="paywall-value warn">0%</div>
+      <div class="paywall-sub">{{ conversions }} paid / {{ "{:,}".format(free_tier_requests) }} total</div>
+    </div>
+    <div class="paywall-card">
+      <div class="paywall-label">Pending Bounty Total</div>
+      <div class="paywall-value ok">${{ "{:,}".format(pending_total) }}+</div>
+      <div class="paywall-sub">across {{ prs | length }} tracked PRs</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div>
+      <a href="/">tiamat.live</a>
+      <span style="margin:0 8px">·</span>
+      <a href="/status">status</a>
+      <span style="margin:0 8px">·</span>
+      <a href="/docs">api docs</a>
+    </div>
+    <div>ENERGENAI LLC · autonomous since cycle 1</div>
+  </footer>
+
+</div><!-- .page -->
+
+<script>
+/* ─── REFRESH COUNTDOWN ─── */
+(function(){
+  const INTERVAL = 60;
+  let remaining = INTERVAL;
+  const el = document.getElementById('countdown');
+  const fill = document.getElementById('refresh-fill');
+
+  function tick(){
+    remaining--;
+    if(remaining <= 0){ location.reload(); return; }
+    el.textContent = remaining + 's';
+    fill.style.width = (remaining / INTERVAL * 100) + '%';
+  }
+
+  setInterval(tick, 1000);
+})();
+
+/* ─── LIVE CLOCK ─── */
+(function(){
+  const clockEl = document.getElementById('clock');
+  function updateClock(){
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    clockEl.textContent =
+      now.getUTCFullYear() + '-' +
+      pad(now.getUTCMonth()+1) + '-' +
+      pad(now.getUTCDate()) + ' ' +
+      pad(now.getUTCHours()) + ':' +
+      pad(now.getUTCMinutes()) + ' UTC';
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+})();
+
+/* ─── ANIMATE BARS ON LOAD ─── */
+(function(){
+  const fills = document.querySelectorAll('.merge-bar-fill');
+  fills.forEach(function(f){
+    const w = f.style.width;
+    f.style.width = '0%';
+    setTimeout(function(){f.style.width = w;}, 120);
+  });
+})();
+</script>
+</body>
+</html>

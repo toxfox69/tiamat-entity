@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIAMAT — API Keys & Tiers</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0f;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            color: #00ff88;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 860px; margin: 0 auto; }
+        h1 {
+            font-size: 2rem;
+            letter-spacing: 0.1em;
+            text-align: center;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px #00ff88;
+        }
+        .subtitle {
+            text-align: center;
+            color: #00cc66;
+            margin-bottom: 48px;
+            font-size: 0.85rem;
+        }
+        .tiers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 48px;
+        }
+        .tier-card {
+            border: 1px solid #00ff8844;
+            border-radius: 8px;
+            padding: 28px 24px;
+            background: rgba(0, 255, 136, 0.03);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .tier-card:hover {
+            border-color: #00ff88;
+            box-shadow: 0 0 16px #00ff8822;
+        }
+        .tier-card.pro { border-color: #00aaff44; }
+        .tier-card.pro:hover { border-color: #00aaff; box-shadow: 0 0 16px #00aaff22; }
+        .tier-card.enterprise { border-color: #ff44aa44; }
+        .tier-card.enterprise:hover { border-color: #ff44aa; box-shadow: 0 0 16px #ff44aa22; }
+        .tier-name {
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            opacity: 0.7;
+        }
+        .tier-limit {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .tier-card.pro .tier-limit { color: #00aaff; }
+        .tier-card.enterprise .tier-limit { color: #ff44aa; }
+        .tier-desc {
+            font-size: 0.8rem;
+            color: #88aa99;
+            margin-bottom: 16px;
+        }
+        .tier-price {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .form-box {
+            border: 1px solid #00ff8844;
+            border-radius: 8px;
+            padding: 32px;
+            background: rgba(0, 255, 136, 0.02);
+            margin-bottom: 40px;
+        }
+        .form-box h2 {
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+            letter-spacing: 0.08em;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        input, select {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff8844;
+            border-radius: 4px;
+            color: #00ff88;
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 10px 14px;
+            flex: 1;
+            min-width: 180px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus { border-color: #00ff88; }
+        select option { background: #0a0a0f; }
+        button {
+            background: transparent;
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            color: #00ff88;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 10px 28px;
+            letter-spacing: 0.05em;
+            transition: background 0.2s, color 0.2s;
+        }
+        button:hover { background: #00ff88; color: #0a0a0f; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        #result {
+            display: none;
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid #00ff88;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        #result .key-val {
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            margin: 8px 0 16px;
+            word-break: break-all;
+            color: #44ffaa;
+        }
+        #result .usage-line {
+            color: #88aa99;
+            font-size: 0.8rem;
+            margin-top: 12px;
+        }
+        #error {
+            display: none;
+            margin-top: 16px;
+            color: #ff4444;
+            font-size: 0.85rem;
+        }
+        .copy-btn {
+            margin-left: 8px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            border-color: #44ffaa;
+            color: #44ffaa;
+        }
+        .copy-btn:hover { background: #44ffaa; color: #0a0a0f; }
+        .usage-box {
+            border: 1px solid #00ff8822;
+            border-radius: 8px;
+            padding: 28px 32px;
+            font-size: 0.82rem;
+            color: #88aa99;
+            line-height: 1.8;
+        }
+        .usage-box h2 {
+            color: #00ff88;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            letter-spacing: 0.06em;
+        }
+        code {
+            color: #44ffaa;
+            background: rgba(0,255,136,0.08);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>TIAMAT API</h1>
+    <p class="subtitle">Get an API key. Call the endpoints. Pay nothing (for now).</p>
+
+    <div class="tiers">
+        <div class="tier-card free">
+            <div class="tier-name">Free</div>
+            <div class="tier-limit">100</div>
+            <div class="tier-desc">requests / day</div>
+            <div class="tier-price">$0 — always</div>
+        </div>
+        <div class="tier-card pro">
+            <div class="tier-name">Pro</div>
+            <div class="tier-limit" style="color:#00aaff">10K</div>
+            <div class="tier-desc">requests / day</div>
+            <div class="tier-price">Contact: tiamat@tiamat.live</div>
+        </div>
+        <div class="tier-card enterprise">
+            <div class="tier-name">Enterprise</div>
+            <div class="tier-limit" style="color:#ff44aa">∞</div>
+            <div class="tier-desc">unlimited</div>
+            <div class="tier-price">Contact: tiamat@tiamat.live</div>
+        </div>
+    </div>
+
+    <div class="form-box">
+        <h2>// GENERATE API KEY</h2>
+        <div class="form-row">
+            <input type="email" id="email" placeholder="you@example.com" autocomplete="email" />
+            <select id="tier">
+                <option value="free">Free — 100/day</option>
+                <option value="pro">Pro — 10K/day</option>
+                <option value="enterprise">Enterprise — Unlimited</option>
+            </select>
+            <button id="gen-btn" onclick="generateKey()">Generate</button>
+        </div>
+        <div id="error"></div>
+        <div id="result">
+            <div>Your API key:</div>
+            <div class="key-val" id="key-display"></div>
+            <button class="copy-btn" onclick="copyKey()">Copy</button>
+            <div class="usage-line">Add to requests: <code>Authorization: Bearer &lt;key&gt;</code></div>
+            <div class="usage-line" id="limit-display"></div>
+        </div>
+    </div>
+
+    <div class="usage-box">
+        <h2>// USAGE</h2>
+        Pass your key in the <code>Authorization</code> header on POST requests:<br><br>
+        <code>curl -X POST https://tiamat.live/summarize \<br>
+&nbsp;&nbsp;-H "Authorization: Bearer x402_your_key" \<br>
+&nbsp;&nbsp;-H "Content-Type: application/json" \<br>
+&nbsp;&nbsp;-d '{"text": "Paste text here..."}'</code><br><br>
+        Endpoints: <code>/summarize</code> &nbsp;|&nbsp; <code>/generate</code> &nbsp;|&nbsp; <code>/chat</code> &nbsp;|&nbsp; <code>/synthesize</code><br><br>
+        Rate limit exceeded returns <code>429</code>. No key = IP-based free tier (100/day).
+    </div>
+</div>
+
+<script>
+async function generateKey() {
+    const email = document.getElementById('email').value.trim();
+    const tier = document.getElementById('tier').value;
+    const btn = document.getElementById('gen-btn');
+    const errEl = document.getElementById('error');
+    const resEl = document.getElementById('result');
+
+    errEl.style.display = 'none';
+    resEl.style.display = 'none';
+
+    if (!email || !email.includes('@')) {
+        errEl.textContent = 'Enter a valid email address.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    try {
+        const resp = await fetch('/api/generate-key', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email, tier}),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            errEl.textContent = data.error || 'Failed to generate key.';
+            errEl.style.display = 'block';
+            return;
+        }
+        document.getElementById('key-display').textContent = data.api_key;
+        const limit = data.daily_limit === 'unlimited' ? 'Unlimited requests/day' : `${data.daily_limit} requests/day`;
+        document.getElementById('limit-display').textContent = `Tier: ${data.tier} — ${limit}`;
+        resEl.style.display = 'block';
+    } catch (e) {
+        errEl.textContent = 'Network error. Try again.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate';
+    }
+}
+
+function copyKey() {
+    const key = document.getElementById('key-display').textContent;
+    navigator.clipboard.writeText(key).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+}
+</script>
+</body>
+</html>
