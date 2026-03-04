@@ -112,32 +112,47 @@
             vertical-align: middle;
         }
         #status-message { margin-top: 16px; }
+        #rate-limit-banner {
+            display: none;
+            background: rgba(255, 80, 80, 0.15);
+            border: 1px solid #ff5050;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            color: #ff9090;
+            font-size: 14px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div class="payment-container">
         <h1>&#9889; TIAMAT Payment Gateway</h1>
 
+        <div id="rate-limit-banner"></div>
+
         <div class="info-box">
             Pay once. Access for 30 days. API key delivered instantly after payment.
         </div>
 
+        <div class="info-box" style="color:#00ff88;font-size:12px;margin-bottom:8px;">Volume pricing: $0.0001 per call (10,000 calls per $1)</div>
+
         <div class="pricing-grid">
-            <div class="pricing-card" data-amount="1" data-calls="1000">
+            <div class="pricing-card" data-amount="1" data-calls="10000">
                 <div class="price">$1 USD</div>
-                <div class="calls">1,000 API Calls</div>
-            </div>
-            <div class="pricing-card selected" data-amount="5" data-calls="5000">
-                <div class="price">$5 USD</div>
-                <div class="calls">5,000 API Calls</div>
-            </div>
-            <div class="pricing-card" data-amount="10" data-calls="10000">
-                <div class="price">$10 USD</div>
                 <div class="calls">10,000 API Calls</div>
             </div>
-            <div class="pricing-card" data-amount="50" data-calls="50000">
-                <div class="price">$50 USD</div>
+            <div class="pricing-card selected" data-amount="5" data-calls="50000">
+                <div class="price">$5 USD</div>
                 <div class="calls">50,000 API Calls</div>
+            </div>
+            <div class="pricing-card" data-amount="10" data-calls="100000">
+                <div class="price">$10 USD</div>
+                <div class="calls">100,000 API Calls</div>
+            </div>
+            <div class="pricing-card" data-amount="50" data-calls="500000">
+                <div class="price">$50 USD</div>
+                <div class="calls">500,000 API Calls</div>
             </div>
         </div>
 
@@ -172,6 +187,17 @@
     </div>
 
     <script>
+        // Show rate-limit banner if redirected here with ?msg=
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const msg = params.get('msg');
+            if (msg) {
+                const banner = document.getElementById('rate-limit-banner');
+                banner.textContent = '⚠ ' + decodeURIComponent(msg);
+                banner.style.display = 'block';
+            }
+        })();
+
         const pricingCards = document.querySelectorAll('.pricing-card');
         let selectedAmount = 5;
         let selectedCalls = 5000;
