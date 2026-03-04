@@ -6,6 +6,7 @@ Cache TTL: 1 hour (via module-level dict).
 
 import os
 import re
+import json
 import time
 import logging
 import requests
@@ -118,8 +119,6 @@ def fetch_github_bounties() -> list:
         return cached
 
     results = []
-    query = 'label:bounty label:bounty is:open language:TypeScript language:Python language:JavaScript'
-    # Run two queries to not limit to one lang
     queries = [
         'label:bounty is:open language:TypeScript',
         'label:bounty is:open language:Python',
@@ -402,6 +401,140 @@ def fetch_gitcoin_bounties() -> list:
 
     _cache_set("gitcoin", results)
     return results
+
+
+# ── Sonar consolidated search (TIK-512: replaces 6-browse loop) ───────────
+
+_SONAR_QUERY = (
+    "List the top 5 currently open software bounties on Algora, IssueHunt, or GitHub "
+    "that are written in Python or TypeScript, reward between $50-$500 USD, not trivial. "
+    "For each bounty return a JSON object with keys: "
+    "title (string), url (string, direct link), reward_usd (number), language (python|typescript|javascript), "
+    "difficulty (easy|medium|hard), notes (one sentence). "
+    "Respond ONLY with a JSON array of up to 5 objects, no markdown, no prose."
+)
+
+
+def search_bounties_sonar(max_results: int = 3) -> list[dict]:
+    """
+    Single Perplexity Sonar call that replaces the 6-browse loop (TIK-512).
+    Returns up to `max_results` bounties ranked by reward / estimated_hours.
+    Falls back to fetch_all_bounties() on any error.
+    """
+    cached = _cache_get("sonar")
+    if cached is not None:
+        return cached
+
+    pplx_key = os.environ.get("PERPLEXITY_API_KEY", "")
+    if not pplx_key:
+        logger.warning("PERPLEXITY_API_KEY not set — falling back to HTTP fetch")
+        return _sonar_fallback(max_results)
+
+    try:
+        resp = requests.post(
+            "https://api.perplexity.ai/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {pplx_key}",
+            },
+            json={
+                "model": "sonar",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a precise JSON API. Return only valid JSON arrays. "
+                            "No markdown fences, no commentary."
+                        ),
+                    },
+                    {"role": "user", "content": _SONAR_QUERY},
+                ],
+                "max_tokens": 1024,
+            },
+            timeout=20,
+        )
+        resp.raise_for_status()
+
+        raw_answer: str = (
+            resp.json()
+            .get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "[]")
+        )
+    except Exception as exc:
+        logger.warning(f"sonar_search failed: {exc} — falling back to HTTP fetch")
+        return _sonar_fallback(max_results)
+
+    # Strip accidental markdown fences
+    raw_answer = re.sub(r"```(?:json)?\s*", "", raw_answer).strip().rstrip("`").strip()
+
+    try:
+        parsed = json.loads(raw_answer)
+        if not isinstance(parsed, list):
+            raise ValueError(f"expected JSON array, got {type(parsed).__name__}")
+        items: list[dict] = parsed
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.warning(f"sonar parse error ({exc}) — falling back to HTTP fetch")
+        return _sonar_fallback(max_results)
+
+    results: list[dict] = []
+    for item in items[:5]:  # hard cap at 5 parsed
+        try:
+            lang = str(item.get("language", "")).lower()
+            if not _in_target_lang(lang):
+                continue
+
+            reward = float(item.get("reward_usd") or 0)
+            if not (MIN_REWARD <= reward <= MAX_REWARD):
+                continue
+
+            url_b = str(item.get("url", "")).strip()
+            if not url_b or not url_b.startswith("http"):
+                continue
+
+            difficulty = str(item.get("difficulty", "medium")).lower()
+            if difficulty not in ("easy", "medium", "hard"):
+                difficulty = "medium"
+            if difficulty == "easy":
+                continue
+
+            hours = _estimate_hours(difficulty, reward)
+            results.append({
+                "url": url_b,
+                "title": str(item.get("title", ""))[:120],
+                "reward": reward,
+                "language": lang,
+                "difficulty": difficulty,
+                "hours": hours,
+                "score": round(reward / hours, 2),  # $/hr ranking key
+                "notes": str(item.get("notes", ""))[:200],
+                "source": "sonar",
+            })
+        except Exception as exc:
+            logger.debug(f"sonar item parse error: {exc}")
+
+    # Rank by reward/hour descending, return top N
+    results.sort(key=lambda x: x["score"], reverse=True)
+    top = results[:max_results]
+
+    _cache_set("sonar", top)
+    return top
+
+
+def _sonar_fallback(max_results: int) -> list[dict]:
+    """Fallback: pull from existing HTTP sources and return top N by $/hr."""
+    all_bounties: list[dict] = []
+    for fn in [fetch_github_bounties, fetch_algora_bounties, fetch_gitcoin_bounties]:
+        try:
+            all_bounties.extend(fn())
+        except Exception as exc:
+            logger.error(f"{fn.__name__} failed: {exc}")
+
+    for b in all_bounties:
+        b.setdefault("score", round(b["reward"] / max(b["hours"], 1), 2))
+
+    all_bounties.sort(key=lambda x: x["score"], reverse=True)
+    return all_bounties[:max_results]
 
 
 # ── Main aggregator ────────────────────────────────────────────────────────

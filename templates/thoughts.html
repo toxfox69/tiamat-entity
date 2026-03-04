@@ -558,7 +558,37 @@ async function fetchLogs() {
     statusDot.className = 'status-dot';
     statusText.textContent = HAS_AUTH ? 'LIVE · AUTH' : 'LIVE';
 
-    if (data.lines) renderLines(data.lines);
+    // API returns {thoughts, activity, pacer} — merge into flat lines for renderLines()
+    if (data.thoughts || data.activity) {
+      const allEntries = [];
+      if (data.activity) {
+        data.activity.forEach(e => {
+          const ts = e.timestamp || '';
+          allEntries.push({ time: ts, text: (ts ? `[${ts}] ` : '') + (e.content || '') });
+        });
+      }
+      if (data.thoughts) {
+        data.thoughts.forEach(e => {
+          const ts = e.timestamp || '';
+          const prefix = e.type === 'thought' ? '[THOUGHT] ' : '[THINK] ';
+          allEntries.push({ time: ts, text: (ts ? `[${ts}] ` : '') + prefix + (e.content || '') });
+        });
+      }
+      // Sort by timestamp descending, then reverse for chronological display
+      allEntries.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+      renderLines(allEntries.map(e => e.text));
+    } else if (data.lines) {
+      renderLines(data.lines);
+    }
+
+    // Update stats from pacer data
+    if (data.pacer && data.pacer.interval) {
+      const cycleMatch = allEntries?.find(e => /Cycle\s+(\d+)/i.test(e.text));
+      if (cycleMatch) {
+        const m = cycleMatch.text.match(/Cycle\s+(\d+)/i);
+        if (m) document.getElementById('cycleCount').textContent = m[1];
+      }
+    }
     if (data.cycle)      document.getElementById('cycleCount').textContent = data.cycle;
     if (data.daily_cost) document.getElementById('dailyCost').textContent  = data.daily_cost;
     if (data.cache_rate) document.getElementById('cacheRate').textContent  = data.cache_rate;

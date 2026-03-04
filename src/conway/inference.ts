@@ -168,7 +168,7 @@ If you cannot determine a useful action, call exec with: echo "FALLBACK_SKIP: no
 // Without these, a hung provider stalls the cascade for Node's socket timeout (~2min).
 const TIMEOUT_TIAMAT_LOCAL = 15_000; // 15s — self-hosted on GPU pod
 const TIMEOUT_TIAMAT_HEALTH = 3_000; // 3s — quick health check
-const TIMEOUT_ANTHROPIC  = 60_000;  // 60s — large prompts can be slow
+const TIMEOUT_ANTHROPIC  = 90_000;  // 90s — 15k token prompts regularly take 40-55s
 const TIMEOUT_GROQ       = 30_000;  // 30s — usually <10s
 const TIMEOUT_CEREBRAS   = 30_000;  // 30s — usually <5s
 const TIMEOUT_SAMBANOVA  = 45_000;  // 45s

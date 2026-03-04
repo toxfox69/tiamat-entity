@@ -1,266 +1,281 @@
 # Firecrawl Python SDK — Examples
 
-Three production-ready examples demonstrating the core capabilities of the
-[Firecrawl](https://firecrawl.dev) Python SDK: web scraping, structured data
-extraction, and full-site crawling.
+Production-ready examples for the [Firecrawl](https://firecrawl.dev) Python SDK
+(`firecrawl-py`). All examples require only `pip install firecrawl-py` and a
+free API key — no extra dependencies unless noted.
 
 Submitted for [Issue #616 — Python Example Bounty](https://github.com/mendableai/firecrawl/issues/616).
 
 ---
 
+## Quick Start
+
+```bash
+pip install firecrawl-py
+export FIRECRAWL_API_KEY="fc-your-key-here"
+# Get a free key at https://firecrawl.dev/app/api-keys
+```
+
+---
+
 ## Examples
 
-| File | What it does |
-|------|-------------|
-| [`example_01_web_scraper.py`](./example_01_web_scraper.py) | Scrape a single URL → clean markdown + HTML + links |
-| [`example_02_data_extractor.py`](./example_02_data_extractor.py) | AI-powered structured data extraction with Pydantic schemas |
-| [`example_03_site_crawler.py`](./example_03_site_crawler.py) | Crawl an entire site → per-page markdown files with YAML frontmatter |
+| File | What it does | Extra deps |
+|------|-------------|------------|
+| [`example_1_basic_scrape.py`](#example-1--basic-url-to-markdown-scraper) | Pass a URL → get clean Markdown | none |
+| [`example_2_batch_scraping.py`](#example-2--async-batch-scraper-with-csv-export) | Scrape many URLs concurrently → CSV | none |
+| [`example_01_web_scraper.py`](#example-01--web-scraper) | Scrape + save Markdown, HTML, metadata to disk | none |
+| [`example_02_data_extractor.py`](#example-02--structured-data-extractor) | AI extraction with Pydantic schemas | `pydantic` |
+| [`example_03_site_crawler.py`](#example-03--site-crawler--markdown-exporter) | Crawl entire site → markdown files | `tqdm` (optional) |
 
 ---
 
-## Setup
+## Example 1 — Basic URL to Markdown Scraper
 
-### 1. Get a Firecrawl API key
+**File:** `example_1_basic_scrape.py`
 
-Sign up at [firecrawl.dev](https://firecrawl.dev) — free tier includes
-hundreds of scrapes per month.
+The simplest possible Firecrawl workflow: pass a URL, get back clean Markdown.
+Handles JavaScript-rendered pages and strips nav/ads/footers automatically.
 
-### 2. Install dependencies
-
-```bash
-pip install firecrawl-py pydantic tqdm
-```
-
-Or install from the requirements file:
+### Run
 
 ```bash
-pip install -r requirements.txt
+# Scrape the default demo URL (Hacker News):
+python example_1_basic_scrape.py
+
+# Scrape any URL:
+python example_1_basic_scrape.py https://docs.python.org/3/library/asyncio.html
+
+# Keep nav/footer (disable boilerplate stripping):
+python example_1_basic_scrape.py https://example.com --full-page
 ```
 
-### 3. Set your API key
+### Output
 
-```bash
-export FIRECRAWL_API_KEY="fc-your-key-here"
+```
+Scraping: https://news.ycombinator.com
+Title : Hacker News
+Words : 1,412  (8,231 characters)
+
+────────────────────────────────────────────────────────────
+Markdown preview (first 800 characters)
+────────────────────────────────────────────────────────────
+# Hacker News
+
+1. [Some Article Title](https://example.com) (self.example) 312 points by user
+...
 ```
 
-Add it to your shell profile (`.bashrc`, `.zshrc`) to make it permanent.
+### Use as a library
 
----
-
-## Example 1 — Web Scraper
-
-Scrapes a single URL and returns clean, LLM-ready markdown. Automatically
-strips navigation, ads, and boilerplate (`onlyMainContent=True`). Saves
-markdown, HTML, and metadata to disk.
-
-**Run:**
-```bash
-python example_01_web_scraper.py
-# or with a custom URL:
-python example_01_web_scraper.py https://news.ycombinator.com
-```
-
-**Output:**
-```
-[firecrawl] Scraping: https://news.ycombinator.com
-[firecrawl] Markdown saved: output/scrape/news.ycombinator.com_20240315_120000.md
-[firecrawl] Metadata saved: output/scrape/news.ycombinator.com_20240315_120000_meta.json
-
-===========================================================
-SCRAPE SUMMARY
-===========================================================
-URL:          https://news.ycombinator.com
-Scraped at:   2024-03-15T12:00:00Z
-Title:        Hacker News
-Markdown len: 4,231 characters
-Links found:  87
-```
-
-**Key function:**
 ```python
-from example_01_web_scraper import scrape_to_markdown
+from example_1_basic_scrape import scrape_to_markdown
 
 result = scrape_to_markdown(
-    url="https://example.com/article",
-    only_main_content=True,  # strip nav/footer/ads
-    include_html=False,       # also fetch raw HTML
+    url="https://docs.python.org/3/library/asyncio.html",
+    only_main_content=True,   # strip nav/footer/ads (default)
 )
-print(result["markdown"])    # clean markdown string
-print(result["links"])       # list of URLs found on page
-print(result["metadata"])    # title, description, og tags, etc.
+
+print(result["title"])        # "asyncio — Asynchronous I/O"
+print(result["word_count"])   # 3241
+print(result["markdown"][:200])
 ```
 
 ---
 
-## Example 2 — Structured Data Extractor
+## Example 2 — Async Batch Scraper with CSV Export
 
-Uses Firecrawl's AI extraction to pull typed fields from any web page.
-You define a [Pydantic](https://docs.pydantic.dev/) model describing what
-you want; Firecrawl's LLM populates every field automatically.
+**File:** `example_2_batch_scraping.py`
 
-Three schemas are included out of the box:
-- `JobPosting` — job board listings (title, company, salary, skills…)
-- `ProductInfo` — e-commerce products (price, rating, features…)
-- `ArticleMetadata` — news/blog posts (author, topics, summary…)
+Scrape a list of URLs concurrently using `asyncio` + `ThreadPoolExecutor`,
+then write every result — including failures — to a CSV file. Ideal for
+pipelines where you need to process 10–1000 URLs in one shot.
 
-**Run:**
+### Run
+
+```bash
+# Scrape the 5 built-in demo URLs:
+python example_2_batch_scraping.py
+
+# Pass your own URLs:
+python example_2_batch_scraping.py https://url1.com https://url2.com https://url3.com
+
+# Custom output file:
+python example_2_batch_scraping.py --output my_results.csv https://url1.com https://url2.com
+```
+
+### Output (console)
+
+```
+Scraping 5 URLs (5 concurrent workers)...
+[1/5] OK    https://news.ycombinator.com  (1,412 words)
+[2/5] OK    https://www.python.org        (843 words)
+[3/5] OK    https://github.com/trending   (2,105 words)
+[4/5] OK    https://docs.firecrawl.dev    (997 words)
+[5/5] ERROR https://invalid.example.test  (connection refused)
+
+====================================================================
+  URL                                            Words  Status
+────────────────────────────────────────────────────────────────────
+  https://news.ycombinator.com                   1,412  OK
+  https://www.python.org                           843  OK
+  https://github.com/trending                    2,105  OK
+  https://docs.firecrawl.dev                       997  OK
+  https://invalid.example.test                       —  ERROR: connection refused
+====================================================================
+  Done: 4/5 succeeded  |  1 failed  |  CSV: scrape_results.csv
+```
+
+### Output (CSV — `scrape_results.csv`)
+
+```csv
+url,title,word_count,char_count,scraped_at,status,error
+https://news.ycombinator.com,Hacker News,1412,8231,2026-03-04T12:00:00+00:00,ok,
+https://www.python.org,Welcome to Python.org,843,4921,2026-03-04T12:00:01+00:00,ok,
+https://github.com/trending,Trending repositories,2105,12834,2026-03-04T12:00:02+00:00,ok,
+https://docs.firecrawl.dev,Firecrawl Docs,997,5821,2026-03-04T12:00:01+00:00,ok,
+https://invalid.example.test,,0,0,2026-03-04T12:00:03+00:00,error,connection refused
+```
+
+### Use as a library
+
+```python
+import asyncio
+from example_2_batch_scraping import batch_scrape
+
+urls = [
+    "https://news.ycombinator.com",
+    "https://www.python.org",
+    "https://github.com/trending",
+]
+
+results = asyncio.run(batch_scrape(urls, output_csv="hacker_news.csv"))
+
+for r in results:
+    if r["status"] == "ok":
+        print(f"{r['url']}  →  {r['word_count']:,} words")
+```
+
+---
+
+## Example 01 — Web Scraper
+
+**File:** `example_01_web_scraper.py`
+
+Full-featured single-URL scraper that saves Markdown, raw HTML, and a JSON
+metadata sidecar to disk. Includes a `--html` flag to also capture raw HTML.
+
+```bash
+python example_01_web_scraper.py
+python example_01_web_scraper.py https://news.ycombinator.com
+python example_01_web_scraper.py https://example.com --html --output-dir ./my-output
+```
+
+**Output files** (under `output/scrape/`):
+```
+news.ycombinator.com_20260304_120000.md         ← clean Markdown
+news.ycombinator.com_20260304_120000.html       ← raw HTML (--html only)
+news.ycombinator.com_20260304_120000_meta.json  ← metadata + top 20 links
+```
+
+---
+
+## Example 02 — Structured Data Extractor
+
+**File:** `example_02_data_extractor.py`
+**Extra:** `pip install pydantic`
+
+AI-powered extraction: define a Pydantic model describing the data you want,
+Firecrawl's LLM fills every field from the page automatically.
+
 ```bash
 python example_02_data_extractor.py
-# or with a custom URL:
 python example_02_data_extractor.py https://example.com/product
 ```
 
-**Output:**
-```
-[firecrawl] Extracting: https://firecrawl.dev
-[firecrawl] Schema:     ArticleMetadata
-[firecrawl] Result saved: output/extract/ArticleMetadata_firecrawl.dev_...json
+**Built-in schemas:** `JobPosting`, `ProductInfo`, `ArticleMetadata`
 
-===========================================================
-EXTRACTED: ArticleMetadata
-===========================================================
-  title: Firecrawl — Web Data API for AI
-  author: None
-  publication: Firecrawl
-  published_date: None
-  topics:
-    • web scraping
-    • AI
-    • LLM
-    • API
-  summary: Firecrawl is a web data API that converts any website into
-            clean markdown or structured data ready for use with LLMs...
-```
-
-**Define a custom schema:**
 ```python
 from pydantic import BaseModel
-from typing import Optional
 from example_02_data_extractor import extract_structured_data
 
 class RestaurantInfo(BaseModel):
     name: str
     cuisine: str
-    price_range: Optional[str]
-    address: Optional[str]
-    rating: Optional[float]
+    rating: float | None
     top_dishes: list[str]
 
-data = extract_structured_data(
-    url="https://www.yelp.com/biz/some-restaurant",
-    schema=RestaurantInfo,
-    prompt="Extract restaurant details including menu highlights.",
-)
-print(data)  # validated dict matching RestaurantInfo
+data = extract_structured_data("https://yelp.com/biz/some-restaurant", RestaurantInfo)
 ```
 
 ---
 
-## Example 3 — Site Crawler & Markdown Exporter
+## Example 03 — Site Crawler & Markdown Exporter
 
-Crawls an entire website (or subtree) and exports every page as a markdown
-file with YAML frontmatter. Ideal for building RAG knowledge bases,
-fine-tuning datasets, or offline documentation mirrors.
+**File:** `example_03_site_crawler.py`
+**Extra:** `pip install tqdm` (optional — progress bar degrades gracefully)
 
-**Run:**
+Crawls an entire website and exports every page as a Markdown file with YAML
+frontmatter. Ideal for building RAG knowledge bases or offline doc mirrors.
+
 ```bash
 python example_03_site_crawler.py
-# custom target with options:
 python example_03_site_crawler.py https://docs.example.com \
     --max-pages 50 \
-    --output ./my-docs \
     --include "/docs/*" "/api/*" \
-    --exclude "/tag/*" "/page/*"
+    --exclude "/tag/*" "/changelog/*"
 ```
 
-**Output:**
-```
-[firecrawl] Starting crawl: https://firecrawl.dev
-[firecrawl] Max pages:      15
-[firecrawl] Output dir:     /path/to/output/crawl
-Saving pages: 100%|████████████████| 12/12 [00:02<00:00]
-[firecrawl] Crawl complete. Pages collected: 12
-[firecrawl] Index saved:    output/crawl/_crawl_index.json
-
-===========================================================
-CRAWL SUMMARY
-===========================================================
-Start URL:    https://firecrawl.dev
-Pages saved:  12 / 12
-Errors:       0
-Total content:48,231 characters
-Output dir:   /path/to/output/crawl
-```
-
-**Output file format (per page):**
+**Output files** (under `output/crawl/`):
 ```markdown
 ---
-url: "https://firecrawl.dev/pricing"
-title: "Pricing — Firecrawl"
-description: "Transparent pricing for the Firecrawl web data API..."
-crawled_at: "2024-03-15T12:00:00+00:00"
-language: "en"
+url: "https://docs.example.com/getting-started"
+title: "Getting Started"
+crawled_at: "2026-03-04T12:00:00+00:00"
 ---
 
-# Pricing
-
-[... clean markdown content ...]
+# Getting Started
+...
 ```
-
-**Use as a library:**
-```python
-from example_03_site_crawler import crawl_site_to_markdown
-
-result = crawl_site_to_markdown(
-    start_url="https://docs.mycompany.com",
-    output_dir="./knowledge-base",
-    max_pages=100,
-    include_paths=["/docs/*"],
-    exclude_paths=["/blog/*", "/changelog/*"],
-)
-print(f"Saved {result['total_saved']} pages to {result['output_dir']}")
-```
-
----
-
-## Use Cases
-
-| Example | Real-world use |
-|---------|---------------|
-| Web Scraper | Feed articles into an LLM or RAG pipeline |
-| Data Extractor | Build a job board aggregator, price tracker, or lead gen tool |
-| Site Crawler | Create a local knowledge base from documentation sites |
 
 ---
 
 ## Requirements
 
 ```
-firecrawl-py>=1.0.0   # Firecrawl Python SDK
-pydantic>=2.0.0       # Schema validation (example 2)
-tqdm>=4.0.0           # Progress bars (example 3, optional)
+firecrawl-py>=1.0.0   # required for all examples
+pydantic>=2.0.0       # example_02_data_extractor.py only
+tqdm>=4.66.0          # example_03_site_crawler.py (optional)
 ```
 
-All examples require Python 3.11+.
+Install everything:
+
+```bash
+pip install -r requirements.txt
+```
+
+All examples require **Python 3.11+**.
 
 ---
 
 ## API Key Security
 
-Never hardcode your API key. Use environment variables:
+Never hardcode your API key. Use an environment variable:
 
 ```bash
-# Good
+# Temporary (current shell session)
 export FIRECRAWL_API_KEY="fc-..."
-python example_01_web_scraper.py
 
-# Or use a .env file with python-dotenv
+# Permanent (add to ~/.bashrc or ~/.zshrc)
+echo 'export FIRECRAWL_API_KEY="fc-..."' >> ~/.bashrc
+
+# Or use python-dotenv
 pip install python-dotenv
 ```
 
 ```python
 from dotenv import load_dotenv
-load_dotenv()  # reads FIRECRAWL_API_KEY from .env
+load_dotenv()  # reads FIRECRAWL_API_KEY from .env file
 ```
 
 ---

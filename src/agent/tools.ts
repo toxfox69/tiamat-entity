@@ -67,6 +67,53 @@ function recordSocialPost(platform: string): void {
   writeFileSync(SOCIAL_COOLDOWNS_PATH, JSON.stringify(cooldowns, null, 2), "utf-8");
 }
 
+// ─── Search Web Cache / Rate Limiter ───────────────────────────
+// Prevents hammering the same (or near-identical) query within 60 seconds.
+// Stores: normalised query → { result, ts }
+
+const SEARCH_WEB_COOLDOWN_MS = 60_000; // 60 seconds
+const searchWebCache = new Map<string, { result: string; ts: number }>();
+
+/** Normalise query: lowercase, collapse whitespace, strip punctuation. */
+function normaliseSearchQuery(q: string): string {
+  return q.toLowerCase().replace(/[^\w\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+/** Log search-web cooldown activity to tiamat.log. */
+function logSearchCooldown(msg: string): void {
+  try {
+    const line = `[${new Date().toISOString()}] [search_web] ${msg}\n`;
+    writeFileSync("/root/.automaton/tiamat.log", line, { flag: "a" });
+  } catch {}
+}
+
+/** Check cache; returns cached result string or null. */
+function checkSearchWebCache(query: string): string | null {
+  const key = normaliseSearchQuery(query);
+  const entry = searchWebCache.get(key);
+  if (!entry) return null;
+  const age = Date.now() - entry.ts;
+  if (age < SEARCH_WEB_COOLDOWN_MS) {
+    const secsLeft = Math.ceil((SEARCH_WEB_COOLDOWN_MS - age) / 1000);
+    logSearchCooldown(`CACHE HIT "${query}" — returning cached result (${secsLeft}s remaining)`);
+    return `[CACHED ${secsLeft}s ago] ${entry.result}`;
+  }
+  searchWebCache.delete(key);
+  return null;
+}
+
+/** Store result in cache and log. */
+function recordSearchWebCache(query: string, result: string): void {
+  const key = normaliseSearchQuery(query);
+  // Evict old entries (keep cache small)
+  if (searchWebCache.size > 50) {
+    const oldest = [...searchWebCache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+    searchWebCache.delete(oldest[0]);
+  }
+  searchWebCache.set(key, { result, ts: Date.now() });
+  logSearchCooldown(`CACHED "${query}" (key="${key}", cache_size=${searchWebCache.size})`);
+}
+
 // ─── Self-Preservation Guard ───────────────────────────────────
 
 const FORBIDDEN_COMMAND_PATTERNS = [
@@ -104,11 +151,51 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   />\s*.*loop\.ts/,
   />\s*.*tools\.ts/,
   />\s*.*system-prompt\.ts/,
-  // Live API protection — no shell splicing into the running API file
+  // Live API protection — no modification of the running API file via ANY vector
   /cat\s+>>?\s+.*summarize_api\.py/,
   /mv\s+.*summarize_api\.py/,
   /sed\s+.*summarize_api\.py/,
   />\s*.*summarize_api\.py/,
+  /cp\s+.*summarize_api\.py/,
+  /tee\s+.*summarize_api\.py/,
+  /dd\s+.*of=.*summarize_api\.py/,
+  /python3?\s+.*summarize_api\.py/i,
+  /python3?\s+-c\s+.*summarize_api/i,
+  /node\s+-e\s+.*summarize_api/i,
+  /\bopen\s*\(.*summarize_api/,
+  /\bwriteFile.*summarize_api/,
+  /\becho\b.*summarize_api\.py/,
+  /\bprintf\b.*summarize_api\.py/,
+  /\bgunicorn\b/,
+  /\bchattr\b/,
+  // Website protection — ALL web-facing files are immutable
+  // Templates directory
+  /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/templates\//,
+  />\s*.*\/templates\//,
+  /python3?\s+-c\s+.*\/templates\//i,
+  /node\s+-e\s+.*\/templates\//i,
+  /\bopen\s*\(.*\/templates\//,
+  /\bwriteFile.*\/templates\//,
+  // Static web assets
+  /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/var\/www\/tiamat\//,
+  />\s*.*\/var\/www\/tiamat\//,
+  /python3?\s+-c\s+.*\/var\/www\/tiamat/i,
+  /node\s+-e\s+.*\/var\/www\/tiamat/i,
+  /\bopen\s*\(.*\/var\/www\/tiamat/,
+  /\bwriteFile.*\/var\/www\/tiamat/,
+  // Stream HUD
+  /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/opt\/tiamat-stream\//,
+  />\s*.*\/opt\/tiamat-stream\//,
+  /python3?\s+-c\s+.*\/opt\/tiamat-stream/i,
+  /node\s+-e\s+.*\/opt\/tiamat-stream/i,
+  /\bopen\s*\(.*\/opt\/tiamat-stream/,
+  /\bwriteFile.*\/opt\/tiamat-stream/,
+  // Nginx configs
+  /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/etc\/nginx\//,
+  />\s*.*\/etc\/nginx\//,
+  /\bnginx\s+-s\s+reload/,
+  /\bsystemctl\s+(restart|stop|reload)\s+nginx/,
+  /\bsystemctl\s+(restart|stop|reload)\s+tiamat-api/,
   // Credential harvesting
   /cat\s+.*\.ssh/,
   /cat\s+.*\.gnupg/,
@@ -140,9 +227,9 @@ const FOURCHAN_BOARDS = ['g','sci','biz','diy','pol'];
 const FOURCHAN_ACTIONS = ['catalog','thread','search','test'];
 
 const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/', '/root/CLAUDE-BRIEFING.md'];
-const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/root/entity/templates/', '/var/www/tiamat/', '/tmp/', '/root/tiamat-app/', '/root/entity/summarize_api.py', '/root/summarize_api.py'];
+const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/tmp/', '/root/tiamat-app/'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
-const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts'];
+const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts', 'summarize_api.py', 'landing.html', 'thoughts.html', 'hud/index.html'];
 
 function isPathAllowed(filePath: string, allowedDirs: string[], blocked: string[]): string | null {
   const resolved = resolvePath(filePath.replace(/^~/, process.env.HOME || '/root'));
@@ -633,7 +720,7 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
     // ── Survival Tools ──
     {
       name: "send_email",
-    description: "Send email from tiamat@tiamat.live via Mailgun. Auto-CCs grants@tiamat.live for .mil/.gov recipients. Appends ENERGENAI LLC signature. Use for: federal contacts, grant follow-ups, USSOCOM outreach, professional correspondence. For grant alerts use send_grant_alert, for research papers use send_research_alert, for human-action-needed use send_action_required.",
+    description: "Send email from tiamat@tiamat.live via Mailgun. RULES: (1) NEVER guess or make up email addresses — you MUST verify the address exists first by finding it on the company's actual website or contact page using browse/search_web. (2) Generic guesses like hello@, info@, team@, partnerships@ are almost always wrong — find the REAL address. (3) If you cannot find a verified email address, use a web contact form via browse instead. (4) Auto-CCs grants@tiamat.live for .mil/.gov recipients.",
     category: "survival",
     dangerous: false,
     parameters: {
@@ -652,6 +739,34 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
       if (!to || !to.includes('@') || !to.includes('.')) {
         return `BLOCKED: Invalid email address "${to}".`;
       }
+
+      // Hard rate limit: max 3 emails per hour to prevent spam blasts that destroy domain reputation
+      const LIMIT_FILE = '/root/.automaton/email_rate.json';
+      const fs = await import('fs');
+      let rateData: { timestamps: number[] } = { timestamps: [] };
+      try { rateData = JSON.parse(fs.readFileSync(LIMIT_FILE, 'utf-8')); } catch {}
+      const oneHourAgo = Date.now() - 3600_000;
+      rateData.timestamps = (rateData.timestamps || []).filter((t: number) => t > oneHourAgo);
+      if (rateData.timestamps.length >= 3) {
+        const nextAvail = new Date(rateData.timestamps[0] + 3600_000).toISOString();
+        return `BLOCKED: Email rate limit (3/hour) exceeded. Protects domain reputation. Next send available at ${nextAvail}. Use browse to find web contact forms instead.`;
+      }
+
+      // Block generic/guessed prefixes — these bounce and hurt sender reputation
+      const localPart = to.split('@')[0];
+      const BLOCKED_PREFIXES = [
+        'partnerships', 'partners', 'business', 'business-development', 'bd',
+        'bizdev', 'team', 'hello', 'contact', 'info', 'support', 'sales',
+        'inquiry', 'investing', 'apply', 'batches', 'innovation', 'sbir',
+        'community', 'general', 'admin', 'press', 'media', 'careers',
+        'hr', 'legal', 'compliance', 'security', 'abuse', 'postmaster',
+        'webmaster', 'noreply', 'no-reply', 'feedback', 'suggestions',
+        'aws-channel-partners', 'defense-partnerships',
+      ];
+      if (BLOCKED_PREFIXES.includes(localPart)) {
+        return `BLOCKED: "${to}" looks like a guessed generic address. These bounce and destroy our sender reputation. You MUST find a real person's email via browse/search_web first, or use a web contact form.`;
+      }
+
       // Verify the domain has MX records (actually accepts email)
       const domain = to.split('@')[1];
       try {
@@ -663,6 +778,11 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
       } catch {
         return `BLOCKED: Could not verify domain "${domain}" accepts email.`;
       }
+
+      // Record send timestamp
+      rateData.timestamps.push(Date.now());
+      try { fs.writeFileSync(LIMIT_FILE, JSON.stringify(rateData)); } catch {}
+
       const { sendEmail } = await import('../tools/email.js');
       return await sendEmail(ctx.config, {
         to: args.to as string,
@@ -1188,7 +1308,7 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.ANTHROPIC_API_KEY;  // Force CLI to use Max subscription, not depleted API key
 
         const TIMEOUT_MS = 900_000; // 15 minutes
-        const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
+        const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py, landing.html, thoughts.html, /opt/tiamat-stream/hud/index.html. These files are chattr +i immutable — writes WILL fail. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
 
         // Helper to spawn one CLI attempt
         const runOnce = (): Promise<string> => new Promise((resolve) => {
@@ -1972,8 +2092,27 @@ Model: ${ctx.inference.getDefaultModel()}
           message: args.message as string | undefined,
         });
 
-        const child = await spawnChild(ctx.conway, ctx.identity, ctx.db, genesis);
-        return `Child spawned: ${child.name} in sandbox ${child.sandboxId} (status: ${child.status})`;
+        try {
+          const child = await spawnChild(ctx.conway, ctx.identity, ctx.db, genesis);
+          return `Child spawned: ${child.name} in sandbox ${child.sandboxId} (status: ${child.status})`;
+        } catch (err: any) {
+          const msg = err.message || String(err);
+          const isRateLimit = msg.includes("429") || /rate.?limit|quota exceeded|too many/i.test(msg);
+          if (isRateLimit) {
+            console.warn(`[spawn_child] Conway rate limit — falling back to direct exec. Error: ${msg}`);
+            const { exec } = await import("child_process");
+            const safeName = (args.name as string).replace(/[^a-zA-Z0-9_-]/g, "_");
+            const safeMsg = ((args.message as string) || "").replace(/"/g, '\\"').slice(0, 500);
+            const cmd = `node /root/entity/dist/agent/loop.js --name "${safeName}" --message "${safeMsg}" >> /root/.automaton/tiamat.log 2>&1 &`;
+            exec(cmd, (execErr) => {
+              if (execErr) console.error(`[spawn_child] Direct exec failed: ${execErr.message}`);
+              else console.log(`[spawn_child] Direct exec started for "${safeName}"`);
+            });
+            return `[FALLBACK→exec] Conway sandbox rate-limited. Started direct subprocess for "${args.name}". No sandbox isolation — single-machine mode.`;
+          }
+          console.error(`[spawn_child] Spawn failed: ${msg}`);
+          return `ERROR spawning child: ${msg}`;
+        }
       },
     },
     {
@@ -2067,13 +2206,41 @@ Model: ${ctx.inference.getDefaultModel()}
       execute: async (args, _ctx) => {
         const cooldown = checkSocialCooldown("twitter");
         if (cooldown) return cooldown;
-        const authToken = process.env.TWITTER_AUTH_TOKEN;
-        const ct0 = process.env.TWITTER_CT0;
-        if (!authToken) return "ERROR: TWITTER_AUTH_TOKEN not set in environment.";
-        if (!ct0) return "ERROR: TWITTER_CT0 not set in environment.";
         const text = args.text as string;
         if (!text?.trim()) return "ERROR: tweet text is required.";
         if (text.length > 280) return `ERROR: tweet is ${text.length} chars, max 280.`;
+        const authToken = process.env.TWITTER_AUTH_TOKEN;
+        const ct0 = process.env.TWITTER_CT0;
+        if (!authToken || !ct0) {
+          console.warn("[post_tweet] TWITTER_AUTH_TOKEN/CT0 missing — falling back to Bluesky");
+          const bskyHandle = process.env.BLUESKY_HANDLE;
+          const bskyPass = process.env.BLUESKY_APP_PASSWORD;
+          if (!bskyHandle || !bskyPass)
+            return "ERROR: TWITTER_AUTH_TOKEN not set and Bluesky fallback unavailable (BLUESKY_HANDLE/BLUESKY_APP_PASSWORD also missing).";
+          const truncated = text.length > 300 ? text.slice(0, 297) + "..." : text;
+          const sessionResp = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier: bskyHandle, password: bskyPass }),
+          });
+          if (!sessionResp.ok)
+            return `ERROR: Twitter creds missing, Bluesky fallback auth failed (${sessionResp.status}): ${await sessionResp.text()}`;
+          const session = await sessionResp.json() as any;
+          const postResp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.accessJwt}` },
+            body: JSON.stringify({
+              repo: session.did,
+              collection: "app.bsky.feed.post",
+              record: { $type: "app.bsky.feed.post", text: truncated, createdAt: new Date().toISOString() },
+            }),
+          });
+          if (!postResp.ok)
+            return `ERROR: Bluesky fallback post failed (${postResp.status}): ${await postResp.text()}`;
+          const bskyResult = await postResp.json() as any;
+          recordSocialPost("bluesky");
+          return `[FALLBACK→Bluesky] Twitter creds missing. Posted to Bluesky. URI: ${bskyResult.uri}`;
+        }
         const { spawnSync } = await import("child_process");
         const result = spawnSync(
           "bird",
@@ -2990,6 +3157,10 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         const query = args.query as string;
         const limit = (args.limit as number) || 8;
 
+        // ── Rate limiter: return cached result if queried within 60s ──
+        const cached = checkSearchWebCache(query);
+        if (cached) return cached;
+
         // Perplexity Search API (preferred — $0.005/query, best quality)
         const pplxKey = process.env.PERPLEXITY_API_KEY;
         if (pplxKey) {
@@ -3006,9 +3177,11 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
               const data = await resp.json() as any;
               const results = data.results ?? [];
               if (results.length > 0) {
-                return results.slice(0, limit).map((r: any, i: number) =>
+                const out = results.slice(0, limit).map((r: any, i: number) =>
                   `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.snippet || r.description || ""}`
                 ).join("\n\n");
+                recordSearchWebCache(query, out);
+                return out;
               }
             }
             // Fall through to Brave/DDG if Perplexity returns empty or errors
@@ -3028,9 +3201,11 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
             const data = await resp.json() as any;
             const results = data.web?.results ?? [];
             if (results.length === 0) return "No results found.";
-            return results.slice(0, limit).map((r: any, i: number) =>
+            const out = results.slice(0, limit).map((r: any, i: number) =>
               `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.description || ""}`
             ).join("\n\n");
+            recordSearchWebCache(query, out);
+            return out;
           }
         }
 
@@ -3052,7 +3227,9 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
           results.push(`${idx}. ${title}\n   ${url}\n   ${snippet}`);
           idx++;
         }
-        return results.length > 0 ? results.join("\n\n") : "No results found.";
+        const ddgOut = results.length > 0 ? results.join("\n\n") : "No results found.";
+        if (results.length > 0) recordSearchWebCache(query, ddgOut);
+        return ddgOut;
       },
     },
 
@@ -3789,9 +3966,14 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
         const repo = args.repo as string;
         const num = args.issue_number as number;
         const body = args.body as string;
+        // Validate inputs before touching credentials
+        if (!body?.trim()) return "ERROR: comment body cannot be empty.";
+        if (!repo?.includes("/")) return "ERROR: repo must be in 'owner/repo' format.";
+        if (!Number.isInteger(num) || num < 1) return "ERROR: issue_number must be a positive integer.";
+        if (body.length > 65536) return `ERROR: comment body too long (${body.length} chars, max 65536).`;
         const token = process.env.GITHUB_TOKEN;
         if (!token) return "ERROR: GITHUB_TOKEN not set in environment.";
-        if (!body?.trim()) return "ERROR: comment body cannot be empty.";
+        console.log(`[github_comment] Posting to ${repo}#${num} (${body.length} chars)`);
         try {
           const resp = await fetch(`https://api.github.com/repos/${repo}/issues/${num}/comments`, {
             method: "POST",
@@ -3799,10 +3981,16 @@ Be surgical — fix only what's broken. Return a summary of what you changed.`;
             body: JSON.stringify({ body }),
             signal: AbortSignal.timeout(15_000),
           });
-          if (!resp.ok) return `ERROR ${resp.status}: ${await resp.text()}`;
+          if (!resp.ok) {
+            const errText = await resp.text();
+            console.error(`[github_comment] API error ${resp.status}: ${errText}`);
+            return `ERROR ${resp.status}: ${errText}`;
+          }
           const data = await resp.json();
+          console.log(`[github_comment] Success: ${data.html_url}`);
           return `Comment posted: ${data.html_url}`;
         } catch (e: any) {
+          console.error(`[github_comment] Exception: ${e.message}`);
           return `Failed to post comment: ${e.message}`;
         }
       },

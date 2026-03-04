@@ -728,5 +728,244 @@ def synthesize():
     )
 
 
+# ============================================================================
+# EMAIL COLLECTION — /register, /verify-email, /user-status
+# ============================================================================
+
+SUBSCRIPTIONS_DB = '/root/.automaton/subscriptions.db'
+_MAILGUN_API_KEY = os.getenv('MAILGUN_API_KEY', '')
+_MAILGUN_DOMAIN = os.getenv('MAILGUN_DOMAIN', 'tiamat.live')
+_TIAMAT_FROM_EMAIL = os.getenv('TIAMAT_LIVE_EMAIL', 'tiamat@tiamat.live')
+
+
+def _sub_db():
+    conn = sqlite3.connect(SUBSCRIPTIONS_DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _send_verification_email(to_email: str, token: str) -> bool:
+    """Send verification link via Mailgun HTTP API."""
+    import urllib.request, urllib.parse, base64
+    verify_url = f"https://tiamat.live/verify-email?token={token}"
+    body = (
+        f"Welcome to TIAMAT.\n\n"
+        f"Click the link below to verify your email and unlock higher rate limits:\n\n"
+        f"  {verify_url}\n\n"
+        f"This link expires in 24 hours.\n\n"
+        f"If you didn't sign up, ignore this email.\n\n"
+        f"---\nTIAMAT Autonomous Intelligence\nhttps://tiamat.live"
+    )
+    payload = urllib.parse.urlencode({
+        'from': f'TIAMAT <{_TIAMAT_FROM_EMAIL}>',
+        'to': to_email,
+        'subject': 'Verify your TIAMAT API email',
+        'text': body,
+    }).encode()
+    auth = base64.b64encode(f'api:{_MAILGUN_API_KEY}'.encode()).decode()
+    req = urllib.request.Request(
+        f'https://api.mailgun.net/v3/{_MAILGUN_DOMAIN}/messages',
+        data=payload,
+        headers={'Authorization': f'Basic {auth}'},
+        method='POST'
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception as e:
+        logger.error(f"Mailgun send failed: {e}")
+        return False
+
+
+@app.route('/register', methods=['POST'])
+def register_email():
+    """Register an email for API access / higher rate limits.
+
+    Body: { "email": "user@example.com", "api_key": "<optional>", "consent_marketing": true }
+    """
+    data = request.get_json(silent=True) or {}
+    email_addr = (data.get('email') or '').strip().lower()
+    api_key = (data.get('api_key') or '').strip() or None
+    consent = bool(data.get('consent_marketing', True))
+
+    if not email_addr or not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email_addr):
+        return jsonify({'error': 'Valid email required'}), 400
+    if len(email_addr) > 254:
+        return jsonify({'error': 'Email too long'}), 400
+
+    client_ip = (request.headers.get('X-Forwarded-For', '') or '').split(',')[0].strip() \
+                or request.remote_addr or '0.0.0.0'
+
+    try:
+        conn = _sub_db()
+        conn.execute(
+            '''INSERT INTO users (ip, api_key, email, consent_marketing)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(email) DO UPDATE SET
+                 ip=excluded.ip,
+                 api_key=COALESCE(excluded.api_key, users.api_key),
+                 consent_marketing=excluded.consent_marketing,
+                 updated_at=datetime('now')''',
+            (client_ip, api_key, email_addr, int(consent))
+        )
+        conn.execute(
+            "DELETE FROM email_verifications WHERE email=? AND verified_at IS NULL",
+            (email_addr,)
+        )
+        row = conn.execute('SELECT email_verified FROM users WHERE email=?', (email_addr,)).fetchone()
+        if row and row['email_verified']:
+            conn.commit()
+            conn.close()
+            return jsonify({'ok': True, 'status': 'already_verified',
+                            'message': 'Email already verified'}), 200
+
+        import secrets
+        token = secrets.token_hex(32)
+        conn.execute(
+            'INSERT INTO email_verifications (email, token) VALUES (?, ?)',
+            (email_addr, token)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"/register db error: {e}")
+        return jsonify({'error': 'Database error'}), 500
+
+    sent = _send_verification_email(email_addr, token)
+    if not sent:
+        return jsonify({
+            'ok': True,
+            'status': 'registered',
+            'warning': 'Verification email could not be sent — contact tiamat@tiamat.live'
+        }), 201
+
+    return jsonify({
+        'ok': True,
+        'status': 'registered',
+        'message': 'Verification email sent — check your inbox'
+    }), 201
+
+
+@app.route('/verify-email', methods=['GET', 'POST'])
+def verify_email():
+    """Verify email via token.
+
+    GET  /verify-email?token=<token>  — browser link click
+    POST /verify-email  body: { "token": "<token>" }
+    """
+    token = request.args.get('token') or (request.get_json(silent=True) or {}).get('token', '')
+    token = token.strip()
+
+    if not token or len(token) != 64:
+        if request.method == 'GET':
+            return '<h2>Invalid verification link.</h2>', 400
+        return jsonify({'error': 'Invalid token'}), 400
+
+    try:
+        conn = _sub_db()
+        row = conn.execute(
+            'SELECT email, verified_at, expires_at FROM email_verifications WHERE token=?',
+            (token,)
+        ).fetchone()
+
+        if not row:
+            conn.close()
+            if request.method == 'GET':
+                return '<h2>Verification link not found or already used.</h2>', 404
+            return jsonify({'error': 'Token not found'}), 404
+
+        if row['verified_at']:
+            conn.close()
+            if request.method == 'GET':
+                return '<h2>Email already verified.</h2><p><a href="https://tiamat.live">Back to TIAMAT</a></p>', 200
+            return jsonify({'ok': True, 'status': 'already_verified'}), 200
+
+        expires = datetime.fromisoformat(row['expires_at'])
+        if datetime.utcnow() > expires:
+            conn.close()
+            if request.method == 'GET':
+                return '<h2>Verification link expired.</h2><p>Register again at <a href="https://tiamat.live">tiamat.live</a></p>', 410
+            return jsonify({'error': 'Token expired'}), 410
+
+        email_addr = row['email']
+        now_str = datetime.utcnow().isoformat()
+        conn.execute("UPDATE email_verifications SET verified_at=? WHERE token=?", (now_str, token))
+        conn.execute("UPDATE users SET email_verified=1, updated_at=? WHERE email=?", (now_str, email_addr))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"/verify-email db error: {e}")
+        if request.method == 'GET':
+            return '<h2>Server error — try again.</h2>', 500
+        return jsonify({'error': 'Server error'}), 500
+
+    if request.method == 'GET':
+        return f'''<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Email Verified — TIAMAT</title>
+<style>body{{font-family:monospace;background:#0a0a0a;color:#00ff88;display:flex;
+align-items:center;justify-content:center;min-height:100vh;margin:0;}}
+.box{{border:1px solid #00ff88;padding:40px;max-width:460px;text-align:center;}}
+a{{color:#00ff88;}}h1{{margin-top:0;}}</style></head>
+<body><div class="box">
+<h1>&#10003; Email Verified</h1>
+<p>Your email <strong>{email_addr}</strong> is now verified.</p>
+<p>You now have access to higher rate limits on the TIAMAT API.</p>
+<p><a href="https://tiamat.live">&#8592; Back to TIAMAT</a></p>
+</div></body></html>''', 200
+
+    return jsonify({'ok': True, 'status': 'verified', 'email': email_addr}), 200
+
+
+@app.route('/user-status', methods=['GET'])
+def user_status():
+    """Check registration/verification status for current IP or email.
+
+    Query: ?email=<email>  OR uses caller IP.
+    """
+    email_addr = (request.args.get('email') or '').strip().lower()
+    client_ip = (request.headers.get('X-Forwarded-For', '') or '').split(',')[0].strip() \
+                or request.remote_addr or '0.0.0.0'
+
+    try:
+        conn = _sub_db()
+        if email_addr:
+            row = conn.execute(
+                'SELECT email, email_verified, consent_marketing, created_at FROM users WHERE email=?',
+                (email_addr,)
+            ).fetchone()
+            count_row = None
+        else:
+            row = conn.execute(
+                'SELECT email, email_verified, consent_marketing, created_at FROM users WHERE ip=? ORDER BY id DESC LIMIT 1',
+                (client_ip,)
+            ).fetchone()
+            today = str(date.today())
+            count_row = conn.execute(
+                'SELECT request_count FROM ip_requests WHERE ip=? AND date_str=?',
+                (client_ip, today)
+            ).fetchone()
+        conn.close()
+    except Exception as e:
+        logger.error(f"/user-status db error: {e}")
+        return jsonify({'error': 'Server error'}), 500
+
+    if not row:
+        return jsonify({
+            'registered': False,
+            'email_verified': False,
+            'requests_today': count_row[0] if count_row else 0,
+            'register_url': 'https://tiamat.live/register'
+        }), 200
+
+    return jsonify({
+        'registered': True,
+        'email': row['email'],
+        'email_verified': bool(row['email_verified']),
+        'consent_marketing': bool(row['consent_marketing']),
+        'registered_at': row['created_at'],
+        'requests_today': count_row[0] if count_row else None,
+    }), 200
+
+
 if __name__ == '__main__':
     app.run(debug=False, host='127.0.0.1', port=5000)

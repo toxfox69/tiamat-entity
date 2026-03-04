@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TIAMAT Payment Gateway</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TIAMAT001"></script>
     <script>
@@ -13,15 +13,13 @@
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-TIAMAT001', {'anonymize_ip': false});
-        
-        // Track page view
         gtag('event', 'page_view', {
             'page_title': 'Payment Gateway',
             'page_path': '/pay',
             'page_location': window.location.href
         });
     </script>
-    
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -70,6 +68,7 @@
         }
         button:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(0, 255, 136, 0.5); }
         button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .qr-code { text-align: center; margin: 30px 0; }
         .qr-code img { max-width: 200px; border: 2px solid #00ff88; padding: 10px; background: white; }
         .hidden { display: none; }
@@ -102,14 +101,25 @@
         .pricing-card:hover { background: rgba(0, 255, 136, 0.1); }
         .price { font-size: 20px; font-weight: bold; }
         .calls { font-size: 12px; color: #aaa; }
+        .stripe-badge {
+            display: inline-block;
+            background: #6772e5;
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        #status-message { margin-top: 16px; }
     </style>
 </head>
 <body>
     <div class="payment-container">
-        <h1>💰 TIAMAT Payment Gateway</h1>
-        
+        <h1>&#9889; TIAMAT Payment Gateway</h1>
+
         <div class="info-box">
-            Pay once. Access for 30 days. Use the API with your generated API key.
+            Pay once. Access for 30 days. API key delivered instantly after payment.
         </div>
 
         <div class="pricing-grid">
@@ -131,105 +141,107 @@
             </div>
         </div>
 
-        <fieldset>
-            <legend>Choose Payment Method:</legend>
-            
+        <fieldset style="border:1px solid #00ff88;padding:15px;border-radius:5px">
+            <legend style="padding:0 8px">Choose Payment Method:</legend>
+
             <div class="payment-method">
                 <input type="radio" id="crypto" name="payment" value="crypto" checked>
                 <label for="crypto">
-                    <strong>Base Network (USDC)</strong> - Instant, trustless, transparent
+                    <strong>Base Network (USDC)</strong> &mdash; Instant, on-chain
                 </label>
-                <div class="qr-code hidden" id="qr-container">
-                    <p style="margin-bottom: 10px; font-size: 12px;">Send USDC to:</p>
-                    <p style="word-break: break-all; font-size: 12px; margin-bottom: 10px;" id="wallet-address">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</p>
+                <div id="qr-container" style="margin-top:12px;font-size:13px;color:#aaa">
+                    <p>Send USDC on Base to:</p>
+                    <p style="word-break:break-all;color:#00ff88;margin:6px 0">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</p>
+                    <p>Then verify at <a href="/verify-payment" style="color:#00ff88">/verify-payment</a></p>
                 </div>
             </div>
 
             <div class="payment-method">
                 <input type="radio" id="stripe" name="payment" value="stripe">
                 <label for="stripe">
-                    <strong>Credit Card (Stripe)</strong> - Traditional payment
+                    <strong>Credit / Debit Card</strong>
+                    <span class="stripe-badge">Stripe</span>
+                    &mdash; Visa, Mastercard, Amex
                 </label>
             </div>
         </fieldset>
 
         <button id="pay-button" onclick="handlePayment()">Proceed to Payment</button>
 
-        <div id="status-message" class="hidden"></div>
+        <div id="status-message"></div>
     </div>
 
     <script>
         const pricingCards = document.querySelectorAll('.pricing-card');
-        let selectedAmount = 5; // Default
+        let selectedAmount = 5;
         let selectedCalls = 5000;
 
         pricingCards.forEach(card => {
             card.addEventListener('click', () => {
-                const previousAmount = selectedAmount;
+                const prev = selectedAmount;
                 pricingCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
-                selectedAmount = card.dataset.amount;
-                selectedCalls = card.dataset.calls;
-                
-                // Track pricing tier selection
+                selectedAmount = parseInt(card.dataset.amount, 10);
+                selectedCalls  = parseInt(card.dataset.calls, 10);
                 gtag('event', 'select_pricing_tier', {
-                    'previous_tier': previousAmount + ' USD',
-                    'tier': selectedAmount + ' USD',
-                    'calls': selectedCalls
+                    previous_tier: prev + ' USD',
+                    tier: selectedAmount + ' USD',
+                    calls: selectedCalls
                 });
             });
         });
 
         document.querySelectorAll('input[name="payment"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const qrContainer = document.getElementById('qr-container');
-                const method = e.target.value;
-                
-                // Track payment method selection
-                gtag('event', 'select_payment_method', {
-                    'payment_method': method,
-                    'currency': 'USD'
-                });
-                
-                if (method === 'crypto') {
-                    qrContainer.classList.remove('hidden');
-                } else {
-                    qrContainer.classList.add('hidden');
-                }
+            radio.addEventListener('change', e => {
+                const qr = document.getElementById('qr-container');
+                gtag('event', 'select_payment_method', {payment_method: e.target.value});
+                qr.style.display = e.target.value === 'crypto' ? 'block' : 'none';
             });
         });
+        // Init: hide crypto QR (default shows it)
+        document.getElementById('qr-container').style.display = 'block';
 
-        function handlePayment() {
+        async function handlePayment() {
             const method = document.querySelector('input[name="payment"]:checked').value;
             const statusDiv = document.getElementById('status-message');
+            const btn = document.getElementById('pay-button');
 
-            // Track payment button click
             gtag('event', 'payment_attempt', {
-                'payment_method': method,
-                'amount': selectedAmount,
-                'currency': 'USD',
-                'calls': selectedCalls,
-                'timestamp': new Date().toISOString()
+                payment_method: method,
+                amount: selectedAmount,
+                currency: 'USD',
+                calls: selectedCalls
             });
 
             if (method === 'crypto') {
-                statusDiv.innerHTML = `<p class="warning">Awaiting payment verification...</p>`;
-                statusDiv.classList.remove('hidden');
-                
-                // Simulate listening for blockchain event
-                setTimeout(() => {
-                    gtag('event', 'payment_verification_pending', {
-                        'amount': selectedAmount,
-                        'currency': 'USD'
-                    });
-                }, 1000);
-            } else if (method === 'stripe') {
-                statusDiv.innerHTML = `<p class="warning">Stripe integration coming soon</p>`;
-                statusDiv.classList.remove('hidden');
-                
-                gtag('event', 'payment_method_unavailable', {
-                    'method': 'stripe'
+                statusDiv.innerHTML = '<p class="warning">Send USDC to the wallet above, then verify your transaction at <a href="/verify-payment" style="color:#00ff88">/verify-payment</a></p>';
+                return;
+            }
+
+            // Stripe Checkout redirect
+            btn.disabled = true;
+            btn.textContent = 'Opening Stripe Checkout\u2026';
+            statusDiv.innerHTML = '<p class="warning">Redirecting to secure payment\u2026</p>';
+
+            try {
+                const res = await fetch('/create-checkout', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({amount_usd: selectedAmount})
                 });
+                const data = await res.json();
+                if (data.url) {
+                    gtag('event', 'stripe_checkout_redirect', {amount: selectedAmount, currency: 'USD'});
+                    window.location.href = data.url;
+                } else {
+                    statusDiv.innerHTML = '<p class="error">Error: ' + (data.error || 'Unknown') + '</p>';
+                    btn.disabled = false;
+                    btn.textContent = 'Proceed to Payment';
+                }
+            } catch (err) {
+                statusDiv.innerHTML = '<p class="error">Network error \u2014 please try again</p>';
+                btn.disabled = false;
+                btn.textContent = 'Proceed to Payment';
             }
         }
     </script>
