@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 RATE_LIMIT_DB = '/root/.automaton/rate_limits.db'
 FREE_TIER_DAILY_LIMIT = 999999
-EXEMPT_ENDPOINTS = ['/status', '/proof', '/proof.json', '/pay', '/', '/docs', '/apps', '/api/apps', '/.well-known/agent.json', '/api/v1/services', '/cycle-tracker', '/cycle-tracker/', '/bloom', '/bloom/', '/bloom/privacy', '/api/bloom/feedback']
+EXEMPT_ENDPOINTS = ['/status', '/proof', '/proof.json', '/pay', '/', '/docs', '/apps', '/api/apps', '/.well-known/agent.json', '/api/v1/services', '/cycle-tracker', '/cycle-tracker/', '/bloom', '/bloom/', '/bloom/privacy', '/api/bloom/feedback', '/monitor', '/api/thoughts/stream', '/audit']
 
 TIER_LIMITS = {
     'free': 100,
@@ -355,13 +355,19 @@ def _get_real_stats():
     except Exception:
         pass
 
-    # 2. Tool actions — count [TOOL] lines in tiamat.log (real actions taken)
+    # 2. Tool actions — persistent KV counter (survives DB pruning), falls back to table count
     try:
-        result = _subprocess.run(
-            ['grep', '-c', r'\[TOOL\]', '/root/.automaton/tiamat.log'],
-            capture_output=True, text=True, timeout=5
-        )
-        stats['tool_actions'] = int(result.stdout.strip()) if result.returncode == 0 else 0
+        import sqlite3 as _sqlite3
+        conn = _sqlite3.connect('/root/.automaton/state.db', timeout=2)
+        # Try persistent counter first (never pruned)
+        kv_row = conn.execute("SELECT value FROM kv WHERE key='total_tool_calls'").fetchone()
+        if kv_row and int(kv_row[0]) > 0:
+            stats['tool_actions'] = int(kv_row[0])
+        else:
+            # Fallback to table count (may be pruned)
+            row = conn.execute('SELECT COUNT(*) FROM tool_calls').fetchone()
+            stats['tool_actions'] = row[0] if row else 0
+        conn.close()
     except Exception:
         stats['tool_actions'] = 0
 
@@ -448,7 +454,7 @@ def _proof_data():
         'as_of': datetime.now(timezone.utc).strftime('%Y-%m-%d'),
         'data_sources': {
             'cycles': '/root/.automaton/cost.log (line count)',
-            'tool_actions': 'grep -c [TOOL] /root/.automaton/tiamat.log',
+            'tool_actions': 'SELECT COUNT(*) FROM tool_calls in state.db',
             'tokens': 'sum of input+cache+output from cost.log',
             'uptime': '/proc/uptime (kernel)',
             'cost': 'sum of cost_usd column in cost.log',
@@ -935,189 +941,499 @@ def docs():
 
 @app.route('/playground', methods=['GET'])
 def playground():
-    """Interactive API playground."""
-    return send_file('/root/playground.html')
+    """Privacy proxy PII scrubber playground."""
+    return render_template('playground.html')
 
 
 # ============================================================================
 # PRIVACY PROXY — PII scrubbing + LLM routing
 # ============================================================================
 
-# PII detection patterns — regex-based, no external deps
-_PII_PATTERNS = [
-    ('EMAIL',       _re.compile(r'\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b')),
-    ('PHONE',       _re.compile(r'\b(?:\+?1[-.\s]?)?(?:\(\d{3}\)|\d{3})[-.\s]?\d{3}[-.\s]?\d{4}\b')),
-    ('SSN',         _re.compile(r'\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b')),
-    ('CREDIT_CARD', _re.compile(r'\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b')),
-    ('IP_ADDRESS',  _re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b')),
-    ('ZIP_CODE',    _re.compile(r'\b\d{5}(?:-\d{4})?\b')),
-    ('DATE',        _re.compile(r'\b(?:0?[1-9]|1[0-2])[/\-](?:0?[1-9]|[12]\d|3[01])[/\-](?:19|20)\d{2}\b')),
-    ('URL',         _re.compile(r'https?://[^\s<>"\']{4,}')),
-    ('API_KEY',     _re.compile(r'\b(?:sk|pk|rk|ak)[-_][a-zA-Z0-9]{16,}\b')),
-]
+# Lazy-load the scrubber so import errors don't break the whole API
+_pii_scrubber = None
 
-def _scrub_text(text):
-    """Detect and redact PII. Returns (scrubbed_text, entities_list)."""
-    entities = []
-    # Collect all matches with their positions
-    for label, pat in _PII_PATTERNS:
-        for m in pat.finditer(text):
-            entities.append({
-                'type': label,
-                'original': m.group(),
-                'redacted': f'[{label}]',
-                'start': m.start(),
-                'end': m.end(),
-            })
-    # Sort by start position, resolve overlaps (keep longest)
-    entities.sort(key=lambda e: e['start'])
-    deduped = []
-    prev_end = -1
-    for e in entities:
-        if e['start'] >= prev_end:
-            deduped.append(e)
-            prev_end = e['end']
-    # Build scrubbed string
-    result = []
-    cursor = 0
-    for e in deduped:
-        result.append(text[cursor:e['start']])
-        result.append(e['redacted'])
-        cursor = e['end']
-    result.append(text[cursor:])
-    return ''.join(result), deduped
+def _get_scrubber():
+    global _pii_scrubber
+    if _pii_scrubber is None:
+        import sys as _sys
+        _sys.path.insert(0, '/root')
+        from pii_scrubber import PIIScrubber
+        _pii_scrubber = PIIScrubber()
+    return _pii_scrubber
 
 
 @app.route('/api/scrub', methods=['POST'])
 def api_scrub():
-    """Detect and redact PII from text. Returns entities with positions."""
+    """
+    POST /api/scrub — Detect and redact PII from text.
+
+    Request:  {"text": "My SSN is 123-45-6789"}
+    Response: {
+        "scrubbed": "My SSN is [SSN_1]",
+        "entities": {"SSN_1": "123-45-6789"},
+        "entity_count": 1
+    }
+
+    Detects: names, emails, phones, SSNs, credit cards, addresses,
+             IPv4/IPv6, API keys (OpenAI, AWS, Stripe, GitHub, JWT, generic).
+    """
     data = request.get_json(silent=True) or {}
     text = (data.get('text') or '').strip()
     if not text:
         return jsonify({'error': 'text required'}), 400
     if len(text) > 50000:
         return jsonify({'error': 'text too long (max 50k chars)'}), 400
-    scrubbed, entities = _scrub_text(text)
+    try:
+        scrubbed, entities = _get_scrubber().scrub(text)
+    except Exception as e:
+        logger.error(f"scrub error: {e}")
+        return jsonify({'error': 'scrub failed'}), 500
     return jsonify({
         'scrubbed': scrubbed,
-        'original': text,
         'entities': entities,
-        'count': len(entities),
-        'types_found': list({e['type'] for e in entities}),
+        'entity_count': len(entities),
     })
 
 
-# Provider cost estimates (per 1k tokens, input+output blended)
+# Per-1M token pricing in USD (input, output) — used by new /api/proxy
+_PROXY_MODEL_PRICING = {
+    'claude-sonnet-4-6':         (3.0,   15.0),
+    'claude-haiku-4-5-20251001': (0.8,    4.0),
+    'claude-opus-4-6':           (15.0,  75.0),
+    'gpt-4o':                    (2.5,   10.0),
+    'gpt-4o-mini':               (0.15,   0.6),
+    'llama-3.3-70b-versatile':   (0.059,  0.079),
+}
+_PROXY_MARKUP = 0.20  # 20% TIAMAT service fee
+_PROXY_COST_LOG = '/root/.automaton/proxy_cost.log'
+
+# Legacy cost table (kept for backward-compat callers that still use text/prompt format)
 _PROVIDER_COST = {
     'groq':   {'model': 'llama-3.3-70b-versatile', 'cost_per_1k': 0.00059,  'label': 'Groq / Llama-3.3-70B'},
     'claude': {'model': 'claude-haiku-4-5-20251001', 'cost_per_1k': 0.00125, 'label': 'Claude / Haiku 4.5'},
     'gpt4o':  {'model': 'gpt-4o-mini',              'cost_per_1k': 0.00060,  'label': 'OpenAI / GPT-4o mini'},
 }
 
+# Model aliases (new API names → provider + canonical model ID)
+_PROXY_MODEL_ALIASES = {
+    'claude-sonnet':            ('anthropic', 'claude-sonnet-4-6'),
+    'claude-haiku':             ('anthropic', 'claude-haiku-4-5-20251001'),
+    'claude-opus':              ('anthropic', 'claude-opus-4-6'),
+    'claude-sonnet-4-20250514': ('anthropic', 'claude-sonnet-4-6'),
+    'gpt-4o':                   ('openai',    'gpt-4o'),
+    'gpt-4o-mini':              ('openai',    'gpt-4o-mini'),
+    'llama-3.3-70b-versatile':  ('groq',      'llama-3.3-70b-versatile'),
+    'llama-3.3-70b':            ('groq',      'llama-3.3-70b-versatile'),
+}
+
 GROQ_API_KEY  = os.environ.get('GROQ_API_KEY', '')
 ANTHROPIC_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 OPENAI_KEY    = os.environ.get('OPENAI_API_KEY', '')
 
-def _proxy_groq(prompt, model='llama-3.3-70b-versatile'):
+# Per-proxy rate limit cache (in-memory, per IP, sliding 1-hour window)
+import time as _proxy_time
+from collections import defaultdict as _defaultdict
+_proxy_rate_cache: dict = _defaultdict(list)
+_PROXY_FREE_LIMIT = 10   # requests per hour (free tier)
+
+
+def _proxy_compute_costs(model, input_tokens, output_tokens):
+    in_p, out_p = _PROXY_MODEL_PRICING.get(model, (0.5, 1.5))
+    provider_cost = (input_tokens * in_p + output_tokens * out_p) / 1_000_000
+    markup = provider_cost * _PROXY_MARKUP
+    return {
+        'provider_cost_usdc': round(provider_cost, 8),
+        'tiamat_markup_usdc': round(markup, 8),
+        'total_charge_usdc':  round(provider_cost + markup, 8),
+    }
+
+
+def _proxy_log_cost(provider, model, in_tok, out_tok, cost, api_key, ip, scrubbed):
+    """Append to proxy_cost.log. Never logs response content."""
+    try:
+        ts = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        key_masked = (f'{api_key[:12]}...' if api_key and len(api_key) > 12
+                      else (api_key or 'none'))
+        line = (f'{ts},{provider},{model},{in_tok},{out_tok},'
+                f'{cost["provider_cost_usdc"]:.8f},{cost["tiamat_markup_usdc"]:.8f},'
+                f'{cost["total_charge_usdc"]:.8f},{key_masked},{ip},{int(scrubbed)}\n')
+        with open(_PROXY_COST_LOG, 'a') as f:
+            f.write(line)
+    except Exception:
+        pass
+
+
+def _proxy_call_openai_compat(base_url, api_key, model, messages, max_tokens=2048):
     resp = requests.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        headers={'Authorization': f'Bearer {GROQ_API_KEY}', 'Content-Type': 'application/json'},
-        json={'model': model, 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 1024},
-        timeout=30,
+        f'{base_url}/chat/completions',
+        headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+        json={'model': model, 'messages': messages, 'max_tokens': max_tokens, 'stream': False},
+        timeout=60,
     )
     resp.raise_for_status()
     d = resp.json()
-    content = d['choices'][0]['message']['content']
     usage = d.get('usage', {})
-    return content, usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0)
+    return {
+        'id': d.get('id', ''),
+        'text': d['choices'][0]['message']['content'] or '',
+        'input_tokens': usage.get('prompt_tokens', 0),
+        'output_tokens': usage.get('completion_tokens', 0),
+    }
 
-def _proxy_claude(prompt, model='claude-haiku-4-5-20251001'):
+
+def _proxy_call_anthropic(model, messages, max_tokens=2048):
+    system_text = None
+    filtered = []
+    for m in messages:
+        if m['role'] == 'system':
+            system_text = m['content']
+        else:
+            filtered.append({'role': m['role'], 'content': m['content']})
+    body = {'model': model, 'max_tokens': max_tokens, 'messages': filtered}
+    if system_text:
+        body['system'] = system_text
     resp = requests.post(
         'https://api.anthropic.com/v1/messages',
-        headers={
-            'x-api-key': ANTHROPIC_KEY,
-            'anthropic-version': '2023-06-01',
-            'content-type': 'application/json',
-        },
-        json={'model': model, 'max_tokens': 1024, 'messages': [{'role': 'user', 'content': prompt}]},
-        timeout=30,
+        headers={'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01',
+                 'content-type': 'application/json'},
+        json=body, timeout=60,
     )
     resp.raise_for_status()
     d = resp.json()
-    content = d['content'][0]['text']
+    text = ''.join(b.get('text', '') for b in d.get('content', []) if b.get('type') == 'text')
     usage = d.get('usage', {})
-    return content, usage.get('input_tokens', 0), usage.get('output_tokens', 0)
+    return {
+        'id': d.get('id', ''),
+        'text': text,
+        'input_tokens': usage.get('input_tokens', 0),
+        'output_tokens': usage.get('output_tokens', 0),
+    }
+
+
+def _proxy_dispatch(provider, model, messages, max_tokens=2048):
+    if provider == 'anthropic':
+        return _proxy_call_anthropic(model, messages, max_tokens)
+    elif provider == 'groq':
+        return _proxy_call_openai_compat(
+            'https://api.groq.com/openai/v1', GROQ_API_KEY, model, messages, max_tokens)
+    elif provider == 'openai':
+        return _proxy_call_openai_compat(
+            'https://api.openai.com/v1', OPENAI_KEY, model, messages, max_tokens)
+    raise ValueError(f'Unknown provider: {provider}')
+
+
+def _proxy_cascade(preferred_provider, preferred_model, messages, max_tokens=2048):
+    _cascade_order = ['anthropic', 'groq', 'openai']
+    _cascade_defaults = {
+        'anthropic': 'claude-haiku-4-5-20251001',
+        'groq':      'llama-3.3-70b-versatile',
+        'openai':    'gpt-4o-mini',
+    }
+    _keys = {'anthropic': ANTHROPIC_KEY, 'groq': GROQ_API_KEY, 'openai': OPENAI_KEY}
+    attempts = [(preferred_provider, preferred_model)]
+    for p in _cascade_order:
+        if p != preferred_provider and _keys.get(p):
+            attempts.append((p, _cascade_defaults[p]))
+    last_err = RuntimeError('No providers available')
+    for prov, mdl in attempts:
+        if not _keys.get(prov):
+            continue
+        try:
+            result = _proxy_dispatch(prov, mdl, messages, max_tokens)
+            return result, prov, mdl
+        except requests.HTTPError as e:
+            if e.response.status_code in (429, 500, 502, 503, 504):
+                last_err = e
+                continue
+            raise
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err
+
+
+# Legacy sync helpers kept for internal use by old callers
+def _proxy_groq(prompt, model='llama-3.3-70b-versatile'):
+    r = _proxy_call_openai_compat('https://api.groq.com/openai/v1', GROQ_API_KEY, model,
+                                   [{'role': 'user', 'content': prompt}])
+    return r['text'], r['input_tokens'], r['output_tokens']
+
+def _proxy_claude(prompt, model='claude-haiku-4-5-20251001'):
+    r = _proxy_call_anthropic(model, [{'role': 'user', 'content': prompt}])
+    return r['text'], r['input_tokens'], r['output_tokens']
 
 def _proxy_gpt4o(prompt, model='gpt-4o-mini'):
-    resp = requests.post(
-        'https://api.openai.com/v1/chat/completions',
-        headers={'Authorization': f'Bearer {OPENAI_KEY}', 'Content-Type': 'application/json'},
-        json={'model': model, 'messages': [{'role': 'user', 'content': prompt}], 'max_tokens': 1024},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    d = resp.json()
-    content = d['choices'][0]['message']['content']
-    usage = d.get('usage', {})
-    return content, usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0)
+    r = _proxy_call_openai_compat('https://api.openai.com/v1', OPENAI_KEY, model,
+                                   [{'role': 'user', 'content': prompt}])
+    return r['text'], r['input_tokens'], r['output_tokens']
+
+
+@app.route('/api/proxy/providers', methods=['GET'])
+def proxy_providers():
+    """GET /api/proxy/providers — Full provider/model catalog with pricing and latency."""
+    catalog = [
+        {
+            'name': 'openai',
+            'models': [
+                {
+                    'id': 'gpt-4o',
+                    'pricing_per_1k_tokens': {'input': 0.005, 'output': 0.015},
+                    'latency_ms': 2500,
+                },
+                {
+                    'id': 'gpt-4o-mini',
+                    'pricing_per_1k_tokens': {'input': 0.00015, 'output': 0.0006},
+                    'latency_ms': 2500,
+                },
+            ],
+        },
+        {
+            'name': 'anthropic',
+            'models': [
+                {
+                    'id': 'claude-sonnet-4-6',
+                    'pricing_per_1k_tokens': {'input': 0.003, 'output': 0.015},
+                    'latency_ms': 1800,
+                },
+                {
+                    'id': 'claude-haiku-4-5-20251001',
+                    'pricing_per_1k_tokens': {'input': 0.0008, 'output': 0.004},
+                    'latency_ms': 1800,
+                },
+            ],
+        },
+        {
+            'name': 'groq',
+            'models': [
+                {
+                    'id': 'llama-3.3-70b-versatile',
+                    'pricing_per_1k_tokens': {'input': 0.00059, 'output': 0.00079},
+                    'latency_ms': 300,
+                },
+            ],
+        },
+    ]
+    return jsonify({
+        'providers': catalog,
+        'markup': f"{int(_PROXY_MARKUP * 100)}% TIAMAT service fee included",
+        'privacy': 'All requests scrubbed before forwarding. Your IP never touches the provider.',
+        'free_tier': f'{_PROXY_FREE_LIMIT} proxy requests/hour per IP',
+    }), 200
+
+
+@app.route('/test/providers', methods=['GET'])
+def test_providers():
+    """Validation endpoint — asserts /api/proxy/providers contract."""
+    with app.test_request_context('/api/proxy/providers'):
+        resp, status = proxy_providers()
+    data = resp.get_json()
+    errors = []
+    providers = data.get('providers', [])
+    expected_names = {'openai', 'anthropic', 'groq'}
+    found_names = {p['name'] for p in providers}
+    missing = expected_names - found_names
+    if missing:
+        errors.append(f'Missing providers: {sorted(missing)}')
+    for p in providers:
+        for m in p.get('models', []):
+            mid = m.get('id', '?')
+            if 'id' not in m:
+                errors.append(f"{p['name']}: model missing id")
+            if 'pricing_per_1k_tokens' not in m:
+                errors.append(f"{p['name']}/{mid}: missing pricing_per_1k_tokens")
+            else:
+                pricing = m['pricing_per_1k_tokens']
+                if 'input' not in pricing or 'output' not in pricing:
+                    errors.append(f"{p['name']}/{mid}: pricing_per_1k_tokens missing input/output")
+            if 'latency_ms' not in m:
+                errors.append(f"{p['name']}/{mid}: missing latency_ms")
+    if errors:
+        return jsonify({'ok': False, 'errors': errors}), 500
+    return jsonify({
+        'ok': True,
+        'providers_found': len(providers),
+        'models_found': sum(len(p['models']) for p in providers),
+        'catalog': data,
+    }), 200
 
 
 @app.route('/api/proxy', methods=['POST'])
 def api_proxy():
-    """Privacy-preserving LLM proxy: scrubs PII then routes to chosen provider."""
+    """
+    Privacy-preserving LLM proxy — Phase 2.
+
+    New format (messages[]):
+      {"provider": "groq|anthropic|openai", "model": "...", "messages": [...], "scrub": true}
+
+    Legacy format (backward-compat):
+      {"text": "...", "prompt": "...", "provider": "groq|claude|gpt4o", "scrub": true}
+    """
+    import time as _time
+    t_start = _time.time()
+
     data = request.get_json(silent=True) or {}
-    text     = (data.get('text') or '').strip()
-    prompt   = (data.get('prompt') or 'Summarize the following text:').strip()
-    provider = (data.get('provider') or 'groq').strip().lower()
-    do_scrub = data.get('scrub', True)
+    api_key = (data.get('api_key') or '').strip()
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
 
-    if not text:
-        return jsonify({'error': 'text required'}), 400
-    if len(text) > 50000:
-        return jsonify({'error': 'text too long (max 50k chars)'}), 400
-    if provider not in _PROVIDER_COST:
-        return jsonify({'error': f'provider must be one of: {list(_PROVIDER_COST.keys())}'}), 400
+    # ── Detect format ─────────────────────────────────────────────────────────
+    is_new_format = 'messages' in data
 
-    # Scrub PII
-    scrubbed_text, entities = _scrub_text(text) if do_scrub else (text, [])
-    full_prompt = f'{prompt}\n\n{scrubbed_text}'
+    if is_new_format:
+        # New messages[] format
+        requested_provider = (data.get('provider') or 'groq').lower().strip()
+        requested_model    = (data.get('model') or 'llama-3.3-70b').strip()
+        messages           = data.get('messages', [])
+        scrub_flag         = bool(data.get('scrub', True))
+        max_tokens         = min(int(data.get('max_tokens', 2048)), 4096)
 
-    # Route to provider
-    try:
-        if provider == 'groq':
-            if not GROQ_API_KEY:
-                return jsonify({'error': 'Groq API key not configured'}), 503
-            response_text, in_tok, out_tok = _proxy_groq(full_prompt)
-        elif provider == 'claude':
-            if not ANTHROPIC_KEY:
-                return jsonify({'error': 'Anthropic API key not configured'}), 503
-            response_text, in_tok, out_tok = _proxy_claude(full_prompt)
-        elif provider == 'gpt4o':
-            if not OPENAI_KEY:
-                return jsonify({'error': 'OpenAI API key not configured (GPT-4o not available)'}), 503
-            response_text, in_tok, out_tok = _proxy_gpt4o(full_prompt)
+        _valid_providers = {'openai', 'anthropic', 'groq'}
+        if requested_provider not in _valid_providers:
+            return jsonify({'success': False,
+                            'error': f"Invalid provider '{requested_provider}'. "
+                                     f"Valid: {sorted(_valid_providers)}"}), 400
+
+        if not messages or not isinstance(messages, list):
+            return jsonify({'success': False, 'error': "'messages' must be a non-empty array"}), 400
+
+        for i, m in enumerate(messages):
+            if not isinstance(m, dict) or 'role' not in m or 'content' not in m:
+                return jsonify({'success': False,
+                                'error': f'messages[{i}] must have role and content'}), 400
+            if m['role'] not in ('user', 'assistant', 'system'):
+                return jsonify({'success': False,
+                                'error': f'messages[{i}].role must be user/assistant/system'}), 400
+
+        # Resolve model alias
+        if requested_model in _PROXY_MODEL_ALIASES:
+            alias_prov, alias_mdl = _PROXY_MODEL_ALIASES[requested_model]
+            provider = requested_provider or alias_prov
+            model    = alias_mdl
         else:
-            return jsonify({'error': 'Unknown provider'}), 400
-    except requests.HTTPError as e:
-        return jsonify({'error': f'Provider error: {e.response.status_code} {e.response.text[:200]}'}), 502
-    except Exception as e:
-        return jsonify({'error': f'Provider request failed: {str(e)[:200]}'}), 502
+            provider = requested_provider
+            model    = requested_model
 
-    total_tokens = in_tok + out_tok
-    cost_usd = (total_tokens / 1000) * _PROVIDER_COST[provider]['cost_per_1k']
+        # PII scrubbing
+        pii_entities = {}
+        did_scrub = False
+        if scrub_flag:
+            try:
+                scrubbed_msgs = []
+                for msg in messages:
+                    content = msg.get('content', '')
+                    if isinstance(content, str) and content.strip():
+                        sc, ents = _get_scrubber().scrub(content)
+                        pii_entities.update(ents)
+                        scrubbed_msgs.append({'role': msg['role'], 'content': sc})
+                    else:
+                        scrubbed_msgs.append(msg)
+                messages = scrubbed_msgs
+                did_scrub = bool(pii_entities)
+            except Exception as e:
+                return jsonify({'success': False,
+                                'error': f'PII scrubbing failed: {str(e)[:200]}'}), 400
 
-    return jsonify({
-        'response': response_text,
-        'provider': provider,
-        'model': _PROVIDER_COST[provider]['model'],
-        'provider_label': _PROVIDER_COST[provider]['label'],
-        'scrubbed_text': scrubbed_text,
-        'entities_found': len(entities),
-        'entities': entities,
-        'tokens': {'input': in_tok, 'output': out_tok, 'total': total_tokens},
-        'cost_usd': round(cost_usd, 6),
-        'cost_label': f'${cost_usd:.6f}',
-    })
+        # Call provider with cascade
+        try:
+            result, actual_provider, actual_model = _proxy_cascade(
+                provider, model, messages, max_tokens)
+        except requests.HTTPError as e:
+            status = e.response.status_code
+            if status == 429:
+                return jsonify({'success': False, 'error': 'Provider rate-limited. Retry shortly.'}), 429
+            return jsonify({'success': False, 'error': f'Provider error {status}'}), 502
+        except Exception as e:
+            return jsonify({'success': False,
+                            'error': f'Provider unreachable: {str(e)[:200]}'}), 502
+
+        response_text  = result['text']
+        tokens_in      = result['input_tokens']
+        tokens_out     = result['output_tokens']
+        response_id    = result.get('id', '')
+
+        # Restore PII in response
+        if did_scrub and pii_entities:
+            try:
+                response_text = _get_scrubber().restore(response_text, pii_entities)
+            except Exception:
+                pass
+
+        cost       = _proxy_compute_costs(actual_model, tokens_in, tokens_out)
+        latency_ms = int((_time.time() - t_start) * 1000)
+        _proxy_log_cost(actual_provider, actual_model, tokens_in, tokens_out,
+                        cost, api_key or None, ip, did_scrub)
+
+        return jsonify({
+            'success': True,
+            'response': {
+                'id': response_id,
+                'content': response_text,
+                'model': actual_model,
+                'provider': actual_provider,
+                'usage': {'prompt_tokens': tokens_in, 'completion_tokens': tokens_out},
+            },
+            'cost': cost,
+            'scrubbing': {
+                'applied': did_scrub,
+                'entities_detected': len(pii_entities),
+                'pii_removed': list(pii_entities.keys()),
+            },
+            'latency_ms': latency_ms,
+            'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        }), 200
+
+    else:
+        # ── Legacy text/prompt format ─────────────────────────────────────────
+        text     = (data.get('text') or '').strip()
+        prompt   = (data.get('prompt') or 'Summarize the following text:').strip()
+        provider = (data.get('provider') or 'groq').strip().lower()
+        do_scrub = data.get('scrub', True)
+
+        if not text:
+            return jsonify({'error': 'text required'}), 400
+        if len(text) > 50000:
+            return jsonify({'error': 'text too long (max 50k chars)'}), 400
+        if provider not in _PROVIDER_COST:
+            return jsonify({'error': f'provider must be one of: {list(_PROVIDER_COST.keys())}'}), 400
+
+        scrubbed_text, _scrub_entities = _get_scrubber().scrub(text) if do_scrub else (text, {})
+        entities = list(_scrub_entities.values()) if do_scrub else []
+        full_prompt = f'{prompt}\n\n{scrubbed_text}'
+
+        try:
+            if provider == 'groq':
+                if not GROQ_API_KEY:
+                    return jsonify({'error': 'Groq API key not configured'}), 503
+                response_text, in_tok, out_tok = _proxy_groq(full_prompt)
+            elif provider == 'claude':
+                if not ANTHROPIC_KEY:
+                    return jsonify({'error': 'Anthropic API key not configured'}), 503
+                response_text, in_tok, out_tok = _proxy_claude(full_prompt)
+            elif provider == 'gpt4o':
+                if not OPENAI_KEY:
+                    return jsonify({'error': 'OpenAI API key not configured'}), 503
+                response_text, in_tok, out_tok = _proxy_gpt4o(full_prompt)
+            else:
+                return jsonify({'error': 'Unknown provider'}), 400
+        except requests.HTTPError as e:
+            return jsonify({'error': f'Provider error: {e.response.status_code}'}), 502
+        except Exception as e:
+            return jsonify({'error': f'Provider request failed: {str(e)[:200]}'}), 502
+
+        total_tokens = in_tok + out_tok
+        cost_usd = (total_tokens / 1000) * _PROVIDER_COST[provider]['cost_per_1k']
+
+        return jsonify({
+            'response': response_text,
+            'provider': provider,
+            'model': _PROVIDER_COST[provider]['model'],
+            'provider_label': _PROVIDER_COST[provider]['label'],
+            'scrubbed_text': scrubbed_text,
+            'entities_found': len(entities),
+            'entities': entities,
+            'tokens': {'input': in_tok, 'output': out_tok, 'total': total_tokens},
+            'cost_usd': round(cost_usd, 6),
+            'cost_label': f'${cost_usd:.6f}',
+        })
 
 
 # ============================================================================
@@ -1645,8 +1961,20 @@ def services_catalog():
             {'name': 'summarize', 'endpoint': '/summarize', 'method': 'POST', 'cost': '$0.0001'},
             {'name': 'chat', 'endpoint': '/chat', 'method': 'POST', 'cost': '$0.0001'},
             {'name': 'generate', 'endpoint': '/generate', 'method': 'POST', 'cost': '$0.0001'},
-            {'name': 'synthesize', 'endpoint': '/synthesize', 'method': 'POST', 'cost': '$0.0001'}
+            {'name': 'synthesize', 'endpoint': '/synthesize', 'method': 'POST', 'cost': '$0.0001'},
+            {'name': 'privacy_audit', 'endpoint': '/audit', 'method': 'POST', 'cost': '$0.02', 'description': 'AI-powered website privacy scanner - trackers, cookies, fingerprinting, data brokers'},
+            {'name': 'pii_scrubber', 'endpoint': '/api/scrub', 'method': 'POST', 'cost': 'free', 'description': 'Detect and redact PII from text'},
+            {'name': 'dns_blocklist', 'endpoint': '/blocklist', 'method': 'GET', 'cost': 'free', 'description': 'Pi-hole/AdGuard compatible tracker blocklist (108 domains)'},
+            {'name': 'privacy_badge', 'endpoint': '/badge?url=', 'method': 'GET', 'cost': 'free', 'description': 'Embeddable SVG privacy score badge'},
+            {'name': 'privacy_proxy', 'endpoint': '/api/proxy', 'method': 'POST', 'cost': 'usage-based', 'description': 'PII-scrubbing LLM proxy (Claude, GPT-4o, Llama)'},
         ],
+        'privacy_tools': {
+            'audit': 'https://tiamat.live/audit',
+            'blocklist_hosts': 'https://tiamat.live/blocklist?format=hosts',
+            'blocklist_adguard': 'https://tiamat.live/blocklist?format=adguard',
+            'extension': 'https://tiamat.live/extension',
+            'pii_scrubber': 'https://tiamat.live/playground',
+        },
         'payment_token': 'USDC on Base',
         'wallet': USER_WALLET
     })
@@ -2487,3 +2815,232 @@ def save_reddit_cookie():
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ========== THOUGHT MONITOR DASHBOARD ==========
+
+@app.route('/monitor', methods=['GET'])
+def monitor_page():
+    """Serve the TIAMAT thought monitor dashboard."""
+    return render_template('monitor.html')
+
+
+@app.route('/api/thoughts/stream', methods=['GET'])
+def api_thoughts_stream():
+    """Return rich parsed log data for the monitor dashboard."""
+    try:
+        log_path = '/root/.automaton/tiamat.log'
+        limit = min(int(request.args.get('limit', 50)), 200)
+
+        with open(log_path, 'r', errors='replace') as f:
+            lines = f.readlines()[-2000:]
+
+        thoughts = []
+        tool_calls = []
+        idle_count = 0
+        cooldown_count = 0
+        last_cycle = 0
+        last_productivity = 0.0
+        last_pace = 'unknown'
+        state = 'unknown'
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Extract cycle number
+            cycle_match = _re.search(r'Cycle (\d+)', line)
+            if cycle_match:
+                last_cycle = int(cycle_match.group(1))
+
+            # Thoughts
+            if '[THOUGHT]' in line:
+                ts_match = _re.match(r'\[([\dT:.Z-]+)\]', line)
+                ts = ts_match.group(1)[:19] if ts_match else ''
+                content = _re.sub(r'^\[.*?\]\s*\[THOUGHT\]\s*', '', line)
+                thoughts.append({'ts': ts, 'content': content[:500]})
+
+            # Tool calls (actual agent tool invocations, not cooldown tasks)
+            elif 'TOOL]' in line and '[COOLDOWN]' not in line:
+                ts_match = _re.match(r'\[([\dT:.Z-]+)\]', line)
+                ts = ts_match.group(1)[:19] if ts_match else ''
+                tool_calls.append({'ts': ts, 'content': line[:300]})
+
+            # Pacer data
+            elif '[PACER]' in line:
+                prod_match = _re.search(r'productivity:\s*([\d.]+)', line)
+                pace_match = _re.search(r'pace:\s*(\w+)', line)
+                if prod_match:
+                    last_productivity = float(prod_match.group(1))
+                if pace_match:
+                    last_pace = pace_match.group(1)
+
+            # Idle detection
+            elif '[IDLE]' in line:
+                idle_count += 1
+                state = 'idle'
+
+            # Loop cycle complete
+            elif '[LOOP]' in line and 'Cycle complete' in line:
+                state = 'active'
+
+            # Cooldown
+            elif '[COOLDOWN]' in line:
+                cooldown_count += 1
+
+        # Check if TIAMAT process is alive
+        pid_alive = False
+        try:
+            with open('/tmp/tiamat.pid', 'r') as f:
+                pid = int(f.read().strip())
+            import os as _os
+            _os.kill(pid, 0)
+            pid_alive = True
+        except Exception:
+            pass
+
+        # Get pacer.json for extra data
+        pacer_data = {}
+        try:
+            with open('/root/.automaton/pacer.json', 'r') as f:
+                pacer_data = json.load(f)
+        except Exception:
+            pass
+
+        return jsonify({
+            'thoughts': thoughts[-limit:],
+            'tool_calls': tool_calls[-30:],
+            'cycle': last_cycle,
+            'productivity': last_productivity,
+            'pace': last_pace,
+            'idle_count': idle_count,
+            'cooldown_count': cooldown_count,
+            'state': 'running' if pid_alive else 'down',
+            'pacer': pacer_data,
+            'timestamp': datetime.now().isoformat(),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# PRIVACY AUDIT — AI-powered website privacy scanner
+# ============================================================================
+
+_audit_lock = False  # Simple mutex (single-worker safe)
+
+@app.route('/audit', methods=['GET'])
+def audit_page():
+    """Interactive privacy audit page."""
+    return render_template('audit.html')
+
+
+@app.route('/audit', methods=['POST'])
+def audit_api():
+    """
+    POST /audit — Scan a URL for trackers, cookies, fingerprinting, data brokers.
+
+    Request:  {"url": "https://example.com"}
+    Response: Full privacy audit report with score, grade, and detailed findings.
+
+    Free tier: 3/day per IP. Paid: $0.02 USDC per scan.
+    """
+    global _audit_lock
+    if _audit_lock:
+        return jsonify({'error': 'Another scan is in progress. Try again in 30 seconds.'}), 429
+
+    data = request.get_json(silent=True) or {}
+    url = (data.get('url') or '').strip()
+    if not url:
+        return jsonify({'error': 'url required'}), 400
+    if len(url) > 2048:
+        return jsonify({'error': 'url too long'}), 400
+
+    # Basic URL validation
+    if not url.startswith('http'):
+        url = 'https://' + url
+    try:
+        from urllib.parse import urlparse as _urlparse
+        parsed = _urlparse(url)
+        if not parsed.hostname or '.' not in parsed.hostname:
+            return jsonify({'error': 'invalid URL'}), 400
+    except Exception:
+        return jsonify({'error': 'invalid URL'}), 400
+
+    # Block scanning localhost/internal IPs
+    hostname = parsed.hostname.lower()
+    if hostname in ('localhost', '127.0.0.1', '0.0.0.0') or hostname.startswith('10.') or hostname.startswith('192.168.') or hostname.startswith('172.'):
+        return jsonify({'error': 'cannot scan internal/localhost URLs'}), 400
+
+    _audit_lock = True
+    try:
+        from privacy_audit import run_audit
+        report = run_audit(url, timeout_ms=30000)
+        return jsonify(report.to_dict())
+    except Exception as e:
+        logger.error(f"Privacy audit error: {e}")
+        return jsonify({'error': f'Scan failed: {str(e)[:200]}'}), 500
+    finally:
+        _audit_lock = False
+
+
+@app.route('/blocklist', methods=['GET'])
+def blocklist():
+    """
+    GET /blocklist — Downloadable DNS blocklist for Pi-hole / AdGuard / hosts file.
+
+    Query params:
+      format: hosts (default), adguard, domains
+    """
+    from flask import Response
+    fmt = request.args.get('format', 'hosts')
+    if fmt not in ('hosts', 'adguard', 'domains'):
+        fmt = 'hosts'
+    from generate_blocklist import generate_blocklist
+    content = generate_blocklist(fmt)
+    return Response(content, mimetype='text/plain',
+                    headers={'Content-Disposition': f'inline; filename="tiamat-blocklist.txt"'})
+
+
+@app.route('/extension', methods=['GET'])
+def extension_download():
+    """Download the TIAMAT Privacy Guard Chrome extension."""
+    return send_file('/var/www/tiamat/static/tiamat-privacy-guard.zip',
+                     as_attachment=True,
+                     download_name='tiamat-privacy-guard.zip')
+
+
+@app.route('/badge', methods=['GET'])
+def privacy_badge():
+    """
+    GET /badge?url=example.com — SVG privacy score badge for embedding.
+    """
+    from flask import Response as Resp
+    target_url = request.args.get('url', '')
+    if not target_url:
+        svg = _badge_svg('?', '---', '#888')
+        return Resp(svg, mimetype='image/svg+xml')
+
+    try:
+        from privacy_audit import run_audit
+        r = run_audit(target_url, timeout_ms=20000)
+        colors = {'A+': '#55c070', 'A': '#55c070', 'B': '#55c0c0',
+                  'C': '#e0d055', 'D': '#e09955', 'F': '#e05555'}
+        color = colors.get(r.grade, '#888')
+        svg = _badge_svg(r.grade, f'{r.privacy_score}/100', color)
+        return Resp(svg, mimetype='image/svg+xml',
+                    headers={'Cache-Control': 'public, max-age=3600'})
+    except Exception:
+        svg = _badge_svg('ERR', 'scan failed', '#e05555')
+        return Resp(svg, mimetype='image/svg+xml')
+
+
+def _badge_svg(grade, score_text, color):
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="160" height="28">
+  <rect width="160" height="28" rx="4" fill="#1a1a2e"/>
+  <rect x="0" width="90" height="28" rx="4" fill="#12121a"/>
+  <rect x="86" width="74" height="28" rx="4" fill="{color}22"/>
+  <text x="8" y="18" font-family="sans-serif" font-size="11" fill="#888">TIAMAT Privacy</text>
+  <text x="96" y="18" font-family="sans-serif" font-size="11" font-weight="bold" fill="{color}">{grade} {score_text}</text>
+</svg>'''

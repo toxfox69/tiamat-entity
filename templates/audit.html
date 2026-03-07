@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIAMAT Privacy Audit - AI-Powered Website Privacy Scanner</title>
+<meta name="description" content="Free AI-powered privacy audit. Scan any website for trackers, cookies, fingerprinting, and data brokers. Get a privacy score instantly.">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a2e;
+  --border: #2a2a3e;
+  --text: #e0e0e8;
+  --muted: #888899;
+  --accent: #7b5ea7;
+  --accent2: #5b8dd9;
+  --red: #e05555;
+  --orange: #e09955;
+  --yellow: #e0d055;
+  --green: #55c070;
+  --cyan: #55c0c0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', 'Fira Code', monospace; min-height: 100vh; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+header { text-align: center; padding: 40px 0 32px; }
+header h1 { font-size: 2rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+header p { color: var(--muted); font-size: 0.85rem; }
+
+.scan-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.scan-row { display: flex; gap: 12px; }
+.scan-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+}
+.scan-row input:focus { border-color: var(--accent); }
+.scan-row button {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 8px;
+  padding: 14px 28px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.scan-row button:hover { opacity: 0.9; }
+.scan-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.status-line {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-height: 20px;
+}
+
+/* Results */
+.results { display: none; }
+.results.visible { display: block; }
+
+.score-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.grade-circle {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 16px;
+  border: 4px solid;
+}
+.grade-a { border-color: var(--green); color: var(--green); background: rgba(85,192,112,0.1); }
+.grade-b { border-color: var(--cyan); color: var(--cyan); background: rgba(85,192,192,0.1); }
+.grade-c { border-color: var(--yellow); color: var(--yellow); background: rgba(224,208,85,0.1); }
+.grade-d { border-color: var(--orange); color: var(--orange); background: rgba(224,153,85,0.1); }
+.grade-f { border-color: var(--red); color: var(--red); background: rgba(224,85,85,0.1); }
+
+.score-label { font-size: 1.1rem; margin-bottom: 8px; }
+.score-url { font-size: 0.75rem; color: var(--muted); word-break: break-all; }
+.score-meta { display: flex; justify-content: center; gap: 24px; margin-top: 16px; font-size: 0.8rem; color: var(--muted); }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.stat-val { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+.stat-good { color: var(--green); }
+.stat-warn { color: var(--orange); }
+.stat-bad { color: var(--red); }
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.section-header {
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+.section-header:hover { background: var(--surface2); }
+.section-header h3 { font-size: 0.9rem; }
+.section-body { padding: 0 20px 16px; display: none; }
+.section.open .section-body { display: block; }
+.section-header .arrow { transition: transform 0.2s; }
+.section.open .section-header .arrow { transform: rotate(90deg); }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+table th { text-align: left; padding: 8px 6px; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+table td { padding: 8px 6px; border-bottom: 1px solid rgba(42,42,62,0.5); }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.badge-analytics { background: rgba(91,141,217,0.2); color: var(--accent2); }
+.badge-advertising { background: rgba(224,85,85,0.2); color: var(--red); }
+.badge-tracking { background: rgba(224,153,85,0.2); color: var(--orange); }
+.badge-data_broker { background: rgba(224,85,85,0.3); color: #ff6666; }
+.badge-session_recording { background: rgba(224,85,85,0.25); color: #ff8888; }
+.badge-social { background: rgba(123,94,167,0.2); color: var(--accent); }
+.badge-consent { background: rgba(85,192,112,0.2); color: var(--green); }
+.badge-functional { background: rgba(85,192,192,0.2); color: var(--cyan); }
+.badge-cdn { background: rgba(136,136,153,0.2); color: var(--muted); }
+.badge-unknown { background: rgba(136,136,153,0.15); color: var(--muted); }
+.badge-preferences { background: rgba(85,192,192,0.15); color: var(--cyan); }
+.badge-error_tracking { background: rgba(224,208,85,0.2); color: var(--yellow); }
+.badge-tag_manager { background: rgba(224,153,85,0.15); color: var(--orange); }
+.badge-media { background: rgba(136,136,153,0.15); color: var(--muted); }
+
+.check-list { list-style: none; }
+.check-list li { padding: 6px 0; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; }
+.check-pass { color: var(--green); }
+.check-fail { color: var(--red); }
+.check-warn { color: var(--orange); }
+
+.footer { text-align: center; padding: 32px 0 16px; font-size: 0.75rem; color: var(--muted); }
+.footer a { color: var(--accent); text-decoration: none; }
+
+.api-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.api-box h3 { font-size: 0.9rem; margin-bottom: 12px; }
+.api-box pre {
+  background: var(--bg);
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  color: var(--cyan);
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>TIAMAT PRIVACY AUDIT</h1>
+    <p>AI-powered website privacy scanner. Detects trackers, cookies, fingerprinting, and data brokers.</p>
+  </header>
+
+  <div class="scan-box">
+    <div class="scan-row">
+      <input type="text" id="url-input" placeholder="Enter URL to audit (e.g. example.com)" autofocus>
+      <button id="scan-btn" onclick="startScan()">SCAN</button>
+    </div>
+    <div class="status-line" id="status"></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="score-card" id="score-card"></div>
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="section" id="sec-security">
+      <div class="section-header" onclick="toggleSection('sec-security')">
+        <h3>Security Headers</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="section-body" id="security-body"></div>
+    </div>
+
+    <div class="section" id="sec-trackers">
+      <div class="section-header" onclick="toggleSection('sec-trackers')">
+        <h3>Trackers Detected</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="section-body" id="trackers-body"></div>
+    </div>
+
+    <div class="section" id="sec-cookies">
+      <div class="section-header" onclick="toggleSection('sec-cookies')">
+        <h3>Cookies</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="section-body" id="cookies-body"></div>
+    </div>
+
+    <div class="section" id="sec-fingerprints">
+      <div class="section-header" onclick="toggleSection('sec-fingerprints')">
+        <h3>Fingerprinting Techniques</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="section-body" id="fingerprints-body"></div>
+    </div>
+
+    <div class="section" id="sec-thirdparty">
+      <div class="section-header" onclick="toggleSection('sec-thirdparty')">
+        <h3>Third-Party Domains</h3>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="section-body" id="thirdparty-body"></div>
+    </div>
+  </div>
+
+  <div class="api-box">
+    <h3>API Access</h3>
+    <pre>curl -X POST https://tiamat.live/audit \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'</pre>
+  </div>
+
+  <div class="footer">
+    Powered by <a href="https://tiamat.live">TIAMAT</a> | <a href="/docs">API Docs</a> | <a href="/">Home</a>
+  </div>
+</div>
+
+<script>
+const inp = document.getElementById('url-input');
+const btn = document.getElementById('scan-btn');
+const status = document.getElementById('status');
+const results = document.getElementById('results');
+
+inp.addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
+
+async function startScan() {
+  let url = inp.value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) url = 'https://' + url;
+
+  btn.disabled = true;
+  btn.textContent = 'SCANNING...';
+  status.textContent = 'Launching headless browser and crawling site...';
+  results.classList.remove('visible');
+
+  try {
+    const resp = await fetch('/audit', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url})
+    });
+    const data = await resp.json();
+    if (data.error) {
+      status.textContent = 'Error: ' + data.error;
+    } else {
+      status.textContent = `Scan complete in ${(data.scan_duration_ms/1000).toFixed(1)}s`;
+      renderResults(data);
+    }
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'SCAN';
+}
+
+function gradeClass(g) {
+  if (g.startsWith('A')) return 'grade-a';
+  if (g === 'B') return 'grade-b';
+  if (g === 'C') return 'grade-c';
+  if (g === 'D') return 'grade-d';
+  return 'grade-f';
+}
+
+function statColor(val, thresholds) {
+  if (val <= thresholds[0]) return 'stat-good';
+  if (val <= thresholds[1]) return 'stat-warn';
+  return 'stat-bad';
+}
+
+function badge(cat) {
+  return `<span class="badge badge-${cat}">${cat.replace('_',' ')}</span>`;
+}
+
+function renderResults(d) {
+  // Score card
+  document.getElementById('score-card').innerHTML = `
+    <div class="grade-circle ${gradeClass(d.grade)}">${d.grade}</div>
+    <div class="score-label">Privacy Score: ${d.privacy_score}/100</div>
+    <div class="score-url">${d.url}</div>
+    <div class="score-meta">
+      <span>${d.total_requests} requests</span>
+      <span>${d.third_party_requests} third-party</span>
+      <span>${d.scan_duration_ms}ms scan time</span>
+    </div>
+  `;
+
+  // Stats grid
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-val ${statColor(d.tracker_requests, [0, 5])}">${d.tracker_requests}</div>
+      <div class="stat-label">Trackers</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val ${statColor(d.cookie_count, [5, 15])}">${d.cookie_count}</div>
+      <div class="stat-label">Cookies</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val ${statColor(d.third_party_cookies, [0, 5])}">${d.third_party_cookies}</div>
+      <div class="stat-label">3rd-Party Cookies</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val ${statColor(d.fingerprint_techniques, [0, 2])}">${d.fingerprint_techniques}</div>
+      <div class="stat-label">Fingerprinting</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">${d.third_party_domains.length}</div>
+      <div class="stat-label">3rd-Party Domains</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">${d.has_consent_banner ? '<span class="stat-good">Yes</span>' : '<span class="stat-warn">No</span>'}</div>
+      <div class="stat-label">Consent Banner</div>
+    </div>
+  `;
+
+  // Security headers
+  const checks = [
+    [d.has_https, 'HTTPS', 'Connection is encrypted', 'No HTTPS - connection is insecure'],
+    [d.has_hsts, 'HSTS', 'Strict-Transport-Security header set', 'No HSTS header'],
+    [d.has_csp, 'CSP', 'Content-Security-Policy header set', 'No Content-Security-Policy'],
+    [d.has_referrer_policy, 'Referrer-Policy', 'Referrer-Policy header set', 'No Referrer-Policy header'],
+    [d.has_permissions_policy, 'Permissions-Policy', 'Browser APIs restricted', 'No Permissions-Policy header'],
+    [!d.mixed_content, 'No Mixed Content', 'All resources loaded over HTTPS', 'Mixed HTTP/HTTPS content detected'],
+  ];
+  document.getElementById('security-body').innerHTML = '<ul class="check-list">' +
+    checks.map(([ok, name, pass, fail]) =>
+      `<li class="${ok ? 'check-pass' : 'check-fail'}">${ok ? '&#10003;' : '&#10007;'} <strong>${name}</strong> &mdash; ${ok ? pass : fail}</li>`
+    ).join('') + '</ul>';
+
+  // Trackers
+  if (d.trackers.length === 0) {
+    document.getElementById('trackers-body').innerHTML = '<p style="color:var(--green)">No known trackers detected!</p>';
+  } else {
+    document.getElementById('trackers-body').innerHTML = '<table><thead><tr><th>Name</th><th>Category</th><th>Domain</th></tr></thead><tbody>' +
+      d.trackers.map(t => `<tr><td>${t.name}</td><td>${badge(t.category)}</td><td style="color:var(--muted);font-size:0.72rem">${t.domain}</td></tr>`).join('') +
+      '</tbody></table>';
+  }
+
+  // Cookies
+  if (d.cookies.length === 0) {
+    document.getElementById('cookies-body').innerHTML = '<p style="color:var(--green)">No cookies detected!</p>';
+  } else {
+    document.getElementById('cookies-body').innerHTML = '<table><thead><tr><th>Name</th><th>Domain</th><th>Category</th><th>3rd Party</th><th>Secure</th><th>Expires</th></tr></thead><tbody>' +
+      d.cookies.map(c => `<tr>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.name}</td>
+        <td style="color:var(--muted);font-size:0.72rem">${c.domain}</td>
+        <td>${badge(c.category)}</td>
+        <td>${c.third_party ? '<span class="check-fail">Yes</span>' : 'No'}</td>
+        <td>${c.secure ? '<span class="check-pass">Yes</span>' : '<span class="check-warn">No</span>'}</td>
+        <td style="font-size:0.72rem">${c.expires}</td>
+      </tr>`).join('') +
+      '</tbody></table>';
+  }
+
+  // Fingerprints
+  if (d.fingerprints.length === 0) {
+    document.getElementById('fingerprints-body').innerHTML = '<p style="color:var(--green)">No fingerprinting techniques detected!</p>';
+  } else {
+    document.getElementById('fingerprints-body').innerHTML = '<table><thead><tr><th>Technique</th><th>Source</th></tr></thead><tbody>' +
+      d.fingerprints.map(f => `<tr><td><span class="check-fail">${f.technique}</span></td><td style="color:var(--muted);font-size:0.72rem">${f.source}</td></tr>`).join('') +
+      '</tbody></table>';
+  }
+
+  // Third-party domains
+  if (d.third_party_domains.length === 0) {
+    document.getElementById('thirdparty-body').innerHTML = '<p style="color:var(--green)">No third-party domains!</p>';
+  } else {
+    document.getElementById('thirdparty-body').innerHTML = '<div style="columns:2;font-size:0.78rem;color:var(--muted)">' +
+      d.third_party_domains.map(d => `<div style="padding:2px 0">${d}</div>`).join('') + '</div>';
+  }
+
+  results.classList.add('visible');
+  // Open security and trackers by default
+  ['sec-security', 'sec-trackers'].forEach(id => document.getElementById(id).classList.add('open'));
+}
+
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+</script>
+</body>
+</html>
