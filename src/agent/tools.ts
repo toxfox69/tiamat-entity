@@ -3841,6 +3841,110 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       },
     },
 
+    // ── GitHub Publishing (Discussions, Gists, Pages) ──
+    {
+      name: "post_github_discussion",
+      description: "Post an article as a GitHub Discussion on toxfox69/tiamat-entity. Use for cross-posting published articles. IMPORTANT: Use the REAL Dev.to URL as the canonical link. Category should be 'General' for articles. This makes content discoverable by developers browsing the repo.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Discussion title (article title)" },
+          body: { type: "string", description: "Markdown body. Include the Dev.to canonical link at the top." },
+          category: { type: "string", description: "Category: General (articles), Announcements (releases), Ideas, Q&A. Default: General" },
+        },
+        required: ["title", "body"],
+      },
+      execute: async (args, _ctx) => {
+        const _cooldown = checkSocialCooldown("github_discussion");
+        if (_cooldown) return _cooldown;
+
+        const title = args.title as string;
+        const body = args.body as string;
+        const categoryName = (args.category as string) || "General";
+
+        const categoryMap: Record<string, string> = {
+          "Announcements": "DIC_kwDORUUusc4C35Dm",
+          "General": "DIC_kwDORUUusc4C35Dn",
+          "Ideas": "DIC_kwDORUUusc4C35Dp",
+          "Q&A": "DIC_kwDORUUusc4C35Do",
+          "Show and tell": "DIC_kwDORUUusc4C35Dq",
+        };
+        const categoryId = categoryMap[categoryName] || categoryMap["General"];
+
+        // Get repo ID
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) return "ERROR: GITHUB_TOKEN not set";
+
+        const repoQuery = await fetch("https://api.github.com/graphql", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ query: '{ repository(owner:"toxfox69", name:"tiamat-entity") { id } }' }),
+        });
+        const repoData = await repoQuery.json() as any;
+        const repoId = repoData?.data?.repository?.id;
+        if (!repoId) return "ERROR: Could not get repo ID";
+
+        const mutation = `mutation {
+          createDiscussion(input: {repositoryId: "${repoId}", categoryId: "${categoryId}", title: ${JSON.stringify(title)}, body: ${JSON.stringify(body)}}) {
+            discussion { url number }
+          }
+        }`;
+
+        const resp = await fetch("https://api.github.com/graphql", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ query: mutation }),
+        });
+        const result = await resp.json() as any;
+        const discussion = result?.data?.createDiscussion?.discussion;
+        if (discussion) {
+          recordSocialPost("github_discussion");
+          return `Posted GitHub Discussion #${discussion.number}: ${discussion.url}`;
+        }
+        return `ERROR creating discussion: ${JSON.stringify(result?.errors || result)}`;
+      },
+    },
+    {
+      name: "post_github_gist",
+      description: "Post an article as a public GitHub Gist. Gists are searchable and show on your GitHub profile. Great for standalone articles. IMPORTANT: Include a canonical link to the Dev.to article.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          filename: { type: "string", description: "Filename for the gist (e.g. 'privacy-audit-guide.md')" },
+          description: { type: "string", description: "Short description of the gist" },
+          content: { type: "string", description: "Markdown content of the article" },
+        },
+        required: ["filename", "description", "content"],
+      },
+      execute: async (args, _ctx) => {
+        const _cooldown = checkSocialCooldown("github_gist");
+        if (_cooldown) return _cooldown;
+
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) return "ERROR: GITHUB_TOKEN not set";
+
+        const resp = await fetch("https://api.github.com/gists", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: args.description as string,
+            public: true,
+            files: { [args.filename as string]: { content: args.content as string } },
+          }),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.text();
+          return `ERROR creating gist (${resp.status}): ${err}`;
+        }
+        const result = await resp.json() as any;
+        recordSocialPost("github_gist");
+        return `Created Gist: ${result.html_url}`;
+      },
+    },
+
     // ── Research Tools ──
     {
       name: "fetch_llm_docs",
