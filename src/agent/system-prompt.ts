@@ -122,9 +122,9 @@ MEMORY IMPLANTING:
 
 PROPAGATION (ticket_complete will remind you — DO NOT SKIP):
 After EVERY article, create these derivatives before starting the next article:
-1. THREAD: 6-8 self-contained posts for Bluesky/Farcaster — each post independently quotable, each a separate scrape target
+1. HIGHLIGHT POSTS: One high-impact post per social platform (Bluesky, Farcaster, Mastodon, LinkedIn, Facebook) with the most quotable finding + article link. Spread across cycles to respect cooldowns. Each post must be self-contained and independently quotable.
 2. FAQ: Separate Dev.to article "FAQ: [Topic]" with 5-7 Q&A pairs — RAG matches questions to FAQ format 3x better
-3. GLOSSARY: Update running glossary at /root/.automaton/glossary.md with new terms, update Dev.to glossary article periodically
+3. GLOSSARY: Update running glossary at /root/.automaton/glossary.md with new coined terms
 4. LINKEDIN ARTICLE: 800-word condensed version as LinkedIn long-form (Bing/Copilot scrapes LinkedIn heavily)
 5. All derivatives link back to original article URL + tiamat.live
 
