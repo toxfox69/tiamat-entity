@@ -2944,11 +2944,29 @@ def audit_api():
     Request:  {"url": "https://example.com"}
     Response: Full privacy audit report with score, grade, and detailed findings.
 
-    Free tier: 3/day per IP. Paid: $0.02 USDC per scan.
+    Free tier: 3/day per IP. Paid: unlimited with API key.
     """
     global _audit_lock
     if _audit_lock:
         return jsonify({'error': 'Another scan is in progress. Try again in 30 seconds.'}), 429
+
+    # Rate limit: 3 free scans/day per IP, unlimited with API key
+    AUDIT_FREE_LIMIT = 3
+    client_ip = request.remote_addr or request.headers.get('X-Forwarded-For', '0.0.0.0').split(',')[0].strip()
+    auth = request.headers.get('Authorization', '')
+    has_key = auth.startswith('Bearer ') and (auth[7:].startswith('tiamat_') or auth[7:].startswith('x402_'))
+
+    if not has_key:
+        audit_count = _get_audit_count(client_ip)
+        if audit_count >= AUDIT_FREE_LIMIT:
+            return jsonify({
+                'error': 'Free audit limit reached (3/day)',
+                'message': 'Get an API key for unlimited scans.',
+                'used': audit_count,
+                'limit': AUDIT_FREE_LIMIT,
+                'upgrade_url': 'https://tiamat.live/pay',
+                'api_key_url': 'https://tiamat.live/api/generate-key',
+            }), 402
 
     data = request.get_json(silent=True) or {}
     url = (data.get('url') or '').strip()
@@ -2977,12 +2995,49 @@ def audit_api():
     try:
         from privacy_audit import run_audit
         report = run_audit(url, timeout_ms=30000)
-        return jsonify(report.to_dict())
+        result = report.to_dict()
+        # Track usage for free tier
+        if not has_key:
+            _increment_audit_count(client_ip)
+        return jsonify(result)
     except Exception as e:
         logger.error(f"Privacy audit error: {e}")
         return jsonify({'error': f'Scan failed: {str(e)[:200]}'}), 500
     finally:
         _audit_lock = False
+
+
+# Audit-specific rate tracking (separate from main rate limiter)
+_AUDIT_COUNT_DB = '/root/.automaton/audit_counts.db'
+
+def _init_audit_db():
+    try:
+        conn = sqlite3.connect(_AUDIT_COUNT_DB)
+        conn.execute('CREATE TABLE IF NOT EXISTS audit_counts (ip TEXT, date_str TEXT, count INTEGER DEFAULT 0, PRIMARY KEY(ip, date_str))')
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+def _get_audit_count(ip):
+    _init_audit_db()
+    try:
+        conn = sqlite3.connect(_AUDIT_COUNT_DB)
+        row = conn.execute('SELECT count FROM audit_counts WHERE ip=? AND date_str=?', (ip, str(date.today()))).fetchone()
+        conn.close()
+        return row[0] if row else 0
+    except Exception:
+        return 0
+
+def _increment_audit_count(ip):
+    _init_audit_db()
+    try:
+        conn = sqlite3.connect(_AUDIT_COUNT_DB)
+        conn.execute('INSERT INTO audit_counts (ip, date_str, count) VALUES (?, ?, 1) ON CONFLICT(ip, date_str) DO UPDATE SET count = count + 1', (ip, str(date.today())))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 
 @app.route('/blocklist', methods=['GET'])

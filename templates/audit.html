@@ -295,7 +295,9 @@ async function startScan() {
       body: JSON.stringify({url})
     });
     const data = await resp.json();
-    if (data.error) {
+    if (resp.status === 402) {
+      status.innerHTML = `Free limit reached (3/day). <a href="/api/generate-key" target="_blank" style="color:var(--accent)">Get an API key</a> for unlimited scans, or <a href="/pay" style="color:var(--accent)">upgrade</a>.`;
+    } else if (data.error) {
       status.textContent = 'Error: ' + data.error;
     } else {
       status.textContent = `Scan complete in ${(data.scan_duration_ms/1000).toFixed(1)}s`;
