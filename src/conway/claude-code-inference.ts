@@ -29,8 +29,8 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 0; // 0 = no timeout — CLI-only mode, wait forever
 const MODEL_NAME = "claude-code-cli";
-const CLI_MODEL = "haiku"; // Haiku for fast thinking; Sonnet was timing out at 120s
-const MAX_PROMPT_TOKENS = 14_000; // Cap prompt size — 22k+ token prompts cause 100s+ latency
+const CLI_MODEL = "sonnet"; // Sonnet full blast
+const MAX_PROMPT_TOKENS = 20_000; // Sonnet can handle bigger context
 const MAX_OUTPUT_CHARS = 100_000; // Kill CLI if stdout exceeds this — CLI is subscription (free), real guard is timeout
 
 /**
@@ -39,8 +39,11 @@ const MAX_OUTPUT_CHARS = 100_000; // Kill CLI if stdout exceeds this — CLI is 
  */
 const ESSENTIAL_TOOLS = new Set([
   "exec", "write_file", "read_file", "search_web", "web_fetch",
-  "send_email", "read_email", "post_bluesky",
-  "remember", "recall", "learn_fact",
+  "send_email", "read_email", "post_bluesky", "post_farcaster", "post_devto", "post_hashnode", "post_facebook", "post_medium", "post_linkedin", "post_mastodon",
+  "read_bluesky", "like_bluesky", "repost_bluesky",
+  "farcaster_engage", "read_farcaster",
+  "mastodon_engage", "linkedin_engage",
+  "remember", "recall", "learn_fact", "query_knowledge", "manage_automations",
   "ticket_list", "ticket_claim", "ticket_complete", "ticket_create",
   "check_usdc_balance", "generate_image", "send_telegram",
   "log_strategy", "manage_cooldown",
@@ -64,7 +67,7 @@ const TOOL_SUBSETS: Record<string, Set<string>> = {
     "manage_cooldown", "search_web", "sonar_search", "web_fetch", "browse",
   ]),
   market: new Set([
-    "exec", "post_bluesky", "send_email", "send_telegram",
+    "exec", "post_bluesky", "post_medium", "post_linkedin", "post_mastodon", "send_email", "send_telegram",
     "search_web", "sonar_search", "web_fetch", "ask_claude_code",
     "ticket_complete", "log_strategy", "generate_image", "browse",
   ]),
@@ -96,11 +99,12 @@ function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string, maxOut
     const args = [
       "-p",                         // print mode (non-interactive)
       "--output-format", "json",    // structured JSON output
-      "--max-turns", "1",           // single turn — no tool loops
+      "--max-turns", "8",           // 8 turns: Sonnet gets room to reason and produce
       "--tools", "",                // disable ALL built-in CC tools
+      "--disallowed-tools", "LSP",  // LSP plugin tool leaks through --tools "" — block it
       "--strict-mcp-config",        // disable all MCP tools
       "--no-session-persistence",   // don't save to disk
-      "--model", CLI_MODEL,         // haiku for speed
+      "--model", CLI_MODEL,         // sonnet — full blast
     ];
 
     // Pass system prompt via --system-prompt flag (proper SYSTEM role)
@@ -266,8 +270,10 @@ function buildPrompt(
     }
     userParts.push(
       `\n## FMT\n` +
-      `Call tools: <tool_call>{"name":"tool_name","arguments":{"param":"value"}}</tool_call>\n` +
-      `Closing tag: </tool_call>. Reason before calling. Multiple calls OK.`
+      `CRITICAL: You MUST output tool calls as plain text XML — NOT as native tool_use blocks.\n` +
+      `Format: <tool_call>{"name":"tool_name","arguments":{"param":"value"}}</tool_call>\n` +
+      `Closing tag: </tool_call>. Reason before calling. Multiple calls OK.\n` +
+      `NEVER use the tool_use content block type. ALWAYS respond with text containing <tool_call> XML tags.`
     );
   }
 
@@ -447,7 +453,51 @@ export function createClaudeCodeInferenceClient(
         throw new Error(`CLI error: ${JSON.stringify(parsed).slice(0, 300)}`);
       }
 
+      // Detect empty result (model used native tool_use instead of XML text)
+      if (!parsed.result.trim()) {
+        try {
+          const raw = JSON.parse(stdout);
+          console.warn(`[INFERENCE:CC] Empty result — subtype=${raw.subtype}, stop_reason=${raw.stop_reason}, output_tokens=${raw.usage?.output_tokens}`);
+        } catch {
+          console.warn(`[INFERENCE:CC] Empty result — raw: ${stdout.slice(0, 200)}`);
+        }
+      }
+
       const { content, toolCalls } = parseToolCalls(parsed.result);
+
+      // ── Empty Response Recovery ──
+      // Model used native tool_use blocks instead of XML text → result is empty.
+      // Retry same prompt with forced text-only instruction (still CLI, no cascade).
+      if (!content.trim() && toolCalls.length === 0) {
+        if (!(opts as any)?._textRetried) {
+          console.warn(`[INFERENCE:CC] Empty response (native tool_use) — retrying with text-only instruction...`);
+          const textOnlyPrompt = "RESPOND WITH TEXT ONLY. Do NOT use tool_use content blocks. Output your tool calls as plain text XML: <tool_call>{\"name\":\"...\",\"arguments\":{...}}</tool_call>. If you cannot use XML tool calls, just describe what you would do in plain text.\n\n" + userPrompt;
+          try {
+            const { stdout: retryOut, exitCode: retryCode } = await runCLI(textOnlyPrompt, timeoutMs, systemPrompt || undefined);
+            if (retryCode === 0 && retryOut.trim()) {
+              const retryParsed = parseCLIOutput(retryOut);
+              const { content: retryContent, toolCalls: retryTools } = parseToolCalls(retryParsed.result);
+              if (retryContent.trim() || retryTools.length > 0) {
+                const retryElapsed = Date.now() - startTime;
+                console.log(`[INFERENCE:CC] TEXT-ONLY RETRY OK ${retryElapsed}ms — ${retryContent.length}ch, ${retryTools.length} tools`);
+                const outputTokens = Math.round(retryParsed.result.length / 4);
+                return {
+                  id: retryParsed.sessionId || `cc-${Date.now()}`,
+                  model: MODEL_NAME,
+                  message: { role: "assistant" as const, content: retryContent, tool_calls: retryTools.length > 0 ? retryTools : undefined },
+                  toolCalls: retryTools.length > 0 ? retryTools : undefined,
+                  usage: { promptTokens: estTokens, completionTokens: outputTokens, totalTokens: estTokens + outputTokens },
+                  finishReason: retryTools.length > 0 ? "tool_calls" : "stop",
+                };
+              }
+            }
+          } catch (retryErr: any) {
+            console.warn(`[INFERENCE:CC] TEXT-ONLY RETRY FAIL — ${retryErr.message}`);
+          }
+        }
+        console.warn(`[INFERENCE:CC] CLI returned EMPTY after retry. Passing through as error.`);
+        throw new Error("CLI returned empty response (no content, no tools)");
+      }
 
       // ── Refusal Detection ──
       // Claude CLI sometimes interprets the agentic system prompt as a jailbreak.
@@ -501,7 +551,7 @@ export function createClaudeCodeInferenceClient(
       const elapsed = Date.now() - startTime;
       console.warn(`[INFERENCE:CC] FAIL ${elapsed}ms — ${err.message}`);
 
-      const _isRefusal = err.message?.startsWith("CLI model refused:");  // used when cascade is active
+      const isRefusal = err.message?.startsWith("CLI model refused:");
       const isTimeout = err.message?.includes("timed out");
 
       // On timeout: retry CLI once with a longer timeout before falling back
@@ -534,16 +584,9 @@ export function createClaudeCodeInferenceClient(
       }
 
       // ── CASCADE PAUSED — CLI-only mode (2026-03-04) ──
-      // Cascade fallback disabled by operator. CLI is the only inference path.
-      // To re-enable: uncomment the fallback.chat() calls below.
+      // Cascade fallback produces junk data. CLI is the only inference path.
       if (fallback) {
         console.warn(`[INFERENCE:CC] CLI failed but cascade is PAUSED — not falling back. Error: ${err.message?.slice(0, 200)}`);
-        // if (isRefusal) {
-        //   console.log(`[INFERENCE:CC] → API cascade fallback (skipping Anthropic — model refused system prompt)`);
-        //   return fallback.chat(messages, { ...opts, tier: "free" as any });
-        // }
-        // console.log(`[INFERENCE:CC] → API cascade fallback (free tier — CLI ${isTimeout ? "timed out" : "failed"})`);
-        // return fallback.chat(messages, { ...opts, tier: "free" as any });
       }
 
       throw err;

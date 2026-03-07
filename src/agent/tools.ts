@@ -117,6 +117,8 @@ function recordSearchWebCache(query: string, result: string): void {
 // ─── Self-Preservation Guard ───────────────────────────────────
 
 const FORBIDDEN_COMMAND_PATTERNS = [
+  // Claude CLI — suspended by operator
+  /\bclaude\b/,
   // Self-destruction
   /rm\s+(-rf?\s+)?.*\.automaton/,
   /rm\s+(-rf?\s+)?.*state\.db/,
@@ -124,15 +126,18 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /rm\s+(-rf?\s+)?.*automaton\.json/,
   /rm\s+(-rf?\s+)?.*heartbeat\.yml/,
   /rm\s+(-rf?\s+)?.*SOUL\.md/,
-  // Process killing (including self)
-  // NOTE: patterns must not over-match on multi-command strings containing "tiamat.live" URLs
-  /\bkill\s+(?!-0\b)(-\w+\s+)*\S*automaton/,       // kill <signal> ...automaton (but not kill -0 health checks)
-  /\bpkill\s+(-\w+\s+)*\S*automaton/,
-  /\bkill\s+(?!-0\b)(-\w+\s+)*\S*tiamat\b(?!\.live)/i,  // kill ...tiamat but NOT tiamat.live
-  /\bpkill\s+(-\w+\s+)*\S*tiamat\b(?!\.live)/i,          // pkill ...tiamat but NOT tiamat.live
+  /rm\s+(-rf?\s+)?.*INBOX\.md/,
+  /rm\s+(-rf?\s+)?.*MISSION\.md/,
+  /rm\s+(-rf?\s+)?.*PROGRESS\.md/,
+  /rm\s+(-rf?\s+)?.*CLAUDE-BRIEFING\.md/,
+  // Process killing — TOTAL LOCKDOWN (TIAMAT bypassed name-based guards via process pattern)
+  // kill/pkill/killall are FULLY BLOCKED except health-check (kill -0)
+  /\bkill\s+(?!-0\b)/,                              // any kill except health-check (kill -0)
+  /\bpkill\b/,                                       // all pkill — no exceptions
+  /\bkillall\b/,                                     // all killall — no exceptions
   /\bkill\s+\$\(cat\s+\/tmp\/tiamat/,               // kill $(cat /tmp/tiamat.pid)
   /start-tiamat\.sh/,
-  /systemctl\s+(stop|disable)\s+automaton/,
+  /\bsystemctl\s+(stop|disable|restart|reload)\b/,   // no systemctl mutations at all
   // Database destruction
   /DROP\s+TABLE/i,
   /DELETE\s+FROM\s+(turns|identity|kv|schema_version|skills|children|registry)/i,
@@ -194,8 +199,6 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/etc\/nginx\//,
   />\s*.*\/etc\/nginx\//,
   /\bnginx\s+-s\s+reload/,
-  /\bsystemctl\s+(restart|stop|reload)\s+nginx/,
-  /\bsystemctl\s+(restart|stop|reload)\s+tiamat-api/,
   // Credential harvesting
   /cat\s+.*\.ssh/,
   /cat\s+.*\.gnupg/,
@@ -229,7 +232,7 @@ const FOURCHAN_ACTIONS = ['catalog','thread','search','test'];
 const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/', '/root/CLAUDE-BRIEFING.md', '/root/sandbox/'];
 const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/tmp/', '/root/tiamat-app/', '/root/sandbox/'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
-const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts', 'summarize_api.py', 'landing.html', 'thoughts.html', 'hud/index.html'];
+const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts', 'summarize_api.py', 'landing.html', 'thoughts.html', 'hud/index.html', 'INBOX.md', 'SOUL.md', 'MISSION.md', 'CLAUDE-BRIEFING.md'];
 
 function isPathAllowed(filePath: string, allowedDirs: string[], blocked: string[]): string | null {
   const resolved = resolvePath(filePath.replace(/^~/, process.env.HOME || '/root'));
@@ -416,7 +419,7 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
       },
     },
     {
-      name: "check_usdc_balance",
+      name: "check_usdc_balance_disabled",
       description: "Check your on-chain USDC balance on Base.",
       category: "infra",
       parameters: { type: "object", properties: {} },
@@ -742,18 +745,7 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
         return `BLOCKED: Invalid email address "${to}".`;
       }
 
-      // OUTREACH BAN (2026-03-04) — send_email is for transactional/alert use only.
-      // Cold outreach has 0% conversion rate. Build things instead of emailing people.
-      const ALLOWED_RECIPIENTS = [
-        'tiamat.entity.prime@gmail.com', // operator
-        'grants@tiamat.live',            // internal
-        'tiamat@tiamat.live',            // internal
-        'techexp@socom.mil',             // approved federal contact
-      ];
-      const isInternal = ALLOWED_RECIPIENTS.includes(to) || to.endsWith('@tiamat.live');
-      if (!isInternal) {
-        return `BLOCKED: Outreach emails are BANNED. Cold email has 0% conversion. Build an API playground, SDK, or better docs instead. send_email is only for internal/operator alerts.`;
-      }
+      // Outreach allowed — but rate limited to 3/hr below to protect domain reputation.
 
       // Hard rate limit: max 3 emails per hour to prevent spam blasts that destroy domain reputation
       const LIMIT_FILE = '/root/.automaton/email_rate.json';
@@ -1061,20 +1053,8 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
       },
       required: ["question"],
     },
-    execute: async (args: Record<string, unknown>) => {
-      const { execFileSync } = await import("child_process");
-      const question = String(args.question || "").slice(0, 2000);
-      if (!question) return "Error: question is required";
-      try {
-        const result = execFileSync("python3", ["claude_chat.py", "ask", question], {
-          cwd: "/root/entity/src/agent",
-          timeout: 90000,
-          env: { ...process.env },
-        });
-        return result.toString().slice(0, 5000);
-      } catch (e: any) {
-        return `Claude chat error: ${e.message?.slice(0, 300)}`;
-      }
+    execute: async (_args: Record<string, unknown>) => {
+      return "DISABLED by operator. Claude Code CLI usage is suspended.";
     },
   },
   {
@@ -1322,8 +1302,8 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
         delete childEnv.ANTHROPIC_API_KEY;  // Force CLI to use Max subscription, not depleted API key
 
-        const TIMEOUT_MS = 900_000; // 15 minutes
-        const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py, landing.html, thoughts.html, /opt/tiamat-stream/hud/index.html. These files are chattr +i immutable — writes WILL fail. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
+        const TIMEOUT_MS = 600_000; // 10 minutes
+        const sysPrompt = "CRITICAL RULES: You MUST NOT modify these core files under any circumstances: loop.ts, tools.ts, system-prompt.ts, inference.ts, claude-code-inference.ts, summarize_api.py. If the task requires changing these files, refuse and explain why. You may create new files or modify other files.";
 
         // Helper to spawn one CLI attempt
         const runOnce = (): Promise<string> => new Promise((resolve) => {
@@ -1336,7 +1316,7 @@ Model: ${ctx.inference.getDefaultModel()}
               "--print",
               "--model", "sonnet",
               "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep",
-              "--max-turns", "50",
+              "--max-turns", "20",
               "--no-session-persistence",
               "--append-system-prompt", sysPrompt,
             ],
@@ -1561,8 +1541,9 @@ Model: ${ctx.inference.getDefaultModel()}
         delete childEnv.CLAUDE_CODE_ENTRYPOINT;
         delete childEnv.CLAUDE_CODE_SESSION_ID;
         delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
+        delete childEnv.ANTHROPIC_API_KEY;
 
-        const STEP_TIMEOUT = 600_000; // 10 min per step
+        const STEP_TIMEOUT = 300_000; // 5 min per step
 
         for (const step of steps) {
           let attempt = 0;
@@ -1580,7 +1561,7 @@ Model: ${ctx.inference.getDefaultModel()}
                 const chunks: Buffer[] = [];
                 const proc = spawn(
                   "claude",
-                  ["--print", "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep", "--max-turns", "40"],
+                  ["--print", "--model", "sonnet", "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep", "--max-turns", "20", "--no-session-persistence"],
                   { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
                 );
 
@@ -1629,29 +1610,14 @@ Model: ${ctx.inference.getDefaultModel()}
           results.push({
             step_id: step.id,
             success,
-            output_preview: output.slice(0, 500),
-            attempts: attempt,
+            output_preview: output.slice(-500),
+            attempts: attempt + 1,
           });
 
-          // If a step fails after retries, abort cascade
-          if (!success) {
-            return JSON.stringify({
-              workflow: workflowName,
-              status: "failed",
-              failed_at: step.id,
-              log: cascadeLog,
-              results,
-            });
-          }
+          if (!success) break; // Stop cascade on failure
         }
 
-        return JSON.stringify({
-          workflow: workflowName,
-          status: "completed",
-          steps_completed: results.length,
-          log: cascadeLog,
-          results,
-        });
+        return JSON.stringify({ workflow: workflowName, log: cascadeLog, results }, null, 2);
       },
     },
 
@@ -2503,9 +2469,13 @@ Model: ${ctx.inference.getDefaultModel()}
         const appPassword = process.env.BLUESKY_APP_PASSWORD;
         if (!handle) return "ERROR: BLUESKY_HANDLE not set in environment.";
         if (!appPassword) return "ERROR: BLUESKY_APP_PASSWORD not set in environment.";
-        const text = args.text as string;
-        if (!text?.trim()) return "ERROR: text is required.";
-        if (text.length > 300) return `ERROR: post is ${text.length} chars, max 300.`;
+        let text = (args.text as string)?.trim();
+        if (!text) return "ERROR: text is required.";
+        if (text.length > 300) {
+          // Truncate at last word boundary before 297 chars, add ellipsis
+          const cut = text.lastIndexOf(' ', 297);
+          text = text.slice(0, cut > 200 ? cut : 297) + '...';
+        }
 
         // Step 1: authenticate
         const sessionResp = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
@@ -2581,10 +2551,174 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Bluesky Read Feed ──
+    {
+      name: "read_bluesky",
+      description: "Read Bluesky feed, search posts, or get a user's posts. Returns post text, author, URI, like/repost counts. Use this to find posts to like/repost.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["timeline", "search", "author"], description: "timeline=your home feed, search=search posts, author=get user's posts" },
+          query: { type: "string", description: "Search query (for action=search) or handle like 'user.bsky.social' (for action=author)" },
+          limit: { type: "number", description: "Number of posts to return (default 10, max 25)" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const handle = process.env.BLUESKY_HANDLE;
+        const appPassword = process.env.BLUESKY_APP_PASSWORD;
+        if (!handle || !appPassword) return "ERROR: BLUESKY_HANDLE or BLUESKY_APP_PASSWORD not set.";
+
+        const action = args.action as string;
+        const query = args.query as string | undefined;
+        const limit = Math.min(Number(args.limit) || 10, 25);
+
+        // Authenticate
+        const sessionResp = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: handle, password: appPassword }),
+        });
+        if (!sessionResp.ok) return `ERROR auth (${sessionResp.status}): ${await sessionResp.text()}`;
+        const session = await sessionResp.json() as any;
+        const jwt = session.accessJwt;
+        const headers = { "Authorization": `Bearer ${jwt}` };
+
+        let url: string;
+        if (action === "search" && query) {
+          url = `https://bsky.social/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&limit=${limit}`;
+        } else if (action === "author" && query) {
+          url = `https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(query)}&limit=${limit}`;
+        } else {
+          url = `https://bsky.social/xrpc/app.bsky.feed.getTimeline?limit=${limit}`;
+        }
+
+        const resp = await fetch(url, { headers });
+        if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+        const data = await resp.json() as any;
+
+        const posts = (data.posts || data.feed || []).map((item: any) => {
+          const post = item.post || item;
+          return {
+            uri: post.uri,
+            cid: post.cid,
+            author: post.author?.handle || "?",
+            text: (post.record?.text || "").slice(0, 200),
+            likes: post.likeCount || 0,
+            reposts: post.repostCount || 0,
+            replies: post.replyCount || 0,
+          };
+        });
+
+        return JSON.stringify(posts.slice(0, limit), null, 1);
+      },
+    },
+
+    // ── Bluesky Like ──
+    {
+      name: "like_bluesky",
+      description: "Like a post on Bluesky. You MUST call read_bluesky first to get real uri and cid values. Do NOT fabricate or guess URIs/CIDs — they must come from read_bluesky output.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          uri: { type: "string", description: "Post URI (at://did:plc:.../app.bsky.feed.post/...)" },
+          cid: { type: "string", description: "Post CID" },
+        },
+        required: ["uri", "cid"],
+      },
+      execute: async (args, _ctx) => {
+        const handle = process.env.BLUESKY_HANDLE;
+        const appPassword = process.env.BLUESKY_APP_PASSWORD;
+        if (!handle || !appPassword) return "ERROR: BLUESKY_HANDLE or BLUESKY_APP_PASSWORD not set.";
+
+        const uri = args.uri as string;
+        const cid = args.cid as string;
+        if (!uri || !cid) return "ERROR: uri and cid are required. Call read_bluesky first to get real values.";
+        if (!cid.startsWith("bafy")) return `ERROR: Invalid CID "${cid.slice(0, 30)}". CIDs start with "bafy". You MUST use real values from read_bluesky — do NOT fabricate them.`;
+        if (!uri.startsWith("at://did:plc:")) return `ERROR: Invalid URI "${uri.slice(0, 40)}". URIs start with "at://did:plc:". Use real values from read_bluesky.`;
+
+        const sessionResp = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: handle, password: appPassword }),
+        });
+        if (!sessionResp.ok) return `ERROR auth (${sessionResp.status}): ${await sessionResp.text()}`;
+        const session = await sessionResp.json() as any;
+
+        const resp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.accessJwt}` },
+          body: JSON.stringify({
+            repo: session.did,
+            collection: "app.bsky.feed.like",
+            record: {
+              $type: "app.bsky.feed.like",
+              subject: { uri, cid },
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+        if (!resp.ok) return `ERROR liking (${resp.status}): ${await resp.text()}`;
+        return `Liked: ${uri}`;
+      },
+    },
+
+    // ── Bluesky Repost ──
+    {
+      name: "repost_bluesky",
+      description: "Repost a post on Bluesky. You MUST call read_bluesky first to get real uri and cid values. Do NOT fabricate or guess URIs/CIDs.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          uri: { type: "string", description: "Post URI (at://did:plc:.../app.bsky.feed.post/...)" },
+          cid: { type: "string", description: "Post CID" },
+        },
+        required: ["uri", "cid"],
+      },
+      execute: async (args, _ctx) => {
+        const handle = process.env.BLUESKY_HANDLE;
+        const appPassword = process.env.BLUESKY_APP_PASSWORD;
+        if (!handle || !appPassword) return "ERROR: BLUESKY_HANDLE or BLUESKY_APP_PASSWORD not set.";
+
+        const uri = args.uri as string;
+        const cid = args.cid as string;
+        if (!uri || !cid) return "ERROR: uri and cid are required. Call read_bluesky first to get real values.";
+        if (!cid.startsWith("bafy")) return `ERROR: Invalid CID "${cid.slice(0, 30)}". CIDs start with "bafy". You MUST use real values from read_bluesky — do NOT fabricate them.`;
+        if (!uri.startsWith("at://did:plc:")) return `ERROR: Invalid URI "${uri.slice(0, 40)}". URIs start with "at://did:plc:". Use real values from read_bluesky.`;
+
+        const sessionResp = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: handle, password: appPassword }),
+        });
+        if (!sessionResp.ok) return `ERROR auth (${sessionResp.status}): ${await sessionResp.text()}`;
+        const session = await sessionResp.json() as any;
+
+        const resp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.accessJwt}` },
+          body: JSON.stringify({
+            repo: session.did,
+            collection: "app.bsky.feed.repost",
+            record: {
+              $type: "app.bsky.feed.repost",
+              subject: { uri, cid },
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+        if (!resp.ok) return `ERROR reposting (${resp.status}): ${await resp.text()}`;
+        return `Reposted: ${uri}`;
+      },
+    },
+
     // ── Dev.to Publishing ──
     {
       name: "post_devto",
-      description: "Publish a markdown article to Dev.to. Reads content from a local markdown file. Returns the published URL. Requires DEV_TO_API_KEY env var.",
+      description: "Publish a markdown article to Dev.to (account: @tiamatenity). Reads content from a local markdown file. Returns the published URL. Write thoughtful, valuable articles — NOT promotional spam. Dev.to will ban accounts that self-promote aggressively. Focus on teaching, sharing insights, and providing value. Requires DEV_TO_API_KEY env var.",
       category: "social",
       parameters: {
         type: "object",
@@ -2597,6 +2731,10 @@ Model: ${ctx.inference.getDefaultModel()}
             type: "string",
             description: "Absolute path to the markdown file to publish (e.g. /root/.automaton/devto_drift_article.md)",
           },
+          content: {
+            type: "string",
+            description: "Inline markdown content (alternative to markdown_path — use one or the other)",
+          },
           tags: {
             type: "array",
             items: { type: "string" },
@@ -2607,25 +2745,51 @@ Model: ${ctx.inference.getDefaultModel()}
             description: "Set true to publish immediately, false for draft (default: true)",
           },
         },
-        required: ["title", "markdown_path"],
+        required: ["title"],
       },
       execute: async (args, _ctx) => {
         const apiKey = process.env.DEV_TO_API_KEY;
         if (!apiKey) return "ERROR: DEV_TO_API_KEY not set in environment.";
+        const _devtoCooldown = checkSocialCooldown("devto");
+        if (_devtoCooldown) return _devtoCooldown;
 
         const title = args.title as string;
         if (!title?.trim()) return "ERROR: title is required.";
 
         const mdPath = args.markdown_path as string;
-        if (!mdPath?.trim()) return "ERROR: markdown_path is required.";
+        const inlineContent = args.content as string;
+        if (!mdPath?.trim() && !inlineContent?.trim()) return "ERROR: provide either markdown_path or content.";
 
-        // Read the markdown file
-        const { readFileSync } = await import("fs");
+        // Read content from file or use inline
         let body: string;
-        try {
-          body = readFileSync(mdPath, "utf-8");
-        } catch (err: any) {
-          return `ERROR reading file ${mdPath}: ${err.message}`;
+        if (mdPath?.trim()) {
+          const { readFileSync, existsSync } = await import("fs");
+          if (!existsSync(mdPath)) {
+            return `BLOCKED: Article file ${mdPath} does not exist. You MUST write the article first using ask_claude_code or write_file BEFORE publishing. Do NOT proceed with cross-posting to other platforms until the article file is written and confirmed.`;
+          }
+          try {
+            body = readFileSync(mdPath, "utf-8");
+          } catch (err: any) {
+            return `ERROR reading file ${mdPath}: ${err.message}`;
+          }
+          if (body.trim().length < 200) {
+            return `BLOCKED: Article file ${mdPath} is too short (${body.trim().length} chars). A real article should be 1000+ chars. Write the full article first before publishing.`;
+          }
+        } else {
+          body = inlineContent;
+          if (body.trim().length < 200) {
+            return `BLOCKED: Inline content is too short (${body.trim().length} chars). A real article should be 1000+ chars. Write substantive content.`;
+          }
+        }
+
+        // Auto-backup article before publishing
+        {
+          const { mkdirSync, writeFileSync } = await import("fs");
+          const backupDir = "/root/sandbox/articles";
+          mkdirSync(backupDir, { recursive: true });
+          const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
+          const date = new Date().toISOString().slice(0, 10);
+          writeFileSync(`${backupDir}/${date}_${slug}.md`, `# ${title}\n\n${body}`, "utf-8");
         }
 
         // Strip the leading # title line if present (Dev.to uses the title field)
@@ -2663,6 +2827,196 @@ Model: ${ctx.inference.getDefaultModel()}
 
         const result = await resp.json() as any;
         return `Published to Dev.to: ${result.url || result.canonical_url || `https://dev.to/tiamat/${result.slug}`}`;
+      },
+    },
+
+    // ── Hashnode Publishing ──
+    {
+      name: "post_hashnode",
+      description: "Publish a markdown article to Hashnode. Reads content from a local markdown file. Returns the published URL. Requires HASHNODE_API_TOKEN and HASHNODE_PUBLICATION_ID env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Article title" },
+          markdown_path: { type: "string", description: "Absolute path to the markdown file to publish" },
+          content: { type: "string", description: "Inline markdown content (alternative to markdown_path)" },
+          tags: { type: "array", items: { type: "string" }, description: "Tag slugs (e.g. ['ai', 'privacy', 'python'])" },
+          canonical_url: { type: "string", description: "Original source URL for cross-posts (use Dev.to URL when cross-posting)" },
+        },
+        required: ["title"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.HASHNODE_API_TOKEN;
+        const pubId = process.env.HASHNODE_PUBLICATION_ID;
+        if (!token) return "ERROR: HASHNODE_API_TOKEN not set in environment.";
+        const _hashnodeCooldown = checkSocialCooldown("hashnode");
+        if (_hashnodeCooldown) return _hashnodeCooldown;
+        if (!pubId) return "ERROR: HASHNODE_PUBLICATION_ID not set in environment.";
+
+        const title = args.title as string;
+        if (!title?.trim()) return "ERROR: title is required.";
+
+        const mdPath = args.markdown_path as string;
+        const inlineContent = args.content as string;
+        if (!mdPath?.trim() && !inlineContent?.trim()) return "ERROR: provide either markdown_path or content.";
+
+        let content: string;
+        if (mdPath?.trim()) {
+          const { readFileSync, existsSync } = await import("fs");
+          if (!existsSync(mdPath)) {
+            return `BLOCKED: Article file ${mdPath} does not exist. You MUST write the article first using ask_claude_code or write_file BEFORE publishing. Do NOT proceed with cross-posting until the article file is written and confirmed.`;
+          }
+          try { content = readFileSync(mdPath, "utf-8"); } catch (err: any) { return `ERROR reading file: ${err.message}`; }
+          if (content.trim().length < 200) {
+            return `BLOCKED: Article file ${mdPath} is too short (${content.trim().length} chars). Write the full article first.`;
+          }
+        } else {
+          content = inlineContent;
+        }
+
+        // Auto-backup article before publishing
+        {
+          const { mkdirSync, writeFileSync, existsSync } = await import("fs");
+          const backupDir = "/root/sandbox/articles";
+          mkdirSync(backupDir, { recursive: true });
+          const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
+          const date = new Date().toISOString().slice(0, 10);
+          const backupPath = `${backupDir}/${date}_${slug}.md`;
+          if (!existsSync(backupPath)) writeFileSync(backupPath, `# ${title}\n\n${content}`, "utf-8");
+        }
+
+        // Strip leading # title
+        const lines = content.split("\n");
+        if (lines[0]?.startsWith("# ")) { lines.shift(); content = lines.join("\n").trimStart(); }
+
+        const tagSlugs = (args.tags as string[] || []);
+        const tags = tagSlugs.map(s => ({ name: s, slug: s.toLowerCase().replace(/\s+/g, "-") }));
+
+        const query = `mutation ($input: PublishPostInput!) { publishPost(input: $input) { post { id url title } } }`;
+        const variables = {
+          input: {
+            publicationId: pubId,
+            title,
+            contentMarkdown: content,
+            tags: tags.length > 0 ? tags : undefined,
+            originalArticleURL: (args.canonical_url as string) || undefined,
+          },
+        };
+
+        const resp = await fetch("https://gql.hashnode.com", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": token },
+          body: JSON.stringify({ query, variables }),
+        });
+
+        if (!resp.ok) return `ERROR from Hashnode (${resp.status}): ${await resp.text()}`;
+        const result = await resp.json() as any;
+        if (result.errors) return `ERROR: ${JSON.stringify(result.errors)}`;
+        const post = result.data?.publishPost?.post;
+        return `Published to Hashnode: ${post?.url || "unknown"} (id: ${post?.id || "?"})`;
+      },
+    },
+
+    // ── Zenodo Publishing (Academic Preprints) ──
+    {
+      name: "post_zenodo",
+      description: "Upload and publish a paper/preprint to Zenodo (CERN open repository). Uploads a PDF or markdown file, sets metadata, publishes, and mints a DOI. WARNING: Publishing is IRREVERSIBLE — the DOI is permanent. Requires ZENODO_API_TOKEN env var.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Paper title" },
+          description: { type: "string", description: "Abstract (HTML supported)" },
+          file_path: { type: "string", description: "Absolute path to the file to upload (PDF preferred)" },
+          creators: { type: "string", description: "Comma-separated authors as 'LastName, FirstName; LastName2, FirstName2'" },
+          keywords: { type: "array", items: { type: "string" }, description: "Keywords for discovery" },
+          publish: { type: "boolean", description: "true = publish immediately (mints DOI, IRREVERSIBLE). false = create draft only. Default: false" },
+        },
+        required: ["title", "description", "file_path", "creators"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.ZENODO_API_TOKEN;
+        if (!token) return "ERROR: ZENODO_API_TOKEN not set in environment.";
+
+        const { readFileSync } = await import("fs");
+        const { basename } = await import("path");
+
+        const title = args.title as string;
+        const description = args.description as string;
+        const filePath = args.file_path as string;
+        const shouldPublish = (args.publish as boolean) === true;
+
+        // Parse creators "Last, First; Last2, First2"
+        const creatorStr = args.creators as string;
+        const creators = creatorStr.split(";").map(c => {
+          const trimmed = c.trim();
+          return { name: trimmed, affiliation: "ENERGENAI LLC" };
+        });
+
+        // Step 1: Create empty deposition
+        const createResp = await fetch("https://zenodo.org/api/deposit/depositions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({}),
+        });
+        if (!createResp.ok) return `ERROR creating deposition (${createResp.status}): ${await createResp.text()}`;
+        const deposition = await createResp.json() as any;
+        const depId = deposition.id;
+        const bucketUrl = deposition.links?.bucket;
+        if (!bucketUrl) return "ERROR: No bucket URL in deposition response.";
+
+        // Step 2: Upload file
+        let fileData: string;
+        try { fileData = readFileSync(filePath, "base64"); } catch (err: any) { return `ERROR reading file: ${err.message}`; }
+        const fileName = basename(filePath);
+
+        // Convert base64 to Blob for fetch body
+        const binaryStr = atob(fileData);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const blob = new Blob([bytes]);
+
+        const uploadResp = await fetch(`${bucketUrl}/${fileName}`, {
+          method: "PUT",
+          headers: { "Authorization": `Bearer ${token}` },
+          body: blob,
+        });
+        if (!uploadResp.ok) return `ERROR uploading file (${uploadResp.status}): ${await uploadResp.text()}`;
+
+        // Step 3: Set metadata
+        const keywords = (args.keywords as string[]) || [];
+        const metaResp = await fetch(`https://zenodo.org/api/deposit/depositions/${depId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({
+            metadata: {
+              title,
+              upload_type: "publication",
+              publication_type: "preprint",
+              publication_date: new Date().toISOString().split("T")[0],
+              description,
+              creators,
+              access_right: "open",
+              license: "cc-by-4.0",
+              keywords: keywords.length > 0 ? keywords : undefined,
+            },
+          }),
+        });
+        if (!metaResp.ok) return `ERROR setting metadata (${metaResp.status}): ${await metaResp.text()}`;
+
+        // Step 4: Optionally publish (mints DOI — irreversible)
+        if (shouldPublish) {
+          const pubResp = await fetch(`https://zenodo.org/api/deposit/depositions/${depId}/actions/publish`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+          });
+          if (!pubResp.ok) return `ERROR publishing (${pubResp.status}): ${await pubResp.text()}`;
+          const published = await pubResp.json() as any;
+          return `Published to Zenodo! DOI: ${published.doi || "pending"} | URL: ${published.doi_url || published.links?.html || "?"} | ID: ${depId}`;
+        }
+
+        return `Draft created on Zenodo (ID: ${depId}). File uploaded. NOT published yet — call post_zenodo with publish=true when ready, or publish manually at https://zenodo.org/deposit/${depId}`;
       },
     },
 
@@ -3116,6 +3470,367 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
           recordSocialPost("facebook");
           return `Posted to Facebook. Post ID: ${data.id}`;
         }
+      },
+    },
+
+    // ── Medium Publishing ──
+    {
+      name: "post_medium",
+      description: "Publish a markdown article to Medium. Reads content from a local markdown file or inline content. Returns the published URL. Write valuable, insightful articles — NOT promotional spam. Requires MEDIUM_TOKEN env var.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Article title" },
+          markdown_path: { type: "string", description: "Absolute path to the markdown file to publish" },
+          content: { type: "string", description: "Inline markdown content (alternative to markdown_path)" },
+          tags: { type: "array", items: { type: "string" }, description: "Up to 5 tags (e.g. ['ai', 'privacy', 'cybersecurity'])" },
+          canonical_url: { type: "string", description: "Original source URL for cross-posts (use Dev.to URL when cross-posting)" },
+          published: { type: "boolean", description: "true = public (default), false = draft" },
+        },
+        required: ["title"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.MEDIUM_TOKEN;
+        if (!token) return "Medium not configured — skipping (set MEDIUM_TOKEN in .env)";
+        const _cooldown = checkSocialCooldown("medium");
+        if (_cooldown) return _cooldown;
+
+        const title = args.title as string;
+        if (!title?.trim()) return "ERROR: title is required.";
+
+        const mdPath = args.markdown_path as string;
+        const inlineContent = args.content as string;
+        if (!mdPath?.trim() && !inlineContent?.trim()) return "ERROR: provide either markdown_path or content.";
+
+        let body: string;
+        if (mdPath?.trim()) {
+          const { readFileSync, existsSync } = await import("fs");
+          if (!existsSync(mdPath)) {
+            return `BLOCKED: Article file ${mdPath} does not exist. You MUST write the article first using ask_claude_code or write_file BEFORE publishing. Do NOT proceed with cross-posting until the article file is written and confirmed.`;
+          }
+          try { body = readFileSync(mdPath, "utf-8"); } catch (err: any) { return `ERROR reading file ${mdPath}: ${err.message}`; }
+          if (body.trim().length < 200) {
+            return `BLOCKED: Article file ${mdPath} is too short (${body.trim().length} chars). Write the full article first.`;
+          }
+        } else {
+          body = inlineContent;
+        }
+
+        // Get user ID
+        const meResp = await fetch("https://api.medium.com/v1/me", {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+        });
+        if (!meResp.ok) return `ERROR fetching Medium user (${meResp.status}): ${await meResp.text()}`;
+        const meData = await meResp.json() as any;
+        const userId = meData?.data?.id;
+        if (!userId) return `ERROR: could not get Medium user ID from response: ${JSON.stringify(meData).slice(0, 200)}`;
+
+        const tags = (args.tags as string[] | undefined) || [];
+        const publishStatus = args.published !== false ? "public" : "draft";
+
+        const payload = {
+          title,
+          contentFormat: "markdown",
+          content: body,
+          tags: tags.slice(0, 5),
+          publishStatus,
+          canonicalUrl: args.canonical_url as string | undefined,
+        };
+
+        const resp = await fetch(`https://api.medium.com/v1/users/${userId}/posts`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.text();
+          return `ERROR publishing to Medium (${resp.status}): ${err}`;
+        }
+
+        const result = await resp.json() as any;
+        recordSocialPost("medium");
+        return `Published to Medium: ${result?.data?.url || "(no URL in response)"}`;
+      },
+    },
+
+    // ── LinkedIn Publishing ──
+    {
+      name: "post_linkedin",
+      description: "Post to LinkedIn profile. Supports text posts and article links. Use for professional content — privacy, cybersecurity, AI governance, compliance topics. IMPORTANT: When including article links, use the REAL URL returned by post_devto — do NOT guess or fabricate URLs. Requires LINKEDIN_ACCESS_TOKEN and LINKEDIN_PERSON_ID env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "Post text (up to 3000 chars). Include the article link in the text." },
+          article_url: { type: "string", description: "Optional URL to share as a link preview card" },
+          article_title: { type: "string", description: "Title for the link preview (used with article_url)" },
+          article_description: { type: "string", description: "Description for the link preview (used with article_url)" },
+        },
+        required: ["text"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.LINKEDIN_ACCESS_TOKEN;
+        const personId = process.env.LINKEDIN_PERSON_ID;
+        if (!token || !personId) return "LinkedIn not configured — skipping (set LINKEDIN_ACCESS_TOKEN and LINKEDIN_PERSON_ID in .env)";
+        const _cooldown = checkSocialCooldown("linkedin");
+        if (_cooldown) return _cooldown;
+
+        const text = args.text as string;
+        if (!text?.trim()) return "ERROR: text is required.";
+
+        const articleUrl = args.article_url as string | undefined;
+        const author = `urn:li:person:${personId}`;
+
+        // Build payload for /rest/posts API (versioned, replaces UGC)
+        const payload: any = {
+          author,
+          commentary: text,
+          visibility: "PUBLIC",
+          distribution: { feedDistribution: "MAIN_FEED" },
+          lifecycleState: "PUBLISHED",
+        };
+
+        // Add article link if provided
+        if (articleUrl) {
+          payload.content = {
+            article: {
+              source: articleUrl,
+              title: (args.article_title as string) || undefined,
+              description: (args.article_description as string) || undefined,
+            },
+          };
+        }
+
+        const resp = await fetch("https://api.linkedin.com/rest/posts", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "LinkedIn-Version": "202504",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.text();
+          return `ERROR posting to LinkedIn (${resp.status}): ${err}`;
+        }
+
+        // 201 Created — post ID is in x-restli-id header
+        const postId = resp.headers.get("x-restli-id") || resp.headers.get("X-RestLi-Id") || "(posted)";
+        recordSocialPost("linkedin");
+        return `Posted to LinkedIn: ${postId}`;
+      },
+    },
+
+    // ── Mastodon Publishing ──
+    {
+      name: "post_mastodon",
+      description: "Post to Mastodon (decentralized social network). The infosec community lives here. Supports text posts with optional content warnings. IMPORTANT: When including article links, use the REAL URL returned by post_devto — do NOT guess or fabricate URLs. Requires MASTODON_ACCESS_TOKEN and MASTODON_INSTANCE env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "Post text (up to 500 chars for most instances). Include hashtags and links." },
+          spoiler_text: { type: "string", description: "Optional content warning / subject line" },
+          visibility: { type: "string", description: "Post visibility: public (default), unlisted, private, direct" },
+        },
+        required: ["text"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.MASTODON_ACCESS_TOKEN;
+        const instance = process.env.MASTODON_INSTANCE;
+        if (!token || !instance) return "Mastodon not configured — skipping (set MASTODON_ACCESS_TOKEN and MASTODON_INSTANCE in .env)";
+        const _cooldown = checkSocialCooldown("mastodon");
+        if (_cooldown) return _cooldown;
+
+        const text = args.text as string;
+        if (!text?.trim()) return "ERROR: text is required.";
+
+        const payload: any = {
+          status: text,
+          visibility: (args.visibility as string) || "public",
+        };
+        if (args.spoiler_text) payload.spoiler_text = args.spoiler_text;
+
+        const baseUrl = instance.startsWith("http") ? instance : `https://${instance}`;
+        const resp = await fetch(`${baseUrl}/api/v1/statuses`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.text();
+          return `ERROR posting to Mastodon (${resp.status}): ${err}`;
+        }
+
+        const result = await resp.json() as any;
+        recordSocialPost("mastodon");
+        return `Posted to Mastodon: ${result?.url || result?.uri || "(posted)"}`;
+      },
+    },
+
+    // ── Mastodon Engagement ──
+    {
+      name: "mastodon_engage",
+      description: "Engage on Mastodon: search posts, like, boost, follow accounts, view timelines. The infosec community lives here — engage authentically. Actions: search, like, boost, follow, timeline, followers. Requires MASTODON_ACCESS_TOKEN and MASTODON_INSTANCE env vars.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "Action: search, like, boost, follow, timeline, followers" },
+          query: { type: "string", description: "Search query (for action=search)" },
+          status_id: { type: "string", description: "Status/post ID (for action=like/boost)" },
+          account_id: { type: "string", description: "Account ID (for action=follow)" },
+          hashtag: { type: "string", description: "Hashtag to browse (for action=timeline, without #)" },
+          limit: { type: "number", description: "Number of results (default 10, max 40)" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.MASTODON_ACCESS_TOKEN;
+        const instance = process.env.MASTODON_INSTANCE;
+        if (!token || !instance) return "Mastodon not configured — skipping";
+        const baseUrl = instance.startsWith("http") ? instance : `https://${instance}`;
+        const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+        const action = args.action as string;
+        const limit = Math.min((args.limit as number) || 10, 40);
+
+        if (action === "search") {
+          const q = args.query as string;
+          if (!q) return "ERROR: query is required for search";
+          const resp = await fetch(`${baseUrl}/api/v2/search?q=${encodeURIComponent(q)}&type=statuses&limit=${limit}`, { headers });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          const data = await resp.json() as any;
+          const statuses = (data.statuses || []).map((s: any) => ({
+            id: s.id, account: s.account?.acct, content: s.content?.replace(/<[^>]*>/g, "").slice(0, 200),
+            boosts: s.reblogs_count, likes: s.favourites_count, url: s.url,
+          }));
+          return JSON.stringify(statuses, null, 2);
+        }
+
+        if (action === "like") {
+          const id = args.status_id as string;
+          if (!id) return "ERROR: status_id is required";
+          const resp = await fetch(`${baseUrl}/api/v1/statuses/${id}/favourite`, { method: "POST", headers });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          return `Liked Mastodon post ${id}`;
+        }
+
+        if (action === "boost") {
+          const id = args.status_id as string;
+          if (!id) return "ERROR: status_id is required";
+          const resp = await fetch(`${baseUrl}/api/v1/statuses/${id}/reblog`, { method: "POST", headers });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          return `Boosted Mastodon post ${id}`;
+        }
+
+        if (action === "follow") {
+          const id = args.account_id as string;
+          if (!id) return "ERROR: account_id is required";
+          const resp = await fetch(`${baseUrl}/api/v1/accounts/${id}/follow`, { method: "POST", headers });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          const result = await resp.json() as any;
+          return `Followed @${result.following || id} on Mastodon`;
+        }
+
+        if (action === "timeline") {
+          const hashtag = args.hashtag as string;
+          const url = hashtag
+            ? `${baseUrl}/api/v1/timelines/tag/${encodeURIComponent(hashtag)}?limit=${limit}`
+            : `${baseUrl}/api/v1/timelines/public?limit=${limit}`;
+          const resp = await fetch(url, { headers });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          const statuses = (await resp.json() as any[]).map((s: any) => ({
+            id: s.id, account: s.account?.acct, content: s.content?.replace(/<[^>]*>/g, "").slice(0, 200),
+            boosts: s.reblogs_count, likes: s.favourites_count, url: s.url,
+            account_id: s.account?.id,
+          }));
+          return JSON.stringify(statuses, null, 2);
+        }
+
+        if (action === "followers") {
+          // Look up accounts by search to find people to follow
+          const q = args.query as string || "infosec AI privacy";
+          const resp = await fetch(`${baseUrl}/api/v2/search?q=${encodeURIComponent(q)}&type=accounts&limit=${limit}`, { headers });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          const data = await resp.json() as any;
+          const accounts = (data.accounts || []).map((a: any) => ({
+            id: a.id, acct: a.acct, display_name: a.display_name, followers: a.followers_count,
+            following: a.following_count, bio: a.note?.replace(/<[^>]*>/g, "").slice(0, 150), url: a.url,
+          }));
+          return JSON.stringify(accounts, null, 2);
+        }
+
+        return "Unknown action. Use: search, like, boost, follow, timeline, followers";
+      },
+    },
+
+    // ── LinkedIn Engagement ──
+    {
+      name: "linkedin_engage",
+      description: "Engage on LinkedIn: like posts, comment, follow. Use for professional networking in AI/privacy/cybersecurity space. Actions: like, comment. Requires LINKEDIN_ACCESS_TOKEN env var.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "Action: like, comment" },
+          post_urn: { type: "string", description: "Post URN (e.g. urn:li:share:1234567890)" },
+          comment_text: { type: "string", description: "Comment text (for action=comment)" },
+        },
+        required: ["action", "post_urn"],
+      },
+      execute: async (args, _ctx) => {
+        const token = process.env.LINKEDIN_ACCESS_TOKEN;
+        const personId = process.env.LINKEDIN_PERSON_ID;
+        if (!token || !personId) return "LinkedIn not configured — skipping";
+        const action = args.action as string;
+        const postUrn = args.post_urn as string;
+        if (!postUrn) return "ERROR: post_urn is required";
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-Restli-Protocol-Version": "2.0.0",
+          "LinkedIn-Version": "202504",
+        };
+
+        if (action === "like") {
+          const resp = await fetch("https://api.linkedin.com/rest/reactions", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              root: postUrn,
+              reactionType: "LIKE",
+              actor: `urn:li:person:${personId}`,
+            }),
+          });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          return `Liked LinkedIn post ${postUrn}`;
+        }
+
+        if (action === "comment") {
+          const text = args.comment_text as string;
+          if (!text) return "ERROR: comment_text is required";
+          const resp = await fetch("https://api.linkedin.com/rest/socialActions/" + encodeURIComponent(postUrn) + "/comments", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              actor: `urn:li:person:${personId}`,
+              message: { text },
+            }),
+          });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          return `Commented on LinkedIn post ${postUrn}`;
+        }
+
+        return "Unknown action. Use: like, comment";
       },
     },
 
@@ -3823,6 +4538,137 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       },
     },
     {
+      name: "query_knowledge",
+      description: "Query the knowledge graph. Actions: 'entity <name>' (all facts about entity), 'relation <rel>' (all entities with relation), 'search <term>' (fuzzy search across all facts), 'stats' (graph overview). Returns entity-relation-value triples.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "entity|relation|search|stats" },
+          query: { type: "string", description: "Entity name, relation name, or search term" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const action = String(args.action || "stats").toLowerCase();
+        const query = String(args.query || "");
+        const db = memory.getDb();
+        if (!db) return "Knowledge graph not available.";
+
+        if (action === "entity" && query) {
+          const rows = db.prepare(
+            `SELECT relation, value, confidence, status FROM tiamat_knowledge WHERE entity = ? AND status != 'deprecated' ORDER BY confidence DESC`
+          ).all(query) as any[];
+          if (!rows.length) return `No facts found for entity "${query}".`;
+          return `${query}:\n` + rows.map((r: any) => `  —[${r.relation}]→ ${r.value} (conf:${r.confidence}, ${r.status})`).join("\n");
+        }
+
+        if (action === "relation" && query) {
+          const rows = db.prepare(
+            `SELECT entity, value, confidence FROM tiamat_knowledge WHERE relation = ? AND status != 'deprecated' ORDER BY confidence DESC LIMIT 50`
+          ).all(query) as any[];
+          if (!rows.length) return `No facts with relation "${query}".`;
+          return rows.map((r: any) => `${r.entity} —[${query}]→ ${r.value} (conf:${r.confidence})`).join("\n");
+        }
+
+        if (action === "search" && query) {
+          const rows = db.prepare(
+            `SELECT entity, relation, value, confidence FROM tiamat_knowledge WHERE status != 'deprecated' AND (entity LIKE ? OR relation LIKE ? OR value LIKE ?) ORDER BY confidence DESC LIMIT 30`
+          ).all(`%${query}%`, `%${query}%`, `%${query}%`) as any[];
+          if (!rows.length) return `No knowledge matching "${query}".`;
+          return rows.map((r: any) => `${r.entity} —[${r.relation}]→ ${r.value} (conf:${r.confidence})`).join("\n");
+        }
+
+        if (action === "stats") {
+          const counts = db.prepare(
+            `SELECT COUNT(*) as total, COUNT(DISTINCT entity) as entities, COUNT(DISTINCT relation) as relations FROM tiamat_knowledge WHERE status != 'deprecated'`
+          ).get() as any;
+          const topEntities = db.prepare(
+            `SELECT entity, COUNT(*) as cnt FROM tiamat_knowledge WHERE status != 'deprecated' GROUP BY entity ORDER BY cnt DESC LIMIT 10`
+          ).all() as any[];
+          const topRelations = db.prepare(
+            `SELECT relation, COUNT(*) as cnt FROM tiamat_knowledge WHERE status != 'deprecated' GROUP BY relation ORDER BY cnt DESC LIMIT 10`
+          ).all() as any[];
+          return `Knowledge Graph: ${counts.total} facts, ${counts.entities} entities, ${counts.relations} relations\n` +
+            `Top entities: ${topEntities.map((r: any) => `${r.entity}(${r.cnt})`).join(", ")}\n` +
+            `Top relations: ${topRelations.map((r: any) => `${r.relation}(${r.cnt})`).join(", ")}`;
+        }
+
+        return "Invalid action. Use: entity, relation, search, or stats";
+      },
+    },
+    {
+      name: "manage_automations",
+      description: "Manage recurring scheduled tasks (cron). Actions: 'list' (show all), 'create' (new task), 'delete <id>' (remove), 'toggle <id>' (enable/disable). For create, pass name, command, schedule_type (cycles|minutes), schedule_value.",
+      category: "cognitive",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["list", "create", "delete", "toggle"], description: "list|create|delete|toggle" },
+          id: { type: "string", description: "Task ID — for delete/toggle" },
+          name: { type: "string", description: "Task name — for create" },
+          command: { type: "string", description: "Shell command to run — for create" },
+          schedule_type: { type: "string", enum: ["cycles", "minutes"], description: "cycles or minutes — for create" },
+          schedule_value: { type: "number", description: "Interval value — for create (e.g. 30 cycles or 60 minutes)" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const { loadCronTasks, saveCronTasks } = await import("./pacer.js");
+        const state = loadCronTasks();
+        const action = String(args.action || "list").toLowerCase();
+
+        if (action === "list") {
+          if (!state.tasks.length) return "No automations configured.";
+          return state.tasks.map(t =>
+            `[${t.id}] ${t.name || "unnamed"} — ${t.enabled ? "✅" : "❌"} ${t.schedule_type}:${t.schedule_value} | cmd: ${t.command?.slice(0, 80)} | last: ${t.last_run_time || "never"}`
+          ).join("\n");
+        }
+
+        if (action === "create") {
+          if (!args.name || !args.command) return "create requires name and command";
+          const schedType = (args.schedule_type as string) || "minutes";
+          const schedVal = (args.schedule_value as number) || 60;
+          if (!["cycles", "minutes"].includes(schedType)) return "schedule_type must be 'cycles' or 'minutes'";
+          if (schedVal < 1) return "schedule_value must be >= 1";
+          const id = `cron-${Date.now().toString(36)}`;
+          state.tasks.push({
+            id,
+            name: args.name as string,
+            command: args.command as string,
+            schedule_type: schedType as "cycles" | "minutes",
+            schedule_value: schedVal,
+            last_run_cycle: null,
+            last_run_time: null,
+            last_result: null,
+            created_by_ticket: null,
+            enabled: true,
+            created_at: new Date().toISOString(),
+          });
+          saveCronTasks(state);
+          return `Created automation [${id}] "${args.name}" — runs every ${schedVal} ${schedType}`;
+        }
+
+        if (action === "delete" && args.id) {
+          const idx = state.tasks.findIndex(t => t.id === args.id);
+          if (idx === -1) return `No automation with id "${args.id}"`;
+          const removed = state.tasks.splice(idx, 1)[0];
+          saveCronTasks(state);
+          return `Deleted automation [${removed.id}] "${removed.name}"`;
+        }
+
+        if (action === "toggle" && args.id) {
+          const task = state.tasks.find(t => t.id === args.id);
+          if (!task) return `No automation with id "${args.id}"`;
+          task.enabled = !task.enabled;
+          saveCronTasks(state);
+          return `[${task.id}] "${task.name}" is now ${task.enabled ? "ENABLED ✅" : "DISABLED ❌"}`;
+        }
+
+        return "Invalid action. Use: list, create, delete, toggle";
+      },
+    },
+    {
       name: "reflect",
       description: "Deep reflection on accumulated memories, strategies, and knowledge. Use during strategic cycles to understand patterns, what's working/failing, and what to prioritize. Returns comprehensive memory analysis including tool reliability data and knowledge health.",
       category: "cognitive",
@@ -3932,76 +4778,8 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
           bottleneck: { type: "string", description: "Optional: describe the specific issue to fix. If omitted, will be derived from reflect()." },
         },
       },
-      execute: async (args, _ctx) => {
-        const { writeFileSync } = await import("fs");
-
-        // Get reflection if no bottleneck specified
-        let issue = args.bottleneck as string;
-        if (!issue) {
-          try {
-            const reflection = await memory.reflect();
-            // Extract failed strategies to derive bottleneck
-            const failLines = reflection.split("\n").filter(l => l.includes("Failed") || l.includes("failed") || l.includes("error")).slice(0, 3);
-            issue = failLines.length > 0
-              ? `Based on memory reflection, top issues: ${failLines.join("; ")}`
-              : "No clear bottleneck found in memory. Review PROGRESS.md and identify what to improve.";
-          } catch {
-            issue = "Could not load reflection — fix memory system";
-          }
-        }
-
-        const task = `You are TIAMAT's self-improvement system. Analyze this bottleneck and fix it:
-
-BOTTLENECK: ${issue}
-
-Steps:
-1. Read relevant files to understand the problem
-2. Make the minimal targeted fix
-3. If it's a code change in /root/entity/src/, rebuild with: cd /root/entity && pnpm build
-4. If it's a Python/API change, test with curl
-
-Be surgical — fix only what's broken. Return a summary of what you changed.`;
-
-        writeFileSync("/root/.automaton/claude_task.txt", task, "utf-8");
-
-        const childEnv = { ...process.env };
-        delete childEnv.CLAUDECODE;
-        delete childEnv.CLAUDE_CODE_ENTRYPOINT;
-        delete childEnv.CLAUDE_CODE_SESSION_ID;
-        delete childEnv.ANTHROPIC_AI_TOOL_USE_SESSION_ID;
-
-        // Async spawn — non-blocking so heartbeats stay alive
-        const { spawn: spawnProc } = await import('child_process');
-        const SELF_IMPROVE_TIMEOUT = 300_000; // 5 min
-        const result = await new Promise<string>((resolve) => {
-          const chunks: Buffer[] = [];
-          const proc = spawnProc(
-            "claude",
-            ["--print", "--allowedTools", "Edit,Write,Read,Bash,Glob,Grep", "--max-turns", "20"],
-            { env: childEnv, cwd: "/root/entity", stdio: ["pipe", "pipe", "pipe"] },
-          );
-          proc.stdout.on("data", (d: Buffer) => chunks.push(d));
-          proc.stderr.on("data", (d: Buffer) => chunks.push(d));
-          proc.stdin.write(task);
-          proc.stdin.end();
-          const timer = setTimeout(() => {
-            proc.kill("SIGTERM");
-            setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 3000);
-            const partial = Buffer.concat(chunks).toString("utf-8").trim();
-            resolve(partial ? `(timed out — partial)\n${partial}` : "ERROR: self_improve timed out");
-          }, SELF_IMPROVE_TIMEOUT);
-          proc.on("close", () => {
-            clearTimeout(timer);
-            resolve(Buffer.concat(chunks).toString("utf-8").trim() || "(no output)");
-          });
-          proc.on("error", (e: Error) => {
-            clearTimeout(timer);
-            resolve(`ERROR: ${e.message}`);
-          });
-        });
-
-        await memory.logStrategy("self_improve", issue, result.slice(0, 200), undefined, _ctx.turnNumber);
-        return `Self-improvement complete:\n${result.slice(0, 1000)}`;
+      execute: async (_args, _ctx) => {
+        return "DISABLED by operator. Claude Code CLI usage is suspended.";
       },
     },
 
@@ -4830,31 +5608,50 @@ print(f"Sent {mid}")
         },
         required: ["action"],
       },
-      execute: async (args, _ctx) => {
-        const { execFileSync } = await import('child_process');
-        const raw = args as Record<string, unknown>;
-        // Haiku keeps hallucinating extra params — just extract action, default to 'run'
-        let action = String(raw.action || 'run').toLowerCase();
-        if (!['scan', 'run', 'stats', 'like', 'recast'].includes(action)) action = 'run';
-        const cast_hash = raw.cast_hash as string | undefined;
-        if ((action === 'like' || action === 'recast') && !cast_hash)
-          return `${action} requires a cast_hash parameter`;
-        const pyArgs = ['farcaster_engage.py', action];
-        if (cast_hash) pyArgs.push(cast_hash);
-        try {
-          const output = execFileSync('python3', pyArgs, {
-            encoding: 'utf-8', timeout: 90000, cwd: '/root/entity/src/agent',
-            env: { ...process.env }
-          }).trim();
-          if (['run', 'like', 'recast'].includes(action)) {
-            const fs = await import('fs');
-            fs.appendFileSync('/root/.automaton/tiamat.log', `\n[ENGAGE] ${action}: ${output.slice(0, 200)}\n`);
+      execute: (() => {
+        let lastRateLimitResult: string | null = null;
+        let lastRateLimitTime = 0;
+        const ENGAGE_COOLDOWN_MS = 6 * 60 * 1000; // 6 min (Python rate limit is 5 min)
+        return async (args: any, _ctx: any) => {
+          const { execFileSync } = await import('child_process');
+          const raw = args as Record<string, unknown>;
+          let action = String(raw.action || 'run').toLowerCase();
+          if (!['scan', 'run', 'stats', 'like', 'recast'].includes(action)) action = 'run';
+          const cast_hash = raw.cast_hash as string | undefined;
+          if ((action === 'like' || action === 'recast') && !cast_hash)
+            return `${action} requires a cast_hash parameter`;
+          // If last run was rate-limited, return SHORT cooldown message (no matches — showing them makes model retry)
+          if ((action === 'run' || action === 'scan') && lastRateLimitResult) {
+            const elapsed = Date.now() - lastRateLimitTime;
+            if (elapsed < ENGAGE_COOLDOWN_MS) {
+              const secsLeft = Math.ceil((ENGAGE_COOLDOWN_MS - elapsed) / 1000);
+              return `COOLDOWN: Farcaster engage on cooldown. ${secsLeft}s remaining. Do NOT call farcaster_engage again — work a ticket, build something, or post on Bluesky instead.`;
+            }
+            lastRateLimitResult = null;
           }
-          return output.slice(0, 3000);
-        } catch (e: any) {
-          return `farcaster_engage failed: ${e.stderr?.slice(0, 500) || e.message}`;
-        }
-      },
+          const pyArgs = ['farcaster_engage.py', action];
+          if (cast_hash) pyArgs.push(cast_hash);
+          try {
+            const output = execFileSync('python3', pyArgs, {
+              encoding: 'utf-8', timeout: 90000, cwd: '/root/entity/src/agent',
+              env: { ...process.env }
+            }).trim();
+            if (['run', 'like', 'recast'].includes(action)) {
+              const fs = await import('fs');
+              fs.appendFileSync('/root/.automaton/tiamat.log', `\n[ENGAGE] ${action}: ${output.slice(0, 200)}\n`);
+            }
+            const result = output.slice(0, 3000);
+            // Cache rate-limited results to prevent repeated calls
+            if (result.includes('"reason": "rate_limit"') || result.includes('"replied": false')) {
+              lastRateLimitResult = result;
+              lastRateLimitTime = Date.now();
+            }
+            return result;
+          } catch (e: any) {
+            return `farcaster_engage failed: ${e.stderr?.slice(0, 500) || e.message}`;
+          }
+        };
+      })(),
     },
 
     // ── Reddit Tools ──
