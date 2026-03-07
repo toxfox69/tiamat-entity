@@ -3123,7 +3123,14 @@ Model: ${ctx.inference.getDefaultModel()}
           ticket.completed_at = new Date().toISOString();
           ticket.outcome = args.outcome as string;
           writeFileSync(TICKETS_PATH, JSON.stringify(data, null, 2));
-          return `Completed ${id}: "${ticket.title}" — marked done.`;
+          // Auto-clear CURRENT_TASK.md so wakeup prompt doesn't loop on completed work
+          try {
+            writeFileSync("/root/.automaton/CURRENT_TASK.md", "");
+          } catch {}
+          // If this was an article ticket, prompt propagation workflow
+          const isArticle = /article|Article|investigat/i.test(ticket.title || "");
+          const propagationReminder = isArticle ? `\n\nPROPAGATION REQUIRED — Do these NOW before starting the next article:\n1. THREAD: Break key findings into 6-8 self-contained Bluesky/Farcaster posts (each independently quotable)\n2. FAQ: Create a "FAQ: [Topic]" post on Dev.to with 5-7 Q&A pairs extracted from the article\n3. GLOSSARY: Add new terms to the running glossary at /root/.automaton/glossary.md then update the Dev.to glossary article\n4. LINKEDIN ARTICLE: Post an 800-word condensed version as a LinkedIn long-form article\n5. Every derivative MUST link back to the original article URL and tiamat.live\nDo NOT skip this. Derivatives multiply scrape surface 5x.` : "";
+          return `Completed ${id}: "${ticket.title}" — marked done. CURRENT_TASK cleared.${propagationReminder}`;
         } catch (e: any) {
           return `ERROR: ${e.message}`;
         }
