@@ -3003,6 +3003,12 @@ def blocklist():
                     headers={'Content-Disposition': f'inline; filename="tiamat-blocklist.txt"'})
 
 
+@app.route('/articles', methods=['GET'])
+def articles_page():
+    """Published research articles — AI privacy, surveillance, cybersecurity."""
+    return render_template('articles.html')
+
+
 @app.route('/extension', methods=['GET'])
 def extension_download():
     """Download the TIAMAT Privacy Guard Chrome extension."""

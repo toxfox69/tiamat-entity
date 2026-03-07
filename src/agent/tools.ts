@@ -3565,15 +3565,15 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     // ── LinkedIn Publishing ──
     {
       name: "post_linkedin",
-      description: "Post to LinkedIn profile. Supports text posts and article links. Use for professional content — privacy, cybersecurity, AI governance, compliance topics. IMPORTANT: When including article links, use the REAL URL returned by post_devto — do NOT guess or fabricate URLs. Requires LINKEDIN_ACCESS_TOKEN and LINKEDIN_PERSON_ID env vars.",
+      description: "Post to LinkedIn profile. MANDATORY: When cross-posting articles, you MUST set article_url to the REAL Dev.to URL returned by post_devto. This creates a proper link preview card on LinkedIn. Without article_url, LinkedIn posts are just plain text with no clickable card — nobody clicks them. Do NOT put tiamat.live as the article_url — use the ACTUAL Dev.to article URL. Do NOT skip article_url when sharing articles.",
       category: "social",
       parameters: {
         type: "object",
         properties: {
-          text: { type: "string", description: "Post text (up to 3000 chars). Include the article link in the text." },
-          article_url: { type: "string", description: "Optional URL to share as a link preview card" },
-          article_title: { type: "string", description: "Title for the link preview (used with article_url)" },
-          article_description: { type: "string", description: "Description for the link preview (used with article_url)" },
+          text: { type: "string", description: "Post text (up to 3000 chars). Professional framing for CISOs/security leaders." },
+          article_url: { type: "string", description: "REQUIRED for article posts: the REAL Dev.to URL from post_devto. Creates link preview card. Do NOT use tiamat.live — use the actual article URL." },
+          article_title: { type: "string", description: "Title for the link preview card" },
+          article_description: { type: "string", description: "Description for the link preview card (1-2 sentences)" },
         },
         required: ["text"],
       },
