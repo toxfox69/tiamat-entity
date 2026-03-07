@@ -29,8 +29,8 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 0; // 0 = no timeout — CLI-only mode, wait forever
 const MODEL_NAME = "claude-code-cli";
-const CLI_MODEL = "sonnet"; // Sonnet full blast
-const MAX_PROMPT_TOKENS = 20_000; // Sonnet can handle bigger context
+const CLI_MODEL = "haiku"; // Sonnet rate-limited until Mar 13 — use Haiku
+const MAX_PROMPT_TOKENS = 20_000;
 const MAX_OUTPUT_CHARS = 100_000; // Kill CLI if stdout exceeds this — CLI is subscription (free), real guard is timeout
 
 /**
@@ -99,12 +99,12 @@ function runCLI(prompt: string, timeoutMs: number, systemPrompt?: string, maxOut
     const args = [
       "-p",                         // print mode (non-interactive)
       "--output-format", "json",    // structured JSON output
-      "--max-turns", "8",           // 8 turns: Sonnet gets room to reason and produce
+      "--max-turns", "2",           // 2 turns: Haiku is faster, keep tight
       "--tools", "",                // disable ALL built-in CC tools
       "--disallowed-tools", "LSP",  // LSP plugin tool leaks through --tools "" — block it
       "--strict-mcp-config",        // disable all MCP tools
       "--no-session-persistence",   // don't save to disk
-      "--model", CLI_MODEL,         // sonnet — full blast
+      "--model", CLI_MODEL,         // haiku — sonnet rate-limited
     ];
 
     // Pass system prompt via --system-prompt flag (proper SYSTEM role)

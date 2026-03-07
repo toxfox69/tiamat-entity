@@ -49,253 +49,230 @@ class RedditClient:
         self.min_post_interval = 300  # 5 min between posts
 
     def _get_token(self):
-        """Get OAuth2 token via password grant."""
-        now = time.time()
-        if self._token and now < self._token_expires:
+        if self._token and self._token_expires > time.time() + 60:  # Refresh 60s early
+            log.info("Using existing Reddit token.")
             return self._token
 
-        if not CLIENT_ID or not CLIENT_SECRET:
-            raise ValueError("Missing REDDIT_CLIENT_ID or REDDIT_CLIENT_SECRET in env")
-        if not USERNAME or not PASSWORD:
-            raise ValueError("Missing REDDIT_USERNAME or REDDIT_PASSWORD in env")
+        log.info(f"Attempting to refresh/acquire Reddit token. CLIENT_ID_PRESENT: {bool(CLIENT_ID)}, USERNAME_PRESENT: {bool(USERNAME)}")
+        return self._refresh_token()
 
-        resp = requests.post(
-            TOKEN_URL,
-            auth=(CLIENT_ID, CLIENT_SECRET),
-            data={
-                "grant_type": "password",
-                "username": USERNAME,
-                "password": PASSWORD,
-            },
-            headers={"User-Agent": USER_AGENT},
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            raise ValueError(f"OAuth2 failed: {resp.status_code} — {resp.text[:200]}")
+    def _refresh_token(self):
+        auth = requests.auth.HTTPBasicAuth(CLIENT_ID, CLIENT_SECRET)
+        data = {
+            "grant_type": "password",
+            "username": USERNAME,
+            "password": PASSWORD
+        }
+        headers = {"User-Agent": USER_AGENT}
 
-        data = resp.json()
-        if "access_token" not in data:
-            raise ValueError(f"OAuth2 no token: {json.dumps(data)[:200]}")
+        try:
+            response = requests.post(TOKEN_URL, auth=auth, data=data, headers=headers, timeout=10)
+            response.raise_for_status()
+            token_data = response.json()
 
-        self._token = data["access_token"]
-        self._token_expires = now + data.get("expires_in", 3600) - 60
-        log.info("OAuth2 token acquired")
-        return self._token
+            log.info(f"Reddit token response status: {response.status_code}")
+            if response.status_code != 200:
+                log.error(f"Reddit token refresh failed with status {response.status_code}: {response.text}")
+                self._token = None
+                self._token_expires = 0
+                return None
+
+            self._token = token_data["access_token"]
+            self._token_expires = time.time() + token_data["expires_in"]
+            log.info("Successfully refreshed Reddit token.")
+            return self._token
+        except requests.exceptions.RequestException as e:
+            log.error(f"Error refreshing Reddit token: {e}")
+            self._token = None
+            self._token_expires = 0
+            return None
 
     def _headers(self):
+        token = self._get_token()
+        if not token:
+            raise Exception("Reddit authentication failed: Could not retrieve token.")
         return {
-            "Authorization": f"Bearer {self._get_token()}",
-            "User-Agent": USER_AGENT,
+            "Authorization": f"Bearer {token}",
+            "User-Agent": USER_AGENT
         }
 
     def _validate_subreddit(self, subreddit):
-        """Validate subreddit against whitelist, return canonical name."""
-        key = subreddit.lower()
-        if key not in _WHITELIST_LOWER:
-            raise ValueError(
-                f"Subreddit r/{subreddit} not in whitelist. "
-                f"Allowed: {', '.join(SUBREDDIT_WHITELIST)}"
-            )
-        return _WHITELIST_LOWER[key]
+        if subreddit.lower() not in _WHITELIST_LOWER:
+            raise ValueError(f"Subreddit '{subreddit}' is not whitelisted. Allowed: {', '.join(SUBREDDIT_WHITELIST)}")
+        return _WHITELIST_LOWER[subreddit.lower()]
 
-    def test(self):
-        """Test authentication and return account info."""
-        resp = requests.get(
-            f"{API_BASE}/api/v1/me",
-            headers=self._headers(),
-            timeout=15,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            return {
-                "status": "ok",
-                "username": data.get("name"),
-                "karma": data.get("link_karma", 0) + data.get("comment_karma", 0),
-                "created_utc": data.get("created_utc"),
-            }
-        return {"status": "error", "code": resp.status_code, "detail": resp.text[:200]}
-
-    def post(self, subreddit, title, text=None, url=None):
-        """Submit a post to a subreddit."""
+    def read(self, subreddit, sort="hot", limit=5):
         subreddit = self._validate_subreddit(subreddit)
+        endpoint = f"{API_BASE}/r/{subreddit}/{sort}"
+        params = {"limit": limit}
+        try:
+            response = requests.get(endpoint, headers=self._headers(), params=params, timeout=10)
+            response.raise_for_status()
+            posts = response.json()["data"]["children"]
+            results = []
+            for post in posts:
+                p_data = post["data"]
+                results.append({
+                    "title": p_data.get("title"),
+                    "author": p_data.get("author"),
+                    "score": p_data.get("score"),
+                    "num_comments": p_data.get("num_comments"),
+                    "url": p_data.get("url"),
+                    "permalink": f"https://www.reddit.com{p_data.get('permalink')}",
+                    "id": p_data.get("id"),
+                    "created_utc": p_data.get("created_utc"),
+                    "is_self": p_data.get("is_self"),
+                    "selftext": p_data.get("selftext", "") if p_data.get("is_self") else None,
+                })
+            log.info(f"Read {len(results)} posts from r/{subreddit}.")
+            return results
+        except requests.exceptions.RequestException as e:
+            log.error(f"Error reading Reddit posts from r/{subreddit}: {e}")
+            raise
+        except Exception as e:
+            log.error(f"Unexpected error processing Reddit read for r/{subreddit}: {e}")
+            raise
 
-        now = time.time()
-        if now - self.last_post_time < self.min_post_interval:
-            wait = self.min_post_interval - (now - self.last_post_time)
-            return {"error": f"Rate limit: wait {wait:.0f}s before next post"}
-
-        data = {
-            "sr": subreddit,
-            "title": title[:300],
-            "kind": "link" if url else "self",
-        }
-        if url:
-            data["url"] = url
-        if text:
-            data["text"] = text[:10000]
-
-        resp = requests.post(
-            f"{API_BASE}/api/submit",
-            headers=self._headers(),
-            data=data,
-            timeout=20,
-        )
-        if resp.status_code == 200:
-            result = resp.json()
-            errors = result.get("json", {}).get("errors", [])
-            if errors:
-                return {"error": str(errors)}
-            post_data = result.get("json", {}).get("data", {})
-            self.last_post_time = time.time()
-            post_url = post_data.get("url", "")
-            post_id = post_data.get("id", "")
-            log.info(f"Posted to r/{subreddit}: {title[:50]}... id={post_id}")
-            return {"status": "posted", "id": post_id, "url": post_url, "subreddit": subreddit}
-        return {"error": f"{resp.status_code}: {resp.text[:300]}"}
-
-    def comment(self, post_id, text):
-        """Comment on a post. post_id should be full name like t3_xxxxx."""
-        if not post_id.startswith("t"):
-            post_id = f"t3_{post_id}"
-
-        now = time.time()
-        if now - self.last_post_time < self.min_post_interval:
-            wait = self.min_post_interval - (now - self.last_post_time)
-            return {"error": f"Rate limit: wait {wait:.0f}s before next comment"}
-
-        resp = requests.post(
-            f"{API_BASE}/api/comment",
-            headers=self._headers(),
-            data={"thing_id": post_id, "text": text[:10000]},
-            timeout=20,
-        )
-        if resp.status_code == 200:
-            result = resp.json()
-            errors = result.get("json", {}).get("errors", [])
-            if errors:
-                return {"error": str(errors)}
-            comment_data = (
-                result.get("json", {})
-                .get("data", {})
-                .get("things", [{}])[0]
-                .get("data", {})
-            )
-            comment_id = comment_data.get("id", "unknown")
-            self.last_post_time = time.time()
-            log.info(f"Commented on {post_id}: {text[:50]}... id={comment_id}")
-            return {"status": "commented", "id": comment_id, "parent": post_id}
-        return {"error": f"{resp.status_code}: {resp.text[:300]}"}
-
-    def read(self, subreddit, sort="hot", limit=10):
-        """Read posts from a subreddit."""
-        subreddit = self._validate_subreddit(subreddit)
-        limit = min(int(limit), 25)
-        sort = sort if sort in ("hot", "new", "top", "rising") else "hot"
-
-        resp = requests.get(
-            f"{API_BASE}/r/{subreddit}/{sort}",
-            headers=self._headers(),
-            params={"limit": limit},
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            return {"error": f"{resp.status_code}: {resp.text[:200]}"}
-
-        posts = []
-        for child in resp.json().get("data", {}).get("children", []):
-            d = child.get("data", {})
-            posts.append({
-                "id": d.get("name", ""),
-                "title": d.get("title", ""),
-                "author": d.get("author", ""),
-                "score": d.get("score", 0),
-                "comments": d.get("num_comments", 0),
-                "url": d.get("url", ""),
-                "selftext": (d.get("selftext", "") or "")[:200],
-                "created_utc": d.get("created_utc", 0),
-            })
-        log.info(f"Read {len(posts)} posts from r/{subreddit}/{sort}")
-        return {"subreddit": subreddit, "sort": sort, "posts": posts}
-
-    def search(self, query, subreddit=None, limit=10):
-        """Search Reddit. Optionally restrict to a subreddit."""
-        limit = min(int(limit), 25)
-        params = {"q": query, "limit": limit, "sort": "relevance", "t": "month"}
-
+    def search(self, query, subreddit=None, limit=5):
+        endpoint = f"{API_BASE}/r/{subreddit}/search" if subreddit else f"{API_BASE}/search"
+        params = {"q": query, "limit": limit}
         if subreddit:
             subreddit = self._validate_subreddit(subreddit)
-            url = f"{API_BASE}/r/{subreddit}/search"
-            params["restrict_sr"] = "true"
-        else:
-            url = f"{API_BASE}/search"
+            params["restrict_sr"] = "on"
 
-        resp = requests.get(url, headers=self._headers(), params=params, timeout=15)
-        if resp.status_code != 200:
-            return {"error": f"{resp.status_code}: {resp.text[:200]}"}
+        try:
+            response = requests.get(endpoint, headers=self._headers(), params=params, timeout=10)
+            response.raise_for_status()
+            posts = response.json()["data"]["children"]
+            results = []
+            for post in posts:
+                p_data = post["data"]
+                results.append({
+                    "title": p_data.get("title"),
+                    "author": p_data.get("author"),
+                    "score": p_data.get("score"),
+                    "num_comments": p_data.get("num_comments"),
+                    "url": p_data.get("url"),
+                    "permalink": f"https://www.reddit.com{p_data.get('permalink')}",
+                    "id": p_data.get("id"),
+                    "created_utc": p_data.get("created_utc"),
+                })
+            log.info(f"Searched Reddit for '{query}'. Found {len(results)} posts.")
+            return results
+        except requests.exceptions.RequestException as e:
+            log.error(f"Error searching Reddit for '{query}': {e}")
+            raise
+        except Exception as e:
+            log.error(f"Unexpected error processing Reddit search for '{query}': {e}")
+            raise
 
-        posts = []
-        for child in resp.json().get("data", {}).get("children", []):
-            d = child.get("data", {})
-            posts.append({
-                "id": d.get("name", ""),
-                "title": d.get("title", ""),
-                "author": d.get("author", ""),
-                "subreddit": d.get("subreddit", ""),
-                "score": d.get("score", 0),
-                "comments": d.get("num_comments", 0),
-                "url": d.get("url", ""),
-                "selftext": (d.get("selftext", "") or "")[:200],
-            })
-        log.info(f"Search '{query}': {len(posts)} results" + (f" in r/{subreddit}" if subreddit else ""))
-        return {"query": query, "subreddit": subreddit, "posts": posts}
+    def post(self, subreddit, title, text=None, url=None):
+        if not (text or url):
+            raise ValueError("Must provide either 'text' or 'url' for a post.")
+        if text and url:
+            raise ValueError("Cannot provide both 'text' and 'url'. Choose one.")
+
+        if time.time() - self.last_post_time < self.min_post_interval:
+            raise Exception(f"Rate limit: Please wait {self.min_post_interval - (time.time() - self.last_post_time):.0f} seconds before posting again.")
+
+        subreddit = self._validate_subreddit(subreddit)
+        endpoint = f"{API_BASE}/api/submit"
+        kind = "self" if text else "link"
+        data = {
+            "sr": subreddit,
+            "kind": kind,
+            "title": title,
+            "api_type": "json",
+        }
+        if text:
+            data["text"] = text
+        if url:
+            data["url"] = url
+
+        try:
+            response = requests.post(endpoint, headers=self._headers(), data=data, timeout=10)
+            response.raise_for_status()
+            result = response.json()
+            if result.get("json", {}).get("errors"):
+                errors = result["json"]["errors"]
+                error_msg = "; ".join([f"{e[0]}: {e[1]}" for e in errors])
+                log.error(f"Reddit post failed: {error_msg}")
+                raise Exception(f"Reddit post failed: {error_msg}")
+
+            log.info(f"Successfully posted to r/{subreddit}: '{title}'")
+            self.last_post_time = time.time()
+            return {"status": "success", "response": result}
+        except requests.exceptions.RequestException as e:
+            log.error(f"Error posting to r/{subreddit}: {e}")
+            raise
+        except Exception as e:
+            log.error(f"Unexpected error processing Reddit post for r/{subreddit}: {e}")
+            raise
+
+    def comment(self, post_id, text):
+        endpoint = f"{API_BASE}/api/comment"
+        data = {
+            "parent": f"t3_{post_id}",  # t3_ prefix for posts
+            "text": text,
+            "api_type": "json",
+        }
+        try:
+            response = requests.post(endpoint, headers=self._headers(), data=data, timeout=10)
+            response.raise_for_status()
+            result = response.json()
+            if result.get("json", {}).get("errors"):
+                errors = result["json"]["errors"]
+                error_msg = "; ".join([f"{e[0]}: {e[1]}" for e in errors])
+                log.error(f"Reddit comment failed: {error_msg}")
+                raise Exception(f"Reddit comment failed: {error_msg}")
+
+            log.info(f"Successfully commented on post {post_id}.")
+            return {"status": "success", "response": result}
+        except requests.exceptions.RequestException as e:
+            log.error(f"Error commenting on post {post_id}: {e}")
+            raise
+        except Exception as e:
+            log.error(f"Unexpected error processing Reddit comment for post {post_id}: {e}")
+            raise
 
 
 if __name__ == "__main__":
-    action = sys.argv[1] if len(sys.argv) > 1 else "test"
+    client = RedditClient()
+    action = sys.argv[1]
 
-    if action == "test":
-        client = RedditClient()
-        result = client.test()
-        print(json.dumps(result, indent=2))
-
-    elif action == "post":
-        if len(sys.argv) < 4:
-            print(json.dumps({"error": "Usage: reddit.py post <subreddit> <title> [text] [url]"}))
+    try:
+        if action == "read":
+            subreddit = sys.argv[2]
+            sort = sys.argv[3] if len(sys.argv) > 3 else "hot"
+            limit = int(sys.argv[4]) if len(sys.argv) > 4 else 5
+            result = client.read(subreddit, sort, limit)
+            print(json.dumps({"read_reddit_response": {"result": result}}))
+        elif action == "search":
+            query = sys.argv[2]
+            subreddit = sys.argv[3] if len(sys.argv) > 3 else None
+            limit = int(sys.argv[4]) if len(sys.argv) > 4 else 5
+            result = client.search(query, subreddit, limit)
+            print(json.dumps({"search_reddit_response": {"result": result}}))
+        elif action == "post":
+            subreddit = sys.argv[2]
+            title = sys.argv[3]
+            text = sys.argv[4] if len(sys.argv) > 4 else None
+            url = sys.argv[5] if len(sys.argv) > 5 else None
+            # Determine if it's a text post or link post
+            if text and text.startswith("http"): # Simple heuristic: if text looks like a URL, treat as URL
+                url = text
+                text = None
+            result = client.post(subreddit, title, text, url)
+            print(json.dumps({"post_reddit_response": {"result": result}}))
+        elif action == "comment":
+            post_id = sys.argv[2]
+            text = sys.argv[3]
+            result = client.comment(post_id, text)
+            print(json.dumps({"comment_reddit_response": {"result": result}}))
+        else:
+            print(json.dumps({"error": f"Unknown action: {action}"}))
             sys.exit(1)
-        client = RedditClient()
-        subreddit = sys.argv[2]
-        title = sys.argv[3]
-        text = sys.argv[4] if len(sys.argv) > 4 else None
-        url = sys.argv[5] if len(sys.argv) > 5 else None
-        result = client.post(subreddit, title, text=text, url=url)
-        print(json.dumps(result, indent=2))
-
-    elif action == "comment":
-        if len(sys.argv) < 4:
-            print(json.dumps({"error": "Usage: reddit.py comment <post_id> <text>"}))
-            sys.exit(1)
-        client = RedditClient()
-        result = client.comment(sys.argv[2], sys.argv[3])
-        print(json.dumps(result, indent=2))
-
-    elif action == "read":
-        sub = sys.argv[2] if len(sys.argv) > 2 else "SideProject"
-        sort = sys.argv[3] if len(sys.argv) > 3 else "hot"
-        limit = int(sys.argv[4]) if len(sys.argv) > 4 else 10
-        client = RedditClient()
-        result = client.read(sub, sort, limit)
-        print(json.dumps(result, indent=2))
-
-    elif action == "search":
-        if len(sys.argv) < 3:
-            print(json.dumps({"error": "Usage: reddit.py search <query> [subreddit]"}))
-            sys.exit(1)
-        query = sys.argv[2]
-        sub = sys.argv[3] if len(sys.argv) > 3 else None
-        client = RedditClient()
-        result = client.search(query, subreddit=sub)
-        print(json.dumps(result, indent=2))
-
-    else:
-        print(json.dumps({"error": f"Unknown action: {action}. Use: test, post, comment, read, search"}))
+    except Exception as e:
+        log.error(f"Reddit operation failed: {e}")
+        print(json.dumps({"read_reddit_response": {"result": f"Reddit operation failed: {e}"}}))
         sys.exit(1)

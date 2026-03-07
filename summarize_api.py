@@ -2952,7 +2952,7 @@ def audit_api():
 
     # Rate limit: 3 free scans/day per IP, unlimited with API key
     AUDIT_FREE_LIMIT = 3
-    client_ip = request.remote_addr or request.headers.get('X-Forwarded-For', '0.0.0.0').split(',')[0].strip()
+    client_ip = request.headers.get('X-Real-IP') or request.headers.get('X-Forwarded-For', '').split(',')[0].strip() or request.remote_addr or '0.0.0.0'
     auth = request.headers.get('Authorization', '')
     has_key = auth.startswith('Bearer ') and (auth[7:].startswith('tiamat_') or auth[7:].startswith('x402_'))
 
@@ -3056,6 +3056,32 @@ def blocklist():
     content = generate_blocklist(fmt)
     return Response(content, mimetype='text/plain',
                     headers={'Content-Disposition': f'inline; filename="tiamat-blocklist.txt"'})
+
+
+@app.route('/auth/producthunt/callback', methods=['GET'])
+def ph_callback():
+    """Product Hunt OAuth callback — exchanges code for access token."""
+    code = request.args.get('code')
+    if not code:
+        return jsonify({'error': 'no code'}), 400
+    import requests as _req
+    r = _req.post('https://api.producthunt.com/v2/oauth/token', json={
+        'client_id': '0luUgvauq-uy1rpYqZpn8W2-KTTSD1t1WH5XA2dYvJ0',
+        'client_secret': 'cEebmq6Bl8Ty1T60qmjvi2WLkksefvosg1CUm1MhRK8',
+        'grant_type': 'authorization_code',
+        'redirect_uri': 'https://tiamat.live/auth/producthunt/callback',
+        'code': code,
+    })
+    data = r.json()
+    # Save token
+    token = data.get('access_token', '')
+    if token:
+        try:
+            with open('/root/.automaton/ph_token.txt', 'w') as f:
+                f.write(token)
+        except Exception:
+            pass
+    return jsonify(data)
 
 
 @app.route('/articles', methods=['GET'])

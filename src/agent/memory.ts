@@ -30,6 +30,8 @@ class TiamatMemory {
   private cortex: any = null;
   private useNoormme = false;
 
+  getDb(): Database.Database | null { return this.db; }
+
   constructor() {
     this.init().catch((err) =>
       console.error(`[MEMORY] Init error: ${err.message}`)

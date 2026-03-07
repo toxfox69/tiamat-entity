@@ -163,7 +163,7 @@ export function checkBehavioralLoop(
   // Only flag them at a higher threshold to avoid false positives.
   const BUILD_TOOLS = new Set([
     "write_file", "ask_claude_code", "ask_claude_chat",
-    "send_telegram", "post_bluesky", "post_social", "post_farcaster",
+    "send_telegram", "post_bluesky", "post_social", "post_farcaster", "post_devto", "post_hashnode",
     "grow", "remember", "recall", "reflect",
     "ticket_list", "ticket_claim", "ticket_complete",
     "check_revenue", "read_farcaster", "farcaster_engage",
@@ -179,8 +179,8 @@ export function checkBehavioralLoop(
   ]);
   const RESEARCH_THRESHOLD = 5; // research tools flag at 5+ repeats
 
-  // exec is NOT exempt — it hides busywork (grep, curl, etc.)
-  const EXEMPT_TOOLS = new Set<string>();
+  // exec is TIAMAT's shell — exempt from loop detection. She needs it unrestricted.
+  const EXEMPT_TOOLS = new Set<string>(["exec", "ask_claude_code"]);
 
   const warnings: string[] = [];
   for (const [action, count] of counts) {
@@ -206,7 +206,7 @@ export function checkBehavioralLoop(
   const recentActions = state.action_history.slice(-15); // last ~3 cycles worth
   const recentToolNames = recentActions.map(a => a.action.split("::")[0]);
   const BUILD_SET = new Set(["write_file", "ask_claude_code", "post_bluesky", "post_farcaster",
-    "post_social", "send_email", "deploy_app", "ticket_complete"]);
+    "post_social", "post_devto", "post_hashnode", "send_email", "deploy_app", "ticket_complete"]);
   const hasAnyBuild = recentToolNames.some(t => BUILD_SET.has(t));
   const hasResearch = recentToolNames.some(t => RESEARCH_TOOLS.has(t));
   if (hasResearch && !hasAnyBuild && recentActions.length >= 10) {

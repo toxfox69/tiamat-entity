@@ -73,7 +73,9 @@ const HIGH_VALUE_TOOLS = new Set([
   "ask_claude_code", "self_improve", "write_file",
   // Content publishing (visible artifacts)
   "post_bluesky", "post_farcaster", "post_instagram", "post_facebook",
-  "publish_devto", "post_reddit",
+  "publish_devto", "post_reddit", "post_devto", "post_hashnode",
+  // Social engagement (likes, reposts = visibility)
+  "like_bluesky", "repost_bluesky", "farcaster_engage",
   // Revenue / outreach
   "deploy_app", "send_email", "send_telegram",
   // Completing work
@@ -188,10 +190,10 @@ interface PaceTierConfig {
 }
 
 const PACE_TIERS: Record<PaceTier, PaceTierConfig> = {
-  sprint:  { interval: 30,   claudeCodeBudget: 1 },    // Fast — she needs momentum
-  active:  { interval: 60,   claudeCodeBudget: 1 },
-  idle:    { interval: 90,   claudeCodeBudget: 1 },    // Cap at 90s — never let her stall
-  reflect: { interval: 90,   claudeCodeBudget: 1 },    // Same as idle — no 10min death spiral
+  sprint:  { interval: 10,   claudeCodeBudget: 1 },    // FULL BLAST — Sonnet, no brakes
+  active:  { interval: 15,   claudeCodeBudget: 1 },
+  idle:    { interval: 30,   claudeCodeBudget: 1 },
+  reflect: { interval: 45,   claudeCodeBudget: 1 },
 };
 
 function rateToPace(rate: number): PaceTier {
