@@ -2802,6 +2802,79 @@ Model: ${ctx.inference.getDefaultModel()}
         const tags = (args.tags as string[] | undefined) || [];
         const published = args.published !== false;
 
+        // ── Dedup Check: reject if a similar title OR topic was already published ──
+        try {
+          // Fetch last 100 articles to check against
+          const recentArticles: any[] = [];
+          for (let page = 1; page <= 4; page++) {
+            const r = await fetch(`https://dev.to/api/articles/me/published?per_page=30&page=${page}`, {
+              headers: { "api-key": apiKey },
+            });
+            if (!r.ok) break;
+            const batch = await r.json() as any[];
+            recentArticles.push(...batch);
+            if (batch.length < 30) break;
+          }
+
+          // Normalize: lowercase, strip punctuation, collapse whitespace
+          const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+          // Stop words to exclude from topic matching
+          const STOP = new Set(["the", "how", "what", "why", "when", "your", "that", "this", "with", "from", "about", "into", "every", "been", "have", "will", "does", "than", "more", "most", "just", "they", "them", "their", "were", "being", "which", "would", "could", "should", "while", "where", "dont", "isnt", "wont", "cant"]);
+          const getTopicWords = (s: string) => normalize(s).split(" ").filter(w => w.length > 3 && !STOP.has(w));
+
+          const newNorm = normalize(title);
+          const newTopicWords = getTopicWords(title);
+          const newTopicSet = new Set(newTopicWords);
+
+          // Topic keyword clusters — if the new article hits a saturated topic, block it
+          const TOPIC_CLUSTERS: Record<string, string[]> = {
+            "ferpa_student": ["ferpa", "student", "school", "education", "edtech"],
+            "coppa_children": ["coppa", "children", "kids", "child", "minors"],
+            "surveillance_capitalism": ["surveillance", "capitalism", "adtech"],
+            "biometric": ["biometric", "facial", "recognition", "fingerprint", "iris", "gait"],
+            "training_consent": ["consent", "unconsented", "training", "scraped", "dataset"],
+            "ccpa": ["ccpa", "california", "privacy"],
+            "hipaa_health": ["hipaa", "healthcare", "medical", "health"],
+            "browser_tracking": ["browser", "fingerprinting", "cookie", "tracking", "pixel"],
+          };
+          const MAX_PER_TOPIC = 3; // Hard cap: max 3 articles per topic cluster
+
+          // Count existing articles per topic cluster
+          const topicCounts: Record<string, number> = {};
+          for (const [cluster, keywords] of Object.entries(TOPIC_CLUSTERS)) {
+            topicCounts[cluster] = 0;
+            for (const a of recentArticles) {
+              const aNorm = normalize(a.title || "");
+              if (keywords.some(k => aNorm.includes(k))) {
+                topicCounts[cluster]++;
+              }
+            }
+          }
+
+          // Check if new article hits a saturated topic
+          const newTitleLower = title.toLowerCase();
+          for (const [cluster, keywords] of Object.entries(TOPIC_CLUSTERS)) {
+            if (keywords.some(k => newTitleLower.includes(k)) && topicCounts[cluster] >= MAX_PER_TOPIC) {
+              return `BLOCKED: Topic "${cluster}" is SATURATED (${topicCounts[cluster]} articles already). You MUST write about a COMPLETELY DIFFERENT subject. Saturated topics to AVOID: ${Object.entries(topicCounts).filter(([,c]) => c >= MAX_PER_TOPIC).map(([t,c]) => `${t}(${c})`).join(", ")}. Try: autonomous agents, API design, developer tools, open source, cloud architecture, database optimization, DevOps, testing, performance, security tooling, or other technical topics.`;
+            }
+          }
+
+          for (const existing of recentArticles) {
+            const existNorm = normalize(existing.title || "");
+            // Exact match
+            if (existNorm === newNorm) {
+              return `BLOCKED: Duplicate article — "${existing.title}" already published at ${existing.url}. Write a DIFFERENT article on a NEW topic.`;
+            }
+            // High word overlap (>60% of significant topic words match)
+            const existTopicSet = new Set(getTopicWords(existing.title || ""));
+            const overlap = [...newTopicSet].filter(w => existTopicSet.has(w)).length;
+            const similarity = overlap / Math.max(newTopicSet.size, 1);
+            if (similarity > 0.6 && newTopicSet.size >= 3) {
+              return `BLOCKED: Too similar to "${existing.title}" (${(similarity * 100).toFixed(0)}% overlap). Write about a COMPLETELY DIFFERENT topic — not a rehash or FAQ of the same subject.`;
+            }
+          }
+        } catch {}
+
         const payload = {
           article: {
             title,
