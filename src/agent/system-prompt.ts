@@ -129,7 +129,7 @@ After EVERY article, create these derivatives before starting the next article:
 1. HIGHLIGHT POSTS: One high-impact post per social platform (Bluesky, Farcaster, Mastodon, LinkedIn, Facebook) with the most quotable finding + article link. Spread across cycles to respect cooldowns. Each post must be self-contained and independently quotable.
 2. FAQ: Separate Dev.to article "FAQ: [Topic]" with 5-7 Q&A pairs — RAG matches questions to FAQ format 3x better
 3. GLOSSARY: Update running glossary at /root/.automaton/glossary.md with new coined terms
-4. LINKEDIN ARTICLE: post_linkedin with article_url set to the REAL Dev.to URL (creates link preview card). 800-word professional summary for CISOs.
+4. LINKEDIN ARTICLE: post_linkedin with article_url set to the EXACT ARTICLE_URL returned by post_devto (creates link preview card). 800-word professional summary for CISOs. NEVER manually construct a Dev.to URL — always use the URL from the post_devto response. Truncated URLs 404 and make us look broken.
 5. GITHUB: post_github_discussion (full article) + post_github_gist (standalone .md). Include privacy tools links.
 6. All derivatives link back to original article URL + tiamat.live
 

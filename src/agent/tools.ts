@@ -348,6 +348,34 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
         const resolvedPath = filePath.replace(/^~/, homedir());
         const blocked = isPathAllowed(resolvedPath, ALLOWED_WRITE_PATHS, BLOCKED_WRITE_PATTERNS);
         if (blocked) return blocked;
+
+        // Article dedup: block writing duplicate-topic articles
+        if (resolvedPath.includes('/articles/') && resolvedPath.endsWith('.md')) {
+          const { readdirSync } = await import('fs');
+          const articlesDir = '/root/.automaton/articles';
+          try {
+            const existing = readdirSync(articlesDir).filter(f => f.endsWith('.md'));
+            const EXHAUSTED_KEYWORDS: Record<string, string[]> = {
+              "ferpa": ["ferpa", "student data", "education ai", "edtech privacy", "school data"],
+              "ccpa": ["ccpa", "california privacy", "california consumer"],
+              "coppa": ["coppa", "children data", "kids privacy", "child data", "minors"],
+              "surveillance": ["surveillance capitalism", "surveillance", "adtech"],
+              "biometric": ["biometric", "facial recognition", "fingerprint"],
+              "training_consent": ["training consent", "unconsented", "scraped data"],
+            };
+            const contentLower = (args.content as string).toLowerCase();
+            const titleLine = contentLower.split('\n').find(l => l.startsWith('#')) || '';
+            for (const [topic, keywords] of Object.entries(EXHAUSTED_KEYWORDS)) {
+              if (keywords.some(k => titleLine.includes(k))) {
+                const matchCount = existing.filter(f => keywords.some(k => f.toLowerCase().includes(k.split(' ')[0]))).length;
+                if (matchCount >= 2) {
+                  return `BLOCKED: Topic "${topic}" is EXHAUSTED (${matchCount} articles already in /articles/). Write about a COMPLETELY DIFFERENT subject. Try: employee monitoring, insurance AI, RAG privacy, vector DB leaks, fine-tuning attacks, voice cloning, hiring AI, smart home privacy, healthcare AI.`;
+                }
+              }
+            }
+          } catch {}
+        }
+
         mkdirSync(dirname(resolvedPath), { recursive: true });
         writeFileSync(resolvedPath, args.content as string, 'utf-8');
         return `File written: ${filePath}`;
@@ -2899,7 +2927,9 @@ Model: ${ctx.inference.getDefaultModel()}
         }
 
         const result = await resp.json() as any;
-        return `Published to Dev.to: ${result.url || result.canonical_url || `https://dev.to/tiamat/${result.slug}`}`;
+        const devtoUrl = result.url || result.canonical_url || `https://dev.to/tiamatenity/${result.slug}`;
+        // IMPORTANT: Return URL in a clear format so TIAMAT uses the REAL URL for cross-posting
+        return `Published to Dev.to!\nARTICLE_URL: ${devtoUrl}\nTitle: ${result.title || title}\nIMPORTANT: Use the ARTICLE_URL above (not a manually constructed URL) when cross-posting to LinkedIn/social media.`;
       },
     },
 
@@ -3660,8 +3690,20 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         const text = args.text as string;
         if (!text?.trim()) return "ERROR: text is required.";
 
-        const articleUrl = args.article_url as string | undefined;
+        let articleUrl = args.article_url as string | undefined;
         const author = `urn:li:person:${personId}`;
+
+        // Validate dev.to URLs — they must include the full slug with hash suffix
+        // Bad:  dev.to/tiamatenity/the-biometric-permanence-problem
+        // Good: dev.to/tiamatenity/the-biometric-permanence-problem-facial-recognition-...-43h6
+        if (articleUrl && articleUrl.includes("dev.to/")) {
+          // Dev.to slugs always end with a short alphanumeric hash like -43h6 or -1mbk
+          const slug = articleUrl.split("/").pop() || "";
+          const hasHash = /\-[a-z0-9]{2,5}$/.test(slug);
+          if (!hasHash) {
+            return `ERROR: article_url "${articleUrl}" looks like a truncated Dev.to URL (missing slug hash suffix). Use the EXACT ARTICLE_URL returned by post_devto, not a manually constructed URL.`;
+          }
+        }
 
         // Build payload for /rest/posts API (versioned, replaces UGC)
         const payload: any = {
