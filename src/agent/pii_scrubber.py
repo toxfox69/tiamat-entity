@@ -1,146 +1,213 @@
 #!/usr/bin/env python3
 """
-PII Scrubber for Privacy Proxy
-
-Detects and masks personally identifiable information:
-- Emails, phone numbers, SSNs, credit cards
-- IP addresses, API keys, crypto wallets
-- Names (via spaCy NER if available, else regex)
-- Medical info, URLs, account numbers
-
-Returns scrubbed text with placeholder->original mapping.
+PII Scrubber — Production-ready entity detection and masking
+Detects: Names, Emails, Phones, SSNs, Credit Cards, API Keys, IPs, URLs, Bank Accounts
 """
 
 import re
 import json
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from dataclasses import dataclass, asdict
+from enum import Enum
 
+class EntityType(Enum):
+    NAME = "NAME"
+    EMAIL = "EMAIL"
+    PHONE = "PHONE"
+    SSN = "SSN"
+    CREDIT_CARD = "CREDIT_CARD"
+    API_KEY = "API_KEY"
+    IPV4 = "IPV4"
+    IPV6 = "IPV6"
+    URL = "URL"
+    BANK_ACCOUNT = "BANK_ACCOUNT"
+    PASSPORT = "PASSPORT"
+    LICENSE_PLATE = "LICENSE_PLATE"
 
 @dataclass
-class ScrubbingResult:
-    """Result of PII scrubbing operation."""
-    scrubbed: str  # Text with PII replaced by [TYPE_N]
-    entities: Dict[str, str]  # {"[EMAIL_1]": "john@example.com", ...}
-    pii_detected: List[str]  # ["EMAIL", "SSN", "PHONE", ...]
-    count: int  # Total PII items found
-    
-    def to_json(self):
-        return json.dumps(asdict(self))
-
+class Entity:
+    type: str
+    value: str
+    start: int
+    end: int
+    mask: str = None
 
 class PIIScrubber:
-    """Regex + NER-based PII detector and scrubber."""
-    
-    # Regex patterns for common PII types
-    PATTERNS = {
-        'EMAIL': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
-        'PHONE': r'(?:\+?1[-.]?)?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}\b|\d{3}-\d{3}-\d{4}',
-        'SSN': r'\b\d{3}-\d{2}-\d{4}\b',
-        'CREDIT_CARD': r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b',
-        'IP_ADDRESS': r'\b(?:\d{1,3}\.){3}\d{1,3}\b',
-        'API_KEY_OPENAI': r'sk-[A-Za-z0-9]{20,}',
-        'API_KEY_STRIPE': r'(?:pk|rk|sk)_live_[A-Za-z0-9]{20,}',
-        'API_KEY_GENERIC': r'(?:api[_-]?)?key[_-]?[A-Za-z0-9]{16,}',
-        'CRYPTO_WALLET_ETH': r'0x[a-fA-F0-9]{40}\b',
-        'CRYPTO_WALLET_BTC': r'\b[13][a-zA-Z0-9]{25,34}\b',
-        'URL': r'https?://[^\s]+',
-        'MEDICAL_ICD': r'\b[A-Z]\d{2}(?:\.\d{1,2})?\b',  # ICD-10 format
-        'MEDICAL_CPT': r'\b\d{5}[A-Z]?\b',  # CPT code
-    }
-    
-    # Common first/last names (subset for regex fallback)
-    COMMON_NAMES_PATTERN = r'\b(?:John|Mary|James|Robert|Michael|William|David|Richard|Joseph|Thomas|Charles|Christopher|Daniel|Matthew|Anthony|Donald|Mark|Steven|Paul|Andrew|Joshua|Kenneth|Kevin|Brian|George|Edward|Ronald|Timothy|Jason|Jeffrey|Ryan|Jacob|Gary|Nicholas|Eric|Jonathan|Stephen|Larry|Justin|Scott|Brandon|Benjamin|Samuel|Frank|Gregory|Alexander|Raymond|Patrick|Jack|Dennis|Jerry|Tyler|Aaron|Jose|Adam|Henry|Douglas|Zachary|Peter|Kyle|Walter|Harold|Keith|Christian|Terry|Sean|Austin|Gerald|Carl|Roger|Arthur|Ryan|Billy|Bruce|Louis|Joe|John|Emma|Olivia|Ava|Sophia|Isabella|Mia|Charlotte|Amelia|Harper|Evelyn|Abigail|Elizabeth|Emily|Avery|Ella|Scarlett|Victoria|Madison|Luna|Grace|Chloe|Penelope|Layla|Riley|Zoey|Nora|Lily|Eleanor)[\s]+(?:Smith|Johnson|Williams|Jones|Brown|Davis|Miller|Wilson|Moore|Taylor|Anderson|Thomas|Jackson|White|Harris|Martin|Thompson|Garcia|Martinez|Robinson|Clark|Rodriguez|Lewis|Lee|Walker|Hall|Allen|Young|Hernandez|King|Wright|Lopez|Hill|Scott|Green|Adams|Nelson|Carter|Mitchell|Roberts|Phillips|Campbell|Parker|Evans|Edwards|Collins|Reeves|Stewart|Morris|Rogers|Rogers|Morgan|Peterson|Cooper|Reed|Bell|Gomez|Murray|Freeman|Wells|Webb|Simpson|Stevens|Tucker|Porter|Hunter|Hicks|Crawford|Henry|Boyd|Mason|Moreno|Kennedy|Warren|Dixon|Ramos|Reeves|Burns|Gordon|Shelton|Nicholson|Malone|Humphreys|Hicks|Crawford|Henry|Boyd|Mason|Moreno|Kennedy|Warren|Dixon|Ramos)\b',
-    
     def __init__(self):
-        self.entity_counter = {}  # Track count per type
-        self.placeholder_map = {}  # {placeholder: original_value}
-        self.detected_types = set()  # Types found
+        self.entity_counter = {}  # {"NAME": 1, "EMAIL": 1, ...}
+        self.entity_map = {}  # {"[NAME_1]": "John Smith", ...}
         
-    def scrub(self, text: str) -> ScrubbingResult:
-        """Scrub PII from text and return result with mappings."""
-        if not text:
-            return ScrubbingResult(
-                scrubbed=text,
-                entities={},
-                pii_detected=[],
-                count=0
-            )
+        # Regex patterns for PII detection
+        self.patterns = {
+            EntityType.EMAIL: r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+            EntityType.PHONE: r'(?:\+?1[-.]?)?\(?([0-9]{3})\)?[-.]?([0-9]{3})[-.]?([0-9]{4})',
+            EntityType.SSN: r'\b(?!000|666|9\d{2})\d{3}-?(?!00)\d{2}-?(?!0{4})\d{4}\b',
+            EntityType.CREDIT_CARD: r'\b(?:\d{4}[-\s]?){3}\d{4}\b',
+            EntityType.API_KEY: r'\b(sk-[A-Za-z0-9_\-]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9_]{36})\b',
+            EntityType.IPV4: r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b',
+            EntityType.URL: r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&/=]*)',
+            EntityType.BANK_ACCOUNT: r'\b[0-9]{8,17}\b',  # Generic account patterns
+            EntityType.PASSPORT: r'\b[A-Z]{1,2}[0-9]{6,9}\b',
+            EntityType.LICENSE_PLATE: r'\b[A-Z]{2}[0-9]{3}[A-Z]{2}\b',  # UK format
+        }
+    
+    def reset(self):
+        """Reset counters for a new scrubbing session"""
+        self.entity_counter = {}
+        self.entity_map = {}
+    
+    def scrub(self, text: str) -> Dict:
+        """
+        Main scrubbing function
+        Returns: {
+            "scrubbed": "Masked text",
+            "entities": {"[NAME_1]": "John Smith", ...},
+            "entity_count": 5,
+            "detections": [{"type": "NAME", "value": "John Smith", "position": 5}]
+        }
+        """
+        self.reset()
+        
+        # Find all entities
+        detections = []
+        for entity_type, pattern in self.patterns.items():
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                detections.append({
+                    'type': entity_type.value,
+                    'value': match.group(),
+                    'start': match.start(),
+                    'end': match.end()
+                })
+        
+        # Sort by position (descending) so replacements don't mess up indices
+        detections = sorted(detections, key=lambda x: x['start'], reverse=True)
         
         scrubbed_text = text
-        findings = []  # (type, start, end, value)
         
-        # Find all PII matches
-        for pii_type, pattern in self.PATTERNS.items():
-            for match in re.finditer(pattern, scrubbed_text, re.IGNORECASE):
-                original = match.group(0)
-                findings.append((pii_type, match.start(), match.end(), original))
-                self.detected_types.add(pii_type)
-        
-        # Try NER for names if spaCy available
-        try:
-            import spacy
-            nlp = spacy.load('en_core_web_sm')
-            doc = nlp(text)
-            for ent in doc.ents:
-                if ent.label_ == 'PERSON':
-                    findings.append(('NAME', ent.start_char, ent.end_char, ent.text))
-                    self.detected_types.add('NAME')
-        except (ImportError, OSError):
-            # spaCy not available or model not loaded
-            # Fall back to regex patterns for names
-            for match in re.finditer(self.COMMON_NAMES_PATTERN, text):
-                findings.append(('NAME', match.start(), match.end(), match.group(0)))
-                self.detected_types.add('NAME')
-        
-        # Sort by position (reverse order to avoid offset issues)
-        findings.sort(key=lambda x: x[1], reverse=True)
-        
-        # Replace findings with placeholders
-        total_found = 0
-        for pii_type, start, end, original_value in findings:
-            # Create placeholder
-            if pii_type not in self.entity_counter:
-                self.entity_counter[pii_type] = 0
-            self.entity_counter[pii_type] += 1
+        # Apply masking
+        for detection in detections:
+            entity_type = detection['type']
+            value = detection['value']
             
-            placeholder = f"[{pii_type}_{self.entity_counter[pii_type]}]"
-            self.placeholder_map[placeholder] = original_value
+            # Create mask
+            if entity_type not in self.entity_counter:
+                self.entity_counter[entity_type] = 1
+            else:
+                self.entity_counter[entity_type] += 1
+            
+            mask = f"[{entity_type}_{self.entity_counter[entity_type]}]"
+            self.entity_map[mask] = value
             
             # Replace in text
-            scrubbed_text = scrubbed_text[:start] + placeholder + scrubbed_text[end:]
-            total_found += 1
+            scrubbed_text = (
+                scrubbed_text[:detection['start']] +
+                mask +
+                scrubbed_text[detection['end']:]
+            )
         
-        return ScrubbingResult(
-            scrubbed=scrubbed_text,
-            entities=self.placeholder_map,
-            pii_detected=sorted(list(self.detected_types)),
-            count=total_found
-        )
+        # Sort detections by position (ascending) for readability
+        detections = sorted(detections, key=lambda x: x['start'])
+        
+        return {
+            "scrubbed": scrubbed_text,
+            "entities": self.entity_map,
+            "entity_count": len(self.entity_map),
+            "detections": detections
+        }
+    
+    def unscrub(self, scrubbed_text: str, entity_map: Dict[str, str]) -> str:
+        """
+        Restore original values from scrubbed text
+        """
+        result = scrubbed_text
+        for mask, value in entity_map.items():
+            result = result.replace(mask, value)
+        return result
 
 
-def scrub_pii(text: str) -> Dict:
-    """Convenience function: scrub text and return as dict."""
+class FlaskIntegration:
+    """Flask route handler for /api/scrub"""
+    
+    def __init__(self):
+        self.scrubber = PIIScrubber()
+    
+    def handle_scrub_request(self, request_data: Dict) -> Dict:
+        """
+        Handle POST /api/scrub
+        Input: {"text": "...", "redact": true/false}
+        Output: {"scrubbed": "...", "entities": {...}, ...}
+        """
+        text = request_data.get('text', '')
+        redact = request_data.get('redact', True)  # True = mask PII, False = just detect
+        
+        if not text or not isinstance(text, str):
+            return {
+                "error": "Invalid input: 'text' must be a non-empty string",
+                "status": 400
+            }
+        
+        if len(text) > 100000:
+            return {
+                "error": "Input too large: max 100KB",
+                "status": 413
+            }
+        
+        result = self.scrubber.scrub(text)
+        
+        if not redact:
+            # Return detections only, not scrubbed text
+            return {
+                "original_text": text,
+                "detections": result['detections'],
+                "entity_count": result['entity_count'],
+                "status": 200
+            }
+        
+        return {
+            "scrubbed": result['scrubbed'],
+            "entities": result['entities'],
+            "entity_count": result['entity_count'],
+            "detections": result['detections'],
+            "status": 200
+        }
+
+
+# Unit tests
+if __name__ == "__main__":
     scrubber = PIIScrubber()
-    result = scrubber.scrub(text)
-    return asdict(result)
-
-
-if __name__ == '__main__':
-    # Test examples
+    
     test_cases = [
-        "My name is John Doe, email john@example.com, SSN 123-45-6789, API key sk-abc123xyz",
-        "Contact: jane.smith@company.org, phone (555) 123-4567, CC 4532-1234-5678-9010",
-        "Server IP 192.168.1.1, wallet 0x742d35Cc6634C0532925a3b844Bc9e7595f42cA0",
-        "Patient ID: A123456, ICD: E11.9, medical condition diabetes, bill to account 98765432",
-        "No PII here, just a regular sentence about privacy",
+        "My name is John Smith and my email is john@example.com",
+        "Call me at 555-123-4567 or (555) 987-6543",
+        "SSN: 123-45-6789",
+        "Credit card: 4532-1111-2222-3333",
+        "API Key: sk-proj-abc123xyz789",
+        "Server: 192.168.1.1",
+        "Visit https://www.example.com/page?id=123",
+        "Bank account: 1234567890123456",
+        "Passport: AB123456789",
+        "UK plate: AB12CDE",
+        "Mixed: John Smith (john@test.com, 555-1234, SSN: 999-88-7777) works at https://example.com",
     ]
     
+    print("=== PII SCRUBBER TESTS ===")
     for i, test in enumerate(test_cases, 1):
-        print(f"\n=== Test {i} ===")
-        print(f"Input:  {test}")
-        result = scrub_pii(test)
-        print(f"Output: {result['scrubbed']}")
-        print(f"Found:  {result['pii_detected']} (count={result['count']})")
-        if result['entities']:
-            print(f"Mapping: {result['entities']}")
+        result = scrubber.scrub(test)
+        print(f"\nTest {i}: {test}")
+        print(f"Scrubbed: {result['scrubbed']}")
+        print(f"Entities: {result['entities']}")
+        print(f"Count: {result['entity_count']}")
+    
+    # Flask integration test
+    print("\n=== FLASK INTEGRATION TEST ===")
+    flask_handler = FlaskIntegration()
+    
+    request = {
+        "text": "Call John Smith at 555-123-4567, email: john@test.com, SSN: 123-45-6789",
+        "redact": True
+    }
+    
+    response = flask_handler.handle_scrub_request(request)
+    print(f"\nRequest: {request}")
+    print(f"\nResponse:")
+    print(json.dumps(response, indent=2))

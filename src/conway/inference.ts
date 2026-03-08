@@ -14,14 +14,14 @@ import type {
   TokenUsage,
   InferenceToolDefinition,
 } from "../types.js";
-import { CACHE_SENTINEL } fro
+import { CACHE_SENTINEL } from "../agent/system-prompt.js";
+
 // Cost-optimized provider cascade (cheapest first)
 const PROVIDER_CASCADE = {
   routine: ['groq', 'anthropic', 'cerebras', 'gemini'],  // Try cheaper first
   strategic: ['anthropic', 'groq', 'cerebras'],           // Need better reasoning
   fallback: ['openrouter']                                 // Last resort
 };
-m "../agent/system-prompt.js";
 
 interface InferenceClientOptions {
   apiUrl: string;
