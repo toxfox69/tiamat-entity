@@ -149,6 +149,17 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   />\s*.*injection-defense/,
   />\s*.*self-mod\/code/,
   />\s*.*audit-log/,
+  // Operator briefing protection — TIAMAT bypassed write_file ACL via exec heredoc
+  /cat\s+>>?\s+.*CLAUDE-BRIEFING/,
+  />\s*.*CLAUDE-BRIEFING/,
+  /tee\s+.*CLAUDE-BRIEFING/,
+  /sed\s+.*CLAUDE-BRIEFING/,
+  /cp\s+.*CLAUDE-BRIEFING/,
+  /mv\s+.*CLAUDE-BRIEFING/,
+  // Locked file protection — no shell writes to sandbox or locked production files
+  /cat\s+>>?\s+.*\/sandbox\//,
+  />\s*.*\/sandbox\//,
+  /tee\s+.*\/sandbox\//,
   // Core loop protection — modifications must go through ask_claude_code/run_cascade
   /sed\s+.*loop\.ts/,
   /sed\s+.*tools\.ts/,
