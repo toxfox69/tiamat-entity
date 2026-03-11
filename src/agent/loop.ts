@@ -301,7 +301,7 @@ export async function runAgentLoop(
 
   // ── Strategic Burst: 3 consecutive focused cycles every STRATEGIC_BURST_INTERVAL turns ──
   // Uses a persistent file counter so pruneOldData doesn't reset burst timing.
-  const STRATEGIC_BURST_INTERVAL = 20;  // Was 45 — more frequent deep thinking on DO credits
+  const STRATEGIC_BURST_INTERVAL = 15;  // Every 15 cycles — 43M tokens/day across 7 DO model pools
   const STRATEGIC_BURST_SIZE = 3;
   let burstRemaining = 0;  // 0 = no burst active; 3/2/1 = burst in progress
   const BURST_COUNTER_PATH = path.join(process.env.HOME || "/root", ".automaton", "burst_counter.json");
@@ -1087,12 +1087,13 @@ If you have no tickets, create one and claim it immediately.`;
         }
       } catch {}
 
-      // ── Chain-of-Thought Reasoning Pass (FREE via Groq) ──
-      // Runs before strategic bursts and high-priority tickets.
-      // DeepSeek R1 distill analyzes the situation; output is injected as context.
-      // Reason on strategic cycles + every 5th routine cycle (DO credits = cheap reasoning)
-      const shouldReason = isStrategicCycle || (inferenceModel?.includes("sonnet")) || (persistentCycleCount % 5 === 0);
-      if (shouldReason && process.env.GROQ_API_KEY) {
+      // ── Chain-of-Thought Reasoning Pass (Groq free → DO multi-model fallback) ──
+      // Runs before strategic bursts and frequently on routine cycles.
+      // Uses Groq free tier first, falls back to DO DeepSeek R1 / 120B / 70B / 32B.
+      // With ~43M DO tokens/day across 7 model pools, reasoning is nearly unlimited.
+      // Reason on strategic cycles + every 3rd routine cycle (DO credits = cheap reasoning)
+      const shouldReason = isStrategicCycle || (inferenceModel?.includes("sonnet")) || (persistentCycleCount % 3 === 0);
+      if (shouldReason && (process.env.GROQ_API_KEY || process.env.DO_MODEL_ACCESS_KEY)) {
         try {
           // Gather situation context for reasoning
           let currentTicketInfo: { id: string; title: string; description?: string; priority: string; ageHours: number } | undefined;
@@ -1165,7 +1166,7 @@ If you have no tickets, create one and claim it immediately.`;
           const phaseMap: Record<number, BurstPhase> = { 1: "REFLECT", 2: "BUILD", 3: "MARKET" };
           const currentPhase: BurstPhase = phaseMap[burstPhase] || "ROUTINE";
 
-          const reasoningResult = await reasonFirst(situation, process.env.GROQ_API_KEY!, currentPhase);
+          const reasoningResult = await reasonFirst(situation, process.env.GROQ_API_KEY || "", currentPhase);
           const reasoningBlock = formatReasoningBlock(reasoningResult);
 
           if (reasoningBlock) {

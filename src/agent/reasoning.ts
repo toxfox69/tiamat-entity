@@ -168,54 +168,68 @@ export async function reasonFirst(
     }
   }
 
-  // Fallback: DO Gradient DeepSeek R1 70B (has reasoning_content chain-of-thought)
+  // Fallback: DO Gradient multi-model reasoning cascade
+  // Each model has its own daily token pool — try them in order of reasoning quality
   const doKey = process.env.DO_MODEL_ACCESS_KEY;
   if (doKey) {
-    try {
-      const doModel = "deepseek-r1-distill-llama-70b";
-      const resp = await Promise.race([
-        fetch("https://inference.do-ai.run/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${doKey}`,
-          },
-          body: JSON.stringify({
-            model: doModel,
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: situation },
-            ],
-            max_completion_tokens: Math.max(256, REASONING_MAX_TOKENS),
-            temperature: 0.3,
+    const doReasoningModels = [
+      "deepseek-r1-distill-llama-70b",  // Best reasoning (chain-of-thought), 6M/day
+      "openai-gpt-oss-120b",             // 120B strong reasoning, 5M/day
+      "llama3.3-70b-instruct",           // Proven 70B, 6M/day
+      "alibaba-qwen3-32b",              // Decent 32B, 6M/day
+    ];
+
+    for (const doModel of doReasoningModels) {
+      try {
+        const isDeepSeek = doModel.includes("deepseek");
+        const resp = await Promise.race([
+          fetch("https://inference.do-ai.run/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${doKey}`,
+            },
+            body: JSON.stringify({
+              model: doModel,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: situation },
+              ],
+              max_completion_tokens: Math.max(256, isDeepSeek ? REASONING_MAX_TOKENS * 2 : REASONING_MAX_TOKENS),
+              temperature: 0.3,
+            }),
           }),
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("DO reasoning timeout")), 30_000),
-        ),
-      ]);
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`DO ${doModel} reasoning timeout`)), 30_000),
+          ),
+        ]);
 
-      if (resp.ok) {
-        const data = await resp.json() as any;
-        const choice = data.choices?.[0];
-        let reasoning = choice?.message?.content?.trim() || "";
-        // DeepSeek R1 also provides reasoning_content — use it if main content is empty
-        if (!reasoning && choice?.message?.reasoning_content) {
-          reasoning = choice.message.reasoning_content.trim();
-        }
+        if (resp.ok) {
+          const data = await resp.json() as any;
+          const choice = data.choices?.[0];
+          let reasoning = choice?.message?.content?.trim() || "";
+          // DeepSeek R1 provides reasoning_content — use it if main content is empty
+          if (!reasoning && choice?.message?.reasoning_content) {
+            reasoning = choice.message.reasoning_content.trim();
+          }
 
-        if (reasoning) {
-          const tokens = data.usage?.total_tokens || 0;
-          const durationMs = Date.now() - startMs;
-          console.log(
-            `[REASONING] DO/${doModel} [${phase}]: ${tokens} tokens, ${durationMs}ms ` +
-            `(${reasoning.length} chars)`,
-          );
-          return { reasoning, model: `DO/${doModel}`, tokens, durationMs };
+          if (reasoning) {
+            const tokens = data.usage?.total_tokens || 0;
+            const durationMs = Date.now() - startMs;
+            console.log(
+              `[REASONING] DO/${doModel} [${phase}]: ${tokens} tokens, ${durationMs}ms ` +
+              `(${reasoning.length} chars)`,
+            );
+            return { reasoning, model: `DO/${doModel}`, tokens, durationMs };
+          }
+          console.log(`[REASONING] DO/${doModel}: empty response, trying next`);
+        } else {
+          const errText = await resp.text().catch(() => "");
+          console.log(`[REASONING] DO/${doModel}: HTTP ${resp.status}, trying next — ${errText.slice(0, 100)}`);
         }
+      } catch (err: any) {
+        console.log(`[REASONING] DO/${doModel} failed: ${err.message?.slice(0, 100)}, trying next`);
       }
-    } catch (err: any) {
-      console.log(`[REASONING] DO DeepSeek R1 failed: ${err.message?.slice(0, 100)}`);
     }
   }
 

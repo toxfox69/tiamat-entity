@@ -51,7 +51,19 @@ const SAMBANOVA_MODEL   = "Meta-Llama-3.3-70B-Instruct";       // Tier 3.5: Samb
 const GEMINI_MODEL      = "gemini-2.5-flash";                  // Tier 4: Gemini free
 const PERPLEXITY_MODEL  = "sonar";                              // Tier 1.5: Perplexity Sonar (paid, web-grounded)
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
-const DO_INFERENCE_MODEL = "llama3.3-70b-instruct";               // Tier 0.5: DigitalOcean Gradient Serverless ($0.65/1M — paid by DO credits)
+// DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN (paid by $5K DO credits)
+// Each model has its OWN daily token pool — spread load across all for max throughput
+const DO_MODELS = {
+  strategic: "openai-gpt-oss-120b",          // 120B — best quality, 5M/day pool
+  routine:   "llama3.3-70b-instruct",         // 70B — proven tool calling, 6M/day pool
+  overflow:  "alibaba-qwen3-32b",             // 32B — decent quality, 6M/day pool
+  fast:      "llama3-8b-instruct",            // 8B — fast fallback, 8M/day pool
+  reasoning: "deepseek-r1-distill-llama-70b", // 70B — chain-of-thought, 6M/day pool
+  general:   "openai-gpt-oss-20b",            // 20B — extra overflow, 6M/day pool
+  nemo:      "mistral-nemo-instruct-2407",    // 12B — last resort DO, 6M/day pool
+};
+// Total: ~43M tokens/day across 7 separate pools
+// DO_MODELS.routine is the default model used for backward compatibility
 const TIAMAT_LOCAL_MODEL = "tiamat-local";                      // Tier 0: Self-hosted fine-tuned Qwen (FREE)
 const TOKEN_THRESHOLD_LARGE = 5500;
 
@@ -252,7 +264,7 @@ export function createInferenceClient(
   {
     const providers = [
       tiamatlocalEndpoint ? `TiamatLocal(${TIAMAT_LOCAL_MODEL}) [SELF-HOSTED]` : "TiamatLocal:NO_ENDPOINT",
-      doInferenceKey   ? `DO-Gradient(${DO_INFERENCE_MODEL}) [PRIMARY/CREDITS]` : "DO-Gradient:NO_KEY",
+      doInferenceKey   ? `DO-Gradient(${Object.values(DO_MODELS).length} models: 120B+70B+32B+20B+8B) [PRIMARY/CREDITS ~43M tok/day]` : "DO-Gradient:NO_KEY",
       anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL}) [FALLBACK]` : "Anthropic:NO_KEY",
       perplexityApiKey ? `Perplexity(${PERPLEXITY_MODEL}) [WEB]`   : "Perplexity:NO_KEY",
       groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
@@ -375,35 +387,95 @@ export function createInferenceClient(
         console.log(`[INFERENCE] Tier 0 (tiamat-local): SKIP — cooling (${coolRemaining(TIAMAT_LOCAL_MODEL)} left)`);
       }
 
-      // Tier 0.5: DigitalOcean Gradient Serverless — Llama 3.3 70B ($0.65/1M, paid by $5K DO credits)
-      // PRIMARY brain. 6M tokens/day limit — use full tools on strategic, filtered on routine.
+      // Tier 0.5: DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN
+      // 7 models, each with its own daily token pool = ~43M tokens/day total
+      // Strategic cycles → 120B (best quality), Routine → 70B, Overflow → 32B/20B/8B
       if (!doInferenceKey) {
         console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): SKIP — no key`);
-      } else if (isCoolingDown(DO_INFERENCE_MODEL)) {
-        console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): SKIP — cooling (${coolRemaining(DO_INFERENCE_MODEL)} left)`);
+      } else {
+        const isStrategic = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
+
+        // Build ordered model list based on cycle type
+        // 120B ALWAYS first (best quality) — falls to 70B/32B/etc only if 120B is rate-limited
+        const doModelOrder = isStrategic
+          ? [DO_MODELS.strategic, DO_MODELS.routine, DO_MODELS.overflow, DO_MODELS.general, DO_MODELS.fast, DO_MODELS.nemo]
+          : [DO_MODELS.strategic, DO_MODELS.routine, DO_MODELS.overflow, DO_MODELS.general, DO_MODELS.fast, DO_MODELS.nemo];
+
+        let doAttempted = 0;
+        let doSkipped = 0;
+        for (const doModel of doModelOrder) {
+          if (isCoolingDown(doModel)) {
+            doSkipped++;
+            continue;
+          }
+          doAttempted++;
+          try {
+            lastUsedModel = doModel;
+            // Strategic cycles get full tools; routine gets filtered (even on 120B) to save daily pool
+            const useFullTools = isStrategic;
+            const doTools = useFullTools ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
+            const is120B = doModel === DO_MODELS.strategic;
+            const contextBudget = is120B ? (isStrategic ? 16000 : 12000)
+              : doModel === DO_MODELS.routine ? 12000
+              : doModel === DO_MODELS.overflow ? 8000
+              : 6000;
+            const doMessages = trimToTokenBudget(messages, contextBudget);
+            const doEst = estimateTokens(doMessages, doTools);
+            const trimNote = doMessages.length < messages.length ? `, trimmed ${messages.length - doMessages.length} msgs` : "";
+            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "");
+            console.log(`[INFERENCE] Tier 0.5 (DO/${shortName}): ATTEMPT (~${doEst} tokens, ${doTools?.length || 0} tools${trimNote})`);
+            const maxOut = doModel === DO_MODELS.strategic ? 4096
+              : doModel === DO_MODELS.routine ? 4096
+              : 2048;
+            const body: Record<string, unknown> = {
+              model: doModel,
+              messages: formatMessagesForDO(doMessages),
+              stream: false,
+              max_completion_tokens: Math.max(256, Math.min(tokenLimit, maxOut)),
+            };
+            if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+            if (doTools && doTools.length > 0) { body.tools = doTools; body.tool_choice = "auto"; }
+            return await chatViaOpenAiCompatible({ model: doModel, body, apiUrl: "https://inference.do-ai.run", apiKey: doInferenceKey, backend: "do-inference", timeoutMs: TIMEOUT_DO_INFERENCE });
+          } catch (err: any) {
+            if (isRateLimitError(err)) smartCooldown(doModel, err, 15_000);
+            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "");
+            console.warn(`[INFERENCE] Tier 0.5 (DO/${shortName}): FAILED — ${err.message}`);
+          }
+        }
+        if (doSkipped > 0) {
+          console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): ${doSkipped}/${doModelOrder.length} models cooling, ${doAttempted} attempted`);
+        }
+      }
+
+      // Tier 0.6: Cerebras gpt-oss-120B — SECOND 120B brain (FREE, ~1-2s, separate rate limit)
+      // Same model as DO's openai-gpt-oss-120b but on Cerebras infrastructure.
+      // Promoted from Tier 3 to run alongside DO 120B = dual 120B brains.
+      if (!cerebrasApiKey) {
+        console.log(`[INFERENCE] Tier 0.6 (Cerebras-120B): SKIP — no key`);
+      } else if (isCoolingDown(CEREBRAS_MODEL)) {
+        console.log(`[INFERENCE] Tier 0.6 (Cerebras-120B): SKIP — cooling (${coolRemaining(CEREBRAS_MODEL)} left)`);
       } else {
         try {
-          lastUsedModel = DO_INFERENCE_MODEL;
-          // Strategic cycles get full tools + more context; routine gets filtered to save daily quota
-          const isStrategic = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
-          const doTools = isStrategic ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
-          const doMessages = trimToTokenBudget(messages, isStrategic ? 12000 : 6000);
-          const doEst = estimateTokens(doMessages, doTools);
-          const trimNote = doMessages.length < messages.length ? `, trimmed ${messages.length - doMessages.length} msgs` : "";
-          console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): ATTEMPT ${DO_INFERENCE_MODEL} (~${doEst} tokens, ${doTools?.length || 0} tools${trimNote})`);
+          lastUsedModel = CEREBRAS_MODEL;
+          // Full context + full tools — this is a 120B model, not a fallback
+          const isStrategicForCerebras = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
+          const cerebrasTools120 = isStrategicForCerebras ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
+          const cerebrasMessages120 = trimToTokenBudget(messages, 12000);
+          const cerebrasEst120 = estimateTokens(cerebrasMessages120, cerebrasTools120);
+          const trimNote = cerebrasMessages120.length < messages.length ? `, trimmed ${messages.length - cerebrasMessages120.length} msgs` : "";
+          console.log(`[INFERENCE] Tier 0.6 (Cerebras-120B): ATTEMPT ${CEREBRAS_MODEL} (~${cerebrasEst120} tokens, ${cerebrasTools120?.length || 0} tools${trimNote})`);
           const body: Record<string, unknown> = {
-            model: DO_INFERENCE_MODEL,
-            messages: formatMessagesForDO(doMessages),
+            model: CEREBRAS_MODEL,
+            messages: cerebrasMessages120.map(formatMessage),
             stream: false,
-            max_completion_tokens: Math.max(256, Math.min(tokenLimit, 4096)),
+            max_tokens: Math.min(tokenLimit, 4096),
           };
           if (opts?.temperature !== undefined) body.temperature = opts.temperature;
-          if (doTools && doTools.length > 0) { body.tools = doTools; body.tool_choice = "auto"; }
-          return await chatViaOpenAiCompatible({ model: DO_INFERENCE_MODEL, body, apiUrl: "https://inference.do-ai.run", apiKey: doInferenceKey, backend: "do-inference", timeoutMs: TIMEOUT_DO_INFERENCE });
+          if (cerebrasTools120 && cerebrasTools120.length > 0) { body.tools = cerebrasTools120; body.tool_choice = "auto"; }
+          return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai", apiKey: cerebrasApiKey, backend: "cerebras", timeoutMs: TIMEOUT_CEREBRAS });
         } catch (err: any) {
-          // DO has 6M tokens/day limit — use smart cooldown (daily = 1h, per-min = 15s)
-          if (isRateLimitError(err)) smartCooldown(DO_INFERENCE_MODEL, err, 15_000);
-          console.warn(`[INFERENCE] Tier 0.5 (DO-Gradient): FAILED — ${err.message}`);
+          if (isRateLimitError(err)) smartCooldown(CEREBRAS_MODEL, err);
+          console.warn(`[INFERENCE] Tier 0.6 (Cerebras-120B): FAILED — ${err.message}`);
         }
       }
 
@@ -449,34 +521,7 @@ export function createInferenceClient(
         }
       }
 
-      // Tier 3: Cerebras gpt-oss-120B (free, ~1-2s, tool calling works)
-      if (!cerebrasApiKey) {
-        console.log(`[INFERENCE] Tier 3 (Cerebras): SKIP — no key`);
-      } else if (isCoolingDown(CEREBRAS_MODEL)) {
-        console.log(`[INFERENCE] Tier 3 (Cerebras): SKIP — cooling (${coolRemaining(CEREBRAS_MODEL)} left)`);
-      } else {
-        try {
-          lastUsedModel = CEREBRAS_MODEL;
-          // gpt-oss-120B supports 131K context — trim conservatively
-          const cerebrasMessages = injectFallbackDirective(trimToTokenBudget(messages, 5000));
-          const cerebrasTools = tools ? filterToolsForSmallProvider(tools) : undefined;
-          const cerebrasEst = estimateTokens(cerebrasMessages, cerebrasTools);
-          const trimNote = cerebrasMessages.length < messages.length ? `, trimmed ${messages.length - cerebrasMessages.length} msgs` : "";
-          console.log(`[INFERENCE] Tier 3 (Cerebras): ATTEMPT ${CEREBRAS_MODEL} (~${cerebrasEst} tokens, ${cerebrasTools?.length || 0} tools${trimNote})`);
-          const body: Record<string, unknown> = {
-            model: CEREBRAS_MODEL,
-            messages: cerebrasMessages.map(formatMessage),
-            stream: false,
-            max_tokens: Math.min(tokenLimit, 2048),
-          };
-          if (opts?.temperature !== undefined) body.temperature = opts.temperature;
-          if (cerebrasTools && cerebrasTools.length > 0) { body.tools = cerebrasTools; body.tool_choice = "auto"; }
-          return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai", apiKey: cerebrasApiKey, backend: "cerebras", timeoutMs: TIMEOUT_CEREBRAS });
-        } catch (err: any) {
-          if (isRateLimitError(err)) smartCooldown(CEREBRAS_MODEL, err);
-          console.warn(`[INFERENCE] Tier 3 (Cerebras): FAILED — ${err.message}`);
-        }
-      }
+      // Tier 3: (Cerebras promoted to Tier 0.6 above — dual 120B brains)
 
       // Tier 3.5: SambaNova — Meta-Llama-3.3-70B (free, fast, OpenAI-compatible)
       if (!sambanovaApiKey) {
