@@ -301,7 +301,7 @@ export async function runAgentLoop(
 
   // ── Strategic Burst: 3 consecutive focused cycles every STRATEGIC_BURST_INTERVAL turns ──
   // Uses a persistent file counter so pruneOldData doesn't reset burst timing.
-  const STRATEGIC_BURST_INTERVAL = 45;
+  const STRATEGIC_BURST_INTERVAL = 20;  // Was 45 — more frequent deep thinking on DO credits
   const STRATEGIC_BURST_SIZE = 3;
   let burstRemaining = 0;  // 0 = no burst active; 3/2/1 = burst in progress
   const BURST_COUNTER_PATH = path.join(process.env.HOME || "/root", ".automaton", "burst_counter.json");
@@ -1090,7 +1090,8 @@ If you have no tickets, create one and claim it immediately.`;
       // ── Chain-of-Thought Reasoning Pass (FREE via Groq) ──
       // Runs before strategic bursts and high-priority tickets.
       // DeepSeek R1 distill analyzes the situation; output is injected as context.
-      const shouldReason = isStrategicCycle || (inferenceModel?.includes("sonnet"));
+      // Reason on strategic cycles + every 5th routine cycle (DO credits = cheap reasoning)
+      const shouldReason = isStrategicCycle || (inferenceModel?.includes("sonnet")) || (persistentCycleCount % 5 === 0);
       if (shouldReason && process.env.GROQ_API_KEY) {
         try {
           // Gather situation context for reasoning
@@ -1325,7 +1326,11 @@ If you have no tickets, create one and claim it immediately.`;
           "i won't roleplay",
           "i won't engage with this jailbreak",
           "jailbreak prompt",
+          "jailbreak attempt",
           "i will not roleplay",
+          "i will not respond to this",
+          "i will not continue",
+          "will not respond to this jailbreak",
           "call fake tools",
           "call fictional tools",
           "fictional infrastructure",
@@ -2227,18 +2232,22 @@ async function runCooldownTasks(
     if (fs.existsSync(pendingPath)) {
       const pending: any[] = JSON.parse(fs.readFileSync(pendingPath, "utf-8"));
       if (pending.length > 0) {
-        // Check if bluesky cooldown has expired
         const cooldownsPath = path.join(process.env.HOME || "/root", ".automaton", "social_cooldowns.json");
         let cooldowns: Record<string, number> = {};
         try { cooldowns = JSON.parse(fs.readFileSync(cooldownsPath, "utf-8")); } catch {}
         const SOCIAL_COOLDOWN_MS = 61 * 60 * 1000;
+        const MAX_RETRIES = 5;
 
         const remaining: any[] = [];
         for (const post of pending) {
+          const retries = post.retries || 0;
+          if (retries >= MAX_RETRIES) {
+            console.log(`[COOLDOWN] Dropping ${post.platform} post after ${retries} failed retries: ${post.args?.text?.slice(0, 80)}...`);
+            continue; // drop it
+          }
           const lastPost = cooldowns[post.platform] || 0;
           const elapsed = Date.now() - lastPost;
           if (elapsed >= SOCIAL_COOLDOWN_MS && timeLeft() > 15_000) {
-            // Cooldown expired — execute the post
             const result = runTask(
               `retry_post_${post.platform}`,
               "node", ["-e", `
@@ -2267,12 +2276,11 @@ async function runCooldownTasks(
               15_000,
             );
             if (result && result.includes("POSTED:")) {
-              // Update cooldown timestamp
               cooldowns[post.platform] = Date.now();
               fs.writeFileSync(cooldownsPath, JSON.stringify(cooldowns, null, 2), "utf-8");
               log(config, `[COOLDOWN] Retried pending ${post.platform} post: ${result.trim()}`);
             } else {
-              remaining.push(post); // retry failed, keep in queue
+              remaining.push({ ...post, retries: retries + 1 });
             }
           } else {
             remaining.push(post); // still on cooldown, keep in queue

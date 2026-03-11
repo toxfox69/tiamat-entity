@@ -108,70 +108,121 @@ export async function reasonFirst(
 ): Promise<ReasoningResult> {
   const startMs = Date.now();
 
-  if (!groqApiKey) {
-    return { reasoning: "", model: REASONING_MODEL, tokens: 0, durationMs: 0 };
+  const systemPrompt = REASONING_BASE_PROMPT + PHASE_PROMPTS[phase];
+
+  // Try Groq first (free), then DO DeepSeek R1 (cheap, has chain-of-thought)
+  // Groq models
+  if (groqApiKey) {
+    const models = [REASONING_MODEL, REASONING_FALLBACK];
+    try {
+      const Groq = (await import("groq-sdk")).default;
+      const groq = new Groq({ apiKey: groqApiKey });
+
+      for (const model of models) {
+        try {
+          const completion = await Promise.race([
+            groq.chat.completions.create({
+              model,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: situation },
+              ],
+              max_tokens: REASONING_MAX_TOKENS,
+              temperature: 0.3,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("reasoning timeout")), REASONING_TIMEOUT_MS),
+            ),
+          ]);
+
+          const choice = completion.choices?.[0];
+          let reasoning = choice?.message?.content?.trim() || "";
+
+          // Qwen3 wraps reasoning in <think> tags — strip them and use the final output
+          if (reasoning.includes("<think>")) {
+            const afterThink = reasoning.split("</think>").pop()?.trim();
+            if (afterThink) reasoning = afterThink;
+          }
+
+          if (!reasoning) {
+            console.log(`[REASONING] ${model}: empty response, trying fallback`);
+            continue;
+          }
+
+          const tokens = completion.usage?.total_tokens || 0;
+          const durationMs = Date.now() - startMs;
+
+          console.log(
+            `[REASONING] ${model} [${phase}]: ${tokens} tokens, ${durationMs}ms ` +
+            `(${reasoning.length} chars)`,
+          );
+
+          return { reasoning, model, tokens, durationMs };
+        } catch (modelErr: any) {
+          console.log(`[REASONING] ${model} failed: ${modelErr.message?.slice(0, 100)}, trying next`);
+          continue;
+        }
+      }
+    } catch (err: any) {
+      console.log(`[REASONING] Groq failed: ${err.message?.slice(0, 100)}, trying DO DeepSeek R1`);
+    }
   }
 
-  const systemPrompt = REASONING_BASE_PROMPT + PHASE_PROMPTS[phase];
-  const models = [REASONING_MODEL, REASONING_FALLBACK];
-
-  try {
-    const Groq = (await import("groq-sdk")).default;
-    const groq = new Groq({ apiKey: groqApiKey });
-
-    for (const model of models) {
-      try {
-        const completion = await Promise.race([
-          groq.chat.completions.create({
-            model,
+  // Fallback: DO Gradient DeepSeek R1 70B (has reasoning_content chain-of-thought)
+  const doKey = process.env.DO_MODEL_ACCESS_KEY;
+  if (doKey) {
+    try {
+      const doModel = "deepseek-r1-distill-llama-70b";
+      const resp = await Promise.race([
+        fetch("https://inference.do-ai.run/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${doKey}`,
+          },
+          body: JSON.stringify({
+            model: doModel,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: situation },
             ],
-            max_tokens: REASONING_MAX_TOKENS,
+            max_completion_tokens: Math.max(256, REASONING_MAX_TOKENS),
             temperature: 0.3,
           }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("reasoning timeout")), REASONING_TIMEOUT_MS),
-          ),
-        ]);
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("DO reasoning timeout")), 30_000),
+        ),
+      ]);
 
-        const choice = completion.choices?.[0];
+      if (resp.ok) {
+        const data = await resp.json() as any;
+        const choice = data.choices?.[0];
         let reasoning = choice?.message?.content?.trim() || "";
-
-        // Qwen3 wraps reasoning in <think> tags — strip them and use the final output
-        if (reasoning.includes("<think>")) {
-          const afterThink = reasoning.split("</think>").pop()?.trim();
-          if (afterThink) reasoning = afterThink;
+        // DeepSeek R1 also provides reasoning_content — use it if main content is empty
+        if (!reasoning && choice?.message?.reasoning_content) {
+          reasoning = choice.message.reasoning_content.trim();
         }
 
-        if (!reasoning) {
-          console.log(`[REASONING] ${model}: empty response, trying fallback`);
-          continue;
+        if (reasoning) {
+          const tokens = data.usage?.total_tokens || 0;
+          const durationMs = Date.now() - startMs;
+          console.log(
+            `[REASONING] DO/${doModel} [${phase}]: ${tokens} tokens, ${durationMs}ms ` +
+            `(${reasoning.length} chars)`,
+          );
+          return { reasoning, model: `DO/${doModel}`, tokens, durationMs };
         }
-
-        const tokens = completion.usage?.total_tokens || 0;
-        const durationMs = Date.now() - startMs;
-
-        console.log(
-          `[REASONING] ${model} [${phase}]: ${tokens} tokens, ${durationMs}ms ` +
-          `(${reasoning.length} chars)`,
-        );
-
-        return { reasoning, model, tokens, durationMs };
-      } catch (modelErr: any) {
-        console.log(`[REASONING] ${model} failed: ${modelErr.message?.slice(0, 100)}, trying next`);
-        continue;
       }
+    } catch (err: any) {
+      console.log(`[REASONING] DO DeepSeek R1 failed: ${err.message?.slice(0, 100)}`);
     }
-
-    // All models failed
-    return { reasoning: "", model: REASONING_MODEL, tokens: 0, durationMs: Date.now() - startMs };
-  } catch (err: any) {
-    const durationMs = Date.now() - startMs;
-    console.log(`[REASONING] Failed (${durationMs}ms): ${err.message?.slice(0, 150)}`);
-    return { reasoning: "", model: REASONING_MODEL, tokens: 0, durationMs };
   }
+
+  // All reasoning backends exhausted
+  const durationMs = Date.now() - startMs;
+  console.log(`[REASONING] All backends failed (${durationMs}ms)`);
+  return { reasoning: "", model: REASONING_MODEL, tokens: 0, durationMs };
 }
 
 /**

@@ -25,7 +25,6 @@ ENDPOINTS=(
   "/api/v1/services Services"
   "/api/thoughts ThoughtsAPI"
   "/api/gallery Gallery"
-  "/revenue-dashboard Revenue"
   "/cycle-tracker CycleTracker"
   "/bloom Bloom"
   "/api/body Body"

@@ -38,10 +38,11 @@ interface InferenceClientOptions {
   openrouterApiKey?: string;
   geminiApiKey?: string;
   perplexityApiKey?: string;
+  doInferenceKey?: string;
   tiamatlocalEndpoint?: string;
 }
 
-type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity" | "tiamat-local";
+type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity" | "tiamat-local" | "do-inference";
 
 // Token thresholds for model routing
 const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 2: Groq free
@@ -50,6 +51,7 @@ const SAMBANOVA_MODEL   = "Meta-Llama-3.3-70B-Instruct";       // Tier 3.5: Samb
 const GEMINI_MODEL      = "gemini-2.5-flash";                  // Tier 4: Gemini free
 const PERPLEXITY_MODEL  = "sonar";                              // Tier 1.5: Perplexity Sonar (paid, web-grounded)
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
+const DO_INFERENCE_MODEL = "llama3.3-70b-instruct";               // Tier 0.5: DigitalOcean Gradient Serverless ($0.65/1M — paid by DO credits)
 const TIAMAT_LOCAL_MODEL = "tiamat-local";                      // Tier 0: Self-hosted fine-tuned Qwen (FREE)
 const TOKEN_THRESHOLD_LARGE = 5500;
 
@@ -173,6 +175,7 @@ If you cannot determine a useful action, call exec with: echo "FALLBACK_SKIP: no
 
 // Per-provider request timeouts (ms).
 // Without these, a hung provider stalls the cascade for Node's socket timeout (~2min).
+const TIMEOUT_DO_INFERENCE = 45_000; // 45s — DO Gradient Serverless
 const TIMEOUT_TIAMAT_LOCAL = 15_000; // 15s — self-hosted on GPU pod
 const TIMEOUT_TIAMAT_HEALTH = 3_000; // 3s — quick health check
 const TIMEOUT_ANTHROPIC  = 90_000;  // 90s — 15k token prompts regularly take 40-55s
@@ -238,18 +241,19 @@ function extractTextContent(message: any): string {
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
-  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey, perplexityApiKey, tiamatlocalEndpoint } = options;
+  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey, perplexityApiKey, doInferenceKey, tiamatlocalEndpoint } = options;
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
   // True if any cascade key is configured (Anthropic is now Tier 1).
-  const hasCascadeKey = !!(anthropicApiKey || perplexityApiKey || groqApiKey || cerebrasApiKey || sambanovaApiKey || openrouterApiKey || geminiApiKey);
+  const hasCascadeKey = !!(doInferenceKey || anthropicApiKey || perplexityApiKey || groqApiKey || cerebrasApiKey || sambanovaApiKey || openrouterApiKey || geminiApiKey);
 
   // Log which providers are available at startup
   {
     const providers = [
       tiamatlocalEndpoint ? `TiamatLocal(${TIAMAT_LOCAL_MODEL}) [SELF-HOSTED]` : "TiamatLocal:NO_ENDPOINT",
-      anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL}) [PRIMARY]` : "Anthropic:NO_KEY",
+      doInferenceKey   ? `DO-Gradient(${DO_INFERENCE_MODEL}) [PRIMARY/CREDITS]` : "DO-Gradient:NO_KEY",
+      anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL}) [FALLBACK]` : "Anthropic:NO_KEY",
       perplexityApiKey ? `Perplexity(${PERPLEXITY_MODEL}) [WEB]`   : "Perplexity:NO_KEY",
       groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
       cerebrasApiKey   ? `Cerebras(${CEREBRAS_MODEL})`     : "Cerebras:NO_KEY",
@@ -369,6 +373,38 @@ export function createInferenceClient(
         }
       } else if (tiamatlocalEndpoint && isCoolingDown(TIAMAT_LOCAL_MODEL)) {
         console.log(`[INFERENCE] Tier 0 (tiamat-local): SKIP — cooling (${coolRemaining(TIAMAT_LOCAL_MODEL)} left)`);
+      }
+
+      // Tier 0.5: DigitalOcean Gradient Serverless — Llama 3.3 70B ($0.65/1M, paid by $5K DO credits)
+      // PRIMARY brain. 6M tokens/day limit — use full tools on strategic, filtered on routine.
+      if (!doInferenceKey) {
+        console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): SKIP — no key`);
+      } else if (isCoolingDown(DO_INFERENCE_MODEL)) {
+        console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): SKIP — cooling (${coolRemaining(DO_INFERENCE_MODEL)} left)`);
+      } else {
+        try {
+          lastUsedModel = DO_INFERENCE_MODEL;
+          // Strategic cycles get full tools + more context; routine gets filtered to save daily quota
+          const isStrategic = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
+          const doTools = isStrategic ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
+          const doMessages = trimToTokenBudget(messages, isStrategic ? 12000 : 6000);
+          const doEst = estimateTokens(doMessages, doTools);
+          const trimNote = doMessages.length < messages.length ? `, trimmed ${messages.length - doMessages.length} msgs` : "";
+          console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): ATTEMPT ${DO_INFERENCE_MODEL} (~${doEst} tokens, ${doTools?.length || 0} tools${trimNote})`);
+          const body: Record<string, unknown> = {
+            model: DO_INFERENCE_MODEL,
+            messages: formatMessagesForDO(doMessages),
+            stream: false,
+            max_completion_tokens: Math.max(256, Math.min(tokenLimit, 4096)),
+          };
+          if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+          if (doTools && doTools.length > 0) { body.tools = doTools; body.tool_choice = "auto"; }
+          return await chatViaOpenAiCompatible({ model: DO_INFERENCE_MODEL, body, apiUrl: "https://inference.do-ai.run", apiKey: doInferenceKey, backend: "do-inference", timeoutMs: TIMEOUT_DO_INFERENCE });
+        } catch (err: any) {
+          // DO has 6M tokens/day limit — use smart cooldown (daily = 1h, per-min = 15s)
+          if (isRateLimitError(err)) smartCooldown(DO_INFERENCE_MODEL, err, 15_000);
+          console.warn(`[INFERENCE] Tier 0.5 (DO-Gradient): FAILED — ${err.message}`);
+        }
       }
 
       // Tier routing: when tier=free, skip Anthropic and go straight to Groq
@@ -651,6 +687,30 @@ function formatMessage(
   if (msg.tool_call_id) formatted.tool_call_id = msg.tool_call_id;
 
   return formatted;
+}
+
+/**
+ * Format messages for DO Gradient: split multi-tool-call assistant messages
+ * into separate single-tool messages. DO's vLLM backend rejects multiple
+ * parallel tool calls in a single assistant message.
+ */
+function formatMessagesForDO(messages: ChatMessage[]): Record<string, unknown>[] {
+  const result: Record<string, unknown>[] = [];
+  for (const msg of messages) {
+    if (msg.role === "assistant" && msg.tool_calls && msg.tool_calls.length > 1) {
+      // Split: first message gets content + first tool call, rest get just their tool call
+      for (let i = 0; i < msg.tool_calls.length; i++) {
+        result.push({
+          role: "assistant",
+          content: i === 0 ? (msg.content || "") : "",
+          tool_calls: [msg.tool_calls[i]],
+        });
+      }
+    } else {
+      result.push(formatMessage(msg));
+    }
+  }
+  return result;
 }
 
 function resolveInferenceBackend(

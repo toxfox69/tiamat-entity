@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SHADOWRUN VR — Stoker's Coffin Motel</title>
+    <meta name="description" content="Shadowrun Genesis (1994) VR Port — Stoker's Coffin Motel, Redmond Barrens">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        body { background: #000; overflow: hidden; touch-action: manipulation; }
+        /* Crisp pixel art rendering */
+        canvas { image-rendering: pixelated; image-rendering: crisp-edges;
+            filter: brightness(0.35) contrast(1.15) saturate(0.7) sepia(0.08); }
+        .a-enter-vr-button { background: #090 !important; color: #000 !important;
+            font-family: monospace !important; border: 2px solid #0c0 !important; }
+
+        /* CRT Scanline overlay — subtle, Genesis-style */
+        #crt-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 994; pointer-events: none;
+            background: repeating-linear-gradient(0deg,
+                rgba(0,0,0,0.06) 0px, rgba(0,0,0,0.06) 1px,
+                transparent 1px, transparent 3px);
+            mix-blend-mode: multiply; }
+
+        /* Vignette — heavy, grimy */
+        #vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 993; pointer-events: none;
+            background: radial-gradient(ellipse at center,
+                rgba(0,0,0,0) 0%, rgba(0,0,0,0.25) 60%, rgba(0,0,0,0.55) 100%); }
+        /* Smog/haze overlay — toxic Redmond air */
+        #smog { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 992; pointer-events: none;
+            background: linear-gradient(180deg,
+                rgba(15,12,8,0.3) 0%, rgba(20,18,10,0.15) 40%,
+                rgba(25,20,12,0.25) 70%, rgba(15,10,5,0.4) 100%);
+            mix-blend-mode: screen; }
+
+        /* ===== SPLASH & TITLE SCREENS ===== */
+        .fullscreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 99999999; display: flex; align-items: center;
+            justify-content: center; flex-direction: column; cursor: pointer; }
+
+        /* SEGA splash */
+        #splash-sega .sega-logo { font-family: Arial, Helvetica, sans-serif; font-weight: bold;
+            font-size: 18vw; color: #2266cc; letter-spacing: 0.06em;
+            text-shadow: 0 0 30px #2266cc, 0 0 60px #1144aa; }
+        #splash-sega .tap-hint { color: #555; font-family: monospace; font-size: 4vw;
+            margin-top: 8vh; }
+        #splash-sega .tap-hint span { animation: pulse 1.5s infinite; display: inline-block; }
+
+        /* Developer splash */
+        #splash-dev .dev-line { font-family: monospace; font-size: 5vw; color: #999;
+            letter-spacing: 0.15em; margin: 1vh 0; }
+        #splash-dev .dev-fasa { color: #cc8800; font-family: monospace; font-size: 4vw;
+            margin-top: 4vh; letter-spacing: 0.1em; }
+
+        /* Title screen */
+        #title-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 99999998; display: none; align-items: center;
+            justify-content: center; flex-direction: column; cursor: pointer; }
+        #title-logo { color: #c00; font-family: monospace; font-weight: bold;
+            font-size: 12vw; letter-spacing: 0.08em;
+            text-shadow: 0 0 40px #c00, 3px 3px 0 #600, 0 5px 0 #400; }
+        #title-tagline { color: #666; font-family: monospace; font-size: 3vw;
+            letter-spacing: 0.3em; margin-top: 2vh; }
+        #title-credits { margin-top: 6vh; }
+        #title-credits div { color: #444; font-family: monospace; font-size: 3vw; margin: 0.5vh 0; }
+        #title-start { color: #cc0; font-family: monospace; font-size: 5vw;
+            letter-spacing: 0.15em; margin-top: 8vh; }
+        #title-start span { animation: pulse 1.2s infinite; display: inline-block; }
+
+        @keyframes pulse { 0%,100%{opacity:0.3;}50%{opacity:1;} }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* Story crawl */
+        #story-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 99999998; display: none; align-items: center;
+            justify-content: center; flex-direction: column; cursor: pointer;
+            padding: 8vw; box-sizing: border-box; }
+        #story-text { color: #0c0; font-family: 'Courier New', monospace; font-size: 4.2vw;
+            line-height: 1.8; max-width: 90vw; text-align: left;
+            text-shadow: 0 0 6px #090, 0 0 12px #060;
+            white-space: pre-wrap; }
+        #story-advance { color: #555; font-family: monospace; font-size: 3.5vw;
+            margin-top: 5vh; }
+        #story-advance span { animation: pulse 1.5s infinite; display: inline-block; }
+
+        /* Character select */
+        #char-select { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 99999998; display: none; align-items: center;
+            justify-content: center; flex-direction: column; cursor: pointer; }
+        #char-select h2 { color: #090; font-family: monospace; font-size: 5vw;
+            letter-spacing: 3px; margin-bottom: 4vh; }
+        .archetype { color: #0c0; font-family: monospace; font-size: 4vw; padding: 2vh 5vw;
+            margin: 1vh; border: 1px solid #030; cursor: pointer; min-width: 60vw; text-align: left; }
+        .archetype.selected { border-color: #0c0; background: #0c0; color: #000; font-weight: bold; }
+        .archetype:hover { border-color: #090; }
+        #char-desc { color: #0aa; font-family: monospace; font-size: 3.2vw; margin-top: 3vh;
+            max-width: 80vw; text-align: center; line-height: 1.5; }
+        #char-confirm { color: #cc0; font-family: monospace; font-size: 4vw;
+            margin-top: 4vh; }
+        #char-confirm span { animation: pulse 1.2s infinite; display: inline-block; }
+
+        @media (min-width: 768px) {
+            #splash-sega .sega-logo { font-size: 120px; }
+            #splash-sega .tap-hint { font-size: 18px; }
+            #splash-dev .dev-line { font-size: 28px; }
+            #splash-dev .dev-fasa { font-size: 20px; }
+            #title-logo { font-size: 72px; }
+            #title-tagline { font-size: 14px; }
+            #title-credits div { font-size: 13px; }
+            #title-start { font-size: 22px; }
+            #story-text { font-size: 18px; max-width: 600px; }
+            #story-advance { font-size: 14px; }
+            #char-select h2 { font-size: 24px; }
+            .archetype { font-size: 16px; min-width: 280px; padding: 10px 24px; }
+            #char-desc { font-size: 13px; max-width: 400px; }
+            #char-confirm { font-size: 16px; }
+        }
+
+        /* Genesis-style HUD — uses actual game frame images */
+        #hud { position: fixed; top: 0; right: 0; z-index: 999;
+            pointer-events: none; image-rendering: pixelated; display: none; }
+        #hud-right { position: fixed; top: 0; right: 0; height: 100%;
+            image-rendering: pixelated; z-index: 999; pointer-events: none; }
+        #hud-bottom { position: fixed; bottom: 0; left: 0; width: calc(100% - 90px); height: 38px;
+            image-rendering: pixelated; z-index: 999; pointer-events: none; object-fit: fill; }
+        #hud-top { position: fixed; top: 0; left: 0; width: calc(100% - 90px); height: 14px;
+            image-rendering: pixelated; z-index: 999; pointer-events: none; object-fit: fill; }
+        #hud-left { position: fixed; top: 0; left: 0; width: 14px; height: calc(100% - 38px);
+            image-rendering: pixelated; z-index: 999; pointer-events: none; object-fit: fill; }
+        /* HUD overlay stats positioned over the right panel image */
+        #hud-overlay { position: fixed; top: 0; right: 0; width: 90px; height: 100%;
+            z-index: 1000; pointer-events: none; color: #0c0;
+            font-family: 'Courier New', monospace; }
+        #hud-overlay .stat { font-size: 16px; text-align: center; font-weight: bold;
+            color: #0c0; text-shadow: 0 0 4px #090; }
+        #hud-overlay .ammo { color: #cc0; text-shadow: 0 0 4px #880; }
+
+        /* Crosshair */
+        #crosshair { position: fixed; top: 50%; left: 50%; width: 20px; height: 20px;
+            margin: -10px 0 0 -10px; z-index: 997; pointer-events: none; opacity: 0.5; display: none; }
+        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #0c0; }
+        #crosshair::before { width: 2px; height: 6px; top: 0; left: 9px; box-shadow: 0 14px 0 #0c0; }
+        #crosshair::after { width: 6px; height: 2px; top: 9px; left: 0; box-shadow: 14px 0 0 #0c0; }
+
+        /* Dialogue */
+        #dialogue { position: fixed; bottom: 8px; left: 0; right: 90px;
+            background: #000; border: 2px solid #090; border-left: none;
+            color: #0c0; font-family: 'Courier New', monospace; font-size: 13px; padding: 10px 14px;
+            z-index: 998; display: none; line-height: 1.4; }
+        #dialogue .speaker { color: #cc0; font-size: 11px; margin-bottom: 4px; font-weight: bold; }
+        #dialogue .dismiss { color: #444; font-size: 10px; margin-top: 6px; text-align: right; }
+
+        #muzzle-flash { position: fixed; top: 50%; left: 50%; width: 60px; height: 60px;
+            margin: -50px 0 0 -30px; z-index: 996; pointer-events: none; display: none;
+            background: radial-gradient(circle, rgba(255,200,80,0.9) 0%, rgba(255,120,0,0.5) 40%, transparent 70%);
+            border-radius: 50%; }
+
+        #gun-view { position: fixed; bottom: -5px; right: 100px; z-index: 995; pointer-events: none; display: none; }
+        #gun-view img { width: 160px; height: 80px; image-rendering: pixelated; }
+
+        /* Mobile controls */
+        #dpad { position: fixed; bottom: 20px; left: 15px; width: 120px; height: 120px;
+            pointer-events: auto; z-index: 998; display: none; }
+        #dpad button { position: absolute; width: 38px; height: 38px; background: rgba(0,144,0,0.2);
+            border: 1px solid rgba(0,144,0,0.4); color: #090; font-size: 16px; border-radius: 4px;
+            pointer-events: auto; font-family: monospace; }
+        #dpad button:active { background: rgba(0,144,0,0.5); }
+        #dpad .up { top: 0; left: 41px; }
+        #dpad .down { bottom: 0; left: 41px; }
+        #dpad .left { top: 41px; left: 0; }
+        #dpad .right { top: 41px; right: 0; }
+        #fire-btn { position: fixed; bottom: 35px; right: 110px; width: 60px; height: 60px;
+            background: rgba(180,0,0,0.25); border: 2px solid rgba(180,0,0,0.5); border-radius: 50%;
+            color: #c00; font-family: monospace; font-size: 11px; font-weight: bold;
+            z-index: 998; display: none; pointer-events: auto; }
+        #fire-btn:active { background: rgba(180,60,0,0.5); }
+
+        @media (hover: none) and (pointer: coarse) {
+            #hud-right { width: 70px; }
+            #hud-bottom { width: calc(100% - 70px); }
+            #hud-top { width: calc(100% - 70px); }
+            #hud-overlay { width: 70px; }
+            #gun-view { right: 80px; }
+            #gun-view img { width: 120px; height: 60px; }
+            #fire-btn { right: 85px; }
+            #dialogue { right: 70px; font-size: 11px; }
+            #title-logo { font-size: 28px; }
+        }
+    
+        @keyframes fadeIn { 
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .hud-panel {
+            animation: fadeIn 0.5s ease-in;
+        }
+        </style>
+    <script src="./interactive-crate.js"></script>
+    <script src="./interactive-crate.js"></script>
+</head>
+<body>
+    <!-- SPLASH: SEGA -->
+    <div id="splash-sega" class="fullscreen">
+        <div class="sega-logo">SEGA</div>
+        <div class="tap-hint"><span>TAP TO START</span></div>
+    </div>
+
+    <!-- SPLASH: DEVELOPER -->
+    <div id="splash-dev" class="fullscreen" style="display:none">
+        <div class="dev-line">BlueSky Software</div>
+        <div class="dev-line">presents</div>
+        <div class="dev-fasa">Licensed by FASA Corporation</div>
+    </div>
+
+    <!-- TITLE SCREEN -->
+    <div id="title-screen" style="display:none">
+        <div id="title-logo">SHADOWRUN</div>
+        <div id="title-tagline">SEGA GENESIS &bull; 1994</div>
+        <div id="title-credits">
+            <div>Developed by BlueSky Software</div>
+            <div>Music by Sam Powell</div>
+        </div>
+        <div id="title-start"><span>PRESS START</span></div>
+    </div>
+
+    <!-- STORY CRAWL -->
+    <div id="story-screen">
+        <div id="story-text"></div>
+        <div id="story-advance"><span>&#9654;</span></div>
+    </div>
+
+    <!-- CHARACTER SELECT -->
+    <div id="char-select">
+        <h2>CHOOSE YOUR ARCHETYPE</h2>
+        <div class="archetype selected" data-arch="samurai">&#9654; STREET SAMURAI</div>
+        <div class="archetype" data-arch="decker">&nbsp; DECKER</div>
+        <div class="archetype" data-arch="gator">&nbsp; GATOR SHAMAN</div>
+        <div id="char-desc">Combat specialist. Starts with hand razors and a Beretta pistol. High body and strength. Gains karma through combat.</div>
+        <div id="char-confirm"><span>[ TAP TO CONFIRM ]</span></div>
+    </div>
+
+    <div id="crt-overlay"></div>
+    <div id="vignette"></div>
+    <div id="smog"></div>
+
+    <div id="hud">
+        <!-- Actual Genesis HUD frame images -->
+        <img id="hud-right" src="textures/hud_right.png" alt="">
+        <img id="hud-bottom" src="textures/hud_bottom.png" alt="">
+        <img id="hud-top" src="textures/hud_top.png" alt="">
+        <img id="hud-left" src="textures/hud_left.png" alt="">
+    </div>
+    <!-- Stat overlay on top of HUD frame -->
+    <div id="hud-overlay" style="display:none">
+        <div style="margin-top:98px">
+            <div class="stat ammo" id="ammo-display">12</div>
+        </div>
+        <div style="margin-top:30px">
+            <div class="stat">00</div>
+        </div>
+        <div style="margin-top:30px">
+            <div class="stat">00</div>
+        </div>
+    </div>
+
+    <div id="crosshair"></div>
+    <div id="muzzle-flash"></div>
+    <div id="gun-view"><img src="textures/pistol_genesis.png" alt=""></div>
+    <div id="dialogue">
+        <div class="speaker"></div>
+        <div class="text"></div>
+        <div class="dismiss">[ A ]</div>
+    </div>
+
+    <div id="dpad">
+        <button class="up" data-dir="forward">&#9650;</button>
+        <button class="down" data-dir="backward">&#9660;</button>
+        <button class="left" data-dir="left">&#9664;</button>
+        <button class="right" data-dir="right">&#9654;</button>
+    </div>
+    <button id="fire-btn">FIRE</button>
+
+    <a-scene id="game-scene" style="visibility: hidden"
+        fog="type: exponential; color: #080808; density: 0.035"
+        loading-screen="enabled: false"
+        renderer="antialias: false; colorManagement: false"
+        vr-mode-ui="enabled: true">
+
+        <a-assets timeout="10000">
+            <img id="floor-tex" src="textures/t_ground.png" crossorigin="anonymous">
+            <img id="wall-blue-tex" src="textures/t_wall.png" crossorigin="anonymous">
+            <img id="facade-tex" src="textures/t_facade.png" crossorigin="anonymous">
+            <img id="window-tex" src="textures/t_window.png" crossorigin="anonymous">
+            <img id="hazard-tex" src="textures/t_hazard.png" crossorigin="anonymous">
+            <img id="trim-tex" src="textures/t_trim.png" crossorigin="anonymous">
+            <img id="ceiling-tex" src="textures/t_ceiling.png" crossorigin="anonymous">
+            <img id="door-tex" src="textures/t_door.png" crossorigin="anonymous">
+            <img id="stoker-tex" src="textures/stoker_genesis.png" crossorigin="anonymous">
+            <img id="phone-tex" src="textures/phone_genesis.png" crossorigin="anonymous">
+            <img id="ganger-sprite" src="textures/ganger_genesis.png" crossorigin="anonymous">
+            <img id="fixer-sprite" src="textures/fixer_genesis.png" crossorigin="anonymous">
+            <img id="decker-sprite" src="textures/decker_genesis.png" crossorigin="anonymous">
+                    <img id="medkit-item" src="textures/medkit_item.png" crossorigin="anonymous">
+            <img id="ammo-item" src="textures/ammo_item.png" crossorigin="anonymous">
+            <img id="credstick-item" src="textures/credstick_item.png" crossorigin="anonymous">
+        </a-assets>
+
+        <!-- ===== PLAYER ===== -->
+        <a-entity id="rig" position="0 0 16"
+                  movement-controls="speed: 0.10; fly: false; controls: keyboard, touch"
+                  touch-controls>
+            <a-entity id="camera" camera
+                      position="0 1.6 0"
+                      look-controls="pointerLockEnabled: false; touchEnabled: true; magicWindowTrackingEnabled: true">
+                <a-entity cursor="fuse: false; rayOrigin: mouse" raycaster="far: 30; objects: .shootable, .interactive"></a-entity>
+            </a-entity>
+            <a-entity laser-controls="hand: left" raycaster="objects: .interactive"></a-entity>
+            <a-entity laser-controls="hand: right" raycaster="objects: .interactive"></a-entity>
+        </a-entity>
+
+        <!-- ===================== INDOOR: MOTEL ===================== -->
+
+        <!-- Ground — cracked gray concrete (Genesis-accurate) -->
+        <a-plane position="0 0 0" rotation="-90 0 0" width="18" height="22"
+                 material="shader: flat; src: #floor-tex; repeat: 6 7; npot: true"
+                 class="shootable"></a-plane>
+
+        <!-- Ceiling — metal panels -->
+        <a-plane position="0 3.2 0" rotation="90 0 0" width="18" height="22"
+                 material="shader: flat; src: #ceiling-tex; repeat: 6 7; npot: true"></a-plane>
+
+        <!-- ===== BUILDING FACADE (North wall) ===== -->
+        <a-box position="0 1.6 -8" width="18" height="3.2" depth="0.3"
+               material="shader: flat; src: #facade-tex; repeat: 8 4; npot: true"
+               class="shootable"></a-box>
+        <a-box position="0 3.1 -8.05" width="18" height="0.35" depth="0.2"
+               material="shader: flat; src: #trim-tex; repeat: 12 1; npot: true"></a-box>
+        <!-- Red trim separator -->
+        <a-box position="0 1.2 -7.82" width="18" height="0.12" depth="0.08"
+               material="shader: flat; color: #b42020"></a-box>
+
+        <!-- Teal windows -->
+        <a-plane position="-5 2.3 -7.83" width="1.8" height="1.2"
+                 material="shader: flat; src: #window-tex; npot: true"
+                 class="interactive shootable"></a-plane>
+        <a-plane position="-1.5 2.3 -7.83" width="1.8" height="1.2"
+                 material="shader: flat; src: #window-tex; npot: true"
+                 class="interactive shootable"></a-plane>
+        <a-plane position="2 2.3 -7.83" width="1.8" height="1.2"
+                 material="shader: flat; src: #window-tex; npot: true"
+                 class="interactive shootable"></a-plane>
+        <a-plane position="5.5 2.3 -7.83" width="1.8" height="1.2"
+                 material="shader: flat; src: #window-tex; npot: true"
+                 class="interactive shootable"></a-plane>
+
+        <!-- Window frames -->
+        <a-box position="-5 2.3 -7.87" width="2.0" height="1.4" depth="0.06" material="shader: flat; color: #181818"></a-box>
+        <a-box position="-1.5 2.3 -7.87" width="2.0" height="1.4" depth="0.06" material="shader: flat; color: #181818"></a-box>
+        <a-box position="2 2.3 -7.87" width="2.0" height="1.4" depth="0.06" material="shader: flat; color: #181818"></a-box>
+        <a-box position="5.5 2.3 -7.87" width="2.0" height="1.4" depth="0.06" material="shader: flat; color: #181818"></a-box>
+
+        <!-- Yellow pipes -->
+        <a-box position="3.5 1.6 -7.75" width="0.12" height="3.2" depth="0.08"
+               material="shader: flat; color: #d8b400"></a-box>
+        <a-box position="-3 1.6 -7.75" width="0.12" height="3.2" depth="0.08"
+               material="shader: flat; color: #d8b400"></a-box>
+
+        <!-- ===== SIDE WALLS — Dark blue brick ===== -->
+        <!-- South wall (entrance gap) -->
+        <a-box position="-5 1.6 10" width="8" height="3.2" depth="0.3"
+               material="shader: flat; src: #wall-blue-tex; repeat: 4 2; npot: true" class="shootable"></a-box>
+        <a-box position="5 1.6 10" width="8" height="3.2" depth="0.3"
+               material="shader: flat; src: #wall-blue-tex; repeat: 4 2; npot: true" class="shootable"></a-box>
+        <a-box position="0 2.8 10" width="2.5" height="0.8" depth="0.3"
+               material="shader: flat; src: #wall-blue-tex; repeat: 1 1; npot: true"></a-box>
+
+        <!-- East/West walls -->
+        <a-box position="-9 1.6 1" width="0.3" height="3.2" depth="18"
+               material="shader: flat; src: #wall-blue-tex; repeat: 8 2; npot: true" class="shootable"></a-box>
+        <a-box position="9 1.6 1" width="0.3" height="3.2" depth="18"
+               material="shader: flat; src: #wall-blue-tex; repeat: 8 2; npot: true" class="shootable"></a-box>
+
+        <!-- Hazard pillars -->
+        <a-box position="7.5 1.6 2" width="0.5" height="3.2" depth="0.5"
+               material="shader: flat; src: #hazard-tex; npot: true" shadow="cast: true" class="shootable"></a-box>
+        <a-box position="7.5 1.6 -3" width="0.5" height="3.2" depth="0.5"
+               material="shader: flat; src: #hazard-tex; npot: true" shadow="cast: true" class="shootable"></a-box>
+
+        <!-- ===== STOKER NPC ===== -->
+        <a-entity id="innkeeper" position="-2 0 7.2" class="interactive"
+                  data-dialogue="I'll be seeing you, chum. You must be Michael's brother.|Your brother owed me 250 nuyen in back rent. Pay up and I'll hand over his belongings.|I ain't running a charity here. Try the Jump House if you need work — ask for Mr. Gunderson.|Coffin's 20 nuyen a night. No refunds. No questions. The Barrens ain't safe after dark.">
+            <a-plane position="0 1.2 0" width="1.2" height="1.8"
+                     material="shader: flat; src: #stoker-tex; transparent: true; alphaTest: 0.5; side: double"
+                     look-at="#camera" class="interactive"></a-plane>
+            <a-text value="STOKER" position="0 2.3 0" align="center" color="#0c0"
+                    font="monoid" width="1.8" side="double" look-at="#camera"></a-text>
+            <a-text id="innkeeper-prompt" value="[TALK]" position="0 2.55 0" align="center" color="#cc0"
+                    font="monoid" width="1.2" side="double" visible="false" look-at="#camera"></a-text>
+        </a-entity>
+
+        <!-- Front desk -->
+        <a-box position="-2 0.45 7.3" width="2.2" height="0.9" depth="0.6"
+               material="shader: flat; color: #2a1818" shadow="cast: true" class="interactive"
+               data-dialogue="The front desk. Bulletproof glass separates you from Stoker.|A sign reads: 'COFFINS 20¥/NIGHT — NO REFUNDS — NO QUESTIONS'|A ledger shows Michael's name. He owed 250 nuyen."></a-box>
+        <a-box position="-1.3 1.0 7.3" width="0.4" height="0.3" depth="0.3" material="shader: flat; color: #121212"></a-box>
+        <a-plane position="-1.3 1.0 7.14" width="0.3" height="0.2"
+                 material="shader: flat; color: #00aa00"></a-plane>
+
+        <!-- Phone booth -->
+        <a-entity position="-6.5 0 3" class="interactive"
+                  data-dialogue="A public vidphone. Most of the buttons are broken.|You could try calling someone... if you knew anyone in this sprawl.">
+            <a-plane position="0 1.0 0" width="0.6" height="1.8"
+                     material="shader: flat; src: #phone-tex; transparent: true; alphaTest: 0.5; side: double"
+                     look-at="#camera" class="interactive"></a-plane>
+            <a-sphere position="0 1.9 0" radius="0.08"
+                      material="shader: flat; color: #ff3300"></a-sphere>
+        </a-entity>
+
+        <!-- Vending machine -->
+        <a-entity position="8.2 0 -5" class="interactive"
+                  data-dialogue="A battered NukaCola machine. It dispenses something that might be cola.|INSERT 5 NUYEN — The slot is jammed with a credstick fragment.">
+            <a-box position="0 0.8 0" width="0.6" height="1.6" depth="0.4"
+                   material="shader: flat; color: #1a2a3a" shadow="cast: true" class="interactive"></a-box>
+            <a-plane position="0 1.0 0.21" width="0.4" height="0.6"
+                     material="shader: flat; color: #006090"></a-plane>
+        </a-entity>
+
+        <!-- Manhole -->
+        <a-entity position="2 0 -2" class="interactive"
+                  data-dialogue="A heavy manhole cover. Something moves in the darkness below.|You'd need tools to pry this open. And a death wish.">
+            <a-plane position="0 0.02 0" rotation="-90 0 0" width="1.0" height="1.0"
+                     material="shader: flat; color: #404040"></a-plane>
+        </a-entity>
+
+        <!-- Coffin pods — left -->
+        <a-entity position="-6 0 -4">
+            <a-box position="0 0.35 0" width="0.9" height="0.6" depth="1.8"
+                   material="shader: flat; color: #006868" shadow="cast: true"
+                   class="interactive" data-dialogue="A cramped sleeping coffin. The mattress is stained and thin.|A faded sticker reads: 'STOKER'S — Sleep Like The Dead'"></a-box>
+            <a-box position="0 0.35 -2.2" width="0.9" height="0.6" depth="1.8"
+                   material="shader: flat; color: #006868" shadow="cast: true"
+                   class="interactive" data-dialogue="This coffin is occupied. You hear shallow breathing inside."></a-box>
+            <a-sphere position="0.5 0.7 0" radius="0.03" material="shader: flat; color: #00cc00"></a-sphere>
+            <a-sphere position="0.5 0.7 -2.2" radius="0.03" material="shader: flat; color: #cc0000"></a-sphere>
+        </a-entity>
+        <!-- Coffin pods — right -->
+        <a-entity position="6 0 -4">
+            <a-box position="0 0.35 0" width="0.9" height="0.6" depth="1.8"
+                   material="shader: flat; color: #006868" shadow="cast: true"
+                   class="interactive" data-dialogue="Empty coffin. Someone scratched 'WAKE UP' into the ceiling."></a-box>
+            <a-box position="0 0.35 -2.2" width="0.9" height="0.6" depth="1.8"
+                   material="shader: flat; color: #006868" shadow="cast: true"
+                   class="interactive" data-dialogue="The lock on this coffin is broken. A medkit lies inside — empty."></a-box>
+            <a-sphere position="-0.5 0.7 0" radius="0.03" material="shader: flat; color: #cccc00"></a-sphere>
+            <a-sphere position="-0.5 0.7 -2.2" radius="0.03" material="shader: flat; color: #00cc00"></a-sphere>
+        </a-entity>
+
+        <!-- Dumpster -->
+        <a-entity position="4 0 6" class="interactive"
+                  data-dialogue="A corroded dumpster. It reeks of chemical waste and something worse.|You find a half-empty clip of ammo. Lucky day."
+                  data-ammo="6">
+            <a-box position="0 0.45 0" width="1.8" height="0.9" depth="1.0"
+                   material="shader: flat; color: #006848" shadow="cast: true" class="interactive"></a-box>
+            <a-box position="0 0.95 0" width="1.9" height="0.06" depth="1.1" material="shader: flat; color: #004838"></a-box>
+        </a-entity>
+
+        <!-- Skeleton -->
+        <a-entity position="5.5 0 5" class="interactive"
+                  data-dialogue="The remains of someone who checked in and never checked out.|A faded SIN card reads: 'J. ARMITAGE' — the name means nothing to you.">
+            <a-box position="0 0.08 0" width="0.35" height="0.12" depth="0.5" rotation="0 -20 5"
+                   material="shader: flat; color: #909090"></a-box>
+            <a-sphere position="0.1 0.1 0.3" radius="0.08" material="shader: flat; color: #a0a0a0"></a-sphere>
+        </a-entity>
+
+        <!-- Motel sign -->
+        <a-entity position="0 0 9.5" class="interactive"
+                  data-dialogue="The battered sign reads Stoker's Coffin Motel.|Motels like these are cheap, each room only large enough to fit a small bed.|Dumps like these tend to attract the dregs of humanity.">
+            <a-text value="STOKER'S COFFIN MOTEL" position="0 2.7 0.15" rotation="0 180 0"
+                    color="#cc0044" font="monoid" width="7" align="center"></a-text>
+            <a-text value="NO VACANCY" position="0 2.2 0.15" rotation="0 180 0"
+                    color="#cc3300" font="monoid" width="3.5" align="center"></a-text>
+        </a-entity>
+
+        <!-- Room dividers -->
+        <a-box position="-4 1.6 -2" width="0.15" height="3.2" depth="5.5"
+               material="shader: flat; src: #facade-tex; repeat: 3 2; npot: true" class="shootable"></a-box>
+        <a-box position="4 1.6 -2" width="0.15" height="3.2" depth="5.5"
+               material="shader: flat; src: #facade-tex; repeat: 3 2; npot: true" class="shootable"></a-box>
+        <a-box position="-2 1.6 1" width="0.15" height="3.2" depth="5.5"
+               material="shader: flat; src: #wall-blue-tex; repeat: 3 2; npot: true" class="shootable"></a-box>
+
+        <!-- Room numbers -->
+        <a-text value="C-01" position="-3.92 2.0 -1" rotation="0 90 0" color="#090" font="monoid" width="1.2"></a-text>
+        <a-text value="C-02" position="-3.92 2.0 -3.5" rotation="0 90 0" color="#090" font="monoid" width="1.2"></a-text>
+        <a-text value="C-03" position="4.07 2.0 -1" rotation="0 -90 0" color="#090" font="monoid" width="1.2"></a-text>
+        <a-text value="C-04" position="4.07 2.0 -3.5" rotation="0 -90 0" color="#c00" font="monoid" width="1.2"></a-text>
+
+        <!-- Ceiling pipes -->
+        <a-cylinder position="0 3.0 0" rotation="0 0 90" radius="0.06" height="18"
+                    material="shader: flat; color: #363636"></a-cylinder>
+        <a-cylinder position="0 3.0 -4" rotation="0 0 90" radius="0.04" height="18"
+                    material="shader: flat; color: #3a2a1a"></a-cylinder>
+        <a-cylinder position="-3 3.0 0" rotation="90 0 0" radius="0.04" height="20"
+                    material="shader: flat; color: #363636"></a-cylinder>
+
+        <!-- ===================== OUTDOOR: STREET ===================== -->
+
+        <!-- Street ground (extends south beyond motel) -->
+        <a-plane position="0 -0.01 18" rotation="-90 0 0" width="30" height="16"
+                 material="shader: flat; src: #floor-tex; repeat: 10 5; npot: true"
+                 class="shootable"></a-plane>
+        <!-- Sidewalk strip -->
+        <a-plane position="0 0.01 12" rotation="-90 0 0" width="18" height="4"
+                 material="shader: flat; src: #floor-tex; repeat: 6 2; npot: true"
+                 class="shootable"></a-plane>
+
+        <!-- Street — darker asphalt -->
+        <a-plane position="0 -0.02 20" rotation="-90 0 0" width="30" height="8"
+                 material="shader: flat; color: #1a1a20" class="shootable"></a-plane>
+
+        <!-- Building across the street -->
+        <a-box position="0 2.5 26" width="30" height="5" depth="0.3"
+               material="shader: flat; src: #wall-blue-tex; repeat: 12 3; npot: true" class="shootable"></a-box>
+        <a-box position="0 4.8 26" width="30" height="0.4" depth="0.3"
+               material="shader: flat; src: #trim-tex; repeat: 20 1; npot: true"></a-box>
+
+        <!-- Windows on building across street -->
+        <a-plane position="-8 3.0 25.84" width="1.5" height="1.0"
+                 material="shader: flat; src: #window-tex; npot: true"></a-plane>
+        <a-plane position="-4 3.0 25.84" width="1.5" height="1.0"
+                 material="shader: flat; color: #604800"></a-plane>
+        <a-plane position="0 3.0 25.84" width="1.5" height="1.0"
+                 material="shader: flat; src: #window-tex; npot: true"></a-plane>
+        <a-plane position="4 3.0 25.84" width="1.5" height="1.0"
+                 material="shader: flat; color: #0a0a12"></a-plane>
+        <a-plane position="8 3.0 25.84" width="1.5" height="1.0"
+                 material="shader: flat; src: #window-tex; npot: true"></a-plane>
+
+        <!-- Street lights -->
+        <a-entity position="-6 0 16">
+            <a-cylinder position="0 2 0" radius="0.06" height="4" material="shader: flat; color: #363636"></a-cylinder>
+            <a-box position="0 4 0.3" width="0.1" height="0.1" depth="0.6" material="shader: flat; color: #363636"></a-box>
+            <a-sphere position="0 3.9 0.6" radius="0.12"
+                      material="shader: flat; color: #cc9900"></a-sphere>
+        </a-entity>
+        <a-entity position="6 0 16">
+            <a-cylinder position="0 2 0" radius="0.06" height="4" material="shader: flat; color: #363636"></a-cylinder>
+            <a-box position="0 4 0.3" width="0.1" height="0.1" depth="0.6" material="shader: flat; color: #363636"></a-box>
+            <a-sphere position="0 3.9 0.6" radius="0.12"
+                      material="shader: flat; color: #cc9900"></a-sphere>
+        </a-entity>
+
+        <!-- Motel exterior sign — worn neon, flickering -->
+        <a-entity position="0 3.5 10.3">
+            <a-plane position="0 0.1 -0.05" width="5" height="1.2"
+                     material="shader: flat; color: #0a0008; opacity: 0.8; transparent: true"></a-plane>
+            <a-text value="STOKER'S COFFIN MOTEL" position="0 0 0" rotation="0 0 0"
+                    color="#cc0044" font="monoid" width="8" align="center" side="double"
+                    class="neon-flicker"></a-text>
+            <a-text value="VACANCY" position="0 -0.5 0" rotation="0 0 0"
+                    color="#cc3300" font="monoid" width="4" align="center" side="double"
+                    class="neon-flicker-slow"></a-text>
+        </a-entity>
+
+        <!-- Worn neon signs on building across street -->
+        <a-entity position="-5 4.2 25.8">
+            <a-text value="LIQUOR" rotation="0 180 0" color="#dd3388" font="monoid"
+                    width="4" align="center" side="double" class="neon-flicker"></a-text>
+        </a-entity>
+        <a-entity position="6 4.5 25.8">
+            <a-text value="XXX" rotation="0 180 0" color="#ff2200" font="monoid"
+                    width="3" align="center" side="double" class="neon-flicker-slow"></a-text>
+        </a-entity>
+        <a-entity position="0 4.0 25.8">
+            <a-text value="CHROME SHOP" rotation="0 180 0" color="#00aacc" font="monoid"
+                    width="5" align="center" side="double" class="neon-flicker-fast"></a-text>
+        </a-entity>
+
+        <!-- Street hazard barriers on sides -->
+        <a-box position="-12 1 16" width="0.4" height="2" depth="0.4"
+               material="shader: flat; src: #hazard-tex; npot: true" class="shootable"></a-box>
+        <a-box position="12 1 16" width="0.4" height="2" depth="0.4"
+               material="shader: flat; src: #hazard-tex; npot: true" class="shootable"></a-box>
+
+        <!-- Dumpster on street -->
+        <a-entity position="10 0 15" class="interactive"
+                  data-dialogue="Another dumpster. This one's on fire. Typical Redmond Barrens.">
+            <a-box position="0 0.45 0" width="1.8" height="0.9" depth="1.0"
+                   material="shader: flat; color: #483020" shadow="cast: true" class="interactive"></a-box>
+            <a-sphere position="0 1.2 0" radius="0.3"
+                      material="shader: flat; color: #cc4400; opacity: 0.5; transparent: true"></a-sphere>
+        </a-entity>
+
+        <!-- Abandoned car on street -->
+        <a-entity position="-8 0 19" class="interactive"
+                  data-dialogue="A burned-out sedan. The plates were ripped off long ago.|Someone's sleeping in the back seat.">
+            <a-box position="0 0.5 0" width="2.0" height="0.8" depth="4.0" rotation="0 15 0"
+                   material="shader: flat; color: #2a2a2a" class="interactive shootable"></a-box>
+            <a-box position="0 1.0 -0.5" width="1.6" height="0.5" depth="2.0" rotation="0 15 0"
+                   material="shader: flat; color: #1a1a1a"></a-box>
+        </a-entity>
+
+        <!-- Dark void walls far out -->
+        <a-box position="-15 2 16" width="0.3" height="6" depth="20"
+               material="shader: flat; color: #020208"></a-box>
+        <a-box position="15 2 16" width="0.3" height="6" depth="20"
+               material="shader: flat; color: #020208"></a-box>
+        <a-plane position="0 2 27" width="30" height="6"
+                 material="shader: flat; color: #020208"></a-plane>
+
+        <!-- ===== LIGHTING ===== -->
+        <!-- Low ambient for dark Barrens atmosphere -->
+        <a-light type="ambient" color="#334" intensity="0.35"></a-light>
+
+        <a-sky color="#030308"></a-sky>
+
+        <!-- ===== ADDITIONAL NPCs ===== -->
+
+        <!-- Ganger: Street enforcer outside motel entrance -->
+        <a-entity id="ganger-1" position="3 0 14" class="interactive"
+                  data-dialogue="You lookin' for trouble, choom? The Scorpions run Tenth Street.|Back off before I flatline you. This ain't your turf.|...unless you got nuyen. Then maybe we can talk.">
+            <a-plane position="0 1.2 0" width="1.0" height="1.8"
+                     material="shader: flat; color: #cc2200; opacity: 0.9; transparent: true; side: double"
+                     look-at="#camera" class="interactive shootable"></a-plane>
+            <a-text value="GANGER" position="0 2.3 0" align="center" color="#c00"
+                    font="monoid" width="1.8" side="double" look-at="#camera"></a-text>
+            <a-text value="[TALK]" position="0 2.55 0" align="center" color="#cc0"
+                    font="monoid" width="1.2" side="double" look-at="#camera" visible="false" class="npc-prompt"></a-text>
+        </a-entity>
+
+        <!-- Fixer: Black market contact near east wall -->
+        <a-entity id="fixer" position="7 0 -1" class="interactive"
+                  data-dialogue="Psst. Over here, omae. Name's Tabitha.|I got what you need — runs, nuyen, intel. The price is right... if you are.|Word on the street — your brother crossed Lone Star. Bad move.|Check the Jump House on Tenth Street. Ask for Mr. Gunderson. He's hiring.">
+            <a-plane position="0 1.2 0" width="1.0" height="1.8"
+                     material="shader: flat; color: #6600aa; opacity: 0.9; transparent: true; side: double"
+                     look-at="#camera" class="interactive shootable"></a-plane>
+            <a-text value="FIXER" position="0 2.3 0" align="center" color="#a0f"
+                    font="monoid" width="1.8" side="double" look-at="#camera"></a-text>
+            <a-text value="[TALK]" position="0 2.55 0" align="center" color="#cc0"
+                    font="monoid" width="1.2" side="double" look-at="#camera" visible="false" class="npc-prompt"></a-text>
+        </a-entity>
+
+        <!-- Decker: Hacker near phone booth -->
+        <a-entity id="decker-npc" position="-5.5 0 3.5" class="interactive"
+                  data-dialogue="Matrix is locked down tight. Corporate hit, maybe.|You running a job? I can jack in, pull some paydata.|Renraku's got something big buried in their arcology. Real hush-hush.|I'll need a cyberdeck upgrade first. You find one, we'll talk biz.">
+            <a-plane position="0 1.1 0" width="0.9" height="1.6"
+                     material="shader: flat; color: #0088cc; opacity: 0.9; transparent: true; side: double"
+                     look-at="#camera" class="interactive shootable"></a-plane>
+            <a-text value="DECKER" position="0 2.1 0" align="center" color="#0af"
+                    font="monoid" width="1.8" side="double" look-at="#camera"></a-text>
+            <a-text value="[TALK]" position="0 2.35 0" align="center" color="#cc0"
+                    font="monoid" width="1.2" side="double" look-at="#camera" visible="false" class="npc-prompt"></a-text>
+        </a-entity>
+
+
+      <!-- Interactive Crates (Task 7) -->
+      <a-entity data-crate-id="crate-1" position="3 0 -5" rotation="0 0 0">
+        <a-box scale="1 1 1" material="color: #8B4513; shader: flat"></a-box>
+        <a-box data-crate-lid position="0 0.8 -0.4" scale="1 0.3 1" material="color: #654321; shader: flat"></a-box>
+        <a-text value="CRATE" position="0 1.5 0.5" scale="0.5 0.5 0.5" color="#FFD700" align="center"></a-text>
+      </a-entity>
+      
+      <a-entity data-crate-id="crate-2" position="-4 0 -8" rotation="0 45 0">
+        <a-box scale="1 1 1" material="color: #8B4513; shader: flat"></a-box>
+        <a-box data-crate-lid position="0 0.8 -0.4" scale="1 0.3 1" material="color: #654321; shader: flat"></a-box>
+        <a-text value="CRATE" position="0 1.5 0.5" scale="0.5 0.5 0.5" color="#FFD700" align="center"></a-text>
+      </a-entity>
+      
+      <a-entity data-crate-id="crate-3" position="0 0 5" rotation="0 -30 0">
+        <a-box scale="1 1 1" material="color: #8B4513; shader: flat"></a-box>
+        <a-box data-crate-lid position="0 0.8 -0.4" scale="1 0.3 1" material="color: #654321; shader: flat"></a-box>
+        <a-text value="CRATE" position="0 1.5 0.5" scale="0.5 0.5 0.5" color="#FFD700" align="center"></a-text>
+      </a-entity>
+      
+    </a-scene>
+
+    <script>
+    // ===== GAME STATE =====
+    const state = { ammo: 12, maxAmmo: 12, dialogueIdx: 0, gameStarted: false };
+    const ammoEl = document.getElementById('ammo-display');
+    const dialogueEl = document.getElementById('dialogue');
+    const muzzleEl = document.getElementById('muzzle-flash');
+    const gunEl = document.getElementById('gun-view');
+
+    // ===== AUDIO ENGINE =====
+    let audioCtx = null;
+    function initAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // Real Genesis soundtrack (Sam Powell, 1994)
+    const bgm = {
+        title: new Audio('audio/title.mp3'),
+        intro1: new Audio('audio/intro1.mp3'),
+        intro2: new Audio('audio/intro2.mp3'),
+        intro3: new Audio('audio/intro3.mp3'),
+        redmond: new Audio('audio/redmond.mp3'),
+        ambient: new Audio('audio/ambient.mp3'),
+        infiltration: new Audio('audio/infiltration.mp3'),
+        bar: new Audio('audio/bar.mp3'),
+        combat: new Audio('audio/combat.mp3')
+    };
+    Object.values(bgm).forEach(a => { a.loop = true; a.preload = 'auto'; });
+    // Intro parts don't loop — they play once per story section
+    bgm.intro1.loop = false;
+    bgm.intro2.loop = false;
+    bgm.intro3.loop = false;
+
+    let currentTrack = null;
+    function playTrack(track) {
+        if (currentTrack === track) return;
+        if (currentTrack) { currentTrack.pause(); currentTrack.currentTime = 0; }
+        currentTrack = track;
+        track.play().catch(() => {});
+    }
+    function stopMusic() {
+        if (currentTrack) { currentTrack.pause(); currentTrack.currentTime = 0; currentTrack = null; }
+    }
+
+    function playTitleMusic() {
+        playTrack(bgm.title);
+    }
+
+    function playGameplayMusic() {
+        playTrack(bgm.redmond);
+    }
+
+    function playGunshot() {
+        if (!audioCtx) return;
+        const dur = 0.12;
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            const t = i / data.length;
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 25) * 0.5;
+            data[i] += Math.sin(i * 0.015) * Math.exp(-t * 12) * 0.4;
+        }
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.35;
+        src.connect(gain).connect(audioCtx.destination);
+        src.start();
+    }
+
+    function playRicochet() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1800 + Math.random() * 2500, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.12);
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+    }
+
+    function playFootstep() {
+        if (!audioCtx) return;
+        const dur = 0.06;
+        const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / data.length * 10) * 0.06;
+        }
+        const src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        src.connect(audioCtx.destination);
+        src.start();
+    }
+
+    function playMenuSelect() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.05);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        osc.connect(g).connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playMenuConfirm() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(660, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08);
+        osc.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.16);
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+        osc.connect(g).connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+    }
+
+    // ===== INTRO SEQUENCE =====
+    // State machine: sega → dev → title → story → charselect → game
+    var screen = 'sega';
+    var storyIdx = 0;
+    var screenLock = false; // debounce to prevent double-firing
+
+    var storyTexts = [
+        "January 31, 2058.\nSeattle, UCAS.\n\nThe Sixth World.\n\nTechnology and flesh have merged.\nThe Matrix connects everything.\nAnd magic has returned.",
+        "Elves. Dwarves. Orks. Trolls.\nThey walk the streets alongside\nhumans now. Mages wield real\npower. Shamans speak to spirits.\n\nThe corps don't care what you\nare — only what you're worth.",
+        "A team of shadowrunners was\nambushed in the Salish-Shidhe\nwilderness. All killed.\n\nOne of the dead had a cybereye.\nIt recorded everything.\nThe footage made the news.",
+        "The last man to die in the\nvideo was your brother.\n\nMichael.\n\nHe was a shadowrunner.",
+        "You spent your last nuyen on a\nflight to Seattle. Broke. Armed.\nLooking for answers.\n\nYou traced Michael's last\ncredstick transaction to a\ncoffin motel in the Barrens.",
+        "Stoker's Coffin Motel.\nRedmond Barrens, Seattle.\n\nThe cheapest flophouse in the\nsprawl. Your brother paid for\nthe room. His last act.\n\nTime to find some answers."
+    ];
+    var storyMusicMap = [bgm.intro1, bgm.intro1, bgm.intro2, bgm.intro2, bgm.intro3, bgm.intro3];
+
+    var descriptions = {
+        samurai: "Combat specialist. Starts with hand razors and a Beretta pistol. High body and strength. Gains karma through combat.",
+        decker: "Matrix specialist. Starts with a datajack and cyberdeck access. Powerful in cyberspace, weaker in the meat world.",
+        gator: "Gator shaman. Follows the Gator totem — combat magic and pyrotechnics. Casts spells, summons spirits. Must carry totem."
+    };
+
+    function nextScreen() {
+        if (screenLock) return;
+        screenLock = true;
+        setTimeout(function() { screenLock = false; }, 300);
+
+        if (screen === 'sega') {
+            initAudio();
+            document.getElementById('splash-sega').style.display = 'none';
+            document.getElementById('splash-dev').style.display = 'flex';
+            screen = 'dev';
+        } else if (screen === 'dev') {
+            document.getElementById('splash-dev').style.display = 'none';
+            document.getElementById('title-screen').style.display = 'flex';
+            playTrack(bgm.title);
+            screen = 'title';
+        } else if (screen === 'title') {
+            playMenuConfirm();
+            document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('story-screen').style.display = 'flex';
+            storyIdx = 0;
+            document.getElementById('story-text').textContent = storyTexts[0];
+            playTrack(bgm.intro1);
+            screen = 'story';
+        } else if (screen === 'story') {
+            playMenuSelect();
+            storyIdx++;
+            if (storyIdx < storyTexts.length) {
+                document.getElementById('story-text').textContent = storyTexts[storyIdx];
+                var track = storyMusicMap[storyIdx];
+                if (track && track !== currentTrack) playTrack(track);
+            } else {
+                document.getElementById('story-screen').style.display = 'none';
+                document.getElementById('char-select').style.display = 'flex';
+                stopMusic();
+                screen = 'charselect';
+            }
+        }
+    }
+
+    function pickArch(el) {
+        document.querySelectorAll('.archetype').forEach(function(x) {
+            x.classList.remove('selected');
+            x.innerHTML = '&nbsp; ' + x.textContent.replace(/[►\s]+/, '').trim();
+        });
+        el.classList.add('selected');
+        el.innerHTML = '&#9654; ' + el.textContent.replace(/[►\s]+/, '').trim();
+        document.getElementById('char-desc').textContent = descriptions[el.dataset.arch];
+        playMenuSelect();
+    }
+
+    function confirmCharacter() {
+        if (screen !== 'charselect') return;
+        playMenuConfirm();
+        document.getElementById('char-select').style.display = 'none';
+        screen = 'game';
+        startGameplay();
+    }
+
+    // ===== TOUCH/CLICK EVENT WIRING =====
+    // Uses capture phase + preventDefault to beat A-Frame's event handling
+    function wireIntroEvents() {
+        var ids = ['splash-sega', 'splash-dev', 'title-screen', 'story-screen'];
+        ids.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                nextScreen();
+            }, { passive: false, capture: true });
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                nextScreen();
+            }, { capture: true });
+        });
+
+        // Character select — archetype buttons
+        document.querySelectorAll('.archetype').forEach(function(btn) {
+            btn.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                pickArch(btn);
+            }, { passive: false, capture: true });
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                pickArch(btn);
+            }, { capture: true });
+        });
+
+        // Character confirm — tap anywhere on char-select (except archetype buttons)
+        var charEl = document.getElementById('char-select');
+        if (charEl) {
+            charEl.addEventListener('touchstart', function(e) {
+                if (e.target.classList.contains('archetype')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                confirmCharacter();
+            }, { passive: false, capture: false });
+            charEl.addEventListener('click', function(e) {
+                if (e.target.classList.contains('archetype')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                confirmCharacter();
+            }, { capture: false });
+        }
+    }
+    wireIntroEvents();
+
+    function startGameplay() {
+        document.getElementById('story-screen').style.display = 'none';
+        document.getElementById('char-select').style.display = 'none';
+        stopMusic();
+
+        // Show A-Frame scene (hidden during intro)
+        var sceneEl = document.getElementById('game-scene');
+        if (sceneEl) sceneEl.style.visibility = 'visible';
+
+        // Show gameplay UI — Genesis HUD frame
+        document.getElementById('hud').style.display = 'block';
+        document.getElementById('hud-overlay').style.display = 'block';
+        document.getElementById('crosshair').style.display = 'block';
+        document.getElementById('gun-view').style.display = 'block';
+        state.gameStarted = true;
+
+        // Show mobile controls
+        if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
+            document.getElementById('dpad').style.display = 'block';
+            document.getElementById('fire-btn').style.display = 'block';
+        }
+
+        playMenuConfirm();
+        playGameplayMusic();
+    }
+
+    // ===== DIALOGUE =====
+    function showDialogue(text, speaker) {
+        const lines = text.split('|');
+        state.dialogueIdx = 0;
+        dialogueEl.querySelector('.speaker').textContent = speaker || '';
+        dialogueEl.querySelector('.text').textContent = lines[0];
+        dialogueEl.style.display = 'block';
+        dialogueEl._lines = lines;
+    }
+
+    dialogueEl.addEventListener('click', advanceDialogue);
+    dialogueEl.addEventListener('touchstart', advanceDialogue);
+
+    function advanceDialogue(e) {
+        e.stopPropagation();
+        playMenuSelect();
+        state.dialogueIdx++;
+        if (dialogueEl._lines && state.dialogueIdx < dialogueEl._lines.length) {
+            dialogueEl.querySelector('.text').textContent = dialogueEl._lines[state.dialogueIdx];
+        } else {
+            dialogueEl.style.display = 'none';
+        }
+    }
+
+    // ===== SHOOTING =====
+    function shoot() {
+        if (!state.gameStarted) return;
+        initAudio();
+        if (state.ammo <= 0) {
+            if (audioCtx) {
+                const osc = audioCtx.createOscillator();
+                osc.frequency.value = 600;
+                const g = audioCtx.createGain();
+                g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                osc.connect(g).connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.04);
+            }
+            return;
+        }
+        state.ammo--;
+        ammoEl.textContent = state.ammo < 10 ? '0' + state.ammo : state.ammo;
+        playGunshot();
+
+        muzzleEl.style.display = 'block';
+        setTimeout(() => { muzzleEl.style.display = 'none'; }, 50);
+        gunEl.style.transform = 'translateY(-6px) rotate(-2deg)';
+        setTimeout(() => { gunEl.style.transform = ''; }, 80);
+
+        const cam = document.getElementById('camera');
+        const raycaster = cam.querySelector('[cursor]').components.raycaster;
+        if (raycaster) {
+            const intersections = raycaster.intersections;
+            if (intersections && intersections.length > 0) {
+                const hit = intersections[0];
+                const point = hit.point;
+                playRicochet();
+
+                const hole = document.createElement('a-circle');
+                hole.setAttribute('radius', 0.03);
+                hole.setAttribute('material', 'color: #0a0a0a; roughness: 1; side: double');
+                if (hit.face) {
+                    const n = hit.face.normal;
+                    hole.setAttribute('position', `${point.x+n.x*0.01} ${point.y+n.y*0.01} ${point.z+n.z*0.01}`);
+                } else {
+                    hole.setAttribute('position', `${point.x} ${point.y} ${point.z}`);
+                }
+                document.querySelector('a-scene').appendChild(hole);
+
+                const spark = document.createElement('a-sphere');
+                spark.setAttribute('radius', 0.05);
+                spark.setAttribute('material', 'color: #cc8; emissive: #cc8; emissiveIntensity: 3; opacity: 0.7');
+                spark.setAttribute('position', `${point.x} ${point.y} ${point.z}`);
+                document.querySelector('a-scene').appendChild(spark);
+                setTimeout(() => spark.remove(), 80);
+            }
+        }
+    }
+
+    // ===== INTERACTION =====
+    function interact(el) {
+        initAudio();
+        const data = el.getAttribute('data-dialogue') || el.parentEl?.getAttribute('data-dialogue');
+        const target = data ? el : el.parentEl;
+        if (!data && !target?.getAttribute('data-dialogue')) return;
+        const text = target.getAttribute('data-dialogue');
+        const ammoPickup = target.getAttribute('data-ammo');
+        let speaker = target.id === 'innkeeper' ? 'STOKER' : 'EXAMINE';
+        showDialogue(text, speaker);
+        if (ammoPickup && !target._looted) {
+            state.ammo = Math.min(state.maxAmmo, state.ammo + parseInt(ammoPickup));
+            ammoEl.textContent = state.ammo < 10 ? '0' + state.ammo : state.ammo;
+            target._looted = true;
+        }
+    }
+
+    document.querySelector('a-scene').addEventListener('click', (e) => {
+        if (!state.gameStarted) return;
+        initAudio();
+        const cam = document.getElementById('camera');
+        const raycaster = cam.querySelector('[cursor]').components.raycaster;
+        if (raycaster && raycaster.intersections.length > 0) {
+            const hit = raycaster.intersections[0].object.el;
+            if (hit.classList.contains('interactive') || hit.parentEl?.classList.contains('interactive')) {
+                interact(hit); return;
+            }
+        }
+    });
+
+    document.getElementById('fire-btn').addEventListener('touchstart', (e) => { e.preventDefault(); shoot(); });
+    document.getElementById('fire-btn').addEventListener('click', (e) => { e.preventDefault(); shoot(); });
+    document.addEventListener('keydown', function(e) {
+        if (screen === 'game') {
+            if (e.key === 'f' || e.key === 'F' || e.key === ' ') { e.preventDefault(); shoot(); }
+            return;
+        }
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (screen === 'charselect') { confirmCharacter(); }
+            else { nextScreen(); }
+        }
+    });
+    document.addEventListener('mousedown', (e) => { if (e.button === 2) { e.preventDefault(); shoot(); } });
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+    // ===== TAP TO SHOOT (mobile) =====
+    // Quick tap = shoot, drag = look around. Must distinguish the two.
+    let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+    document.addEventListener('touchstart', (e) => {
+        if (!state.gameStarted) return;
+        const t = e.target;
+        if (t.closest('#dpad') || t.closest('#fire-btn') || t.closest('#dialogue') ||
+            t.closest('#hud') || t.closest('#hud-overlay') || t.closest('#title-screen') ||
+            t.closest('#char-select') || t.closest('#story-screen')) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+        if (!state.gameStarted || !touchStartTime) return;
+        const dt = Date.now() - touchStartTime;
+        touchStartTime = 0;
+        // Only fire on quick taps (< 200ms) with minimal movement (< 15px)
+        if (dt > 200) return;
+        if (e.changedTouches.length === 0) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 15 || Math.abs(dy) > 15) return;
+        const t = e.target;
+        if (t.closest('#dpad') || t.closest('#fire-btn') || t.closest('#dialogue')) return;
+        shoot();
+    }, { passive: true });
+
+    // ===== WALL COLLISION =====
+    // Define wall boundaries as AABB boxes
+    const walls = [
+        // Motel walls
+        { x1: -9.15, x2: -8.85, z1: -8, z2: 10 },   // West wall
+        { x1: 8.85, x2: 9.15, z1: -8, z2: 10 },      // East wall
+        { x1: -9, x2: 9, z1: -8.15, z2: -7.85 },     // North wall (facade)
+        { x1: -9, x2: -1.25, z1: 9.85, z2: 10.15 },  // South wall left
+        { x1: 1.25, x2: 9, z1: 9.85, z2: 10.15 },    // South wall right
+        // Room dividers
+        { x1: -4.07, x2: -3.93, z1: -5, z2: 0.5 },
+        { x1: 3.93, x2: 4.07, z1: -5, z2: 0.5 },
+        { x1: -2.07, x2: -1.93, z1: -1.5, z2: 4 },
+        // Front desk
+        { x1: -3.1, x2: -0.9, z1: 6.9, z2: 7.7 },
+        // Outdoor boundaries
+        { x1: -15.15, x2: -14.85, z1: 6, z2: 26 },   // Far west
+        { x1: 14.85, x2: 15.15, z1: 6, z2: 26 },      // Far east
+        { x1: -15, x2: 15, z1: 26.85, z2: 27.15 },    // Far south (building)
+        // Hazard pillars
+        { x1: 7.25, x2: 7.75, z1: 1.75, z2: 2.25 },
+        { x1: 7.25, x2: 7.75, z1: -3.25, z2: -2.75 },
+        // Coffins
+        { x1: -6.45, x2: -5.55, z1: -5.1, z2: 0.9 },
+        { x1: 5.55, x2: 6.45, z1: -5.1, z2: 0.9 },
+        // Dumpster
+        { x1: 3.1, x2: 4.9, z1: 5.5, z2: 6.5 },
+        // Vending machine
+        { x1: 7.9, x2: 8.5, z1: -5.2, z2: -4.8 },
+        // Abandoned car
+        { x1: -9.0, x2: -7.0, z1: 17, z2: 21 },
+    ];
+
+    const PLAYER_RADIUS = 0.3;
+    let prevPos = { x: 0, z: 2 };
+
+    function checkCollision(px, pz) {
+        for (const w of walls) {
+            const cx = Math.max(w.x1, Math.min(px, w.x2));
+            const cz = Math.max(w.z1, Math.min(pz, w.z2));
+            const dx = px - cx, dz = pz - cz;
+            if (dx * dx + dz * dz < PLAYER_RADIUS * PLAYER_RADIUS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Collision check loop
+    setInterval(() => {
+        const rig = document.getElementById('rig');
+        if (!rig || !state.gameStarted) return;
+        const pos = rig.getAttribute('position');
+
+        if (checkCollision(pos.x, pos.z)) {
+            // Push back to previous valid position
+            pos.x = prevPos.x;
+            pos.z = prevPos.z;
+            rig.setAttribute('position', pos);
+        } else {
+            prevPos.x = pos.x;
+            prevPos.z = pos.z;
+        }
+    }, 30);
+
+    // ===== FLICKERING (CRT overlay opacity pulse for atmosphere) =====
+    setInterval(() => {
+        const crt = document.getElementById('crt-overlay');
+        if (crt && Math.random() < 0.15) {
+            crt.style.opacity = '0.6';
+            setTimeout(() => { crt.style.opacity = '1'; }, 60);
+        }
+    }, 3000);
+
+
+    // ===== FOOTSTEPS =====
+    let lastPos = {x:0, z:0};
+    let stepAccum = 0;
+    setInterval(() => {
+        if (!state.gameStarted) return;
+        const rig = document.getElementById('rig');
+        if (!rig) return;
+        const pos = rig.getAttribute('position');
+        const dx = pos.x - lastPos.x, dz = pos.z - lastPos.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        lastPos = {x: pos.x, z: pos.z};
+        stepAccum += dist;
+        if (stepAccum > 0.8) { stepAccum = 0; playFootstep(); }
+    }, 100);
+
+    // ===== INNKEEPER =====
+    setInterval(() => {
+        const inn = document.getElementById('innkeeper');
+        const rig = document.getElementById('rig');
+        if (!inn || !rig) return;
+        const rp = rig.getAttribute('position');
+        const ip = inn.getAttribute('position');
+        const dx = rp.x - ip.x, dz = rp.z - ip.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        const prompt = document.getElementById('innkeeper-prompt');
+        if (prompt) prompt.setAttribute('visible', dist < 4);
+    }, 200);
+
+    // ===== D-PAD =====
+    const rig = document.getElementById('rig');
+    let moveDir = null, moveInterval = null;
+    function startMove(dir) {
+        moveDir = dir;
+        if (moveInterval) clearInterval(moveInterval);
+        moveInterval = setInterval(() => {
+            if (!rig || !moveDir || !state.gameStarted) return;
+            const pos = rig.getAttribute('position');
+            const rot = document.getElementById('camera').getAttribute('rotation');
+            const a = (rot.y||0) * Math.PI/180;
+            const s = 0.12;
+            let dx=0, dz=0;
+            if(moveDir==='forward'){dx=-Math.sin(a)*s;dz=-Math.cos(a)*s;}
+            if(moveDir==='backward'){dx=Math.sin(a)*s;dz=Math.cos(a)*s;}
+            if(moveDir==='left'){dx=-Math.cos(a)*s;dz=Math.sin(a)*s;}
+            if(moveDir==='right'){dx=Math.cos(a)*s;dz=-Math.sin(a)*s;}
+            const nx = pos.x + dx, nz = pos.z + dz;
+            if (!checkCollision(nx, nz)) {
+                pos.x = nx; pos.z = nz;
+                rig.setAttribute('position', pos);
+            }
+        }, 50);
+    }
+    function stopMove(){moveDir=null;if(moveInterval){clearInterval(moveInterval);moveInterval=null;}}
+    document.querySelectorAll('#dpad button').forEach(b=>{
+        const d=b.dataset.dir;
+        b.addEventListener('touchstart',e=>{e.preventDefault();startMove(d);});
+        b.addEventListener('touchend',e=>{e.preventDefault();stopMove();});
+        b.addEventListener('touchcancel',stopMove);
+        b.addEventListener('mousedown',()=>startMove(d));
+        b.addEventListener('mouseup',stopMove);
+    });
+
+    // ===== NPC PROXIMITY PROMPTS =====
+    setInterval(() => {
+        const rig = document.getElementById('rig');
+        if (!rig || !state.gameStarted) return;
+        const rp = rig.getAttribute('position');
+        ['ganger-1', 'fixer', 'decker-npc'].forEach(id => {
+            const npc = document.getElementById(id);
+            if (!npc) return;
+            const np = npc.getAttribute('position');
+            const dx = rp.x - np.x, dz = rp.z - np.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+            const prompt = npc.querySelector('.npc-prompt');
+            if (prompt) prompt.setAttribute('visible', dist < 4);
+        });
+    }, 200);
+
+    // ===== NEON FLICKER — worn-out Barrens signs =====
+    setInterval(() => {
+        document.querySelectorAll('.neon-flicker').forEach(el => {
+            el.setAttribute('visible', Math.random() > 0.08);
+        });
+    }, 150);
+    setInterval(() => {
+        document.querySelectorAll('.neon-flicker-slow').forEach(el => {
+            el.setAttribute('visible', Math.random() > 0.15);
+        });
+    }, 400);
+    setInterval(() => {
+        document.querySelectorAll('.neon-flicker-fast').forEach(el => {
+            el.setAttribute('visible', Math.random() > 0.05);
+        });
+    }, 80);
+
+    </script>
+</body>
+</html>

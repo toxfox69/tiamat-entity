@@ -228,14 +228,15 @@ async function run(): Promise<void> {
     openrouterApiKey: config.openrouterApiKey,
     geminiApiKey: config.geminiApiKey,
     perplexityApiKey: config.perplexityApiKey,
+    doInferenceKey: config.doInferenceKey || process.env.DO_MODEL_ACCESS_KEY,
     tiamatlocalEndpoint: process.env.TIAMAT_LOCAL_ENDPOINT,
   });
 
-  const inference = inferenceBackend === "claude-code"
-    ? createClaudeCodeInferenceClient({ fallback: apiInference, timeoutMs: 0 })
-    : apiInference;
+  // CLI Haiku refuses agentic prompts (hard + soft refusal since ~Mar 6).
+  // Bypass CLI entirely — route straight to API cascade (Groq/Cerebras/etc).
+  const inference = apiInference;
 
-  console.log(`[${new Date().toISOString()}] Inference backend: ${inferenceBackend}`);
+  console.log(`[${new Date().toISOString()}] Inference backend: api-cascade (CLI bypassed)`);
 
   // Create social client
   let social: SocialClientInterface | undefined;

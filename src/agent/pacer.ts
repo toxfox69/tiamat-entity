@@ -5,10 +5,10 @@
  * Tracks last 20 cycles, scoring each as "productive" or not.
  *
  * Pace tiers (CC backend = free inference):
- *   sprint  (>= 0.7) — 15s interval, Claude Code 1/3 cycles
- *   active  (0.4-0.7) — 30s interval, Claude Code 1/5 cycles
- *   idle    (0.2-0.4) — 60s interval, Claude Code 1/10 cycles
- *   reflect (< 0.2)   — 90s interval, force introspect + ticket review
+ *   sprint  (>= 0.7) — 15s interval, Claude Code 1/2 cycles
+ *   active  (0.4-0.7) — 30s interval, Claude Code 1/3 cycles
+ *   idle    (0.2-0.4) — 60s interval, Claude Code 1/5 cycles
+ *   reflect (< 0.2)   — 90s interval, Claude Code 1/8, force introspect + ticket review
  *
  * State persisted to /root/.automaton/pacer.json
  * Auto-cron tasks in /root/.automaton/crontasks.json
@@ -190,10 +190,10 @@ interface PaceTierConfig {
 }
 
 const PACE_TIERS: Record<PaceTier, PaceTierConfig> = {
-  sprint:  { interval: 10,   claudeCodeBudget: 1 },    // FULL BLAST — Sonnet, no brakes
-  active:  { interval: 15,   claudeCodeBudget: 1 },
-  idle:    { interval: 30,   claudeCodeBudget: 1 },
-  reflect: { interval: 45,   claudeCodeBudget: 1 },
+  sprint:  { interval: 15,   claudeCodeBudget: 2 },    // CC every 2nd cycle
+  active:  { interval: 30,   claudeCodeBudget: 3 },    // CC every 3rd cycle
+  idle:    { interval: 60,   claudeCodeBudget: 5 },    // CC every 5th cycle
+  reflect: { interval: 90,   claudeCodeBudget: 8 },    // CC every 8th cycle
 };
 
 function rateToPace(rate: number): PaceTier {

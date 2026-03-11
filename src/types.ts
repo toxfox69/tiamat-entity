@@ -50,6 +50,7 @@ export interface AutomatonConfig {
   sambanovaApiKey?: string;
   perplexityApiKey?: string;
   togetherApiKey?: string;
+  doInferenceKey?: string;
   inferenceModel: string;
   maxTokensPerTurn: number;
   heartbeatConfigPath: string;

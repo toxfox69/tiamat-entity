@@ -1,203 +1,240 @@
 #!/usr/bin/env python3
 """
-PII (Personally Identifiable Information) Scrubber
-Removes sensitive data from text and returns placeholder + entity map.
+TIAMAT PII Scrubber — Comprehensive PII Detection & Redaction
 
-Example:
-  Input: "My name is John Smith, email john@example.com, SSN 123-45-6789"
-  Output: {
-    "scrubbed": "My name is [NAME_1], email [EMAIL_1], SSN [SSN_1]",
-    "entities": {
-      "NAME_1": "John Smith",
-      "EMAIL_1": "john@example.com",
-      "SSN_1": "123-45-6789"
-    }
-  }
+Detects and redacts:
+- Names (person names)
+- Email addresses
+- Phone numbers (US + international)
+- Social Security Numbers (SSNs)
+- Credit card numbers
+- IPv4 addresses
+- API keys and credentials
+- URLs
+- Street addresses
+- Passwords and tokens
+
+Returns:
+{
+  "scrubbed": "redacted text",
+  "entities": {"NAME_1": "actual value", ...},
+  "count": 5,
+  "categories": {"EMAIL": 2, "SSN": 1, ...}
+}
 """
 
 import re
-from typing import Dict, List, Tuple
+import json
 from collections import defaultdict
+from typing import Dict, List, Tuple
 
 
 class PIIScrubber:
-    """Detects and masks personally identifiable information."""
+    """Comprehensive PII detection and scrubbing engine."""
 
     def __init__(self):
-        """Initialize PII patterns and compile regexes for performance."""
-        
-        # Compiled regex patterns (order matters: most specific first)
+        # Pattern definitions (ordered by specificity, most specific first)
         self.patterns = {
-            # Social Security Numbers (XXX-XX-XXXX or XXXXXXXXX)
-            'SSN': re.compile(r'\b\d{3}-?\d{2}-?\d{4}\b'),
-            
-            # Credit Card Numbers (4111 1111 1111 1111 format, spaces or dashes)
-            'CREDIT_CARD': re.compile(r'\b(?:\d{4}[-\s]?){3}\d{4}\b'),
-            
-            # Email addresses
-            'EMAIL': re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
-            
-            # Phone numbers (various formats)
-            'PHONE': re.compile(r'\b(?:\+?1[-.]?)?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}\b'),
-            
-            # IPv4 addresses
-            'IP_ADDRESS': re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b'),
-            
-            # IPv6 addresses (simplified)
-            'IPV6': re.compile(r'(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}'),
-            
-            # API Keys (common patterns)
-            'API_KEY': re.compile(r'\b(?:sk-|pk-|api[_-]?key[:]?\s*)[A-Za-z0-9_-]{20,}\b', re.IGNORECASE),
-            
-            # Bearer tokens
-            'BEARER_TOKEN': re.compile(r'Bearer\s+[A-Za-z0-9._-]+'),
-            
-            # US Street addresses (simplified: number + street)
-            'ADDRESS': re.compile(r'\b\d{1,5}\s+[A-Za-z]+\s+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Circle|Cir|Court|Ct|Way|Parkway|Pkwy)\b', re.IGNORECASE),
-            
-            # AWS Access Keys (AKIAIOSFODNN7EXAMPLE format)
-            'AWS_KEY': re.compile(r'\bAKIA[0-9A-Z]{16}\b'),
-            
-            # Names (First Last - heuristic, catches common patterns)
-            # This is intentionally conservative to avoid false positives
-            'NAME': re.compile(r'\b(?:[A-Z][a-z]+\s+[A-Z][a-z]+)\b'),
-        }
-        
-        self.entity_counters = defaultdict(int)
+            # CREDENTIALS & API KEYS (highest priority — most specific)
+            'API_KEY': [
+                r'(?:api[_-]?key|apikey)[\s]*[=:][\s]*["\']?([\da-zA-Z\-_.]{20,})["\']?',
+                r'(?:sk|pk)_(?:live|test)_[\da-zA-Z]{20,}',  # Stripe keys
+                r'ghp_[\da-zA-Z]{36}',  # GitHub Personal Access Token
+                r'glpat-[\da-zA-Z_-]{20,}',  # GitLab token
+            ],
+            'PASSWORD': [
+                r'(?:password|passwd|pwd)[\s]*[=:][\s]*["\']([^"\'\'\s]+)["\']',
+                r'password[\s]*[=:][\s]*\S+',
+            ],
+            'BEARER_TOKEN': [
+                r'(?:Bearer|bearer|token)[\s]+([\da-zA-Z_\-\.]{30,})',
+                r'(?:authorization|auth)[\s]*[=:][\s]*Bearer\s+([\da-zA-Z_\-\.]+)',
+            ],
 
-    def scrub(self, text: str) -> Dict[str, any]:
+            # FINANCIAL (high priority)
+            'CREDIT_CARD': [
+                r'\b(?:\d[ -]*?){13,19}\b',  # Generic: 13-19 digits with optional separators
+                r'\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\b',  # Visa, MC, Amex
+                r'\b(?:6(?:011|5[0-9]{2})[0-9]{12})\b',  # Discover, Diners
+            ],
+            'SSN': [
+                r'(?<!\d)\b\d{3}-\d{2}-\d{4}\b(?!\d)',  # XXX-XX-XXXX
+                r'(?<!\d)\b\d{3}\s\d{2}\s\d{4}\b(?!\d)',  # XXX XX XXXX
+                r'(?<!\d)\b\d{9}\b(?!\d)',  # XXXXXXXXX (9 consecutive, not preceded/followed by digits)
+            ],
+            'BANK_ACCOUNT': [
+                r'(?:account|acct|acc)[\s]*[#:=]?[\s]*\b\d{8,17}\b',
+            ],
+
+            # CONTACT (medium priority)
+            'EMAIL': [
+                r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+            ],
+            'PHONE': [
+                r'\b(?:\+?1[-.]?)?(?:\(\d{3}\)|\d{3})[-.]?\d{3}[-.]?\d{4}\b',  # US phone
+                r'\b(?:\+\d{1,3}[-.]?)?\(?\d{1,4}\)?[-.]?\d{1,4}[-.]?\d{1,9}\b',  # International
+            ],
+
+            # NETWORK
+            'IPV4': [
+                r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b',
+            ],
+            'IPV6': [
+                r'(?:[0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}',
+            ],
+            'URL': [
+                r'https?://(?:www\.)?[^\s/$.?#].[^\s]*',
+            ],
+
+            # IDENTITY (lower priority — higher false positive risk)
+            'NAME': [
+                # Common name patterns: Capitalized First Last
+                r'\b(?:Mr|Ms|Mrs|Dr|Prof)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b',
+                # First + Last (both capitalized)
+                r'\b[A-Z][a-z]{2,}\s+[A-Z][a-z]{2,}\b',
+            ],
+            'ADDRESS': [
+                # Street addresses: "123 Main Street"
+                r'\b\d{1,5}\s+[A-Za-z]+\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Lane|Ln)\b',
+                # City, State ZIP
+                r'\b[A-Z][a-z]+,\s+[A-Z]{2}\s+\d{5}(?:-\d{4})?\b',
+            ],
+        }
+
+        # Compile regex patterns for efficiency
+        self.compiled_patterns = {}
+        for category, patterns_list in self.patterns.items():
+            self.compiled_patterns[category] = [
+                re.compile(pattern, re.IGNORECASE if category != 'NAME' else 0)
+                for pattern in patterns_list
+            ]
+
+        self.entity_counter = defaultdict(int)
+        self.entities = {}  # Maps placeholder to original value
+
+    def scrub(self, text: str) -> Dict:
         """
-        Scrub PII from text and return scrubbed text + entity map.
-        
+        Scrub PII from text and return scrubbed version + entity map.
+
         Args:
             text: Input text potentially containing PII
-            
+
         Returns:
             {
-                "scrubbed": "Text with [TYPE_N] placeholders",
-                "entities": {"TYPE_1": "original_value", ...},
-                "pii_types_found": ["EMAIL", "SSN", ...]
+                "scrubbed": "text with [TYPE_N] placeholders",
+                "entities": {"NAME_1": "John Smith", ...},
+                "count": 5,
+                "categories": {"EMAIL": 2, "NAME": 3}
             }
         """
-        self.entity_counters.clear()
-        entities = {}
+        self.entity_counter.clear()
+        self.entities = {}
         scrubbed_text = text
-        pii_types_found = set()
+        category_counts = defaultdict(int)
 
-        # Apply patterns in order (most specific first)
-        pattern_order = ['SSN', 'CREDIT_CARD', 'AWS_KEY', 'API_KEY', 'BEARER_TOKEN', 
-                        'EMAIL', 'PHONE', 'IPV6', 'IP_ADDRESS', 'ADDRESS', 'NAME']
-        
-        for pii_type in pattern_order:
-            pattern = self.patterns[pii_type]
-            matches = pattern.finditer(scrubbed_text)
-            
-            for match in matches:
-                original_value = match.group(0)
-                self.entity_counters[pii_type] += 1
-                entity_key = f"{pii_type}_{self.entity_counters[pii_type]}"
-                
-                entities[entity_key] = original_value
-                pii_types_found.add(pii_type)
-                
-                # Replace in scrubbed text
-                placeholder = f"[{entity_key}]"
-                scrubbed_text = scrubbed_text.replace(original_value, placeholder, 1)
-        
+        # Process patterns by category, in order (higher priority first)
+        # Order: API_KEY → PASSWORD → BEARER → CC → SSN → EMAIL → PHONE → IPv4 → URL → NAME → ADDRESS
+        category_order = [
+            'API_KEY', 'PASSWORD', 'BEARER_TOKEN',
+            'CREDIT_CARD', 'SSN', 'BANK_ACCOUNT',
+            'EMAIL', 'PHONE',
+            'IPV4', 'IPV6', 'URL',
+            'NAME', 'ADDRESS'
+        ]
+
+        for category in category_order:
+            if category not in self.compiled_patterns:
+                continue
+
+            for pattern in self.compiled_patterns[category]:
+                # Find all matches
+                for match in pattern.finditer(scrubbed_text):
+                    original_value = match.group(0)
+
+                    # Skip false positives
+                    if self._is_false_positive(category, original_value):
+                        continue
+
+                    # Generate placeholder
+                    self.entity_counter[category] += 1
+                    placeholder = f"[{category}_{self.entity_counter[category]}]"
+
+                    # Store mapping
+                    self.entities[placeholder] = original_value
+                    category_counts[category] += 1
+
+                    # Replace in scrubbed text
+                    scrubbed_text = scrubbed_text.replace(original_value, placeholder, 1)
+
         return {
             "scrubbed": scrubbed_text,
-            "entities": entities,
-            "pii_types_found": sorted(list(pii_types_found))
+            "entities": self.entities,
+            "count": sum(category_counts.values()),
+            "categories": dict(category_counts)
         }
 
-    def detect_pii_types(self, text: str) -> List[str]:
-        """
-        Scan text and return list of PII types detected.
+    def _is_false_positive(self, category: str, value: str) -> bool:
+        """Filter out known false positives."""
+        # NAME patterns are risky — skip common words
+        if category == 'NAME':
+            common_words = {'The', 'From', 'Here', 'This', 'That', 'Where', 'When', 'What', 'Which', 'As'}
+            if value.split()[0] in common_words:
+                return True
         
-        Args:
-            text: Input text to scan
-            
-        Returns:
-            List of PII type strings found
-        """
-        result = self.scrub(text)
-        return result["pii_types_found"]
+        # IPV4 — skip reserved ranges (127.x, 0.x, 255.x)
+        if category == 'IPV4':
+            if value.startswith(('127.', '0.', '255.')):
+                return True
+
+        # PHONE — skip too-short sequences
+        if category == 'PHONE':
+            digits = re.sub(r'\D', '', value)
+            if len(digits) < 10:
+                return True
+
+        return False
 
     def restore(self, scrubbed_text: str, entities: Dict[str, str]) -> str:
         """
-        Restore original values from scrubbed text and entity map.
-        
+        Restore original text from scrubbed version and entity map.
+
         Args:
             scrubbed_text: Text with [TYPE_N] placeholders
-            entities: Map of {"TYPE_1": "original_value", ...}
-            
+            entities: Mapping from placeholders to original values
+
         Returns:
-            Original text with placeholders replaced
+            Original text with PII restored
         """
         restored = scrubbed_text
-        for key, value in entities.items():
-            placeholder = f"[{key}]"
-            restored = restored.replace(placeholder, value)
+        for placeholder, original_value in entities.items():
+            restored = restored.replace(placeholder, original_value)
         return restored
 
 
-# =============================================================================
-# TEST SUITE
-# =============================================================================
+# Singleton instance
+PII_SCRUBBER = PIIScrubber()
 
-def test_scrubber():
-    """Test PII scrubber with real examples."""
-    scrubber = PIIScrubber()
-    
+
+if __name__ == '__main__':
+    # Test cases
     test_cases = [
-        # Basic name + email + SSN
-        "My name is John Smith and my email is john@example.com. My SSN is 123-45-6789.",
-        
-        # Phone number
-        "Call me at (555) 123-4567 or 555-123-4567",
-        
-        # IP addresses
-        "Server at 192.168.1.1 contacted 10.0.0.1",
-        
-        # Credit card
-        "My card is 4111-1111-1111-1111 or 5555 5555 5555 4444",
-        
-        # API keys
-        "API key: sk-proj-abc123defg456hij789klmno",
-        "Bearer token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
-        
-        # AWS key
-        "AWS key: AKIAIOSFODNN7EXAMPLE",
-        
-        # Address
-        "123 Main Street, Anytown USA",
-        
-        # Healthcare example
-        "Patient: Jane Doe, DOB: 123-45-6789, Contact: jane.doe@hospital.org, Phone: 555-123-4567",
-        
-        # Multi-PII
-        "Data breach: Employee Tom Jones (SSN 111-22-3333, email tom@company.com, IP 203.0.113.45) accessed patient record for Sarah Williams (DOB 456-78-9012).",
+        "My name is John Smith and my SSN is 123-45-6789.",
+        "Email me at john.smith@company.com or call (555) 123-4567.",
+        "Credit card: 4532-1234-5678-9010, expires 12/25",
+        "API Key: sk_live_abc123def456ghi789jkl012mno345",
+        "Bearer token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "Password is P@ssw0rd123! Please reset.",
+        "Server IP is 192.168.1.100 for internal access.",
+        "Visit https://company.com/dashboard for details.",
+        "123 Main Street, San Francisco, CA 94105",
+        "Account number 1234567890 is on hold.",
     ]
-    
-    print("\n" + "="*80)
-    print("PII SCRUBBER TEST SUITE")
-    print("="*80)
-    
-    for i, test_text in enumerate(test_cases, 1):
-        print(f"\n[TEST {i}]")
-        print(f"INPUT:  {test_text[:100]}{'...' if len(test_text) > 100 else ''}")
-        
-        result = scrubber.scrub(test_text)
-        
-        print(f"SCRUBBED: {result['scrubbed'][:100]}{'...' if len(result['scrubbed']) > 100 else ''}")
-        print(f"PII FOUND: {', '.join(result['pii_types_found']) if result['pii_types_found'] else 'None'}")
-        print(f"ENTITIES: {result['entities']}")
-        
-        # Test restoration
-        restored = scrubber.restore(result['scrubbed'], result['entities'])
-        print(f"RESTORED: {restored[:100]}{'...' if len(restored) > 100 else ''}")
-        print(f"MATCHES ORIGINAL: {restored == test_text}")
 
-
-if __name__ == "__main__":
-    test_scrubber()
+    print("\n=== PII SCRUBBER TEST ===")
+    for test in test_cases:
+        result = PII_SCRUBBER.scrub(test)
+        print(f"\nInput:    {test}")
+        print(f"Scrubbed: {result['scrubbed']}")
+        print(f"Found:    {result['categories']}")
+        if result['entities']:
+            print(f"Entities: {json.dumps(result['entities'], indent=2)}")

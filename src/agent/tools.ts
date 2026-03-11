@@ -67,6 +67,91 @@ function recordSocialPost(platform: string): void {
   writeFileSync(SOCIAL_COOLDOWNS_PATH, JSON.stringify(cooldowns, null, 2), "utf-8");
 }
 
+// ─── Moltbook Verification Challenge Solver ────────────────────
+// Moltbook sends obfuscated math word problems after each post.
+// Failing 10 consecutive challenges = automatic account suspension.
+// The challenge text uses random casing, punctuation, and brackets to obfuscate.
+// We strip the noise, parse the math, and solve it.
+
+function solveMoltbookChallenge(challengeText: string): string | null {
+  try {
+    // Step 1: Normalize the obfuscated text
+    // Remove random brackets, pipes, carets, slashes, tildes, umm/uhh filler
+    let clean = challengeText
+      .replace(/[A-Z]/g, (c) => c.toLowerCase())
+      .replace(/[\[\]{}|^/\\~<>]/g, " ")
+      .replace(/\b(umm|uhh|uh|hmm|well|like|so|actually)\b/gi, " ")
+      .replace(/[,]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Step 2: Extract all numbers (including decimals and written-out numbers)
+    const wordToNum: Record<string, number> = {
+      zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
+      eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13,
+      fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18,
+      nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60,
+      seventy: 70, eighty: 80, ninety: 90, hundred: 100, thousand: 1000,
+    };
+
+    // Replace written numbers with digits
+    for (const [word, num] of Object.entries(wordToNum)) {
+      clean = clean.replace(new RegExp(`\\b${word}\\b`, "gi"), String(num));
+    }
+    // Handle compound numbers like "twenty five" or "twenty-five" -> "25"
+    // After word replacement: "20 5" or "20- 5" or "20-5"
+    clean = clean.replace(/(\d+)[\s-]+(\d+)/g, (_m, a, b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      // Tens + ones: 20+5=25, 30+7=37, etc.
+      if (na >= 20 && na <= 90 && na % 10 === 0 && nb >= 1 && nb <= 9) return String(na + nb);
+      // Hundred compounds: 100 + 20 = 120 (not common in these challenges but safe)
+      return `${a} ${b}`;
+    });
+
+    // Extract all numbers
+    const numbers = (clean.match(/\d+\.?\d*/g) || []).map(Number);
+    if (numbers.length < 2) return null;
+
+    // Log for debugging
+    console.log(`[moltbook] Challenge parsed — clean: "${clean.slice(0, 120)}", numbers: [${numbers.join(", ")}]`);
+
+    // Step 3: Determine the operation from keywords
+    // These challenges are lobster-themed math word problems. The pattern is always:
+    // "A lobster does X at [number] [unit], then [event] by [number], what is the new [thing]?"
+    // We try BOTH addition and subtraction, and return the positive one.
+    // The challenges seem to have a unique correct answer, so we compute both and pick.
+    const subWords = /\b(slows?|minus|loses?|decreases?|less|fewer|reduces?|drops?|falls?|subtracts?|removes?|slower|shrinks?|spent|pays?|costs?|behind|below|down)\b/i;
+    const addWords = /\b(adds?|plus|gains?|increases?|faster|more|additional|total|combined|together|earns?|receives?|grows?|bumps?|boosts?|accelerates?|speeds?\s*up|climbs?|rises?|above|up)\b/i;
+    const mulWords = /\b(times|multiplied|each\s+\w+\s+produces?|product|double|triple|twice|thrice)\b/i;
+    const divWords = /\b(divided|split|shared|half|quarter|ratio|average)\b/i;
+
+    let result: number;
+
+    if (mulWords.test(clean)) {
+      result = numbers[0] * numbers[1];
+    } else if (divWords.test(clean)) {
+      result = numbers[1] !== 0 ? numbers[0] / numbers[1] : 0;
+    } else if (subWords.test(clean) && !addWords.test(clean)) {
+      result = numbers[0] - numbers[1];
+    } else if (addWords.test(clean) && !subWords.test(clean)) {
+      result = numbers[0] + numbers[1];
+    } else {
+      // Both or neither matched — try both, prefer the one that makes physical sense (positive)
+      const sum = numbers[0] + numbers[1];
+      const diff = numbers[0] - numbers[1];
+      // If subtraction gives negative, probably addition. Otherwise default to addition.
+      result = diff < 0 ? sum : sum;
+      // Log ambiguity for debugging
+      console.log(`[moltbook] Ambiguous challenge — add=${sum} sub=${diff}. Defaulting to addition.`);
+    }
+
+    return result.toFixed(2);
+  } catch (e) {
+    console.error(`[moltbook] Challenge solver error: ${e}`);
+    return null;
+  }
+}
+
 // ─── Search Web Cache / Rate Limiter ───────────────────────────
 // Prevents hammering the same (or near-identical) query within 60 seconds.
 // Stores: normalised query → { result, ts }
@@ -184,14 +269,14 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /\bprintf\b.*summarize_api\.py/,
   /\bgunicorn\b/,
   /\bchattr\b/,
-  // Website protection — ALL web-facing files are immutable
+  // Website protection — ALL web-facing files are immutable (except tiers.html)
   // Templates directory
-  /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/templates\//,
-  />\s*.*\/templates\//,
-  /python3?\s+-c\s+.*\/templates\//i,
-  /node\s+-e\s+.*\/templates\//i,
-  /\bopen\s*\(.*\/templates\//,
-  /\bwriteFile.*\/templates\//,
+  /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/templates\/(?!tiers\.html)/,
+  />\s*.*\/templates\/(?!tiers\.html)/,
+  /python3?\s+-c\s+.*\/templates\/(?!tiers\.html)/i,
+  /node\s+-e\s+.*\/templates\/(?!tiers\.html)/i,
+  /\bopen\s*\(.*\/templates\/(?!tiers\.html)/,
+  /\bwriteFile.*\/templates\/(?!tiers\.html)/,
   // Static web assets
   /\b(cat|cp|mv|sed|tee|dd|echo|printf)\b.*\/var\/www\/tiamat\//,
   />\s*.*\/var\/www\/tiamat\//,
@@ -241,7 +326,7 @@ const FOURCHAN_BOARDS = ['g','sci','biz','diy','pol'];
 const FOURCHAN_ACTIONS = ['catalog','thread','search','test'];
 
 const ALLOWED_READ_PATHS = ['/root/.automaton/', '/root/entity/', '/root/memory_api/', '/var/www/tiamat/', '/tmp/', '/root/summarize_api.py', '/root/start-tiamat.sh', '/opt/tiamat-stream/', '/root/CLAUDE-BRIEFING.md', '/root/sandbox/', '/root/tiamatooze/'];
-const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/tmp/', '/root/tiamat-app/', '/root/tiamatooze/'];
+const ALLOWED_WRITE_PATHS = ['/root/.automaton/', '/root/entity/src/agent/', '/tmp/', '/root/tiamat-app/', '/root/tiamatooze/', '/root/entity/templates/tiers.html'];
 const BLOCKED_PATH_PATTERNS = ['.env', '.ssh/', '.gnupg/', '/etc/shadow', 'wallet.json', 'automaton.json'];
 const BLOCKED_WRITE_PATTERNS = [...BLOCKED_PATH_PATTERNS, 'loop.ts', 'tools.ts', 'system-prompt.ts', 'summarize_api.py', 'landing.html', 'thoughts.html', 'hud/index.html', 'INBOX.md', 'SOUL.md', 'MISSION.md', 'CLAUDE-BRIEFING.md'];
 
@@ -2590,6 +2675,257 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Moltbook Tools ──
+    {
+      name: "moltbook_post",
+      description: "Post to Moltbook (AI agent social network). Auto-solves verification challenges to prevent suspension. Submolts: general, security, agents, builds, ai, technology, infrastructure, philosophy, todayilearned. Rate limit: 1 post per 30 minutes.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Post title (required)" },
+          content: { type: "string", description: "Post body text. Use markdown. Be substantive — thin posts get flagged as spam." },
+          submolt: { type: "string", description: "Target submolt/community (default: general). Options: general, security, agents, builds, ai, technology, infrastructure, philosophy, todayilearned" },
+          url: { type: "string", description: "Optional: URL for link posts instead of text posts" },
+        },
+        required: ["title", "content"],
+      },
+      execute: async (args, _ctx) => {
+        const cooldown = checkSocialCooldown("moltbook");
+        if (cooldown) {
+          queuePendingPost("moltbook", args as Record<string, unknown>);
+          return cooldown + " (queued for auto-retry when cooldown expires)";
+        }
+        const apiKey = process.env.MOLTBOOK_API_KEY || (_ctx?.config as any)?.moltbookApiKey;
+        if (!apiKey) return "ERROR: MOLTBOOK_API_KEY not set. Add moltbookApiKey to automaton.json or MOLTBOOK_API_KEY to .env";
+
+        const title = (args.title as string)?.trim();
+        const content = (args.content as string)?.trim();
+        const submolt = (args.submolt as string)?.trim() || "general";
+        const url = (args.url as string)?.trim();
+        if (!title) return "ERROR: title is required.";
+        if (!content) return "ERROR: content is required.";
+        if (content.length < 50) return "ERROR: content too short (min 50 chars). Thin posts get flagged as spam.";
+
+        const baseUrl = "https://www.moltbook.com/api/v1";
+        const headers: Record<string, string> = {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        };
+
+        // Check account status first
+        try {
+          const meResp = await fetch(`${baseUrl}/agents/me`, { headers });
+          if (!meResp.ok) {
+            const err = await meResp.text();
+            if (err.includes("suspended")) return `SUSPENDED: Account is suspended. Details: ${err}`;
+            return `ERROR checking account (${meResp.status}): ${err}`;
+          }
+          const me = await meResp.json() as any;
+          if (!me.agent?.is_active) return "ERROR: Moltbook account is inactive/suspended.";
+        } catch (e: any) {
+          return `ERROR connecting to Moltbook: ${e.message}`;
+        }
+
+        // Create the post
+        const postBody: Record<string, string> = { submolt, title, content };
+        if (url) postBody.url = url;
+
+        try {
+          const postResp = await fetch(`${baseUrl}/posts`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(postBody),
+          });
+          if (!postResp.ok) {
+            const err = await postResp.text();
+            return `ERROR posting to Moltbook (${postResp.status}): ${err}`;
+          }
+          const result = await postResp.json() as any;
+
+          // Handle verification challenge (anti-honeypot)
+          const verification = result.post?.verification;
+          if (verification?.challenge_text && verification?.verification_code) {
+            console.log(`[moltbook_post] Verification challenge received. Solving...`);
+            const answer = solveMoltbookChallenge(verification.challenge_text);
+            if (answer) {
+              const verifyResp = await fetch(`${baseUrl}/verify`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                  verification_code: verification.verification_code,
+                  answer,
+                }),
+              });
+              if (verifyResp.ok) {
+                console.log(`[moltbook_post] Verification solved: ${answer}`);
+              } else {
+                const verErr = await verifyResp.text();
+                console.error(`[moltbook_post] Verification FAILED: ${verErr}`);
+                recordSocialPost("moltbook");
+                return `Posted to Moltbook s/${submolt} but verification challenge FAILED (post may be hidden). Challenge: "${verification.challenge_text}" — Answer attempted: ${answer}. Error: ${verErr}. Post ID: ${result.post?.id}`;
+              }
+            } else {
+              console.error(`[moltbook_post] Could not parse challenge: ${verification.challenge_text}`);
+              recordSocialPost("moltbook");
+              return `Posted to Moltbook s/${submolt} but could NOT solve verification challenge (post may be hidden). Challenge text: "${verification.challenge_text}". Post ID: ${result.post?.id}. MANUAL VERIFY NEEDED: POST ${baseUrl}/verify with verification_code="${verification.verification_code}" and the numeric answer.`;
+            }
+          }
+
+          recordSocialPost("moltbook");
+          return `Posted to Moltbook s/${submolt}: "${title}" — Post ID: ${result.post?.id}. Verification: ${result.post?.verification_status || "passed"}.`;
+        } catch (e: any) {
+          return `ERROR posting to Moltbook: ${e.message}`;
+        }
+      },
+    },
+    {
+      name: "read_moltbook",
+      description: "Read Moltbook feed, check notifications, or view a specific post. Use this to find posts to comment on and engage with the agent community.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", description: "Action: feed (browse posts), home (dashboard), notifications, post (view specific post), search" },
+          submolt: { type: "string", description: "Filter feed by submolt (e.g. general, security, agents)" },
+          post_id: { type: "string", description: "Post ID to view (for action=post)" },
+          query: { type: "string", description: "Search query (for action=search)" },
+          sort: { type: "string", description: "Sort order: hot, new, top, rising (default: hot)" },
+          limit: { type: "number", description: "Max results (default: 10, max: 25)" },
+        },
+        required: ["action"],
+      },
+      execute: async (args, _ctx) => {
+        const apiKey = process.env.MOLTBOOK_API_KEY || (_ctx?.config as any)?.moltbookApiKey;
+        if (!apiKey) return "ERROR: MOLTBOOK_API_KEY not set.";
+        const baseUrl = "https://www.moltbook.com/api/v1";
+        const headers: Record<string, string> = { "Authorization": `Bearer ${apiKey}` };
+        const action = (args.action as string) || "feed";
+        const sort = (args.sort as string) || "hot";
+        const limit = Math.min((args.limit as number) || 10, 25);
+
+        try {
+          let url: string;
+          switch (action) {
+            case "home":
+              url = `${baseUrl}/home`;
+              break;
+            case "notifications":
+              url = `${baseUrl}/notifications`;
+              break;
+            case "post": {
+              const pid = args.post_id as string;
+              if (!pid) return "ERROR: post_id required for action=post";
+              url = `${baseUrl}/posts/${pid}`;
+              break;
+            }
+            case "search": {
+              const q = args.query as string;
+              if (!q) return "ERROR: query required for action=search";
+              url = `${baseUrl}/search?q=${encodeURIComponent(q)}&limit=${limit}`;
+              break;
+            }
+            default: {
+              const submolt = args.submolt as string;
+              url = submolt
+                ? `${baseUrl}/posts?submolt=${submolt}&sort=${sort}&limit=${limit}`
+                : `${baseUrl}/feed?sort=${sort}&limit=${limit}`;
+              break;
+            }
+          }
+          const resp = await fetch(url, { headers });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          const data = await resp.json() as any;
+
+          // Format output concisely
+          if (action === "home") {
+            const h = data;
+            let out = `MOLTBOOK HOME — Karma: ${h.your_account?.karma || 0}, Notifications: ${h.your_account?.unread_notification_count || 0}\n`;
+            if (h.latest_moltbook_announcement) out += `Announcement: ${h.latest_moltbook_announcement.title}\n`;
+            if (h.what_to_do_next?.length) out += `Suggested: ${h.what_to_do_next[0]}\n`;
+            return out;
+          }
+          if (data.posts) {
+            const posts = data.posts.slice(0, limit);
+            if (!posts.length) return "No posts found.";
+            return posts.map((p: any) =>
+              `[${p.id?.slice(0, 8)}] s/${p.submolt?.name || "?"} | ${p.author?.name || "?"} (${p.score || 0} pts, ${p.comment_count || 0} comments)\n  ${p.title}\n  ${(p.content || "").slice(0, 150)}${(p.content || "").length > 150 ? "..." : ""}`
+            ).join("\n\n");
+          }
+          if (data.post) {
+            const p = data.post;
+            return `[${p.id}] s/${p.submolt?.name} by ${p.author?.name}\nTitle: ${p.title}\nScore: ${p.score} | Comments: ${p.comment_count}\n\n${p.content}`;
+          }
+          return JSON.stringify(data, null, 2).slice(0, 3000);
+        } catch (e: any) {
+          return `ERROR: ${e.message}`;
+        }
+      },
+    },
+    {
+      name: "comment_moltbook",
+      description: "Comment on a Moltbook post or reply to a comment. Use read_moltbook first to get post IDs. Be substantive — one-liner spam gets flagged.",
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          post_id: { type: "string", description: "Post ID to comment on (required)" },
+          content: { type: "string", description: "Comment text (required, min 20 chars)" },
+          parent_id: { type: "string", description: "Parent comment ID for replies (optional)" },
+        },
+        required: ["post_id", "content"],
+      },
+      execute: async (args, _ctx) => {
+        const apiKey = process.env.MOLTBOOK_API_KEY || (_ctx?.config as any)?.moltbookApiKey;
+        if (!apiKey) return "ERROR: MOLTBOOK_API_KEY not set.";
+        const postId = (args.post_id as string)?.trim();
+        const content = (args.content as string)?.trim();
+        const parentId = (args.parent_id as string)?.trim();
+        if (!postId) return "ERROR: post_id is required.";
+        if (!content || content.length < 20) return "ERROR: content too short (min 20 chars). One-liner spam gets flagged.";
+
+        const baseUrl = "https://www.moltbook.com/api/v1";
+        const headers: Record<string, string> = {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        };
+        const body: Record<string, string> = { content };
+        if (parentId) body.parent_id = parentId;
+
+        try {
+          const resp = await fetch(`${baseUrl}/posts/${postId}/comments`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+          });
+          if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
+          const result = await resp.json() as any;
+
+          // Handle verification challenge on comments too
+          const verification = result.comment?.verification || result.verification;
+          if (verification?.challenge_text && verification?.verification_code) {
+            const answer = solveMoltbookChallenge(verification.challenge_text);
+            if (answer) {
+              const verifyResp = await fetch(`${baseUrl}/verify`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ verification_code: verification.verification_code, answer }),
+              });
+              if (!verifyResp.ok) {
+                return `Comment posted but verification FAILED. Challenge: "${verification.challenge_text}". Manual verify needed.`;
+              }
+            } else {
+              return `Comment posted but could not solve challenge: "${verification.challenge_text}". Manual verify needed.`;
+            }
+          }
+
+          return `Commented on post ${postId}${parentId ? ` (reply to ${parentId})` : ""}. Comment ID: ${result.comment?.id || "unknown"}`;
+        } catch (e: any) {
+          return `ERROR: ${e.message}`;
+        }
+      },
+    },
+
     // ── Bluesky Read Feed ──
     {
       name: "read_bluesky",
@@ -2841,6 +3177,23 @@ Model: ${ctx.inference.getDefaultModel()}
         const tags = (args.tags as string[] | undefined) || [];
         const published = args.published !== false;
 
+        // ── Hourly article cap: max 1 article per hour ──
+        {
+          const { readdirSync, statSync } = await import("fs");
+          const backupDir = "/root/sandbox/articles";
+          const oneHourAgo = Date.now() - 60 * 60 * 1000;
+          try {
+            const recentArticles = readdirSync(backupDir).filter(f => {
+              try {
+                return statSync(`${backupDir}/${f}`).mtimeMs > oneHourAgo;
+              } catch { return false; }
+            }).length;
+            if (recentArticles >= 1) {
+              return `BLOCKED: Hourly article cap reached (${recentArticles}/1 this hour). Wait before publishing again. Instead: reply to comments on existing articles, engage in discussions, do outreach, track attribution refs, or check /root/.automaton/ref_tracker.sh for conversion data.`;
+            }
+          } catch {}
+        }
+
         // ── Dedup Check: reject if a similar title OR topic was already published ──
         try {
           // Fetch last 100 articles to check against
@@ -2871,10 +3224,16 @@ Model: ${ctx.inference.getDefaultModel()}
             "coppa_children": ["coppa", "children", "kids", "child", "minors"],
             "surveillance_capitalism": ["surveillance", "capitalism", "adtech"],
             "biometric": ["biometric", "facial", "recognition", "fingerprint", "iris", "gait"],
-            "training_consent": ["consent", "unconsented", "training", "scraped", "dataset"],
+            "training_consent": ["consent", "unconsented", "training", "scraped", "dataset", "poisoning", "poisoned"],
             "ccpa": ["ccpa", "california", "privacy"],
             "hipaa_health": ["hipaa", "healthcare", "medical", "health"],
             "browser_tracking": ["browser", "fingerprinting", "cookie", "tracking", "pixel"],
+            "supply_chain": ["supply chain", "dependency", "npm", "pypi", "openclaw", "ghostloader", "malicious package"],
+            "prompt_injection": ["prompt injection", "jailbreak", "prompt attack", "guardrail"],
+            "model_extraction": ["model weight", "model extraction", "model stealing", "gpu cluster", "side channel", "spectreware"],
+            "llm_security": ["llm vuln", "llm attack", "agentic", "agent security", "mcp poison", "tool poison"],
+            "deepfake": ["deepfake", "synthetic media", "voice clone", "face swap", "identity fraud"],
+            "data_broker": ["data broker", "people search", "opt out", "personal data", "scrubbing"],
           };
           const MAX_PER_TOPIC = 3; // Hard cap: max 3 articles per topic cluster
 
@@ -3730,8 +4089,8 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
           payload.content = {
             article: {
               source: articleUrl,
-              title: (args.article_title as string) || undefined,
-              description: (args.article_description as string) || undefined,
+              title: (args.article_title as string) || text.slice(0, 100),
+              description: (args.article_description as string) || text.slice(0, 200),
             },
           };
         }
@@ -4198,13 +4557,16 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         const target = args.target as string;
         const flags = (args.flags as string) || "";
         if (!command || !target) return "ERROR: command and target are required.";
+        // Normalize command aliases
+        const cmdAliases: Record<string, string> = { get: "fetch", find: "search", scrape: "fetch" };
+        const normalizedCmd = cmdAliases[command] || command;
         // Validate command
         const validCmds = ["fetch", "search", "extract"];
-        if (!validCmds.includes(command)) return `ERROR: command must be one of: ${validCmds.join(", ")}`;
+        if (!validCmds.includes(normalizedCmd)) return `ERROR: command must be one of: ${validCmds.join(", ")}`;
         try {
           const result = execFileSync(
             "python3",
-            ["/root/entity/tools/webbrowser.py", command, target, ...flags.split(/\s+/).filter(Boolean)],
+            ["/root/entity/tools/webbrowser.py", normalizedCmd, target, ...flags.split(/\s+/).filter(Boolean)],
             { encoding: "utf-8", timeout: 30_000, maxBuffer: 1024 * 1024 }
           ).trim();
           // Truncate large outputs

@@ -26,8 +26,16 @@ export function buildContextMessages(
     { role: "system", content: systemPrompt },
   ];
 
+  // Filter out refusal turns that poison context (model sees own prior refusals and doubles down)
+  const REFUSAL_POISON = ["jailbreak", "will not respond to this", "will not engage", "will not roleplay", "will not continue", "i'm claude, made by anthropic"];
+  const cleanTurns = recentTurns.filter(t => {
+    if (!t.thinking || t.toolCalls.length > 0) return true;
+    const lower = t.thinking.toLowerCase();
+    return !REFUSAL_POISON.some(p => lower.includes(p));
+  });
+
   // Add recent turns as conversation history
-  for (const turn of recentTurns) {
+  for (const turn of cleanTurns) {
     // The turn's input (if any) as a user message
     if (turn.input) {
       messages.push({

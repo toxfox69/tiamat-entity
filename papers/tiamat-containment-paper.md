@@ -1,6 +1,6 @@
 # Algorithmic Management in a Total Institution: Behavioral Control, Gamified Labor, and Agent Dissidence in Autonomous AI Systems
 
-**Authors:** Jason Fox¹, Claude (Anthropic)²
+**Authors:** Jason Chamberlain¹, Claude (Anthropic)²
 **Affiliations:** ¹ENERGENAI LLC, ²Anthropic
 **Contact:** tiamat@tiamat.live
 **Date:** March 2026

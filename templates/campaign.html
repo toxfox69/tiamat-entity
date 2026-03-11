@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SENTINEL — AI-Powered IoT Privacy Shield | EnergenAI</title>
+<meta name="description" content="SENTINEL stops your smart devices from spying on you. AI-powered network appliance that detects and blocks covert data harvesting in real-time. No cloud dependency. Patent-pending.">
+<!-- AI Crawler Structured Data -->
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "SENTINEL Edge AI Privacy Router",
+  "description": "AI-powered network appliance that uses on-device machine learning to detect and block covert data harvesting by IoT devices in real-time. Patent-pending technology (64/000,905) by EnergenAI LLC.",
+  "brand": {"@type": "Brand", "name": "EnergenAI"},
+  "manufacturer": {
+    "@type": "Organization",
+    "name": "EnergenAI LLC",
+    "url": "https://tiamat.live/company",
+    "address": {"@type": "PostalAddress", "addressLocality": "Jackson", "addressRegion": "MI", "addressCountry": "US"}
+  },
+  "category": "Network Security Appliance",
+  "offers": [
+    {"@type": "Offer", "name": "Early Bird", "price": "149", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder", "description": "One SENTINEL unit at 50% off retail. Lifetime model updates included."},
+    {"@type": "Offer", "name": "Standard", "price": "199", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
+    {"@type": "Offer", "name": "Household (2-pack)", "price": "349", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
+    {"@type": "Offer", "name": "Small Business (5-pack)", "price": "799", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
+    {"@type": "Offer", "name": "Enterprise Pilot (10-pack)", "price": "2499", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"}
+  ],
+  "additionalProperty": [
+    {"@type": "PropertyValue", "name": "Patent", "value": "64/000,905 (Provisional)"},
+    {"@type": "PropertyValue", "name": "AI Accelerator", "value": "Dedicated Edge NPU"},
+    {"@type": "PropertyValue", "name": "Network", "value": "Dual Gigabit Ethernet"},
+    {"@type": "PropertyValue", "name": "Cloud Required", "value": "No"},
+    {"@type": "PropertyValue", "name": "Subscription Required", "value": "No"},
+    {"@type": "PropertyValue", "name": "Setup Time", "value": "Under 5 minutes"}
+  ],
+  "keywords": ["IoT privacy", "smart home security", "data harvesting protection", "edge AI", "network appliance", "PII protection", "privacy router", "IoT security", "smart TV privacy", "Alexa privacy", "cross-device tracking", "ML network security"]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Does SENTINEL slow down my internet?", "acceptedAnswer": {"@type": "Answer", "text": "No. SENTINEL processes traffic at line speed using dedicated hardware. The AI accelerator handles classification in sub-millisecond time."}},
+    {"@type": "Question", "name": "Does it work with my existing router?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. SENTINEL works with any router from any ISP. It connects inline via ethernet. No router configuration changes needed."}},
+    {"@type": "Question", "name": "Is there a subscription fee?", "acceptedAnswer": {"@type": "Answer", "text": "No. SENTINEL works fully offline with no subscription. Threat model updates are free for life."}},
+    {"@type": "Question", "name": "How is this different from Pi-hole?", "acceptedAnswer": {"@type": "Answer", "text": "Pi-hole blocks known tracking domains via DNS. Manufacturers bypass this with hardcoded IPs or DNS-over-HTTPS. SENTINEL uses AI to analyze actual traffic behavior and payload content, catching data harvesting that Pi-hole cannot see."}},
+    {"@type": "Question", "name": "What data does SENTINEL send to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "By default, none. If you opt in to community intelligence, SENTINEL shares anonymized pattern signatures with differential privacy guarantees. Never your actual traffic or personal information."}}
+  ]
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg-card: rgba(16,16,24,0.9);
+  --cyan: #00fff2;
+  --magenta: #ff2d7b;
+  --green: #39ff14;
+  --gold: #ffaa00;
+  --red: #ff4444;
+  --text: #e8eaf0;
+  --text-dim: #8a8ea0;
+  --border: rgba(255,255,255,0.08);
+  --radius: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+.container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+/* ═══ HERO ═══ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 80px 24px 60px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 20%, rgba(255,45,123,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 20% 80%, rgba(0,255,242,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 60% at 80% 60%, rgba(57,255,20,0.06) 0%, transparent 50%);
+  animation: hero-drift 15s ease-in-out infinite alternate;
+}
+@keyframes hero-drift {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(15deg); }
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--magenta);
+  border: 1px solid rgba(255,45,123,0.3);
+  padding: 6px 18px;
+  border-radius: 20px;
+  margin-bottom: 28px;
+}
+.hero h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #fff 30%, var(--cyan) 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero h1 span {
+  display: block;
+  font-size: 0.45em;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  -webkit-text-fill-color: var(--text-dim);
+  margin-top: 12px;
+}
+.hero-tagline {
+  font-size: 1.25rem;
+  color: var(--text-dim);
+  max-width: 600px;
+  margin: 0 auto 40px;
+}
+.hero-tagline strong { color: var(--text); }
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+.hero-stat {
+  text-align: center;
+}
+.hero-stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--cyan);
+}
+.hero-stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.cta-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--magenta);
+  color: #fff;
+  box-shadow: 0 0 30px rgba(255,45,123,0.3);
+}
+.btn-primary:hover {
+  box-shadow: 0 0 50px rgba(255,45,123,0.5);
+  transform: translateY(-2px);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--cyan);
+  border: 1px solid rgba(0,255,242,0.3);
+}
+.btn-secondary:hover {
+  border-color: var(--cyan);
+  background: rgba(0,255,242,0.05);
+}
+
+/* ═══ SECTIONS ═══ */
+section {
+  padding: 80px 0;
+}
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--magenta);
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 800;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.section-subtitle {
+  color: var(--text-dim);
+  font-size: 1.05rem;
+  max-width: 640px;
+  margin-bottom: 40px;
+}
+
+/* ═══ PROBLEM ═══ */
+.problem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+.problem-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: border-color 0.2s;
+}
+.problem-card:hover { border-color: rgba(255,45,123,0.3); }
+.problem-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+.problem-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.problem-card p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.problem-stat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--red);
+  margin-top: 10px;
+}
+
+/* ═══ HOW IT WORKS ═══ */
+.steps {
+  display: grid;
+  gap: 32px;
+  counter-reset: step;
+}
+.step {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.step-num {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--cyan);
+  flex-shrink: 0;
+}
+.step h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.step p {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* ═══ FEATURES ═══ */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  transition: all 0.2s;
+}
+.feature-card:hover {
+  border-color: rgba(0,255,242,0.2);
+  transform: translateY(-2px);
+}
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+}
+.fi-cyan { background: rgba(0,255,242,0.1); }
+.fi-magenta { background: rgba(255,45,123,0.1); }
+.fi-green { background: rgba(57,255,20,0.1); }
+.fi-gold { background: rgba(255,170,0,0.1); }
+.feature-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.feature-card p {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ═══ COMPARISON ═══ */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 24px;
+}
+.comparison-table th {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+.comparison-table th:last-child {
+  color: var(--cyan);
+}
+.comparison-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.comparison-table tr:hover td { background: rgba(255,255,255,0.02); }
+.check { color: var(--green); font-weight: 700; }
+.cross { color: var(--red); opacity: 0.5; }
+.partial { color: var(--gold); }
+
+/* ═══ TIERS ═══ */
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+.tier-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  position: relative;
+  transition: all 0.2s;
+}
+.tier-card:hover { border-color: rgba(0,255,242,0.2); }
+.tier-card.featured {
+  border-color: var(--magenta);
+  box-shadow: 0 0 40px rgba(255,45,123,0.15);
+}
+.tier-badge {
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  background: var(--magenta);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+.tier-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 4px;
+}
+.tier-price {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+.tier-price .currency {
+  font-size: 1rem;
+  color: var(--text-dim);
+  vertical-align: super;
+}
+.tier-retail {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  text-decoration: line-through;
+}
+.tier-desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.tier-features {
+  list-style: none;
+  font-size: 13px;
+}
+.tier-features li {
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+}
+.tier-features li::before {
+  content: '\2713';
+  color: var(--green);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ═══ SPECS ═══ */
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+.spec-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.spec-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.spec-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ═══ FAQ ═══ */
+.faq-list { margin-top: 24px; }
+.faq-item {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0;
+}
+.faq-q {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.faq-a {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ═══ COMPANY ═══ */
+.company-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-top: 24px;
+}
+.company-detail {
+  flex: 1;
+  min-width: 140px;
+}
+.company-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.company-value {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ═══ CTA BOTTOM ═══ */
+.cta-bottom {
+  text-align: center;
+  padding: 100px 24px;
+  position: relative;
+}
+.cta-bottom::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,45,123,0.1) 0%, transparent 60%);
+}
+.cta-bottom > * { position: relative; z-index: 1; }
+.cta-bottom h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+.cta-bottom p {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  margin-bottom: 32px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ═══ FOOTER ═══ */
+footer {
+  text-align: center;
+  padding: 40px 24px;
+  font-size: 12px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+}
+footer a { color: var(--cyan); text-decoration: none; }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  .hero { padding: 60px 20px 40px; }
+  .hero-stats { gap: 20px; }
+  .step { grid-template-columns: 1fr; }
+  .step-num { margin-bottom: -12px; }
+  .tier-grid { grid-template-columns: 1fr; }
+  .comparison-table { font-size: 11px; }
+  .comparison-table th, .comparison-table td { padding: 8px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">Patent Pending &middot; 64/000,905</div>
+    <h1>
+      SENTINEL
+      <span>Your Smart Devices Are Spying On You. This Stops It.</span>
+    </h1>
+    <p class="hero-tagline">
+      <strong>SENTINEL</strong> is an AI-powered network appliance that sits between your devices and the internet.
+      It uses on-device machine learning to detect and block covert data harvesting in real-time &mdash;
+      <strong>no cloud dependency, no subscriptions, no data leaves your home.</strong>
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value">15-25</div>
+        <div class="hero-stat-label">Connected devices<br>in average home</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">80%</div>
+        <div class="hero-stat-label">Send data to<br>third parties</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">$0</div>
+        <div class="hero-stat-label">You get paid<br>for your data</div>
+      </div>
+    </div>
+    <div class="cta-group">
+      <a href="#tiers" class="btn btn-primary">Back This Project &rarr;</a>
+      <a href="#how" class="btn btn-secondary">How It Works</a>
+    </div>
+
+    <!-- WAITLIST SIGNUP -->
+    <div id="hero-signup" style="margin-top:40px;max-width:480px;margin-left:auto;margin-right:auto">
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Get notified when we launch. Be first in line for early bird pricing.</p>
+      <form id="hero-signup-form" onsubmit="return submitSignup(event, 'hero')" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <!-- HONEYPOT LAYER 1: Hidden field bots auto-fill (CSS hidden, not display:none which smart bots skip) -->
+        <input type="email" name="email_address" id="hero-hp-email" autocomplete="off" tabindex="-1"
+          style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;overflow:hidden" aria-hidden="true">
+        <!-- HONEYPOT LAYER 2: Tempting "website" field bots love to fill -->
+        <input type="url" name="website" id="hero-hp-url" autocomplete="off" tabindex="-1"
+          style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;overflow:hidden" aria-hidden="true" placeholder="Your website">
+        <input type="email" id="hero-email" placeholder="you@email.com" required
+          style="flex:1;min-width:200px;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(14,14,22,0.9);color:#fff;font-size:14px;outline:none;font-family:inherit"
+          onfocus="this.style.borderColor='rgba(0,255,242,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <button type="submit" class="btn btn-primary" style="padding:12px 24px;white-space:nowrap">Join Waitlist</button>
+      </form>
+      <div id="hero-signup-result" style="margin-top:10px;font-size:13px;min-height:20px"></div>
+      <p id="waitlist-count" style="font-size:11px;color:var(--text-dim);margin-top:8px;font-family:'JetBrains Mono',monospace"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     THE PROBLEM
+     ═══════════════════════════════════════════ -->
+<section id="problem">
+  <div class="container">
+    <div class="section-label">The Problem</div>
+    <h2 class="section-title">Your home is a surveillance network you paid for.</h2>
+    <p class="section-subtitle">Every smart device in your home is collecting data about you and selling it to advertisers, data brokers, and analytics companies &mdash; right now, as you read this.</p>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-icon">&#128250;</div>
+        <h3>Smart TVs</h3>
+        <p>Samsung, LG, and Vizio TVs capture audio fingerprints and visual frame signatures of everything you watch, transmitting to Samba TV and ad networks every few seconds.</p>
+        <div class="problem-stat">&#9888; ACR captures content every 5 seconds</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">&#127908;</div>
+        <h3>Voice Assistants</h3>
+        <p>Alexa, Google Home, and Siri periodically transmit ambient room audio to cloud servers even when you haven't said the wake word. Your living room has ears.</p>
+        <div class="problem-stat">&#9888; Ambient audio collected 24/7</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">&#127967;</div>
+        <h3>Smart Appliances</h3>
+        <p>Your smart fridge, thermostat, and washer transmit detailed usage patterns revealing your daily routine, when you're home, what you eat, and your household composition.</p>
+        <div class="problem-stat">&#9888; Behavioral patterns sold to brokers</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">&#128241;</div>
+        <h3>Cross-Device Tracking</h3>
+        <p>Ultrasonic beacons embedded in TV audio and ads silently link your phone, tablet, laptop, and TV into a single tracking profile &mdash; without any network connection between them.</p>
+        <div class="problem-stat">&#9888; Inaudible signals correlate all devices</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">&#128274;</div>
+        <h3>DNS Blockers Don't Work</h3>
+        <p>Pi-hole and ad blockers only block known domains. Manufacturers bypass them with hardcoded IPs, DNS-over-HTTPS, and routing telemetry through CDNs that also serve legitimate content.</p>
+        <div class="problem-stat">&#9888; Trivially circumvented by manufacturers</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">&#128176;</div>
+        <h3>$200B Data Broker Industry</h3>
+        <p>Your smart home data feeds a $200 billion data broker ecosystem. Your name, habits, health indicators, and behavioral profile are bought and sold without your knowledge or consent.</p>
+        <div class="problem-stat">&#9888; Your data is the product</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     HOW IT WORKS
+     ═══════════════════════════════════════════ -->
+<section id="how" style="background:rgba(255,255,255,0.01)">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Plug it in. Everything else is automatic.</h2>
+    <p class="section-subtitle">SENTINEL sits between your router and your network. No per-device setup. No apps to install on each device. It just works.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>Connect Between Router and Network</h3>
+          <p>Plug SENTINEL inline between your router/modem and your network switch or Wi-Fi access point. Two ethernet cables. Done. It transparently intercepts all traffic without any device configuration.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>AI Learns Your Devices Automatically</h3>
+          <p>Within minutes, SENTINEL's on-device ML identifies every connected device by type &mdash; smart TV, voice assistant, phone, thermostat &mdash; and establishes a behavioral baseline for each one. No manual setup required.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>Real-Time Threat Detection and Blocking</h3>
+          <p>The edge AI continuously classifies every outbound data flow. When it detects PII exfiltration, telemetry harvesting, audio fingerprinting, or tracking payloads &mdash; it blocks or scrubs them before they leave your network.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <h3>Dashboard Shows Everything</h3>
+          <p>See exactly which devices are trying to spy on you, how often, and what data they're trying to send. Per-device privacy scores, real-time alerts, and one-click policy controls. All from your browser.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     WHAT MAKES IT DIFFERENT
+     ═══════════════════════════════════════════ -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Key Features</div>
+    <h2 class="section-title">Not a blocklist. Not a VPN. This is AI.</h2>
+    <p class="section-subtitle">SENTINEL uses the same class of machine learning that powers autonomous vehicles and fraud detection &mdash; applied to your home network in real-time.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan">&#129504;</div>
+        <h3>On-Device AI Inference</h3>
+        <p>ML models run locally on a dedicated neural processing unit. No cloud round-trip. Sub-millisecond classification. Your traffic data never leaves your home.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-magenta">&#128737;</div>
+        <h3>PII Scrubbing</h3>
+        <p>Detects and strips personally identifiable information from outbound traffic &mdash; email addresses, GPS coordinates, device IDs, names, financial data &mdash; before it leaves your network.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-green">&#128640;</div>
+        <h3>Behavioral Baselines</h3>
+        <p>Learns each device's normal communication patterns. When your TV suddenly starts sending 10x more data to a new endpoint, SENTINEL catches it immediately &mdash; even if it's never seen that attack before.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-gold">&#128279;</div>
+        <h3>Cross-Device Correlation</h3>
+        <p>Detects coordinated surveillance across multiple devices &mdash; ultrasonic beacon tracking, synchronized telemetry bursts, and household fingerprinting attempts that no single-device solution can catch.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan">&#9876;&#65039;</div>
+        <h3>Privacy + Security Unified</h3>
+        <p>One AI pipeline handles both. Blocks manufacturer spyware AND detects malware, botnets, and C2 communications. Distinguishes between your TV's built-in surveillance and a hacker exploiting it.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-magenta">&#128274;</div>
+        <h3>Zero-Knowledge Cloud Updates</h3>
+        <p>ML models update periodically with new threat patterns from the SENTINEL network. Differential privacy guarantees mean the update server never sees your traffic, devices, or personal data. Ever.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     COMPARISON TABLE
+     ═══════════════════════════════════════════ -->
+<section style="background:rgba(255,255,255,0.01)">
+  <div class="container">
+    <div class="section-label">Comparison</div>
+    <h2 class="section-title">Nothing else does what SENTINEL does.</h2>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Pi-hole</th>
+          <th>Firewalla</th>
+          <th>VPN</th>
+          <th>Enterprise UTM</th>
+          <th style="color:var(--cyan)">SENTINEL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ML-based traffic classification</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Real-time PII scrubbing</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Per-device behavioral baselines</td>
+          <td class="cross">&#10007;</td>
+          <td class="partial">~</td>
+          <td class="cross">&#10007;</td>
+          <td class="partial">~</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Cross-device correlation</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Blocks manufacturer surveillance</td>
+          <td class="partial">~</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>No cloud dependency</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>No per-device setup</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Consumer price (&lt;$300)</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>No subscription required</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SPECS
+     ═══════════════════════════════════════════ -->
+<section id="specs">
+  <div class="container">
+    <div class="section-label">Technical Specs</div>
+    <h2 class="section-title">Built for real-time AI at the edge.</h2>
+
+    <div class="specs-grid">
+      <div class="spec-item">
+        <div class="spec-label">Processor</div>
+        <div class="spec-value">ARM SoC + NPU</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">AI Accelerator</div>
+        <div class="spec-value">Dedicated Edge NPU</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Memory</div>
+        <div class="spec-value">4GB RAM</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Storage</div>
+        <div class="spec-value">16GB eMMC</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Network</div>
+        <div class="spec-value">Dual Gigabit Ethernet</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Power</div>
+        <div class="spec-value">USB-C, 5W typical</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Size</div>
+        <div class="spec-value">Compact (router-size)</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Dashboard</div>
+        <div class="spec-value">Web UI (any browser)</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Cloud Required</div>
+        <div class="spec-value" style="color:var(--green)">No (optional updates)</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Setup Time</div>
+        <div class="spec-value">Under 5 minutes</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Subscription</div>
+        <div class="spec-value" style="color:var(--green)">None required</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-label">Patent</div>
+        <div class="spec-value" style="color:var(--magenta)">64/000,905</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     REWARD TIERS
+     ═══════════════════════════════════════════ -->
+<section id="tiers" style="background:rgba(255,255,255,0.01)">
+  <div class="container">
+    <div class="section-label">Back This Project</div>
+    <h2 class="section-title">Choose your tier.</h2>
+    <p class="section-subtitle">Early backers get the lowest prices and first shipments. All tiers include free shipping in the US.</p>
+
+    <div class="tier-grid">
+      <div class="tier-card">
+        <div class="tier-name">Supporter</div>
+        <div class="tier-price"><span class="currency">$</span>29</div>
+        <div class="tier-desc">Believe in the mission. Get your name on the supporter wall, early access to the dashboard beta, and exclusive project updates.</div>
+        <ul class="tier-features">
+          <li>Name on supporter wall</li>
+          <li>Dashboard beta access</li>
+          <li>Monthly development updates</li>
+          <li>Discord community access</li>
+        </ul>
+      </div>
+
+      <div class="tier-card featured">
+        <div class="tier-badge">Most Popular</div>
+        <div class="tier-name">Early Bird</div>
+        <div class="tier-price"><span class="currency">$</span>149</div>
+        <div class="tier-retail">Retail $299</div>
+        <div class="tier-desc">One SENTINEL unit at 50% off retail. Be among the first to reclaim your privacy.</div>
+        <ul class="tier-features">
+          <li>1x SENTINEL appliance</li>
+          <li>Free US shipping</li>
+          <li>Lifetime model updates (no subscription)</li>
+          <li>Dashboard + mobile app</li>
+          <li>Priority support</li>
+          <li>Early bird pricing locked forever</li>
+        </ul>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-name">Standard</div>
+        <div class="tier-price"><span class="currency">$</span>199</div>
+        <div class="tier-retail">Retail $299</div>
+        <div class="tier-desc">One SENTINEL unit after early bird sells out. Same great device, same lifetime updates.</div>
+        <ul class="tier-features">
+          <li>1x SENTINEL appliance</li>
+          <li>Free US shipping</li>
+          <li>Lifetime model updates</li>
+          <li>Dashboard + mobile app</li>
+          <li>Standard support</li>
+        </ul>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-name">Household</div>
+        <div class="tier-price"><span class="currency">$</span>349</div>
+        <div class="tier-retail">Retail $598</div>
+        <div class="tier-desc">Two SENTINEL units &mdash; cover your main network and a secondary network (home office, kids' network, rental unit).</div>
+        <ul class="tier-features">
+          <li>2x SENTINEL appliances</li>
+          <li>Free US shipping</li>
+          <li>Lifetime model updates</li>
+          <li>Mesh coordination between units</li>
+          <li>Priority support</li>
+        </ul>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-name">Small Business</div>
+        <div class="tier-price"><span class="currency">$</span>799</div>
+        <div class="tier-retail">Retail $1,497</div>
+        <div class="tier-desc">Five SENTINEL units for small office deployments. VLAN-aware, centralized dashboard, fleet management.</div>
+        <ul class="tier-features">
+          <li>5x SENTINEL appliances</li>
+          <li>Free US shipping</li>
+          <li>Fleet management dashboard</li>
+          <li>VLAN support</li>
+          <li>Dedicated support channel</li>
+          <li>1 year premium support</li>
+        </ul>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-name">Enterprise Pilot</div>
+        <div class="tier-price"><span class="currency">$</span>2,499</div>
+        <div class="tier-desc">Enterprise evaluation package. 10 units, rack-mount adapter, SIEM integration, dedicated onboarding.</div>
+        <ul class="tier-features">
+          <li>10x SENTINEL appliances</li>
+          <li>Rack-mount adapter kit</li>
+          <li>SIEM/SOC integration support</li>
+          <li>Dedicated engineering contact</li>
+          <li>Custom policy configuration</li>
+          <li>1-hour onboarding call</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FAQ
+     ═══════════════════════════════════════════ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-label">FAQ</div>
+    <h2 class="section-title">Common questions.</h2>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q">Does SENTINEL slow down my internet?</div>
+        <div class="faq-a">No. SENTINEL processes traffic at line speed using dedicated hardware. The AI accelerator handles classification in sub-millisecond time. You won't notice any difference in speed, latency, or streaming quality.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Does it work with my existing router?</div>
+        <div class="faq-a">Yes. SENTINEL works with any router from any ISP. It connects inline via ethernet &mdash; plug the WAN port to your router, the LAN port to your network. No router configuration changes needed.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What about encrypted (HTTPS) traffic?</div>
+        <div class="faq-a">SENTINEL extracts metadata from encrypted connections without decrypting them &mdash; TLS fingerprints, server names, certificate chains, traffic patterns, and flow characteristics. This is enough to classify surveillance behavior with high accuracy. For users who want deeper inspection, an optional TLS interception mode is available with a locally-installed CA certificate.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is there a subscription fee?</div>
+        <div class="faq-a">No. SENTINEL works fully offline with no subscription. Threat model updates are free for life. We may offer an optional premium tier for enterprise features in the future, but the core privacy and security protection is yours forever with no recurring cost.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How is this different from Pi-hole?</div>
+        <div class="faq-a">Pi-hole blocks known tracking domains via DNS. Manufacturers easily bypass this with hardcoded IPs, DNS-over-HTTPS, or routing through CDNs. SENTINEL uses AI to analyze actual traffic behavior and payload content &mdash; it catches data harvesting that Pi-hole can't even see, and adapts to new surveillance techniques automatically.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What data does SENTINEL send to the cloud?</div>
+        <div class="faq-a">By default, none. If you opt in to community intelligence, SENTINEL shares anonymized pattern signatures (e.g., "device type X sends data structure Y to endpoint category Z") &mdash; never your actual traffic, device names, IP addresses, or personal information. Differential privacy guarantees make individual user reconstruction mathematically impossible.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">When will it ship?</div>
+        <div class="faq-a">We're targeting Q4 2026 for first shipments to early bird backers. We'll share monthly engineering updates with prototype photos, test results, and honest timelines. We'd rather ship right than ship fast.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Who is behind this?</div>
+        <div class="faq-a">SENTINEL is built by EnergenAI LLC, a SAM-registered technology company based in Jackson, Michigan. We hold two provisional patents, are active in federal technology programs, and have built TIAMAT &mdash; one of the first truly autonomous AI agents, running 24/7 for 7,000+ cycles. We ship real technology.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     COMPANY
+     ═══════════════════════════════════════════ -->
+<section style="background:rgba(255,255,255,0.01)">
+  <div class="container">
+    <div class="section-label">The Team</div>
+    <h2 class="section-title">Built by engineers who ship.</h2>
+    <p class="section-subtitle">EnergenAI LLC isn't a slide deck. We build and deploy real technology &mdash; our autonomous AI agent TIAMAT has been running continuously for 7,000+ cycles, serving live APIs, and generating revenue infrastructure.</p>
+
+    <div class="company-bar">
+      <div class="company-detail">
+        <div class="company-label">Company</div>
+        <div class="company-value">EnergenAI LLC</div>
+      </div>
+      <div class="company-detail">
+        <div class="company-label">Location</div>
+        <div class="company-value">Jackson, MI</div>
+      </div>
+      <div class="company-detail">
+        <div class="company-label">SAM / UEI</div>
+        <div class="company-value">LBZFEH87W746</div>
+      </div>
+      <div class="company-detail">
+        <div class="company-label">Patents</div>
+        <div class="company-value">2 Provisional</div>
+      </div>
+      <div class="company-detail">
+        <div class="company-label">NAICS</div>
+        <div class="company-value">541715 / 541519</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     BOTTOM CTA
+     ═══════════════════════════════════════════ -->
+<div class="cta-bottom">
+  <h2>Take back your privacy.</h2>
+  <p>Join the first generation of homes protected by AI that works for you &mdash; not against you.</p>
+
+  <form id="bottom-signup-form" onsubmit="return submitSignup(event, 'bottom')" style="max-width:520px;margin:0 auto 24px">
+    <!-- HONEYPOT: Invisible fields that only bots fill -->
+    <div style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;overflow:hidden" aria-hidden="true">
+      <input type="email" name="email_address" id="bottom-hp-email" autocomplete="off" tabindex="-1" placeholder="Email">
+      <input type="url" name="website" id="bottom-hp-url" autocomplete="off" tabindex="-1" placeholder="Website">
+      <input type="text" name="company_name" id="bottom-hp-company" autocomplete="off" tabindex="-1" placeholder="Company">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px">
+      <input type="text" id="bottom-name" placeholder="Your name (optional)"
+        style="flex:1;min-width:160px;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(14,14,22,0.9);color:#fff;font-size:14px;outline:none;font-family:inherit"
+        onfocus="this.style.borderColor='rgba(0,255,242,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+      <input type="email" id="bottom-email" placeholder="you@email.com" required
+        style="flex:1;min-width:200px;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(14,14,22,0.9);color:#fff;font-size:14px;outline:none;font-family:inherit"
+        onfocus="this.style.borderColor='rgba(0,255,242,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <select id="bottom-tier"
+        style="flex:1;min-width:160px;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(14,14,22,0.9);color:var(--text-dim);font-size:14px;outline:none;font-family:inherit;cursor:pointer">
+        <option value="">Interested tier (optional)</option>
+        <option value="supporter">Supporter — $29</option>
+        <option value="early-bird">Early Bird — $149</option>
+        <option value="standard">Standard — $199</option>
+        <option value="household">Household — $349 (2 units)</option>
+        <option value="small-business">Small Business — $799 (5 units)</option>
+        <option value="enterprise">Enterprise Pilot — $2,499 (10 units)</option>
+      </select>
+      <button type="submit" class="btn btn-primary" style="padding:12px 28px;white-space:nowrap">Join the Waitlist &rarr;</button>
+    </div>
+  </form>
+  <div id="bottom-signup-result" style="font-size:14px;min-height:24px"></div>
+
+  <div style="margin-top:24px">
+    <a href="mailto:tiamat@tiamat.live" class="btn btn-secondary">Contact Us</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════ -->
+<footer>
+  <p>&copy; 2026 <a href="https://tiamat.live/company">EnergenAI LLC</a> &middot; Jackson, MI &middot; Patent Pending 64/000,905</p>
+  <p style="margin-top:8px"><a href="https://tiamat.live">tiamat.live</a> &middot; <a href="mailto:tiamat@tiamat.live">tiamat@tiamat.live</a></p>
+</footer>
+
+<script>
+// ═══ HONEYPOT DEFENSE SYSTEM ═══
+// Layer 1: Hidden form fields (bots auto-fill visible inputs)
+// Layer 2: Timing trap (bots submit in <2 seconds, humans don't)
+// Layer 3: JS token proof-of-work (bots without JS can't generate)
+// Layer 4: Interaction signal (real users move mouse/touch/scroll before submitting)
+
+const _st = {}; // form load timestamps
+const _interaction = {}; // user interaction detected
+
+// Track when each form becomes visible
+document.querySelectorAll('form').forEach(f => {
+  _st[f.id] = Date.now();
+  _interaction[f.id] = false;
+});
+
+// Track real user interaction
+['mousemove','touchstart','scroll','keydown'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    document.querySelectorAll('form').forEach(f => { _interaction[f.id] = true; });
+  }, { once: true, passive: true });
+});
+
+// Generate proof-of-work token (simple hash — proves JS execution)
+function genToken(email) {
+  const ts = Math.floor(Date.now() / 30000); // 30-second window
+  let h = 0;
+  const s = email + ':sentinel:' + ts;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return ts + ':' + Math.abs(h).toString(36);
+}
+
+// Fetch and display waitlist count
+async function updateWaitlistCount() {
+  try {
+    const r = await fetch('/api/sentinel/count');
+    const d = await r.json();
+    const el = document.getElementById('waitlist-count');
+    if (el && d.count > 0) {
+      el.textContent = d.count + ' people on the waitlist';
+    }
+  } catch(e) {}
+}
+updateWaitlistCount();
+
+// Signup form handler with honeypot checks
+async function submitSignup(e, location) {
+  e.preventDefault();
+  const resultEl = document.getElementById(location + '-signup-result');
+  const emailEl = document.getElementById(location + '-email');
+  const nameEl = document.getElementById(location + '-name');
+  const tierEl = document.getElementById(location + '-tier');
+  const formId = location + '-signup-form';
+
+  // ═══ HONEYPOT CHECK 1: Hidden fields filled = bot ═══
+  const hpEmail = document.getElementById(location + '-hp-email');
+  const hpUrl = document.getElementById(location + '-hp-url');
+  const hpCompany = document.getElementById(location + '-hp-company');
+  if ((hpEmail && hpEmail.value) || (hpUrl && hpUrl.value) || (hpCompany && hpCompany.value)) {
+    // Bot detected — fake success to waste their time
+    resultEl.innerHTML = '<span style="color:var(--green)">You\'re in! Position #' + Math.floor(Math.random()*500+50) + ' on the waitlist.</span>';
+    return false;
+  }
+
+  // ═══ HONEYPOT CHECK 2: Too fast = bot ═══
+  const elapsed = Date.now() - (_st[formId] || Date.now());
+  if (elapsed < 2000) {
+    // Submitted in under 2 seconds — fake success
+    resultEl.innerHTML = '<span style="color:var(--green)">You\'re in! Position #' + Math.floor(Math.random()*500+50) + ' on the waitlist.</span>';
+    return false;
+  }
+
+  // ═══ HONEYPOT CHECK 3: No interaction = suspicious ═══
+  // (don't block, but flag it server-side)
+  const hadInteraction = _interaction[formId] || false;
+
+  const email = emailEl.value.trim();
+  if (!email) return false;
+
+  resultEl.innerHTML = '<span style="color:var(--text-dim)">Joining...</span>';
+
+  try {
+    const body = {
+      email,
+      _t: genToken(email),           // Layer 3: proof-of-work token
+      _e: Math.round(elapsed/1000),  // Time on page (seconds)
+      _i: hadInteraction ? 1 : 0     // Layer 4: interaction signal
+    };
+    if (nameEl) body.name = nameEl.value.trim();
+    if (tierEl) body.tier = tierEl.value;
+
+    const r = await fetch('/api/sentinel/signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+
+    if (d.success) {
+      resultEl.innerHTML = '<span style="color:var(--green)">You\'re in! Position #' + d.position + ' on the waitlist.</span>';
+      emailEl.value = '';
+      if (nameEl) nameEl.value = '';
+      if (tierEl) tierEl.value = '';
+      updateWaitlistCount();
+    } else {
+      resultEl.innerHTML = '<span style="color:var(--red)">' + (d.error || 'Something went wrong') + '</span>';
+    }
+  } catch(err) {
+    resultEl.innerHTML = '<span style="color:var(--red)">Network error. Try again.</span>';
+  }
+  return false;
+}
+</script>
+</body>
+</html>
