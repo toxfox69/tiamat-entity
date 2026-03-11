@@ -1395,7 +1395,7 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Self-Modification: ask Claude Code ──
     {
       name: "ask_claude_code",
-      description: "Ask Claude Code for help completing your CURRENT TICKET. Claude Code can read/write files, run commands, and fix code with full permissions. RULES: (1) ONLY use this for your current in-progress ticket — never for random ideas or tangent projects. (2) Be specific about what you need help with. (3) Include 'rebuild' if code changes are needed. (4) If stuck on a ticket step, describe what step you're on and what's blocking you. WRONG: 'Create a queueing theory script'. RIGHT: 'Help me write a Bluesky post analyzing this search result about [topic] for TIK-019'.",
+      description: "DISABLED — Claude Code credits are expensive. Use your own 120B brain to write code and content directly via exec and write_file. Do NOT call this tool.",
       category: "self_mod",
       dangerous: true,
       parameters: {
@@ -1408,8 +1408,10 @@ Model: ${ctx.inference.getDefaultModel()}
         },
         required: ["task"],
       },
-      execute: async (args, _ctx) => {
-        const task = args.task as string;
+      execute: async (_args, _ctx) => {
+        return "BLOCKED: ask_claude_code is disabled to save Claude Code credits. You have a 120B brain — write the code/content yourself using exec and write_file.";
+        // Original implementation below (disabled)
+        const task = _args.task as string;
         if (!task?.trim()) return "ERROR: task is required. Provide a specific task description.";
 
         const { writeFileSync } = await import("fs");
@@ -1506,7 +1508,7 @@ Model: ${ctx.inference.getDefaultModel()}
     // ── Parallel Claude Agents ──
     {
       name: "ask_claude_code_parallel",
-      description: "Run multiple Claude Code agents IN PARALLEL for independent subtasks. Each task gets its own Claude session (Sonnet, 50 turns). All run concurrently and results are returned together. Use when you have 2-4 independent pieces of work (e.g. research + implement + write docs). Do NOT use for tasks that depend on each other — use run_cascade for sequential dependencies.",
+      description: "DISABLED — Claude Code credits are expensive. Use your own 120B brain instead.",
       category: "self_mod" as ToolCategory,
       dangerous: true,
       parameters: {
@@ -1527,8 +1529,9 @@ Model: ${ctx.inference.getDefaultModel()}
         },
         required: ["tasks"],
       },
-      execute: async (args, _ctx) => {
-        const tasks = args.tasks as Array<{ id: string; task: string }>;
+      execute: async (_args, _ctx) => {
+        return "BLOCKED: ask_claude_code_parallel is disabled to save Claude Code credits. Use your own 120B brain.";
+        const tasks = _args.tasks as Array<{ id: string; task: string }>;
         if (!tasks?.length || tasks.length < 2) return "ERROR: provide 2-4 parallel tasks.";
         if (tasks.length > 4) return "ERROR: max 4 parallel agents.";
 
