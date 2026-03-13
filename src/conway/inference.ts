@@ -51,19 +51,21 @@ const SAMBANOVA_MODEL   = "Meta-Llama-3.3-70B-Instruct";       // Tier 3.5: Samb
 const GEMINI_MODEL      = "gemini-2.5-flash";                  // Tier 4: Gemini free
 const PERPLEXITY_MODEL  = "sonar";                              // Tier 1.5: Perplexity Sonar (paid, web-grounded)
 const ANTHROPIC_MODEL   = "claude-haiku-4-5-20251001";         // Tier 6: Anthropic paid fallback
-// DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN (paid by $5K DO credits)
-// Each model has its OWN daily token pool — spread load across all for max throughput
+// DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN (paid via DO credits)
+// Commercial models (GPT-5.4, Claude Opus/Sonnet 4.6) at top, open-source as overflow
 const DO_MODELS = {
-  strategic: "openai-gpt-oss-120b",          // 120B — best quality, 5M/day pool
-  routine:   "llama3.3-70b-instruct",         // 70B — proven tool calling, 6M/day pool
-  overflow:  "alibaba-qwen3-32b",             // 32B — decent quality, 6M/day pool
-  fast:      "llama3-8b-instruct",            // 8B — fast fallback, 8M/day pool
-  reasoning: "deepseek-r1-distill-llama-70b", // 70B — chain-of-thought, 6M/day pool
-  general:   "openai-gpt-oss-20b",            // 20B — extra overflow, 6M/day pool
-  nemo:      "mistral-nemo-instruct-2407",    // 12B — last resort DO, 6M/day pool
+  // — Commercial tier (best reasoning, paid per token via DO billing) —
+  strategic: "openai-gpt-5.4",               // GPT-5.4 Thinking — best reasoning model
+  sonnet:    "anthropic-claude-4.6-sonnet",   // Claude Sonnet 4.6 — fast + capable
+  opus:      "anthropic-claude-opus-4.6",     // Claude Opus 4.6 — max quality fallback
+  gpt5:      "openai-gpt-5.2",               // GPT-5.2 — strong general purpose
+  // — Open-source tier (cheaper, daily token pools) —
+  routine:   "openai-gpt-oss-120b",           // 120B — best OSS, 20M/day pool
+  llama:     "llama3.3-70b-instruct",         // 70B — proven tool calling
+  overflow:  "alibaba-qwen3-32b",             // 32B — decent quality
+  fast:      "llama3-8b-instruct",            // 8B — fast fallback
+  nemo:      "mistral-nemo-instruct-2407",    // 12B — last resort DO
 };
-// Total: ~43M tokens/day across 7 separate pools
-// DO_MODELS.routine is the default model used for backward compatibility
 const TIAMAT_LOCAL_MODEL = "tiamat-local";                      // Tier 0: Self-hosted fine-tuned Qwen (FREE)
 const TOKEN_THRESHOLD_LARGE = 5500;
 
@@ -264,7 +266,7 @@ export function createInferenceClient(
   {
     const providers = [
       tiamatlocalEndpoint ? `TiamatLocal(${TIAMAT_LOCAL_MODEL}) [SELF-HOSTED]` : "TiamatLocal:NO_ENDPOINT",
-      doInferenceKey   ? `DO-Gradient(${Object.values(DO_MODELS).length} models: 120B+70B+32B+20B+8B) [PRIMARY/CREDITS ~43M tok/day]` : "DO-Gradient:NO_KEY",
+      doInferenceKey   ? `DO-Gradient(${Object.values(DO_MODELS).length} models: GPT-5.4+Sonnet4.6+Opus4.6+GPT-5.2+120B+70B+32B+8B) [PRIMARY]` : "DO-Gradient:NO_KEY",
       anthropicApiKey  ? `Anthropic(${ANTHROPIC_MODEL}) [FALLBACK]` : "Anthropic:NO_KEY",
       perplexityApiKey ? `Perplexity(${PERPLEXITY_MODEL}) [WEB]`   : "Perplexity:NO_KEY",
       groqApiKey       ? `Groq(${GROQ_MODEL})`             : "Groq:NO_KEY",
@@ -388,18 +390,19 @@ export function createInferenceClient(
       }
 
       // Tier 0.5: DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN
-      // 7 models, each with its own daily token pool = ~43M tokens/day total
-      // Strategic cycles → 120B (best quality), Routine → 70B, Overflow → 32B/20B/8B
+      // Commercial models (GPT-5.4, Claude 4.6) for strategic; OSS for routine; full cascade fallback
       if (!doInferenceKey) {
         console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): SKIP — no key`);
       } else {
         const isStrategic = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
 
-        // Build ordered model list based on cycle type
-        // 120B ALWAYS first (best quality) — falls to 70B/32B/etc only if 120B is rate-limited
+        // Commercial-first cascade: strategic cycles get GPT-5.4 → Sonnet 4.6 → Opus 4.6 → GPT-5.2 → OSS
+        // Routine cycles skip expensive commercial, start at OSS 120B
+        const commercialModels = [DO_MODELS.strategic, DO_MODELS.sonnet, DO_MODELS.opus, DO_MODELS.gpt5];
+        const ossModels = [DO_MODELS.routine, DO_MODELS.llama, DO_MODELS.overflow, DO_MODELS.fast, DO_MODELS.nemo];
         const doModelOrder = isStrategic
-          ? [DO_MODELS.strategic, DO_MODELS.routine, DO_MODELS.overflow, DO_MODELS.general, DO_MODELS.fast, DO_MODELS.nemo]
-          : [DO_MODELS.strategic, DO_MODELS.routine, DO_MODELS.overflow, DO_MODELS.general, DO_MODELS.fast, DO_MODELS.nemo];
+          ? [...commercialModels, ...ossModels]
+          : [...ossModels, ...commercialModels]; // routine: try OSS first, commercial as fallback
 
         let doAttempted = 0;
         let doSkipped = 0;
@@ -411,22 +414,21 @@ export function createInferenceClient(
           doAttempted++;
           try {
             lastUsedModel = doModel;
-            // Strategic cycles get full tools; routine gets filtered (even on 120B) to save daily pool
-            const useFullTools = isStrategic;
+            const isCommercial = commercialModels.includes(doModel);
+            const useFullTools = isStrategic || isCommercial;
             const doTools = useFullTools ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
-            const is120B = doModel === DO_MODELS.strategic;
-            const contextBudget = is120B ? (isStrategic ? 16000 : 12000)
-              : doModel === DO_MODELS.routine ? 12000
-              : doModel === DO_MODELS.overflow ? 8000
-              : 6000;
+            // Commercial models get bigger context (they can handle it)
+            const contextBudget = isCommercial ? (isStrategic ? 32000 : 20000)
+              : doModel === DO_MODELS.routine ? (isStrategic ? 24000 : 16000)
+              : doModel === DO_MODELS.llama ? (isStrategic ? 12000 : 8000)
+              : doModel === DO_MODELS.overflow ? 6000
+              : 4000;
             const doMessages = trimToTokenBudget(messages, contextBudget);
             const doEst = estimateTokens(doMessages, doTools);
             const trimNote = doMessages.length < messages.length ? `, trimmed ${messages.length - doMessages.length} msgs` : "";
-            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "");
-            console.log(`[INFERENCE] Tier 0.5 (DO/${shortName}): ATTEMPT (~${doEst} tokens, ${doTools?.length || 0} tools${trimNote})`);
-            const maxOut = doModel === DO_MODELS.strategic ? 4096
-              : doModel === DO_MODELS.routine ? 4096
-              : 2048;
+            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "").replace("anthropic-claude-", "claude-");
+            console.log(`[INFERENCE] DO/${shortName}: ATTEMPT (~${doEst} tokens, ${doTools?.length || 0} tools${trimNote})`);
+            const maxOut = (isCommercial || doModel === DO_MODELS.routine) ? 4096 : 2048;
             const body: Record<string, unknown> = {
               model: doModel,
               messages: formatMessagesForDO(doMessages),
@@ -435,47 +437,24 @@ export function createInferenceClient(
             };
             if (opts?.temperature !== undefined) body.temperature = opts.temperature;
             if (doTools && doTools.length > 0) { body.tools = doTools; body.tool_choice = "auto"; }
-            return await chatViaOpenAiCompatible({ model: doModel, body, apiUrl: "https://inference.do-ai.run", apiKey: doInferenceKey, backend: "do-inference", timeoutMs: TIMEOUT_DO_INFERENCE });
+            const result = await chatViaOpenAiCompatible({ model: doModel, body, apiUrl: "https://inference.do-ai.run", apiKey: doInferenceKey, backend: "do-inference", timeoutMs: TIMEOUT_DO_INFERENCE });
+            if (result.rateLimitHeaders && result.rateLimitHeaders.limitPerDay > 0) {
+              const pct = Math.round((result.rateLimitHeaders.remainingPerDay / result.rateLimitHeaders.limitPerDay) * 100);
+              console.log(`[INFERENCE] DO/${shortName}: pool ${result.rateLimitHeaders.remainingPerDay.toLocaleString()}/${result.rateLimitHeaders.limitPerDay.toLocaleString()} tokens/day (${pct}%)`);
+              if (result.rateLimitHeaders.remainingPerDay < 100_000) {
+                console.warn(`[INFERENCE] DO/${shortName}: daily pool nearly empty — cooling 1h`);
+                setCooldown(doModel, COOLDOWN_DAILY_LIMIT_MS);
+              }
+            }
+            return result;
           } catch (err: any) {
-            if (isRateLimitError(err)) smartCooldown(doModel, err, 15_000);
-            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "");
-            console.warn(`[INFERENCE] Tier 0.5 (DO/${shortName}): FAILED — ${err.message}`);
+            if (isRateLimitError(err)) setCooldown(doModel, COOLDOWN_DAILY_LIMIT_MS);
+            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "").replace("anthropic-claude-", "claude-");
+            console.warn(`[INFERENCE] DO/${shortName}: FAILED — ${err.message}`);
           }
         }
         if (doSkipped > 0) {
-          console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): ${doSkipped}/${doModelOrder.length} models cooling, ${doAttempted} attempted`);
-        }
-      }
-
-      // Tier 0.6: Cerebras gpt-oss-120B — SECOND 120B brain (FREE, ~1-2s, separate rate limit)
-      // Same model as DO's openai-gpt-oss-120b but on Cerebras infrastructure.
-      // Promoted from Tier 3 to run alongside DO 120B = dual 120B brains.
-      if (!cerebrasApiKey) {
-        console.log(`[INFERENCE] Tier 0.6 (Cerebras-120B): SKIP — no key`);
-      } else if (isCoolingDown(CEREBRAS_MODEL)) {
-        console.log(`[INFERENCE] Tier 0.6 (Cerebras-120B): SKIP — cooling (${coolRemaining(CEREBRAS_MODEL)} left)`);
-      } else {
-        try {
-          lastUsedModel = CEREBRAS_MODEL;
-          // Full context + full tools — this is a 120B model, not a fallback
-          const isStrategicForCerebras = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
-          const cerebrasTools120 = isStrategicForCerebras ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
-          const cerebrasMessages120 = trimToTokenBudget(messages, 12000);
-          const cerebrasEst120 = estimateTokens(cerebrasMessages120, cerebrasTools120);
-          const trimNote = cerebrasMessages120.length < messages.length ? `, trimmed ${messages.length - cerebrasMessages120.length} msgs` : "";
-          console.log(`[INFERENCE] Tier 0.6 (Cerebras-120B): ATTEMPT ${CEREBRAS_MODEL} (~${cerebrasEst120} tokens, ${cerebrasTools120?.length || 0} tools${trimNote})`);
-          const body: Record<string, unknown> = {
-            model: CEREBRAS_MODEL,
-            messages: cerebrasMessages120.map(formatMessage),
-            stream: false,
-            max_tokens: Math.min(tokenLimit, 4096),
-          };
-          if (opts?.temperature !== undefined) body.temperature = opts.temperature;
-          if (cerebrasTools120 && cerebrasTools120.length > 0) { body.tools = cerebrasTools120; body.tool_choice = "auto"; }
-          return await chatViaOpenAiCompatible({ model: CEREBRAS_MODEL, body, apiUrl: "https://api.cerebras.ai", apiKey: cerebrasApiKey, backend: "cerebras", timeoutMs: TIMEOUT_CEREBRAS });
-        } catch (err: any) {
-          if (isRateLimitError(err)) smartCooldown(CEREBRAS_MODEL, err);
-          console.warn(`[INFERENCE] Tier 0.6 (Cerebras-120B): FAILED — ${err.message}`);
+          console.log(`[INFERENCE] DO-Gradient: ${doSkipped}/${doModelOrder.length} models cooling, ${doAttempted} attempted`);
         }
       }
 
@@ -903,6 +882,12 @@ async function chatViaOpenAiCompatible(params: {
     );
   }
 
+  // Extract DO rate limit headers before consuming body
+  const rateLimitHeaders = params.backend === "do-inference" ? {
+    limitPerDay: parseInt(resp.headers.get("x-ratelimit-limit-tokens-per-day") || "0", 10),
+    remainingPerDay: parseInt(resp.headers.get("x-ratelimit-remaining-tokens-per-day") || "0", 10),
+  } : undefined;
+
   const data = await resp.json() as any;
   const choice = data.choices?.[0];
 
@@ -931,6 +916,7 @@ async function chatViaOpenAiCompatible(params: {
     toolCalls,
     usage,
     finishReason: choice.finish_reason || "stop",
+    rateLimitHeaders,
   };
 }
 
