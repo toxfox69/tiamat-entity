@@ -1,13 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+{% extends "base.html" %}
+{% block title %}Bloom — Private Wellness Tracker{% endblock %}
+{% block description %}Track hormones, labs, mood, body changes, supplements, exercises, and progress photos — all 100% private, offline, on your device.{% endblock %}
+{% block canonical %}/bloom{% endblock %}
+{% block og_title %}Bloom — Private Wellness Tracker{% endblock %}
+
+{% block extra_head %}
+<!-- PWA meta overrides -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#F8F0FF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
-<title>Bloom — Private Wellness Tracker</title>
-<style>
+{% endblock %}
+
+{% block extra_css %}
+/* Override TIAMAT base styles for Bloom PWA */
+body::after { display: none !important; } /* Remove scanlines */
+.site-nav { display: none !important; } /* Hide TIAMAT nav - Bloom has its own */
+.page { margin-top: 0; padding: 0; max-width: none; } /* Remove page constraints */
+:root {
+  --bg: #F8F0FF;
+  --text: #3E2465;
+}
+
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --bg:#F8F0FF;--surface:#FFFFFF;--card:#FFFFFF;--border:#E8D5F5;
@@ -277,9 +291,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
 .tour-tooltip .tour-dot.active{width:16px;background:var(--violet)}
 .tour-tooltip .tour-next{padding:6px 16px;border-radius:10px;background:linear-gradient(135deg,var(--violet),var(--pink));color:#fff;font-size:12px;font-weight:600;border:none;cursor:pointer}
 .tour-tooltip .tour-skip{font-size:11px;color:var(--text-muted);cursor:pointer;border:none;background:none;padding:4px 8px}
-</style>
-</head>
-<body>
+{% endblock %}
+
+{% block body %}
 <div class="app" id="app">
   <div class="pin-overlay" id="pinOverlay" style="display:none">
     <h2 id="pinTitle">Enter PIN</h2>
@@ -363,6 +377,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--violet);box-shadow:0 
   <div style="margin-top:10px;font-size:10px;color:var(--text-muted);text-align:center;line-height:1.5" id="waterTip"></div>
 </div>
 
+
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block extra_js %}
 <script>
 // ─── Global Error Handler ────────────────────────────────────
 window.onerror=function(msg,src,line){console.error('[Bloom]',msg,src,line);return true};
@@ -4929,5 +4949,4 @@ if(!checkPinLock()){showView('dashboard');setTimeout(checkDailyReward,800)}
 // Service Worker registration
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
-</body>
-</html>
+{% endblock %}

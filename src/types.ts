@@ -314,6 +314,7 @@ export interface InferenceResponse {
   toolCalls?: InferenceToolCall[];
   usage: TokenUsage;
   finishReason: string;
+  rateLimitHeaders?: { limitPerDay: number; remainingPerDay: number };
 }
 
 export interface InferenceOptions {

@@ -1,11 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bloom — Private Transition &amp; Wellness Tracker</title>
-<meta name="description" content="Track hormones, labs, mood, body changes, supplements, exercises, and progress photos — all 100% private, offline, on your device. Built for trans, non-binary, and gender-diverse people.">
-<style>
+{% extends "base.html" %}
+{% block title %}Bloom — Private HRT & Wellness Tracker | No Cloud, No Account{% endblock %}
+{% block description %}Privacy-first HRT tracking, hormone logging, mood, supplements, labs & body changes. 100% offline, zero cloud. Built for trans, non-binary & gender-diverse people. Free on Google Play.{% endblock %}
+{% block og_title %}Bloom — Private HRT & Wellness Tracker{% endblock %}
+{% block og_description %}Privacy-first HRT tracking, hormone logging, mood, supplements, labs & body changes. 100% offline, zero cloud. Free on Google Play.{% endblock %}
+{% block og_url %}https://tiamat.live/bloom{% endblock %}
+{% block twitter_title %}Bloom — The HRT Tracker That Never Uploads Your Data{% endblock %}
+{% block twitter_description %}Track hormones, labs, mood, supplements, body changes — all private, all offline. No account needed. Built by EnergenAI LLC.{% endblock %}
+{% block canonical %}/bloom{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="https://tiamat.live/bloom">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Bloom",
+  "operatingSystem": "Android",
+  "applicationCategory": "HealthApplication",
+  "description": "Privacy-first HRT tracking, hormone logging, mood, supplement and lab tracking. 100% offline, zero cloud storage. No account required. Built for trans, non-binary and gender-diverse people.",
+  "url": "https://tiamat.live/bloom",
+  "downloadUrl": "https://play.google.com/store/apps/details?id=com.energenai.bloom",
+  "author": {
+    "@type": "Organization",
+    "name": "EnergenAI LLC",
+    "url": "https://tiamat.live"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "featureList": "HRT tracking, Hormone logging, Mood tracking, Supplement tracking, Progress photos, Lab result tracking, Body changes, 100% offline, No cloud, No account required",
+  "keywords": "HRT tracker, hormone therapy tracking, testosterone tracker, estradiol tracker, privacy health app, offline health tracker, transition wellness, supplement tracker, trans health app"
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+/* Override TIAMAT base styles for Bloom landing */
+body::after { display: none !important; } /* Remove scanlines */
 :root {
   --bloom-bg: #F8F0FF;
   --bloom-surface: #FFFFFF;
@@ -34,154 +67,156 @@
   --bloom-card-shadow: 0 2px 16px rgba(0,0,0,0.3);
 }
 }
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bloom-bg);color:var(--bloom-text);line-height:1.6;-webkit-font-smoothing:antialiased}
-a{color:var(--bloom-primary);text-decoration:none}
-a:hover{text-decoration:underline}
+
+/* Bloom landing page styles */
+.bloom-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--bloom-text);line-height:1.6;-webkit-font-smoothing:antialiased}
+.bloom-body a{color:var(--bloom-primary);text-decoration:none}
+.bloom-body a:hover{text-decoration:underline}
 
 /* Hero */
-.hero{background:var(--bloom-hero-gradient);color:#fff;padding:80px 24px 64px;text-align:center;position:relative;overflow:hidden}
-.hero::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:48px;background:var(--bloom-bg);border-radius:50% 50% 0 0 / 100% 100% 0 0}
-.hero-icon{font-size:64px;margin-bottom:12px;display:block}
-.hero h1{font-size:40px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
-.hero .tagline{font-size:18px;opacity:0.92;max-width:480px;margin:0 auto 28px;line-height:1.5}
-.cta-btn{display:inline-block;background:#fff;color:#6b21a8;font-size:17px;font-weight:700;padding:14px 36px;border-radius:40px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
-.cta-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(0,0,0,0.2);text-decoration:none}
-.cta-sub{display:block;margin-top:12px;font-size:13px;opacity:0.75}
+.bloom-hero{background:var(--bloom-hero-gradient);color:#fff;padding:80px 24px 64px;text-align:center;position:relative;overflow:hidden}
+.bloom-hero::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:48px;background:var(--bloom-bg);border-radius:50% 50% 0 0 / 100% 100% 0 0}
+.bloom-hero-icon{font-size:64px;margin-bottom:12px;display:block}
+.bloom-hero h1{font-size:40px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px}
+.bloom-hero .tagline{font-size:18px;opacity:0.92;max-width:480px;margin:0 auto 28px;line-height:1.5}
+.bloom-cta-btn{display:inline-block;background:#fff;color:#6b21a8;font-size:17px;font-weight:700;padding:14px 36px;border-radius:40px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
+.bloom-cta-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(0,0,0,0.2);text-decoration:none}
+.bloom-cta-sub{display:block;margin-top:12px;font-size:13px;opacity:0.75}
 
 /* Sections */
-.section{max-width:860px;margin:0 auto;padding:56px 24px}
-.section-title{font-size:26px;font-weight:700;color:var(--bloom-primary);margin-bottom:8px;text-align:center}
-.section-subtitle{font-size:15px;color:var(--bloom-text-muted);text-align:center;margin-bottom:36px;max-width:560px;margin-left:auto;margin-right:auto}
+.bloom-section{max-width:860px;margin:0 auto;padding:56px 24px;background:var(--bloom-bg)}
+.bloom-section-title{font-size:26px;font-weight:700;color:var(--bloom-primary);margin-bottom:8px;text-align:center}
+.bloom-section-subtitle{font-size:15px;color:var(--bloom-text-muted);text-align:center;margin-bottom:36px;max-width:560px;margin-left:auto;margin-right:auto}
 
 /* Journey Cards */
-.journey-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:8px}
-.journey-card{background:var(--bloom-card);border-radius:var(--bloom-radius);padding:20px 16px;text-align:center;border:1px solid var(--bloom-border);transition:transform 0.15s}
-.journey-card:hover{transform:translateY(-3px)}
-.journey-card .jicon{font-size:28px;margin-bottom:8px;display:block}
-.journey-card .jname{font-size:14px;font-weight:600;color:var(--bloom-text)}
+.bloom-journey-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:8px}
+.bloom-journey-card{background:var(--bloom-card);border-radius:var(--bloom-radius);padding:20px 16px;text-align:center;border:1px solid var(--bloom-border);transition:transform 0.15s}
+.bloom-journey-card:hover{transform:translateY(-3px)}
+.bloom-journey-card .jicon{font-size:28px;margin-bottom:8px;display:block}
+.bloom-journey-card .jname{font-size:14px;font-weight:600;color:var(--bloom-text)}
 
 /* Feature Cards */
-.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
-.feature-card{background:var(--bloom-surface);border:1px solid var(--bloom-border);border-radius:var(--bloom-radius);padding:28px 24px;box-shadow:var(--bloom-card-shadow)}
-.feature-card .ficon{font-size:32px;margin-bottom:12px;display:block}
-.feature-card h3{font-size:17px;font-weight:700;margin-bottom:8px;color:var(--bloom-primary)}
-.feature-card p{font-size:14px;color:var(--bloom-text-muted);line-height:1.55}
+.bloom-feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.bloom-feature-card{background:var(--bloom-surface);border:1px solid var(--bloom-border);border-radius:var(--bloom-radius);padding:28px 24px;box-shadow:var(--bloom-card-shadow)}
+.bloom-feature-card .ficon{font-size:32px;margin-bottom:12px;display:block}
+.bloom-feature-card h3{font-size:17px;font-weight:700;margin-bottom:8px;color:var(--bloom-primary)}
+.bloom-feature-card p{font-size:14px;color:var(--bloom-text-muted);line-height:1.55}
 
 /* Privacy Callout */
-.privacy-callout{background:var(--bloom-hero-gradient);border-radius:var(--bloom-radius);padding:40px 32px;color:#fff;text-align:center;margin-top:56px}
-.privacy-callout h2{font-size:24px;font-weight:700;margin-bottom:12px}
-.privacy-callout p{font-size:15px;opacity:0.9;max-width:520px;margin:0 auto 24px;line-height:1.6}
-.privacy-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
-.privacy-badge{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:24px;padding:8px 18px;font-size:13px;font-weight:600;backdrop-filter:blur(4px)}
+.bloom-privacy-callout{background:var(--bloom-hero-gradient);border-radius:var(--bloom-radius);padding:40px 32px;color:#fff;text-align:center;margin-top:56px}
+.bloom-privacy-callout h2{font-size:24px;font-weight:700;margin-bottom:12px}
+.bloom-privacy-callout p{font-size:15px;opacity:0.9;max-width:520px;margin:0 auto 24px;line-height:1.6}
+.bloom-privacy-badges{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.bloom-privacy-badge{background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:24px;padding:8px 18px;font-size:13px;font-weight:600;backdrop-filter:blur(4px)}
 
 /* FAQ */
-.faq-list{max-width:640px;margin:0 auto}
-.faq-item{border-bottom:1px solid var(--bloom-border);padding:20px 0}
-.faq-item:last-child{border-bottom:none}
-.faq-q{font-size:16px;font-weight:600;color:var(--bloom-text);margin-bottom:6px}
-.faq-a{font-size:14px;color:var(--bloom-text-muted);line-height:1.6}
+.bloom-faq-list{max-width:640px;margin:0 auto}
+.bloom-faq-item{border-bottom:1px solid var(--bloom-border);padding:20px 0}
+.bloom-faq-item:last-child{border-bottom:none}
+.bloom-faq-q{font-size:16px;font-weight:600;color:var(--bloom-text);margin-bottom:6px}
+.bloom-faq-a{font-size:14px;color:var(--bloom-text-muted);line-height:1.6}
 
 /* Final CTA */
-.final-cta{text-align:center;padding:56px 24px 40px}
-.final-cta h2{font-size:28px;font-weight:700;color:var(--bloom-primary);margin-bottom:12px}
-.final-cta p{font-size:15px;color:var(--bloom-text-muted);margin-bottom:28px}
-.cta-btn-solid{display:inline-block;background:var(--bloom-hero-gradient);color:#fff;font-size:17px;font-weight:700;padding:14px 36px;border-radius:40px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 20px rgba(107,33,168,0.25)}
-.cta-btn-solid:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(107,33,168,0.35);text-decoration:none}
+.bloom-final-cta{text-align:center;padding:56px 24px 40px;background:var(--bloom-bg)}
+.bloom-final-cta h2{font-size:28px;font-weight:700;color:var(--bloom-primary);margin-bottom:12px}
+.bloom-final-cta p{font-size:15px;color:var(--bloom-text-muted);margin-bottom:28px}
+.bloom-cta-btn-solid{display:inline-block;background:var(--bloom-hero-gradient);color:#fff;font-size:17px;font-weight:700;padding:14px 36px;border-radius:40px;text-decoration:none;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 20px rgba(107,33,168,0.25)}
+.bloom-cta-btn-solid:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(107,33,168,0.35);text-decoration:none}
 
 /* Support / Founding */
-.support-section{background:linear-gradient(135deg,rgba(107,33,168,0.06),rgba(232,121,168,0.06));border-top:1px solid var(--bloom-border);border-bottom:1px solid var(--bloom-border)}
-.support-card{background:var(--bloom-surface);border:2px solid var(--bloom-primary-light);border-radius:var(--bloom-radius);padding:36px 32px;text-align:center;max-width:520px;margin:0 auto;box-shadow:0 4px 24px rgba(107,33,168,0.1)}
-.support-card h3{font-size:22px;font-weight:700;color:var(--bloom-primary);margin-bottom:8px}
-.support-card p{font-size:14px;color:var(--bloom-text-muted);line-height:1.6;margin-bottom:16px}
-.support-tiers{display:flex;flex-direction:column;gap:12px;margin:20px 0}
-.tier{background:var(--bloom-card);border:1px solid var(--bloom-border);border-radius:12px;padding:16px 20px;text-align:left;display:flex;justify-content:space-between;align-items:center}
-.tier-info .tier-name{font-size:15px;font-weight:700;color:var(--bloom-text)}
-.tier-info .tier-perk{font-size:13px;color:var(--bloom-text-muted)}
-.tier-price{font-size:18px;font-weight:800;color:var(--bloom-primary);white-space:nowrap}
-.wallet-box{background:var(--bloom-card);border:1px solid var(--bloom-border);border-radius:12px;padding:16px;margin-top:16px;word-break:break-all;font-family:monospace;font-size:12px;color:var(--bloom-text-muted)}
-.wallet-box strong{display:block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:var(--bloom-text);margin-bottom:6px}
-.copy-btn{background:var(--bloom-primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity 0.15s}
-.copy-btn:hover{opacity:0.85}
+.bloom-support-section{background:linear-gradient(135deg,rgba(107,33,168,0.06),rgba(232,121,168,0.06));border-top:1px solid var(--bloom-border);border-bottom:1px solid var(--bloom-border)}
+.bloom-support-card{background:var(--bloom-surface);border:2px solid var(--bloom-primary-light);border-radius:var(--bloom-radius);padding:36px 32px;text-align:center;max-width:520px;margin:0 auto;box-shadow:0 4px 24px rgba(107,33,168,0.1)}
+.bloom-support-card h3{font-size:22px;font-weight:700;color:var(--bloom-primary);margin-bottom:8px}
+.bloom-support-card p{font-size:14px;color:var(--bloom-text-muted);line-height:1.6;margin-bottom:16px}
+.bloom-support-tiers{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.bloom-tier{background:var(--bloom-card);border:1px solid var(--bloom-border);border-radius:12px;padding:16px 20px;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.bloom-tier-info .tier-name{font-size:15px;font-weight:700;color:var(--bloom-text)}
+.bloom-tier-info .tier-perk{font-size:13px;color:var(--bloom-text-muted)}
+.bloom-tier-price{font-size:18px;font-weight:800;color:var(--bloom-primary);white-space:nowrap}
+.bloom-wallet-box{background:var(--bloom-card);border:1px solid var(--bloom-border);border-radius:12px;padding:16px;margin-top:16px;word-break:break-all;font-family:monospace;font-size:12px;color:var(--bloom-text-muted)}
+.bloom-wallet-box strong{display:block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:var(--bloom-text);margin-bottom:6px}
+.bloom-copy-btn{background:var(--bloom-primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:opacity 0.15s}
+.bloom-copy-btn:hover{opacity:0.85}
 
-/* Footer */
-.footer{text-align:center;padding:32px 24px 40px;font-size:13px;color:var(--bloom-text-muted);border-top:1px solid var(--bloom-border)}
-.footer a{color:var(--bloom-primary)}
-.footer .footer-links{margin-bottom:8px}
-.footer .footer-links a{margin:0 10px}
+/* Bloom Footer (overrides base) */
+.bloom-footer{text-align:center;padding:32px 24px 40px;font-size:13px;color:var(--bloom-text-muted);border-top:1px solid var(--bloom-border);background:var(--bloom-bg)}
+.bloom-footer a{color:var(--bloom-primary)}
+.bloom-footer .bloom-footer-links{margin-bottom:8px}
+.bloom-footer .bloom-footer-links a{margin:0 10px}
 
 /* Responsive */
 @media(max-width:480px){
-  .hero{padding:56px 20px 48px}
-  .hero h1{font-size:32px}
-  .hero .tagline{font-size:16px}
-  .section{padding:40px 16px}
-  .section-title{font-size:22px}
-  .journey-grid{grid-template-columns:repeat(3,1fr);gap:10px}
-  .journey-card{padding:14px 10px}
-  .feature-grid{grid-template-columns:1fr}
-  .privacy-callout{padding:28px 20px}
-  .privacy-badges{gap:8px}
+  .bloom-hero{padding:56px 20px 48px}
+  .bloom-hero h1{font-size:32px}
+  .bloom-hero .tagline{font-size:16px}
+  .bloom-section{padding:40px 16px}
+  .bloom-section-title{font-size:22px}
+  .bloom-journey-grid{grid-template-columns:repeat(3,1fr);gap:10px}
+  .bloom-journey-card{padding:14px 10px}
+  .bloom-feature-grid{grid-template-columns:1fr}
+  .bloom-privacy-callout{padding:28px 20px}
+  .bloom-privacy-badges{gap:8px}
 }
-</style>
-</head>
-<body>
+{% endblock %}
+
+{% block body %}
+<div class="bloom-body">
 
 <!-- Hero -->
-<div class="hero">
-  <span class="hero-icon">🌸</span>
+<div class="bloom-hero">
+  <span class="bloom-hero-icon">&#127800;</span>
   <h1>Bloom</h1>
   <p class="tagline">Track hormones, labs, mood, body changes, supplements, exercises, and progress photos. 100% private — no cloud, no accounts, no tracking. Your transition, your device.</p>
-  <a href="#download" class="cta-btn">Download Free</a>
-  <span class="cta-sub">Android &middot; 100% Free &middot; No account required</span>
+  <a href="#download" class="bloom-cta-btn">Download Free</a>
+  <span class="bloom-cta-sub">Android &middot; 100% Free &middot; No account required</span>
 </div>
 
 <!-- Journeys -->
-<div class="section">
-  <h2 class="section-title">Your Journey, Your Way</h2>
-  <p class="section-subtitle">Bloom adapts to your path. Choose a journey type during setup — labs, supplements, exercises, and resources all personalize to match.</p>
-  <div class="journey-grid">
-    <div class="journey-card"><span class="jicon">🦋</span><span class="jname">Trans Feminine</span></div>
-    <div class="journey-card"><span class="jicon">🔥</span><span class="jname">Trans Masculine</span></div>
-    <div class="journey-card"><span class="jicon">🌿</span><span class="jname">Selective Feminization</span></div>
-    <div class="journey-card"><span class="jicon">⚡</span><span class="jname">Selective Masculinization</span></div>
-    <div class="journey-card"><span class="jicon">✨</span><span class="jname">Non-Binary</span></div>
-    <div class="journey-card"><span class="jicon">🎨</span><span class="jname">Custom Path</span></div>
+<div class="bloom-section">
+  <h2 class="bloom-section-title">Your Journey, Your Way</h2>
+  <p class="bloom-section-subtitle">Bloom adapts to your path. Choose a journey type during setup — labs, supplements, exercises, and resources all personalize to match.</p>
+  <div class="bloom-journey-grid">
+    <div class="bloom-journey-card"><span class="jicon">&#127795;</span><span class="jname">Trans Feminine</span></div>
+    <div class="bloom-journey-card"><span class="jicon">&#128293;</span><span class="jname">Trans Masculine</span></div>
+    <div class="bloom-journey-card"><span class="jicon">&#127807;</span><span class="jname">Selective Feminization</span></div>
+    <div class="bloom-journey-card"><span class="jicon">&#9889;</span><span class="jname">Selective Masculinization</span></div>
+    <div class="bloom-journey-card"><span class="jicon">&#10024;</span><span class="jname">Non-Binary</span></div>
+    <div class="bloom-journey-card"><span class="jicon">&#127912;</span><span class="jname">Custom Path</span></div>
   </div>
 </div>
 
 <!-- Features -->
-<div class="section">
-  <h2 class="section-title">Everything You Need to Track</h2>
-  <p class="section-subtitle">50+ features built specifically for hormone therapy and wellness monitoring.</p>
-  <div class="feature-grid">
-    <div class="feature-card">
-      <span class="ficon">📊</span>
+<div class="bloom-section">
+  <h2 class="bloom-section-title">Everything You Need to Track</h2>
+  <p class="bloom-section-subtitle">50+ features built specifically for hormone therapy and wellness monitoring.</p>
+  <div class="bloom-feature-grid">
+    <div class="bloom-feature-card">
+      <span class="ficon">&#128202;</span>
       <h3>Daily Tracking</h3>
       <p>Mood, dysphoria, energy, sleep, skin, libido — all scored and charted. 50+ symptom tags plus custom ones. Free-text journal.</p>
     </div>
-    <div class="feature-card">
-      <span class="ficon">🧪</span>
+    <div class="bloom-feature-card">
+      <span class="ficon">&#129514;</span>
       <h3>Hormone Labs</h3>
       <p>17 lab markers with auto-flagging (normal/high/low/urgent). Journey-specific reference ranges, trend charts, and "Ask Your Doctor" prompts.</p>
     </div>
-    <div class="feature-card">
-      <span class="ficon">📐</span>
+    <div class="bloom-feature-card">
+      <span class="ficon">&#128208;</span>
       <h3>Body Measurements</h3>
       <p>Bust, underbust, waist, hips, thigh tracking with trend charts. Auto-calculated bra size and waist-to-hip ratio.</p>
     </div>
-    <div class="feature-card">
-      <span class="ficon">💊</span>
+    <div class="bloom-feature-card">
+      <span class="ficon">&#128138;</span>
       <h3>Meds &amp; Supplements</h3>
       <p>Track all your meds — HRT, prescriptions, everything — with dosing schedules. 13 supplement stacks with personalized recommendations, interaction warnings, and daily reminders.</p>
     </div>
-    <div class="feature-card">
-      <span class="ficon">📸</span>
+    <div class="bloom-feature-card">
+      <span class="ficon">&#128248;</span>
       <h3>Photo Timeline</h3>
       <p>Progress photos organized by month with side-by-side before/after comparison. All stored locally, never uploaded.</p>
     </div>
-    <div class="feature-card">
-      <span class="ficon">🔒</span>
+    <div class="bloom-feature-card">
+      <span class="ficon">&#128274;</span>
       <h3>Real Privacy</h3>
       <p>PIN lock, stealth mode, AES-256 encrypted backups, zero network requests. Built for a community that needs it.</p>
     </div>
@@ -189,97 +224,97 @@ a:hover{text-decoration:underline}
 </div>
 
 <!-- Privacy Callout -->
-<div class="section" style="padding-top:0">
-  <div class="privacy-callout">
+<div class="bloom-section" style="padding-top:0">
+  <div class="bloom-privacy-callout">
     <h2>Private by Design</h2>
     <p>Bloom was built privacy-first for a community with real reasons to need it. Your health data never leaves your device. Ever.</p>
-    <div class="privacy-badges">
-      <span class="privacy-badge">Zero Cloud</span>
-      <span class="privacy-badge">PIN Lock</span>
-      <span class="privacy-badge">Stealth Mode</span>
-      <span class="privacy-badge">AES-256 Encryption</span>
-      <span class="privacy-badge">No Network Requests</span>
-      <span class="privacy-badge">Full Data Deletion</span>
+    <div class="bloom-privacy-badges">
+      <span class="bloom-privacy-badge">Zero Cloud</span>
+      <span class="bloom-privacy-badge">PIN Lock</span>
+      <span class="bloom-privacy-badge">Stealth Mode</span>
+      <span class="bloom-privacy-badge">AES-256 Encryption</span>
+      <span class="bloom-privacy-badge">No Network Requests</span>
+      <span class="bloom-privacy-badge">Full Data Deletion</span>
     </div>
   </div>
 </div>
 
 <!-- FAQ -->
-<div class="section">
-  <h2 class="section-title">Frequently Asked Questions</h2>
-  <div class="faq-list">
-    <div class="faq-item">
-      <div class="faq-q">How much does Bloom cost?</div>
-      <div class="faq-a">Bloom is completely free — no subscriptions, no ads, no in-app purchases. All features included. If you find it helpful, you can support development by becoming a Founding Supporter.</div>
+<div class="bloom-section">
+  <h2 class="bloom-section-title">Frequently Asked Questions</h2>
+  <div class="bloom-faq-list">
+    <div class="bloom-faq-item">
+      <div class="bloom-faq-q">How much does Bloom cost?</div>
+      <div class="bloom-faq-a">Bloom is completely free — no subscriptions, no ads, no in-app purchases. All features included. If you find it helpful, you can support development by becoming a Founding Supporter.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q">What data does Bloom collect?</div>
-      <div class="faq-a">None. Bloom makes zero network requests. All your data stays on your device in local storage. There are no accounts, no analytics, no telemetry — nothing leaves your phone.</div>
+    <div class="bloom-faq-item">
+      <div class="bloom-faq-q">What data does Bloom collect?</div>
+      <div class="bloom-faq-a">None. Bloom makes zero network requests. All your data stays on your device in local storage. There are no accounts, no analytics, no telemetry — nothing leaves your phone.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q">Does it work offline?</div>
-      <div class="faq-a">Bloom works 100% offline. It was designed to never need an internet connection. Once installed, you never need to be online again.</div>
+    <div class="bloom-faq-item">
+      <div class="bloom-faq-q">Does it work offline?</div>
+      <div class="bloom-faq-a">Bloom works 100% offline. It was designed to never need an internet connection. Once installed, you never need to be online again.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q">Who is Bloom for?</div>
-      <div class="faq-a">Anyone tracking hormone therapy or wellness — trans feminine, trans masculine, non-binary, and supplement-only journeys are all supported. You can also create a fully custom path.</div>
+    <div class="bloom-faq-item">
+      <div class="bloom-faq-q">Who is Bloom for?</div>
+      <div class="bloom-faq-a">Anyone tracking hormone therapy or wellness — trans feminine, trans masculine, non-binary, and supplement-only journeys are all supported. You can also create a fully custom path.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q">Can someone find out I'm using it?</div>
-      <div class="faq-a">Bloom includes stealth mode, which changes the app name and icon so it doesn't appear as a health tracker. Combined with PIN lock, your data stays hidden even if someone picks up your phone.</div>
+    <div class="bloom-faq-item">
+      <div class="bloom-faq-q">Can someone find out I'm using it?</div>
+      <div class="bloom-faq-a">Bloom includes stealth mode, which changes the app name and icon so it doesn't appear as a health tracker. Combined with PIN lock, your data stays hidden even if someone picks up your phone.</div>
     </div>
-    <div class="faq-item">
-      <div class="faq-q">How do I back up my data?</div>
-      <div class="faq-a">Bloom supports encrypted backups (AES-256) protected by a password you choose. Export the backup file, store it wherever you want, and restore it on any device.</div>
+    <div class="bloom-faq-item">
+      <div class="bloom-faq-q">How do I back up my data?</div>
+      <div class="bloom-faq-a">Bloom supports encrypted backups (AES-256) protected by a password you choose. Export the backup file, store it wherever you want, and restore it on any device.</div>
     </div>
   </div>
 </div>
 
 <!-- Download -->
-<div class="final-cta" id="download">
+<div class="bloom-final-cta" id="download">
   <h2>Start Tracking Privately</h2>
   <p>Free. Private. No account needed.</p>
-  <a href="https://play.google.com/store/apps/details?id=com.energenai.bloom" class="cta-btn-solid">Get it on Google Play</a>
+  <a href="https://play.google.com/store/apps/details?id=com.energenai.bloom" class="bloom-cta-btn-solid">Get it on Google Play</a>
 </div>
 
 <!-- Founding Supporter -->
-<div class="section support-section" id="support">
-  <div class="support-card">
+<div class="bloom-section bloom-support-section" id="support">
+  <div class="bloom-support-card">
     <div style="font-size:32px;margin-bottom:8px">&#127800;</div>
     <h3>Become a Founding Supporter</h3>
     <p>Bloom is free, private, and ad-free — forever. If it helps you on your journey, consider supporting development. Founding Supporters shape what gets built next.</p>
 
-    <div class="support-tiers">
-      <div class="tier">
-        <div class="tier-info">
+    <div class="bloom-support-tiers">
+      <div class="bloom-tier">
+        <div class="bloom-tier-info">
           <div class="tier-name">Supporter</div>
           <div class="tier-perk">Request a custom color theme for the app</div>
         </div>
-        <div class="tier-price">$5</div>
+        <div class="bloom-tier-price">$5</div>
       </div>
-      <div class="tier" style="border-color:var(--bloom-primary-light)">
-        <div class="tier-info">
+      <div class="bloom-tier" style="border-color:var(--bloom-primary-light)">
+        <div class="bloom-tier-info">
           <div class="tier-name">Founding Member</div>
           <div class="tier-perk">Request a feature to be built into Bloom</div>
         </div>
-        <div class="tier-price">$15</div>
+        <div class="bloom-tier-price">$15</div>
       </div>
-      <div class="tier" style="border-color:var(--bloom-accent)">
-        <div class="tier-info">
+      <div class="bloom-tier" style="border-color:var(--bloom-accent)">
+        <div class="bloom-tier-info">
           <div class="tier-name">Founding Partner</div>
           <div class="tier-perk">Custom theme + feature request + direct line to the dev</div>
         </div>
-        <div class="tier-price">$30</div>
+        <div class="bloom-tier-price">$30</div>
       </div>
     </div>
 
     <p style="font-size:13px;color:var(--bloom-text-muted);margin-bottom:16px">Pay with USDC (Base network) or send via PayPal/Venmo. Include your email so we can follow up on your request.</p>
 
-    <div class="wallet-box">
+    <div class="bloom-wallet-box">
       <strong>USDC on Base</strong>
       <span id="wallet-addr">0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</span>
       <br>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('wallet-addr').textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Address',2000)">Copy Address</button>
+      <button class="bloom-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('wallet-addr').textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Address',2000)">Copy Address</button>
     </div>
 
     <p style="margin-top:16px;font-size:14px">
@@ -291,9 +326,42 @@ a:hover{text-decoration:underline}
   </div>
 </div>
 
-<!-- Footer -->
-<div class="footer">
-  <div class="footer-links">
+<!-- Feedback Form -->
+<div style="max-width:600px;margin:30px auto;padding:20px;background:var(--bloom-card);border-radius:var(--bloom-radius);box-shadow:var(--bloom-card-shadow)">
+  <h3 style="font-size:18px;margin-bottom:8px;color:var(--bloom-primary)">What features do you need?</h3>
+  <p style="font-size:13px;color:var(--bloom-text-muted);margin-bottom:12px">Tell us what would make Bloom work better for you. Every response is read.</p>
+  <form id="bloom-feedback-form" onsubmit="submitFeedback(event)">
+    <select name="type" style="width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid var(--bloom-border);background:var(--bloom-surface);color:var(--bloom-text)">
+      <option value="feature">Feature request</option>
+      <option value="bug">Bug report</option>
+      <option value="feedback">General feedback</option>
+    </select>
+    <textarea name="message" placeholder="What would you like to see in Bloom?" rows="3" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--bloom-border);background:var(--bloom-surface);color:var(--bloom-text);resize:vertical" required></textarea>
+    <input name="contact" placeholder="Email or handle (optional)" style="width:100%;padding:10px;margin-top:8px;border-radius:8px;border:1px solid var(--bloom-border);background:var(--bloom-surface);color:var(--bloom-text)">
+    <button type="submit" style="margin-top:10px;padding:10px 24px;background:var(--bloom-hero-gradient);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;width:100%">Send Feedback</button>
+    <p id="fb-status" style="font-size:12px;color:var(--bloom-primary);margin-top:6px;display:none"></p>
+  </form>
+</div>
+<script>
+function submitFeedback(e){
+  e.preventDefault();
+  const f=e.target;const d={type:f.type.value,message:f.message.value,contact:f.contact.value};
+  fetch('/api/bloom/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})
+  .then(r=>r.json()).then(()=>{
+    document.getElementById('fb-status').style.display='block';
+    document.getElementById('fb-status').textContent='Thanks! We read every response.';
+    f.reset();
+  }).catch(()=>{
+    document.getElementById('fb-status').style.display='block';
+    document.getElementById('fb-status').textContent='Sent! Thank you.';
+    f.reset();
+  });
+}
+</script>
+
+<!-- Bloom Footer -->
+<div class="bloom-footer">
+  <div class="bloom-footer-links">
     <a href="/bloom/privacy">Privacy Policy</a>
     <a href="mailto:tiamat@tiamat.live">Contact</a>
   </div>
@@ -301,5 +369,7 @@ a:hover{text-decoration:underline}
   <p style="margin-top:6px">&copy; 2026 ENERGENAI LLC</p>
 </div>
 
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

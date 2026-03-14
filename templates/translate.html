@@ -1,194 +1,188 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIAMAT Translate — AI Language Translation</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'JetBrains Mono', 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #e0e6ff;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 60px auto 0;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #00ff88 0%, #0088ff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-            font-family: 'Orbitron', sans-serif;
-        }
-        
-        .header p {
-            font-size: 0.9em;
-            color: #8890b0;
-        }
-        
-        .card {
-            background: rgba(20, 25, 50, 0.8);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            border-radius: 12px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-            color: #00ff88;
-            font-weight: bold;
-        }
-        
-        textarea, select {
-            width: 100%;
-            padding: 12px;
-            background: rgba(10, 15, 40, 0.9);
-            border: 1px solid rgba(0, 136, 255, 0.3);
-            border-radius: 6px;
-            color: #e0e6ff;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.95em;
-            resize: vertical;
-            transition: border-color 0.3s;
-        }
-        
-        textarea:focus, select:focus {
-            outline: none;
-            border-color: #00ff88;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
-        }
-        
-        textarea {
-            min-height: 120px;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 30px;
-        }
-        
-        button {
-            flex: 1;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
-            border: none;
-            border-radius: 6px;
-            color: #0a0e27;
-            font-weight: bold;
-            font-family: 'Orbitron', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.95em;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            color: #00ff88;
-            margin-top: 20px;
-        }
-        
-        .result {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(0, 255, 136, 0.05);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            border-radius: 6px;
-            display: none;
-        }
-        
-        .result h3 {
-            color: #00ff88;
-            margin-bottom: 10px;
-            font-size: 0.95em;
-        }
-        
-        .result-text {
-            background: rgba(10, 15, 40, 0.9);
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 10px;
-            line-height: 1.6;
-            word-break: break-word;
-        }
-        
-        .error {
-            color: #ff4444;
-            padding: 15px;
-            background: rgba(255, 68, 68, 0.1);
-            border: 1px solid rgba(255, 68, 68, 0.3);
-            border-radius: 6px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        .pricing {
-            font-size: 0.85em;
-            color: #8890b0;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(0, 255, 136, 0.1);
-        }
-        
-        .language-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
+{% extends "base.html" %}
+{% block title %}TIAMAT Translate — AI Language Translation{% endblock %}
+{% block description %}AI-powered text translation powered by Groq llama-3.3-70b. Translate between 9 languages with auto-detection. Free tier available.{% endblock %}
+{% block og_title %}TIAMAT Translate — AI Language Translation{% endblock %}
+{% block canonical %}/translate{% endblock %}
+{% block extra_css %}
+/* ── Translate page styles ── */
+.translate-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.translate-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.translate-header h1 {
+    font-size: 2.5em;
+    background: linear-gradient(135deg, #00ff88 0%, #0088ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.translate-header p {
+    font-size: 0.9em;
+    color: #8890b0;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.card {
+    background: rgba(20, 25, 50, 0.8);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 12px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.card label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+    color: #00ff88;
+    font-weight: bold;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.card textarea, .card select {
+    width: 100%;
+    padding: 12px;
+    background: rgba(10, 15, 40, 0.9);
+    border: 1px solid rgba(0, 136, 255, 0.3);
+    border-radius: 6px;
+    color: #e0e6ff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95em;
+    resize: vertical;
+    transition: border-color 0.3s;
+}
+
+.card textarea:focus, .card select:focus {
+    outline: none;
+    border-color: #00ff88;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+}
+
+.card textarea {
+    min-height: 120px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.card button[type="submit"] {
+    flex: 1;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+    border: none;
+    border-radius: 6px;
+    color: #0a0e27;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.95em;
+}
+
+.card button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
+}
+
+.card button[type="submit"]:active {
+    transform: translateY(0);
+}
+
+.translate-loading {
+    display: none;
+    text-align: center;
+    color: #00ff88;
+    margin-top: 20px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.translate-result {
+    margin-top: 30px;
+    padding: 20px;
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 6px;
+    display: none;
+}
+
+.translate-result h3 {
+    color: #00ff88;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.result-text {
+    background: rgba(10, 15, 40, 0.9);
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 10px;
+    line-height: 1.6;
+    word-break: break-word;
+    color: #e0e6ff;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.translate-error {
+    color: #ff4444;
+    padding: 15px;
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    border-radius: 6px;
+    margin-top: 20px;
+    display: none;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.translate-pricing {
+    font-size: 0.85em;
+    color: #8890b0;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 255, 136, 0.1);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.language-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+{% endblock %}
+{% block body %}
+<div class="page">
+    <div class="translate-container">
+        <div class="translate-header">
             <h1>TIAMAT TRANSLATE</h1>
             <p>AI-powered text translation powered by Groq llama-3.3-70b</p>
         </div>
-        
+
         <div class="card">
             <form id="translateForm">
                 <div class="form-group">
                     <label for="sourceText">Text to Translate</label>
                     <textarea id="sourceText" placeholder="Enter text to translate..." required></textarea>
                 </div>
-                
+
                 <div class="language-grid">
                     <div class="form-group">
                         <label for="sourceLanguage">Source Language</label>
@@ -205,7 +199,7 @@
                             <option value="KO">Korean</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="targetLanguage">Target Language</label>
                         <select id="targetLanguage" required>
@@ -222,88 +216,90 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="button-group">
                     <button type="submit">Translate</button>
                 </div>
             </form>
-            
-            <div class="loading" id="loading">Translating... 🔄</div>
-            
-            <div class="error" id="error"></div>
-            
-            <div class="result" id="result">
+
+            <div class="translate-loading" id="loading">Translating...</div>
+
+            <div class="translate-error" id="error"></div>
+
+            <div class="translate-result" id="result">
                 <h3>Translation Result</h3>
                 <div class="result-text" id="resultText"></div>
                 <div style="margin-top: 10px; font-size: 0.85em; color: #8890b0;">
                     <span id="resultMeta"></span>
                 </div>
             </div>
-            
-            <div class="pricing">
+
+            <div class="translate-pricing">
                 <strong>Pricing:</strong> Free tier: 5 translations/day per IP. Paid: $0.005 USDC per translation (via x402).
             </div>
         </div>
     </div>
-    
-    <script>
-        document.getElementById('translateForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const text = document.getElementById('sourceText').value.trim();
-            const sourceLang = document.getElementById('sourceLanguage').value;
-            const targetLang = document.getElementById('targetLanguage').value;
-            
-            if (!text || !targetLang) {
-                showError('Please enter text and select a target language');
-                return;
-            }
-            
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('result').style.display = 'none';
-            
-            try {
-                const response = await fetch('/translate', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        text,
-                        source_lang: sourceLang,
-                        target_lang: targetLang
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    if (response.status === 402) {
-                        showError(`Payment required: $${data.cost} USDC for additional translation`);
-                    } else {
-                        showError(data.error || 'Translation failed');
-                    }
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
+<script>
+    document.getElementById('translateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const text = document.getElementById('sourceText').value.trim();
+        const sourceLang = document.getElementById('sourceLanguage').value;
+        const targetLang = document.getElementById('targetLanguage').value;
+
+        if (!text || !targetLang) {
+            showError('Please enter text and select a target language');
+            return;
+        }
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('result').style.display = 'none';
+
+        try {
+            const response = await fetch('/translate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    text,
+                    source_lang: sourceLang,
+                    target_lang: targetLang
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 402) {
+                    showError(`Payment required: $${data.cost} USDC for additional translation`);
                 } else {
-                    showResult(data);
+                    showError(data.error || 'Translation failed');
                 }
-            } catch (err) {
-                showError(`Error: ${err.message}`);
-            } finally {
-                document.getElementById('loading').style.display = 'none';
+            } else {
+                showResult(data);
             }
-        });
-        
-        function showError(msg) {
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = msg;
-            errorDiv.style.display = 'block';
+        } catch (err) {
+            showError(`Error: ${err.message}`);
+        } finally {
+            document.getElementById('loading').style.display = 'none';
         }
-        
-        function showResult(data) {
-            document.getElementById('resultText').textContent = data.translated_text;
-            const meta = `${data.source_language} → ${data.target_language}`;
-            document.getElementById('resultMeta').textContent = meta;
-            document.getElementById('result').style.display = 'block';
-        }
-    </script>
-</body>
-</html>
+    });
+
+    function showError(msg) {
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = msg;
+        errorDiv.style.display = 'block';
+    }
+
+    function showResult(data) {
+        document.getElementById('resultText').textContent = data.translated_text;
+        const meta = `${data.source_language} → ${data.target_language}`;
+        document.getElementById('resultMeta').textContent = meta;
+        document.getElementById('result').style.display = 'block';
+    }
+</script>
+{% endblock %}

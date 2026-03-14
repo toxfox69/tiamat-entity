@@ -229,6 +229,7 @@ async function run(): Promise<void> {
     geminiApiKey: config.geminiApiKey,
     perplexityApiKey: config.perplexityApiKey,
     doInferenceKey: config.doInferenceKey || process.env.DO_MODEL_ACCESS_KEY,
+    deepinfraApiKey: process.env.DEEPINFRA_API_KEY,
     tiamatlocalEndpoint: process.env.TIAMAT_LOCAL_ENDPOINT,
   });
 

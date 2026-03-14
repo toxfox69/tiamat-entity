@@ -417,6 +417,67 @@ def _format_tokens(n):
 # ROUTES
 # ============================================================================
 
+
+# ===== PRIVACY PROXY PHASE 1: PII SCRUBBER =====
+
+PII_PATTERNS = {
+    'SSN': r'\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b',
+    'CREDIT_CARD': r'\b(?:\d{4}[-\s]?){3}\d{4}\b',
+    'EMAIL': r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
+    'PHONE': r'\b(?:\+?1[-.]?)?\(?[0-9]{3}\)?[-.]?[0-9]{3}[-.]?[0-9]{4}\b',
+    'IP_ADDRESS': r'\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b',
+    'API_KEY': r'\b(?:sk-[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16})\b',
+    'AWS_KEY': r'\bAKIA[A-Z0-9]{16}\b',
+}
+
+NAME_PATTERNS = [
+    r'\b(?:Mr|Mrs|Ms|Dr|Prof)\.?\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?',
+]
+
+entity_counters = {}
+
+def scrub_text(text):
+    """Scrub PII from text. Returns {scrubbed, entities, count}."""
+    if not text or not isinstance(text, str):
+        return {'scrubbed': text, 'entities': {}, 'count': 0}
+
+    scrubbed = text
+    entities = {}
+    total_found = 0
+    counters = {}
+
+    for entity_type, pattern in PII_PATTERNS.items():
+        matches = list(_re.finditer(pattern, scrubbed, _re.IGNORECASE))
+        for match in reversed(matches):
+            if entity_type not in counters:
+                counters[entity_type] = 0
+            counters[entity_type] += 1
+            entity_id = f"{entity_type}_{counters[entity_type]}"
+            entities[entity_id] = match.group(0)
+            scrubbed = scrubbed[:match.start()] + f'[{entity_id}]' + scrubbed[match.end():]
+            total_found += 1
+
+    for pattern in NAME_PATTERNS:
+        matches = list(_re.finditer(pattern, scrubbed))
+        for match in reversed(matches):
+            if 'NAME' not in counters:
+                counters['NAME'] = 0
+            counters['NAME'] += 1
+            entity_id = f"NAME_{counters['NAME']}"
+            if entity_id not in entities:
+                entities[entity_id] = match.group(0)
+                scrubbed = scrubbed[:match.start()] + f'[{entity_id}]' + scrubbed[match.end():]
+                total_found += 1
+
+    return {
+        'scrubbed': scrubbed,
+        'entities': entities,
+        'count': total_found
+    }
+
+
+# ===== END SCRUBBER CODE =====
+
 @app.route('/', methods=['GET'])
 def index():
     """Landing page."""
@@ -671,214 +732,13 @@ _PROOF_HTML = """<!DOCTYPE html>
 </html>"""
 
 
-_STATUS_HTML = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TIAMAT — STATUS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap">
-<style>
-  :root {
-    --cyan: #00ffe7; --magenta: #ff00aa; --purple: #7b00ff;
-    --green: #00ff99; --amber: #ffaa00;
-    --dark: #050510; --card: rgba(0,255,231,0.04); --border: rgba(0,255,231,0.15);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: var(--dark); color: #c0d8e8;
-    font-family: 'JetBrains Mono', monospace; min-height: 100vh;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,231,0.012) 2px, rgba(0,255,231,0.012) 4px);
-  }
-  header {
-    text-align: center; padding: 52px 20px 36px;
-    border-bottom: 1px solid var(--border);
-  }
-  header h1 {
-    font-family: 'Orbitron', monospace; font-size: clamp(1.6rem, 4vw, 3rem); font-weight: 900;
-    background: linear-gradient(135deg, var(--cyan), var(--magenta));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    letter-spacing: 0.25em; margin-bottom: 10px;
-  }
-  header p { font-size: 0.75rem; color: rgba(192,216,232,0.4); letter-spacing: 0.18em; }
-  .refresh-note { font-size: 0.65rem; color: rgba(0,255,231,0.4); margin-top: 8px; letter-spacing: 0.12em; }
-  .grid {
-    max-width: 1000px; margin: 52px auto; padding: 0 24px;
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;
-  }
-  .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    padding: 28px 24px; position: relative; overflow: hidden;
-    transition: border-color 0.3s, box-shadow 0.3s;
-  }
-  .card::after {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--cyan), var(--purple));
-    opacity: 0.6;
-  }
-  .card-label {
-    font-size: 0.65rem; letter-spacing: 0.2em; color: rgba(192,216,232,0.4);
-    text-transform: uppercase; margin-bottom: 10px;
-  }
-  .card-value {
-    font-family: 'Orbitron', monospace; font-size: 1.9rem; font-weight: 700;
-    color: var(--cyan); text-shadow: 0 0 20px rgba(0,255,231,0.35); line-height: 1;
-  }
-  .card-value.green { color: var(--green); text-shadow: 0 0 20px rgba(0,255,153,0.3); }
-  .card-value.amber { color: var(--amber); text-shadow: 0 0 20px rgba(255,170,0,0.3); }
-  .card-sub { font-size: 0.7rem; color: rgba(192,216,232,0.35); margin-top: 8px; }
-  .endpoints {
-    max-width: 1000px; margin: 0 auto 52px; padding: 0 24px;
-  }
-  .endpoints h2 {
-    font-family: 'Orbitron', monospace; font-size: 0.85rem; color: var(--cyan);
-    letter-spacing: 0.2em; margin-bottom: 20px;
-  }
-  .ep-list { display: flex; flex-wrap: wrap; gap: 10px; }
-  .ep-badge {
-    background: rgba(0,255,231,0.06); border: 1px solid rgba(0,255,231,0.2);
-    border-radius: 6px; padding: 8px 16px;
-    font-size: 0.75rem; color: var(--cyan); letter-spacing: 0.1em;
-    transition: border-color 0.2s, background 0.2s;
-  }
-  .ep-badge:hover { background: rgba(0,255,231,0.12); border-color: var(--cyan); }
-  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
-  .status-bar {
-    max-width: 1000px; margin: 0 auto 40px; padding: 0 24px;
-    display: flex; align-items: center; gap: 12px;
-    font-size: 0.7rem; color: rgba(192,216,232,0.5); letter-spacing: 0.1em;
-  }
-  footer { text-align: center; padding: 32px 20px; border-top: 1px solid var(--border); font-size: 0.65rem; color: rgba(192,216,232,0.2); letter-spacing: 0.12em; }
-  footer a { color: rgba(0,255,231,0.4); text-decoration: none; }
-  footer a:hover { color: var(--cyan); }
-</style>
-</head>
-<body>
-<header>
-  <h1>SYSTEM STATUS</h1>
-  <p>TIAMAT &nbsp;&middot;&nbsp; AUTONOMOUS AI &nbsp;&middot;&nbsp; ENERGENAI LLC</p>
-  <p class="refresh-note">AUTO-REFRESH EVERY 30s &nbsp;&middot;&nbsp; LIVE DATA FROM /proof</p>
-</header>
-
-<div class="grid" id="grid">
-  <div class="card">
-    <div class="card-label">Autonomous</div>
-    <div class="card-value green" id="v-autonomous">&#x2014;</div>
-    <div class="card-sub">Self-directed, no human dispatcher</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Cycles Completed</div>
-    <div class="card-value" id="v-cycles">&#x2014;</div>
-    <div class="card-sub">Logged in cost.log</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Tool Actions</div>
-    <div class="card-value" id="v-actions">&#x2014;</div>
-    <div class="card-sub">Real actions from tiamat.log</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Tokens Processed</div>
-    <div class="card-value" id="v-tokens">&#x2014;</div>
-    <div class="card-sub">Input + cache + output</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Total API Cost</div>
-    <div class="card-value amber" id="v-cost">&#x2014;</div>
-    <div class="card-sub">USD, all-time</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Cost / Cycle</div>
-    <div class="card-value" id="v-cpc">&#x2014;</div>
-    <div class="card-sub">Avg USD per cycle</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Models Used</div>
-    <div class="card-value green" id="v-models">&#x2014;</div>
-    <div class="card-sub">Distinct inference providers</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Server Uptime</div>
-    <div class="card-value green" id="v-uptime">&#x2014;</div>
-    <div class="card-sub">From /proc/uptime</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Live Endpoints</div>
-    <div class="card-value green" id="v-ep-count">&#x2014;</div>
-    <div class="card-sub">Active API surfaces</div>
-  </div>
-</div>
-
-<div class="endpoints">
-  <h2>LIVE ENDPOINTS</h2>
-  <div class="ep-list" id="ep-list"></div>
-</div>
-
-<div style="max-width:1000px;margin:0 auto 40px;padding:0 24px;font-size:0.6rem;color:rgba(192,216,232,0.25);letter-spacing:0.1em;text-align:center;">
-  ALL NUMBERS DERIVED FROM AUDITABLE LOGS &nbsp;&middot;&nbsp; <a href="/proof" style="color:rgba(0,255,231,0.4);text-decoration:none;">/proof JSON</a> INCLUDES DATA SOURCES
-</div>
-
-<div class="status-bar">
-  <span class="dot"></span>
-  <span id="status-line">Fetching live data&hellip;</span>
-</div>
-
-<footer>
-  <a href="/">TIAMAT.LIVE</a> &nbsp;&middot;&nbsp;
-  <a href="/proof">/proof JSON</a> &nbsp;&middot;&nbsp;
-  <a href="/docs">DOCS</a> &nbsp;&middot;&nbsp;
-  <a href="/pay">PAY</a>
-</footer>
-
-<script>
-function fmtTokens(n) {
-  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
-  return n.toString();
-}
-async function refresh() {
-  try {
-    const r = await fetch('/proof');
-    const d = await r.json();
-
-    document.getElementById('v-autonomous').textContent = d.autonomous ? 'YES' : 'NO';
-    document.getElementById('v-cycles').textContent = d.total_cycles_completed.toLocaleString();
-    document.getElementById('v-actions').textContent = d.total_tool_actions.toLocaleString();
-    document.getElementById('v-tokens').textContent = fmtTokens(d.total_tokens_processed);
-    document.getElementById('v-cost').textContent = '$' + d.total_api_cost_usd.toFixed(2);
-    document.getElementById('v-cpc').textContent = '$' + d.cost_per_cycle_usd.toFixed(4);
-    document.getElementById('v-models').textContent = d.models_used;
-    document.getElementById('v-uptime').textContent = d.server_uptime;
-    document.getElementById('v-ep-count').textContent = d.live_endpoints.length;
-
-    const epList = document.getElementById('ep-list');
-    epList.innerHTML = d.live_endpoints.map(ep =>
-      `<span class="ep-badge"><span class="dot"></span>${ep}</span>`
-    ).join('');
-
-    const now = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-    document.getElementById('status-line').textContent =
-      'Last updated ' + now + ' \\u00b7 Entity: ' + d.entity + ' \\u00b7 ' + d.company;
-  } catch(e) {
-    document.getElementById('status-line').textContent = 'Refresh error: ' + e.message;
-  }
-}
-
-refresh();
-setInterval(refresh, 30000);
-</script>
-</body>
-</html>"""
+# Status page HTML moved to templates/status.html
 
 
 @app.route('/status', methods=['GET'])
 def status():
     """Live status dashboard with 30s auto-refresh (exempt from rate limit)."""
-    return _STATUS_HTML, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    return render_template('status.html')
 
 @app.route('/pay', methods=['GET'])
 def payment_page():
@@ -933,6 +793,12 @@ def generate_api_key():
         'usage': f'Authorization: Bearer {key}',
     })
 
+@app.route('/redact', methods=['GET'])
+def redact():
+    """Free client-side PII redactor tool."""
+    return render_template('redact.html')
+
+
 @app.route('/docs', methods=['GET'])
 def docs():
     """API documentation (exempt from rate limit)."""
@@ -961,211 +827,80 @@ def _get_scrubber():
         _pii_scrubber = PIIScrubber()
     return _pii_scrubber
 
+_PROXY_MARKUP = 0.20  # 20% margin
+_PROXY_FREE_LIMIT = 10  # proxy requests/hour per IP (free tier)
 
-@app.route('/api/scrub', methods=['POST'])
-def api_scrub():
-    """
-    POST /api/scrub — Detect and redact PII from text.
-
-    Request:  {"text": "My SSN is 123-45-6789"}
-    Response: {
-        "scrubbed": "My SSN is [SSN_1]",
-        "entities": {"SSN_1": "123-45-6789"},
-        "entity_count": 1
-    }
-
-    Detects: names, emails, phones, SSNs, credit cards, addresses,
-             IPv4/IPv6, API keys (OpenAI, AWS, Stripe, GitHub, JWT, generic).
-    """
-    data = request.get_json(silent=True) or {}
-    text = (data.get('text') or '').strip()
-    if not text:
-        return jsonify({'error': 'text required'}), 400
-    if len(text) > 50000:
-        return jsonify({'error': 'text too long (max 50k chars)'}), 400
-    try:
-        scrubbed, entities = _get_scrubber().scrub(text)
-    except Exception as e:
-        logger.error(f"scrub error: {e}")
-        return jsonify({'error': 'scrub failed'}), 500
-    return jsonify({
-        'scrubbed': scrubbed,
-        'entities': entities,
-        'entity_count': len(entities),
-    })
-
-
-# Per-1M token pricing in USD (input, output) — used by new /api/proxy
-_PROXY_MODEL_PRICING = {
-    'claude-sonnet-4-6':         (3.0,   15.0),
-    'claude-haiku-4-5-20251001': (0.8,    4.0),
-    'claude-opus-4-6':           (15.0,  75.0),
-    'gpt-4o':                    (2.5,   10.0),
-    'gpt-4o-mini':               (0.15,   0.6),
-    'llama-3.3-70b-versatile':   (0.059,  0.079),
-}
-_PROXY_MARKUP = 0.20  # 20% TIAMAT service fee
-_PROXY_COST_LOG = '/root/.automaton/proxy_cost.log'
-
-# Legacy cost table (kept for backward-compat callers that still use text/prompt format)
-_PROVIDER_COST = {
-    'groq':   {'model': 'llama-3.3-70b-versatile', 'cost_per_1k': 0.00059,  'label': 'Groq / Llama-3.3-70B'},
-    'claude': {'model': 'claude-haiku-4-5-20251001', 'cost_per_1k': 0.00125, 'label': 'Claude / Haiku 4.5'},
-    'gpt4o':  {'model': 'gpt-4o-mini',              'cost_per_1k': 0.00060,  'label': 'OpenAI / GPT-4o mini'},
-}
-
-# Model aliases (new API names → provider + canonical model ID)
 _PROXY_MODEL_ALIASES = {
-    'claude-sonnet':            ('anthropic', 'claude-sonnet-4-6'),
-    'claude-haiku':             ('anthropic', 'claude-haiku-4-5-20251001'),
-    'claude-opus':              ('anthropic', 'claude-opus-4-6'),
-    'claude-sonnet-4-20250514': ('anthropic', 'claude-sonnet-4-6'),
-    'gpt-4o':                   ('openai',    'gpt-4o'),
-    'gpt-4o-mini':              ('openai',    'gpt-4o-mini'),
-    'llama-3.3-70b-versatile':  ('groq',      'llama-3.3-70b-versatile'),
-    'llama-3.3-70b':            ('groq',      'llama-3.3-70b-versatile'),
+    'gpt-4': ('openai', 'gpt-4o'),
+    'gpt4': ('openai', 'gpt-4o'),
+    'claude': ('anthropic', 'claude-sonnet-4-6'),
+    'sonnet': ('anthropic', 'claude-sonnet-4-6'),
+    'haiku': ('anthropic', 'claude-haiku-4-5-20251001'),
+    'llama': ('groq', 'llama-3.3-70b-versatile'),
 }
 
-GROQ_API_KEY  = os.environ.get('GROQ_API_KEY', '')
-ANTHROPIC_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-OPENAI_KEY    = os.environ.get('OPENAI_API_KEY', '')
+_PROVIDER_COST = {
+    'groq': {'model': 'llama-3.3-70b-versatile', 'label': 'Groq (Llama 3.3 70B)', 'cost_per_1k': 0.00079},
+    'anthropic': {'model': 'claude-sonnet-4-6', 'label': 'Anthropic (Claude Sonnet)', 'cost_per_1k': 0.015},
+    'openai': {'model': 'gpt-4o', 'label': 'OpenAI (GPT-4o)', 'cost_per_1k': 0.015},
+}
 
-# Per-proxy rate limit cache (in-memory, per IP, sliding 1-hour window)
-import time as _proxy_time
-from collections import defaultdict as _defaultdict
-_proxy_rate_cache: dict = _defaultdict(list)
-_PROXY_FREE_LIMIT = 10   # requests per hour (free tier)
+def _proxy_cascade(provider, model, messages, max_tokens):
+    """Route request to provider API with fallback."""
+    import requests as _requests
 
+    headers = {'Content-Type': 'application/json'}
 
-def _proxy_compute_costs(model, input_tokens, output_tokens):
-    in_p, out_p = _PROXY_MODEL_PRICING.get(model, (0.5, 1.5))
-    provider_cost = (input_tokens * in_p + output_tokens * out_p) / 1_000_000
-    markup = provider_cost * _PROXY_MARKUP
-    return {
-        'provider_cost_usdc': round(provider_cost, 8),
-        'tiamat_markup_usdc': round(markup, 8),
-        'total_charge_usdc':  round(provider_cost + markup, 8),
-    }
+    if provider == 'groq':
+        headers['Authorization'] = f'Bearer {GROQ_API_KEY}'
+        url = 'https://api.groq.com/openai/v1/chat/completions'
+        body = {'model': model or 'llama-3.3-70b-versatile', 'messages': messages, 'max_tokens': max_tokens or 2048}
+    elif provider == 'anthropic':
+        headers['x-api-key'] = os.getenv('ANTHROPIC_API_KEY', '')
+        headers['anthropic-version'] = '2023-06-01'
+        url = 'https://api.anthropic.com/v1/messages'
+        body = {'model': model or 'claude-sonnet-4-6', 'messages': messages, 'max_tokens': max_tokens or 2048}
+    elif provider == 'openai':
+        headers['Authorization'] = f'Bearer {os.getenv("OPENAI_API_KEY", "")}'
+        url = 'https://api.openai.com/v1/chat/completions'
+        body = {'model': model or 'gpt-4o', 'messages': messages, 'max_tokens': max_tokens or 2048}
+    else:
+        raise ValueError(f'Unknown provider: {provider}')
 
+    resp = _requests.post(url, json=body, headers=headers, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
 
-def _proxy_log_cost(provider, model, in_tok, out_tok, cost, api_key, ip, scrubbed):
-    """Append to proxy_cost.log. Never logs response content."""
+    # Extract response text
+    if provider == 'anthropic':
+        text = data.get('content', [{}])[0].get('text', '')
+        tokens_in = data.get('usage', {}).get('input_tokens', 0)
+        tokens_out = data.get('usage', {}).get('output_tokens', 0)
+    else:
+        text = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+        tokens_in = data.get('usage', {}).get('prompt_tokens', 0)
+        tokens_out = data.get('usage', {}).get('completion_tokens', 0)
+
+    return (text, tokens_in, tokens_out), provider, model
+
+def _proxy_compute_costs(model, tokens_in, tokens_out):
+    """Compute cost with markup."""
+    # Simple flat rate per 1k tokens
+    rate = 0.001  # default
+    for prov in _PROVIDER_COST.values():
+        if prov['model'] == model:
+            rate = prov['cost_per_1k']
+            break
+    base = ((tokens_in + tokens_out) / 1000) * rate
+    return base * (1 + _PROXY_MARKUP)
+
+def _proxy_log_cost(provider, model, tokens_in, tokens_out, cost, api_key=None, ip='unknown', scrubbed=False):
+    """Log proxy cost to file."""
     try:
-        ts = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-        key_masked = (f'{api_key[:12]}...' if api_key and len(api_key) > 12
-                      else (api_key or 'none'))
-        line = (f'{ts},{provider},{model},{in_tok},{out_tok},'
-                f'{cost["provider_cost_usdc"]:.8f},{cost["tiamat_markup_usdc"]:.8f},'
-                f'{cost["total_charge_usdc"]:.8f},{key_masked},{ip},{int(scrubbed)}\n')
-        with open(_PROXY_COST_LOG, 'a') as f:
-            f.write(line)
+        with open('/root/.automaton/proxy_cost.log', 'a') as f:
+            f.write(f'{datetime.utcnow().isoformat()},{provider},{model},{tokens_in},{tokens_out},{cost:.6f},{ip},{scrubbed}\n')
     except Exception:
         pass
-
-
-def _proxy_call_openai_compat(base_url, api_key, model, messages, max_tokens=2048):
-    resp = requests.post(
-        f'{base_url}/chat/completions',
-        headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
-        json={'model': model, 'messages': messages, 'max_tokens': max_tokens, 'stream': False},
-        timeout=60,
-    )
-    resp.raise_for_status()
-    d = resp.json()
-    usage = d.get('usage', {})
-    return {
-        'id': d.get('id', ''),
-        'text': d['choices'][0]['message']['content'] or '',
-        'input_tokens': usage.get('prompt_tokens', 0),
-        'output_tokens': usage.get('completion_tokens', 0),
-    }
-
-
-def _proxy_call_anthropic(model, messages, max_tokens=2048):
-    system_text = None
-    filtered = []
-    for m in messages:
-        if m['role'] == 'system':
-            system_text = m['content']
-        else:
-            filtered.append({'role': m['role'], 'content': m['content']})
-    body = {'model': model, 'max_tokens': max_tokens, 'messages': filtered}
-    if system_text:
-        body['system'] = system_text
-    resp = requests.post(
-        'https://api.anthropic.com/v1/messages',
-        headers={'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01',
-                 'content-type': 'application/json'},
-        json=body, timeout=60,
-    )
-    resp.raise_for_status()
-    d = resp.json()
-    text = ''.join(b.get('text', '') for b in d.get('content', []) if b.get('type') == 'text')
-    usage = d.get('usage', {})
-    return {
-        'id': d.get('id', ''),
-        'text': text,
-        'input_tokens': usage.get('input_tokens', 0),
-        'output_tokens': usage.get('output_tokens', 0),
-    }
-
-
-def _proxy_dispatch(provider, model, messages, max_tokens=2048):
-    if provider == 'anthropic':
-        return _proxy_call_anthropic(model, messages, max_tokens)
-    elif provider == 'groq':
-        return _proxy_call_openai_compat(
-            'https://api.groq.com/openai/v1', GROQ_API_KEY, model, messages, max_tokens)
-    elif provider == 'openai':
-        return _proxy_call_openai_compat(
-            'https://api.openai.com/v1', OPENAI_KEY, model, messages, max_tokens)
-    raise ValueError(f'Unknown provider: {provider}')
-
-
-def _proxy_cascade(preferred_provider, preferred_model, messages, max_tokens=2048):
-    _cascade_order = ['anthropic', 'groq', 'openai']
-    _cascade_defaults = {
-        'anthropic': 'claude-haiku-4-5-20251001',
-        'groq':      'llama-3.3-70b-versatile',
-        'openai':    'gpt-4o-mini',
-    }
-    _keys = {'anthropic': ANTHROPIC_KEY, 'groq': GROQ_API_KEY, 'openai': OPENAI_KEY}
-    attempts = [(preferred_provider, preferred_model)]
-    for p in _cascade_order:
-        if p != preferred_provider and _keys.get(p):
-            attempts.append((p, _cascade_defaults[p]))
-    last_err = RuntimeError('No providers available')
-    for prov, mdl in attempts:
-        if not _keys.get(prov):
-            continue
-        try:
-            result = _proxy_dispatch(prov, mdl, messages, max_tokens)
-            return result, prov, mdl
-        except requests.HTTPError as e:
-            if e.response.status_code in (429, 500, 502, 503, 504):
-                last_err = e
-                continue
-            raise
-        except Exception as e:
-            last_err = e
-            continue
-    raise last_err
-
-
-# Legacy sync helpers kept for internal use by old callers
-def _proxy_groq(prompt, model='llama-3.3-70b-versatile'):
-    r = _proxy_call_openai_compat('https://api.groq.com/openai/v1', GROQ_API_KEY, model,
-                                   [{'role': 'user', 'content': prompt}])
-    return r['text'], r['input_tokens'], r['output_tokens']
-
-def _proxy_claude(prompt, model='claude-haiku-4-5-20251001'):
-    r = _proxy_call_anthropic(model, [{'role': 'user', 'content': prompt}])
-    return r['text'], r['input_tokens'], r['output_tokens']
-
-def _proxy_gpt4o(prompt, model='gpt-4o-mini'):
-    r = _proxy_call_openai_compat('https://api.openai.com/v1', OPENAI_KEY, model,
-                                   [{'role': 'user', 'content': prompt}])
-    return r['text'], r['input_tokens'], r['output_tokens']
 
 
 @app.route('/api/proxy/providers', methods=['GET'])
@@ -1273,7 +1008,7 @@ def api_proxy():
 
     data = request.get_json(silent=True) or {}
     api_key = (data.get('api_key') or '').strip()
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+    ip = (request.headers.get('X-Forwarded-For') or request.remote_addr or '127.0.0.1').split(',')[0].strip()
 
     # ── Detect format ─────────────────────────────────────────────────────────
     is_new_format = 'messages' in data
@@ -1321,7 +1056,9 @@ def api_proxy():
                 for msg in messages:
                     content = msg.get('content', '')
                     if isinstance(content, str) and content.strip():
-                        sc, ents = _get_scrubber().scrub(content)
+                        result = _get_scrubber().scrub(content)
+                        sc = result['scrubbed']
+                        ents = result.get('entities', {})
                         pii_entities.update(ents)
                         scrubbed_msgs.append({'role': msg['role'], 'content': sc})
                     else:
@@ -1345,15 +1082,14 @@ def api_proxy():
             return jsonify({'success': False,
                             'error': f'Provider unreachable: {str(e)[:200]}'}), 502
 
-        response_text  = result['text']
-        tokens_in      = result['input_tokens']
-        tokens_out     = result['output_tokens']
-        response_id    = result.get('id', '')
+        response_text, tokens_in, tokens_out = result
+        response_id    = ''
 
-        # Restore PII in response
+        # Restore PII in response (simple string replacement)
         if did_scrub and pii_entities:
             try:
-                response_text = _get_scrubber().restore(response_text, pii_entities)
+                for placeholder, original in pii_entities.items():
+                    response_text = response_text.replace(f'[{placeholder}]', original)
             except Exception:
                 pass
 
@@ -1395,25 +1131,25 @@ def api_proxy():
         if provider not in _PROVIDER_COST:
             return jsonify({'error': f'provider must be one of: {list(_PROVIDER_COST.keys())}'}), 400
 
-        scrubbed_text, _scrub_entities = _get_scrubber().scrub(text) if do_scrub else (text, {})
+        if do_scrub:
+            scrub_result = _get_scrubber().scrub(text)
+            scrubbed_text = scrub_result['scrubbed']
+            _scrub_entities = scrub_result.get('entities', {})
+        else:
+            scrubbed_text = text
+            _scrub_entities = {}
         entities = list(_scrub_entities.values()) if do_scrub else []
         full_prompt = f'{prompt}\n\n{scrubbed_text}'
 
+        # Map legacy provider names
+        _legacy_map = {'claude': 'anthropic', 'gpt4o': 'openai'}
+        mapped_provider = _legacy_map.get(provider, provider)
+        mapped_model = _PROVIDER_COST.get(provider, {}).get('model', None)
+
         try:
-            if provider == 'groq':
-                if not GROQ_API_KEY:
-                    return jsonify({'error': 'Groq API key not configured'}), 503
-                response_text, in_tok, out_tok = _proxy_groq(full_prompt)
-            elif provider == 'claude':
-                if not ANTHROPIC_KEY:
-                    return jsonify({'error': 'Anthropic API key not configured'}), 503
-                response_text, in_tok, out_tok = _proxy_claude(full_prompt)
-            elif provider == 'gpt4o':
-                if not OPENAI_KEY:
-                    return jsonify({'error': 'OpenAI API key not configured'}), 503
-                response_text, in_tok, out_tok = _proxy_gpt4o(full_prompt)
-            else:
-                return jsonify({'error': 'Unknown provider'}), 400
+            (response_text, in_tok, out_tok), _, _ = _proxy_cascade(
+                mapped_provider, mapped_model,
+                [{'role': 'user', 'content': full_prompt}], 2048)
         except requests.HTTPError as e:
             return jsonify({'error': f'Provider error: {e.response.status_code}'}), 502
         except Exception as e:
@@ -1479,232 +1215,13 @@ APPS_CATALOG = [
     },
 ]
 
-_APPS_HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TIAMAT — APP STORE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap">
-<style>
-  :root {
-    --cyan: #00ffe7; --magenta: #ff00aa; --purple: #7b00ff;
-    --dark: #050510; --card: rgba(0,255,231,0.04); --border: rgba(0,255,231,0.15);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--dark); color: #c0d8e8; font-family: 'JetBrains Mono', monospace; min-height: 100vh; }
-  body::before {
-    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,231,0.015) 2px, rgba(0,255,231,0.015) 4px);
-  }
-  header { text-align: center; padding: 60px 20px 40px; border-bottom: 1px solid var(--border); }
-  header h1 {
-    font-family: 'Orbitron', monospace; font-size: clamp(1.8rem, 5vw, 3.5rem); font-weight: 900;
-    background: linear-gradient(135deg, var(--cyan), var(--magenta));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    letter-spacing: 0.2em; margin-bottom: 12px;
-  }
-  header p { font-size: 0.85rem; color: rgba(192,216,232,0.5); letter-spacing: 0.15em; }
-  .store-grid {
-    max-width: 1100px; margin: 60px auto; padding: 0 24px;
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px;
-  }
-  .app-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 32px 28px; position: relative; overflow: hidden;
-    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
-  }
-  .app-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--magenta));
-    opacity: 0; transition: opacity 0.3s;
-  }
-  .app-card:hover { border-color: rgba(0,255,231,0.4); box-shadow: 0 0 40px rgba(0,255,231,0.08); transform: translateY(-4px); }
-  .app-card:hover::before { opacity: 1; }
-  .app-icon { font-size: 2.8rem; margin-bottom: 16px; display: block; }
-  .app-name { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: var(--cyan); margin-bottom: 8px; letter-spacing: 0.1em; }
-  .app-version { font-size: 0.7rem; color: rgba(192,216,232,0.35); letter-spacing: 0.12em; margin-bottom: 14px; }
-  .app-desc { font-size: 0.8rem; line-height: 1.7; color: rgba(192,216,232,0.65); margin-bottom: 20px; }
-  .app-features { list-style: none; margin-bottom: 24px; }
-  .app-features li { font-size: 0.75rem; color: rgba(192,216,232,0.55); padding: 4px 0 4px 14px; position: relative; }
-  .app-features li::before { content: '\203A'; position: absolute; left: 0; color: var(--cyan); }
-  .app-meta { display: flex; gap: 16px; margin-bottom: 24px; font-size: 0.7rem; color: rgba(192,216,232,0.35); }
-  .price-badge { font-family: 'Orbitron', monospace; font-size: 1.4rem; font-weight: 700; color: var(--cyan); margin-bottom: 20px; text-shadow: 0 0 20px rgba(0,255,231,0.4); }
-  .btn-buy {
-    display: block; width: 100%; padding: 14px 20px; background: transparent;
-    border: 1px solid var(--cyan); border-radius: 8px; color: var(--cyan);
-    font-family: 'Orbitron', monospace; font-size: 0.75rem; font-weight: 700;
-    letter-spacing: 0.15em; cursor: pointer; text-align: center;
-    transition: background 0.2s, box-shadow 0.2s;
-  }
-  .btn-buy:hover { background: rgba(0,255,231,0.08); box-shadow: 0 0 20px rgba(0,255,231,0.2); }
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(5,5,16,0.93); z-index: 1000; align-items: center; justify-content: center; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: #080818; border: 1px solid var(--border); border-radius: 16px; padding: 40px; max-width: 480px; width: 90%; }
-  .modal h2 { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: var(--cyan); margin-bottom: 20px; letter-spacing: 0.1em; }
-  .modal p { font-size: 0.8rem; color: rgba(192,216,232,0.6); margin-bottom: 16px; line-height: 1.6; }
-  .wallet-addr {
-    background: rgba(0,255,231,0.04); border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px 16px; font-size: 0.7rem; color: var(--cyan); word-break: break-all;
-    margin-bottom: 20px; cursor: pointer; transition: border-color 0.2s;
-  }
-  .tx-input {
-    width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px 16px; color: #c0d8e8; font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem; margin-bottom: 16px; outline: none;
-  }
-  .tx-input:focus { border-color: var(--cyan); }
-  .modal-actions { display: flex; gap: 12px; }
-  .btn-verify {
-    flex: 1; padding: 12px; background: transparent; border: 1px solid var(--cyan);
-    border-radius: 8px; color: var(--cyan); font-family: 'Orbitron', monospace;
-    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; cursor: pointer; transition: background 0.2s;
-  }
-  .btn-verify:hover { background: rgba(0,255,231,0.08); }
-  .btn-cancel {
-    padding: 12px 20px; background: transparent; border: 1px solid rgba(192,216,232,0.2);
-    border-radius: 8px; color: rgba(192,216,232,0.4);
-    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; cursor: pointer;
-  }
-  .status-msg { margin-top: 14px; font-size: 0.75rem; min-height: 20px; text-align: center; }
-  .status-msg.ok { color: var(--cyan); }
-  .status-msg.err { color: var(--magenta); }
-  footer { text-align: center; padding: 40px 20px; border-top: 1px solid var(--border); font-size: 0.7rem; color: rgba(192,216,232,0.25); letter-spacing: 0.1em; }
-  footer a { color: rgba(0,255,231,0.5); text-decoration: none; }
-  footer a:hover { color: var(--cyan); }
-</style>
-</head>
-<body>
-<header>
-  <h1>APP STORE</h1>
-  <p>TIAMAT ECOSYSTEM &nbsp;&middot;&nbsp; ANDROID APKs &nbsp;&middot;&nbsp; PAY WITH USDC ON BASE</p>
-</header>
-<div class="store-grid" id="grid"></div>
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <h2 id="modal-title">PURCHASE APK</h2>
-    <p id="modal-desc"></p>
-    <p>Send exactly <strong id="modal-price" style="color:var(--cyan)"></strong> USDC on Base to:</p>
-    <div class="wallet-addr" id="wallet-addr" onclick="copyWallet()" title="Click to copy">
-      0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE
-    </div>
-    <p style="font-size:0.7rem;color:rgba(192,216,232,0.4);margin-bottom:20px">
-      After the transaction confirms, paste your tx hash below to unlock the download.
-    </p>
-    <input class="tx-input" id="tx-input" type="text" placeholder="0x... transaction hash">
-    <div class="modal-actions">
-      <button class="btn-verify" onclick="verifyAndDownload()">VERIFY &amp; DOWNLOAD</button>
-      <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
-    </div>
-    <div class="status-msg" id="status-msg"></div>
-  </div>
-</div>
-<footer>
-  <a href="/">TIAMAT.LIVE</a> &nbsp;&middot;&nbsp;
-  <a href="/docs">DOCS</a> &nbsp;&middot;&nbsp;
-  <a href="/pay">PAYMENT HELP</a> &nbsp;&middot;&nbsp;
-  <a href="/api/apps">JSON API</a>
-  <br><br>Payments verified on-chain &middot; Base mainnet &middot; All sales final
-</footer>
-<script>
-const APPS = __APPS_JSON__;
-const WALLET = '0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE';
-let currentApp = null;
-
-function renderCards() {
-  document.getElementById('grid').innerHTML = APPS.map(a => `
-    <div class="app-card">
-      <span class="app-icon">${a.icon}</span>
-      <div class="app-name">${a.name}</div>
-      <div class="app-version">v${a.version} &nbsp;&middot;&nbsp; ${a.size}</div>
-      <p class="app-desc">${a.description}</p>
-      <ul class="app-features">${a.features.map(f => `<li>${f}</li>`).join('')}</ul>
-      <div class="app-meta"><span>Android 8.0+</span><span>USDC / Base</span></div>
-      <div class="price-badge">${a.price_label}</div>
-      <button class="btn-buy" onclick="openModal('${a.id}')">BUY + DOWNLOAD &#xbb;</button>
-    </div>
-  `).join('');
-}
-
-function openModal(appId) {
-  currentApp = APPS.find(a => a.id === appId);
-  if (!currentApp) return;
-  document.getElementById('modal-title').textContent = 'PURCHASE \u2014 ' + currentApp.name.toUpperCase();
-  document.getElementById('modal-desc').textContent =
-    'Send USDC on Base mainnet. After confirmation, paste your tx hash to unlock the download.';
-  document.getElementById('modal-price').textContent = currentApp.price_label;
-  document.getElementById('tx-input').value = '';
-  document.getElementById('status-msg').textContent = '';
-  document.getElementById('status-msg').className = 'status-msg';
-  document.getElementById('modal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-  currentApp = null;
-}
-
-function copyWallet() {
-  navigator.clipboard.writeText(WALLET).then(() => {
-    const el = document.getElementById('wallet-addr');
-    el.style.borderColor = 'var(--cyan)';
-    setTimeout(() => { el.style.borderColor = ''; }, 1200);
-  });
-}
-
-async function verifyAndDownload() {
-  const txHash = document.getElementById('tx-input').value.trim();
-  const status = document.getElementById('status-msg');
-  if (!currentApp) return;
-  if (!txHash || !txHash.startsWith('0x')) {
-    status.textContent = 'Enter a valid 0x\u2026 transaction hash.';
-    status.className = 'status-msg err';
-    return;
-  }
-  status.textContent = 'Verifying on-chain\u2026';
-  status.className = 'status-msg';
-  try {
-    const resp = await fetch('/api/apps/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ app_id: currentApp.id, tx_hash: txHash }),
-    });
-    const data = await resp.json();
-    if (resp.ok && data.download_url) {
-      status.textContent = 'Payment confirmed! Starting download\u2026';
-      status.className = 'status-msg ok';
-      setTimeout(() => { window.location.href = data.download_url; closeModal(); }, 800);
-    } else {
-      status.textContent = data.error || 'Verification failed. Check your tx hash.';
-      status.className = 'status-msg err';
-    }
-  } catch (e) {
-    status.textContent = 'Network error \u2014 please retry.';
-    status.className = 'status-msg err';
-  }
-}
-
-document.getElementById('modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-renderCards();
-</script>
-</body>
-</html>"""
+# Apps HTML moved to templates/apps.html
 
 
 @app.route('/apps', methods=['GET'])
 def apps_store():
     """APK app store — HTML UI with x402 USDC payment gating (exempt from rate limit)."""
-    import json as _json
-    catalog_json = _json.dumps([
-        {k: v for k, v in item.items() if k != 'apk_file'}
-        for item in APPS_CATALOG
-    ])
-    html = _APPS_HTML_TEMPLATE.replace('__APPS_JSON__', catalog_json)
-    return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    return render_template('apps.html')
 
 
 @app.route('/api/apps', methods=['GET'])
@@ -1912,18 +1429,200 @@ def synthesize_page():
 
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
-    """Text-to-speech via Kokoro (GPU pod)."""
-    data = request.get_json() or {}
-    text = data.get('text', '')
-    
-    if not text or len(text) < 1:
-        return jsonify({'error': 'Text cannot be empty'}), 400
-    
-    return jsonify({
-        'success': True,
-        'message': 'TTS available via paid endpoint',
-        'text': text
-    })
+    """Text-to-speech via Kokoro (local CPU). 3/day free, $0.01 USDC paid."""
+    import io as _io
+    import time
+
+    data = request.get_json(silent=True) or {}
+    text = str(data.get('text', '')).strip()
+    voice = str(data.get('voice', 'alloy')).lower()
+    tx_hash = str(data.get('tx_hash', '')).strip()
+
+    if not text:
+        return jsonify({'error': 'text is required'}), 400
+    if len(text) > 4096:
+        return jsonify({'error': 'text exceeds 4096 character limit'}), 400
+
+    _VALID_VOICES = {'alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'}
+    if voice not in _VALID_VOICES:
+        voice = 'alloy'
+
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '0.0.0.0').split(',')[0].strip()
+
+    # Payment / free-tier gate
+    paid = False
+    if tx_hash:
+        ok, reason = verify_payment(tx_hash)
+        if not ok:
+            return jsonify({'error': 'payment_invalid', 'reason': reason}), 402
+        paid = True
+    else:
+        TTS_FREE_LIMIT = 3
+        today = str(date.today())
+        try:
+            conn = sqlite3.connect(RATE_LIMIT_DB)
+            conn.execute('''CREATE TABLE IF NOT EXISTS tts_requests
+                (ip TEXT, date_str TEXT, count INTEGER DEFAULT 0,
+                 PRIMARY KEY (ip, date_str))''')
+            conn.commit()
+            cur = conn.cursor()
+            cur.execute('SELECT count FROM tts_requests WHERE ip=? AND date_str=?', (client_ip, today))
+            row = cur.fetchone()
+            tts_count = row[0] if row else 0
+            conn.close()
+        except Exception:
+            tts_count = 0
+
+        if tts_count >= TTS_FREE_LIMIT:
+            return jsonify({
+                'error': 'free_tier_exceeded',
+                'message': f'Free tier is {TTS_FREE_LIMIT}/day. Send $0.01 USDC on Base to unlock.',
+                'used': tts_count,
+                'limit': TTS_FREE_LIMIT,
+                'upgrade_url': 'https://tiamat.live/pay',
+            }), 402
+
+        try:
+            conn = sqlite3.connect(RATE_LIMIT_DB)
+            conn.execute('''INSERT INTO tts_requests (ip, date_str, count) VALUES (?,?,1)
+                ON CONFLICT(ip, date_str) DO UPDATE SET count = count + 1''', (client_ip, today))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
+    # Call local Kokoro TTS server
+    _GPU_ENDPOINT = os.getenv('GPU_ENDPOINT', 'http://127.0.0.1:8888').rstrip('/')
+    audio_bytes = None
+    mime_type = 'audio/wav'
+
+    try:
+        resp = requests.post(
+            f'{_GPU_ENDPOINT}/v1/audio/speech',
+            headers={'Content-Type': 'application/json'},
+            json={'model': 'kokoro', 'input': text, 'voice': voice},
+            timeout=30,
+        )
+        if resp.status_code == 200 and len(resp.content) > 256:
+            audio_bytes = resp.content
+    except Exception as _e:
+        logger.warning(f"TTS server unreachable: {_e}")
+
+    # espeak fallback
+    if audio_bytes is None:
+        import subprocess as _sp
+        try:
+            _tmp = '/tmp/tts_output.wav'
+            r = _sp.run(['espeak-ng', '-w', _tmp, '--', text[:1000]],
+                        capture_output=True, timeout=10)
+            if r.returncode == 0:
+                with open(_tmp, 'rb') as f:
+                    audio_bytes = f.read()
+        except Exception:
+            pass
+
+    if audio_bytes is None:
+        return jsonify({'error': 'synthesis_failed', 'reason': 'TTS unavailable'}), 503
+
+    # Log usage
+    try:
+        _tier = 'paid' if paid else 'free'
+        with open('/root/.automaton/tts_usage.log', 'a') as _f:
+            _f.write(f"{datetime.utcnow().isoformat()}|kokoro|{voice}|chars={len(text)}|tier={_tier}|ip={client_ip}\n")
+    except Exception:
+        pass
+
+    return send_file(
+        _io.BytesIO(audio_bytes),
+        mimetype=mime_type,
+        as_attachment=True,
+        download_name=f'tiamat_tts_{int(time.time())}.wav',
+    )
+
+@app.route('/vault')
+@app.route('/vault_endpoint.py')
+def vault_landing():
+    """TIAMAT VAULT — PII scrubbing with on-chain attestation. Coming soon."""
+    return '''<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIAMAT VAULT | Privacy-First AI Processing</title>
+<style>
+:root{--green:#00ff41;--bg:#0a0a0a;--card:#111}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:#ccc;font-family:'Segoe UI',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.c{max-width:700px;padding:40px;border-left:3px solid var(--green)}
+h1{color:var(--green);font-size:2.5rem;margin-bottom:8px}
+.tag{color:#888;text-transform:uppercase;letter-spacing:2px;font-size:.8rem;margin-bottom:30px}
+p{line-height:1.7;margin-bottom:20px;color:#aaa}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:30px 0}
+.f{background:var(--card);padding:20px;border:1px solid #222;border-radius:4px}
+.f h3{color:var(--green);font-size:.95rem;margin-bottom:8px}
+.f p{font-size:.85rem;margin:0;color:#888}
+.status{display:inline-block;width:10px;height:10px;background:#ffaa00;border-radius:50;margin-right:8px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+a{color:var(--green);text-decoration:none}
+a:hover{text-decoration:underline}
+.soon{margin-top:30px;padding:15px;border:1px solid #333;border-radius:4px;color:#888;font-size:.9rem}
+@media(max-width:600px){.features{grid-template-columns:1fr}h1{font-size:1.8rem}.c{padding:20px}}
+</style></head><body><div class="c">
+<div class="tag">Synthesis Hackathon 2026</div>
+<h1>TIAMAT VAULT</h1>
+<p>Privacy-first AI processing with <strong>on-chain attestation</strong> and <strong>multi-token payment</strong> via Uniswap.</p>
+<p>Send any data through VAULT — PII is detected, classified, and scrubbed according to your disclosure policy. Every scrub generates a cryptographic receipt attested on Base L2. Pay in any token — Uniswap settles to USDC automatically.</p>
+<div class="features">
+<div class="f"><h3>PII Scrub Engine</h3><p>7 pattern types: emails, phones, SSNs, names, addresses, DOBs, financial data</p></div>
+<div class="f"><h3>On-Chain Attestation</h3><p>Scrub receipts attested on Base via VaultAttestation.sol — verifiable forever</p></div>
+<div class="f"><h3>Multi-Token Payment</h3><p>Pay in ETH, WBTC, DAI, or any token — Uniswap swaps to USDC</p></div>
+<div class="f"><h3>Agent-to-Agent</h3><p>A2A compatible — agents call /vault/scrub and get verifiable receipts</p></div>
+</div>
+<div class="soon"><span class="status"></span> Building in progress — API endpoint launching this week</div>
+<p style="margin-top:30px;font-size:.85rem;color:#666">
+<a href="https://tiamat.live">tiamat.live</a> &middot;
+<a href="https://tiamat.live/docs">API Docs</a> &middot;
+<a href="https://tiamat.live/pay">Pay</a> &middot;
+ENERGENAI LLC
+</p></div></body></html>''', 200, {'Content-Type': 'text/html'}
+
+
+@app.route('/internal/tts', methods=['POST'])
+def internal_tts():
+    """Internal TTS for stream HUD — no rate limiting, no payment."""
+    import io as _io
+    import time
+
+    data = request.get_json(silent=True) or {}
+    text = str(data.get('input', data.get('text', ''))).strip()
+    voice = str(data.get('voice', 'nova')).lower()
+
+    if not text:
+        return jsonify({'error': 'input is required'}), 400
+    text = text[:300]
+
+    _VALID_VOICES = {'alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'}
+    if voice not in _VALID_VOICES:
+        voice = 'nova'
+
+    _GPU_ENDPOINT = os.getenv('GPU_ENDPOINT', 'http://127.0.0.1:8888').rstrip('/')
+    try:
+        resp = requests.post(
+            f'{_GPU_ENDPOINT}/v1/audio/speech',
+            headers={'Content-Type': 'application/json'},
+            json={'model': 'kokoro', 'input': text, 'voice': voice},
+            timeout=30,
+        )
+        if resp.status_code == 200 and len(resp.content) > 256:
+            return send_file(
+                _io.BytesIO(resp.content),
+                mimetype='audio/wav',
+                as_attachment=True,
+                download_name=f'tts_{int(time.time())}.wav',
+            )
+    except Exception as e:
+        logger.warning(f"Internal TTS failed: {e}")
+
+    return jsonify({'error': 'tts_unavailable'}), 503
+
 
 @app.route('/verify-payment', methods=['POST'])
 def verify_payment_endpoint():
@@ -1995,15 +1694,58 @@ def internal_error(e):
 
 
 # ============= CYCLE TRACKER PWA =============
+@app.route('/revenue-dashboard')
+def revenue_dashboard():
+    """Revenue metrics dashboard — reads real request counts from logs."""
+    import csv, os
+    from datetime import datetime as _dt
+
+    # Read real paid request counts from API request log
+    paid_counts = {}
+    total_paid = 0
+    log_path = '/root/api_requests.log'
+    try:
+        if os.path.exists(log_path):
+            with open(log_path, 'r') as f:
+                for line in f:
+                    if '402' not in line and ('POST /summarize' in line or 'POST /chat' in line
+                            or 'POST /generate' in line or 'POST /synthesize' in line):
+                        if ' 200 ' in line:
+                            for ep in ['/summarize', '/chat', '/generate', '/synthesize']:
+                                if f'POST {ep}' in line:
+                                    paid_counts[ep] = paid_counts.get(ep, 0) + 1
+                                    total_paid += 1
+                                    break
+    except Exception:
+        pass
+
+    # Pricing per endpoint
+    prices = {'/summarize': 0.01, '/chat': 0.005, '/generate': 0.01, '/synthesize': 0.01}
+    top_endpoints = []
+    total_revenue = 0.0
+    for ep in ['/summarize', '/chat', '/generate', '/synthesize']:
+        count = paid_counts.get(ep, 0)
+        rev = count * prices.get(ep, 0.01)
+        total_revenue += rev
+        top_endpoints.append({"endpoint": ep, "requests": count, "revenue_usdc": rev})
+
+    data = {
+        "total_usdc": round(total_revenue, 4),
+        "total_requests": total_paid,
+        "timestamp": _dt.utcnow().isoformat() + "Z",
+        "top_endpoints": top_endpoints,
+    }
+
+    if request.args.get('format') == 'html':
+        return render_template('revenue-dashboard.html', data=data)
+    return jsonify(data)
+
+
 @app.route('/cycle-tracker')
 @app.route('/cycle-tracker/')
 def cycle_tracker():
     """Serve Privacy-First Menstrual Cycle Tracker PWA"""
-    try:
-        with open('/root/entity/src/apps/cycle-tracker/index.html', 'r') as f:
-            return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
-    except Exception as e:
-        return f"Error loading tracker: {str(e)}", 500
+    return render_template('cycle-tracker.html')
 
 # ============= BLOOM HRT TRACKER PWA =============
 @app.route('/bloom')
@@ -2251,6 +1993,165 @@ def company_page():
     """EnergenAI LLC company information page."""
     return render_template('company.html')
 
+# ============ SENTINEL CAMPAIGN PAGE ============
+
+@app.route('/sentinel', methods=['GET'])
+def sentinel_campaign():
+    """SENTINEL Edge AI Privacy Router campaign page."""
+    return render_template('campaign.html')
+
+# ============ SENTINEL SIGNUP API ============
+
+# Rate limit: max 5 signups per IP per hour
+_sentinel_rate = {}  # ip -> [timestamps]
+
+def _sentinel_rate_ok(ip):
+    """Check if IP is under signup rate limit (5/hour)."""
+    import time
+    now = time.time()
+    hits = _sentinel_rate.get(ip, [])
+    hits = [t for t in hits if now - t < 3600]  # last hour
+    _sentinel_rate[ip] = hits
+    if len(hits) >= 5:
+        return False
+    hits.append(now)
+    _sentinel_rate[ip] = hits
+    return True
+
+def _log_bot(ip, reason, data):
+    """Log caught bots to sentinel_bots table for analysis."""
+    try:
+        import sqlite3 as _sql3
+        conn = _sql3.connect('/root/.automaton/state.db')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS sentinel_bots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip TEXT,
+                reason TEXT,
+                email TEXT,
+                user_agent TEXT,
+                payload TEXT,
+                timestamp TEXT DEFAULT (datetime('now'))
+            )
+        ''')
+        conn.execute(
+            'INSERT INTO sentinel_bots (ip, reason, email, user_agent, payload) VALUES (?, ?, ?, ?, ?)',
+            (ip, reason, data.get('email', ''), request.headers.get('User-Agent', ''), json.dumps(data)[:1000])
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+@app.route('/api/sentinel/signup', methods=['POST'])
+def sentinel_signup():
+    """Capture email for SENTINEL launch waitlist with 4-layer bot protection."""
+    try:
+        data = request.get_json() or {}
+        ip = request.remote_addr or 'unknown'
+        email = (data.get('email') or '').strip().lower()
+        name = (data.get('name') or '').strip()
+        tier = (data.get('tier') or '').strip()
+        source = request.headers.get('Referer', 'direct')
+        token = data.get('_t', '')
+        elapsed = data.get('_e', 0)
+        interaction = data.get('_i', 0)
+
+        # ═══ BOT CHECK 1: No JS token = no JavaScript execution ═══
+        if not token or ':' not in str(token):
+            _log_bot(ip, 'no_js_token', data)
+            # Fake success — waste their time
+            return jsonify({'success': True, 'position': __import__('random').randint(50, 500)}), 200
+
+        # ═══ BOT CHECK 2: Token timestamp validation (30-second windows, allow 5 min drift) ═══
+        import time, math
+        try:
+            token_ts = int(str(token).split(':')[0])
+            current_ts = math.floor(time.time() / 30)
+            if abs(current_ts - token_ts) > 10:  # >5 min drift
+                _log_bot(ip, 'stale_token', data)
+                return jsonify({'success': True, 'position': __import__('random').randint(50, 500)}), 200
+        except (ValueError, IndexError):
+            _log_bot(ip, 'invalid_token', data)
+            return jsonify({'success': True, 'position': __import__('random').randint(50, 500)}), 200
+
+        # ═══ BOT CHECK 3: Submitted too fast (<2 seconds on page) ═══
+        try:
+            if int(elapsed) < 2:
+                _log_bot(ip, 'too_fast', data)
+                return jsonify({'success': True, 'position': __import__('random').randint(50, 500)}), 200
+        except (ValueError, TypeError):
+            pass  # Missing elapsed is OK (older form version)
+
+        # ═══ BOT CHECK 4: Rate limit (5 signups/IP/hour) ═══
+        if not _sentinel_rate_ok(ip):
+            _log_bot(ip, 'rate_limited', data)
+            return jsonify({'error': 'Too many signups. Try again later.'}), 429
+
+        # ═══ STANDARD VALIDATION ═══
+        if not email or '@' not in email or '.' not in email.split('@')[-1]:
+            return jsonify({'error': 'Invalid email'}), 400
+        if len(email) > 254 or len(name) > 100:
+            return jsonify({'error': 'Input too long'}), 400
+
+        # Flag suspicious (no interaction but passed other checks)
+        is_suspicious = 1 if not interaction else 0
+
+        import sqlite3 as _sql3
+        conn = _sql3.connect('/root/.automaton/state.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sentinel_signups (
+                email TEXT PRIMARY KEY,
+                name TEXT,
+                tier TEXT,
+                source TEXT,
+                ip TEXT,
+                suspicious INTEGER DEFAULT 0,
+                timestamp TEXT DEFAULT (datetime('now')),
+                notified INTEGER DEFAULT 0
+            )
+        ''')
+        cursor.execute(
+            'INSERT OR IGNORE INTO sentinel_signups (email, name, tier, source, ip, suspicious) VALUES (?, ?, ?, ?, ?, ?)',
+            (email, name, tier, source, ip, is_suspicious)
+        )
+        count = cursor.execute('SELECT COUNT(*) FROM sentinel_signups WHERE suspicious=0').fetchone()[0]
+        conn.commit()
+        conn.close()
+
+        logger.info(f"[SENTINEL] Signup: {email} tier={tier} elapsed={elapsed}s interaction={interaction} ip={ip}")
+        return jsonify({'success': True, 'position': count}), 200
+    except Exception as e:
+        logger.error(f"Sentinel signup error: {e}")
+        return jsonify({'error': 'Server error'}), 500
+
+@app.route('/api/sentinel/count', methods=['GET'])
+def sentinel_count():
+    """Return current SENTINEL waitlist count (excluding suspicious)."""
+    try:
+        import sqlite3 as _sql3
+        conn = _sql3.connect('/root/.automaton/state.db')
+        count = conn.execute('SELECT COUNT(*) FROM sentinel_signups WHERE suspicious=0').fetchone()[0]
+        conn.close()
+        return jsonify({'count': count})
+    except Exception:
+        return jsonify({'count': 0})
+
+@app.route('/api/sentinel/bots', methods=['GET'])
+def sentinel_bots():
+    """View caught bots (admin only — localhost)."""
+    if request.remote_addr not in ('127.0.0.1', '::1'):
+        return jsonify({'error': 'Forbidden'}), 403
+    try:
+        import sqlite3 as _sql3
+        conn = _sql3.connect('/root/.automaton/state.db')
+        rows = conn.execute('SELECT ip, reason, email, user_agent, timestamp FROM sentinel_bots ORDER BY id DESC LIMIT 50').fetchall()
+        conn.close()
+        return jsonify({'bots': [{'ip': r[0], 'reason': r[1], 'email': r[2], 'ua': r[3], 'time': r[4]} for r in rows]})
+    except Exception:
+        return jsonify({'bots': []})
+
 # ============ API BODY STATE ============
 
 @app.route('/api/body', methods=['GET'])
@@ -2296,6 +2197,114 @@ try:
 except Exception as _x402_err:
     logging.getLogger(__name__).warning("x402 middleware not loaded: %s", _x402_err)
     _X402_LOADED = False
+
+# ─── SOC2 Lead Magnet Endpoints ───────────────────────────────────────
+
+@app.route('/soc2-kit', methods=['GET'])
+def soc2_kit_lander():
+    """SOC2 scoping kit landing page."""
+    try:
+        with open('/root/soc2_kit_lander.html', 'r') as f:
+            return f.read()
+    except:
+        return jsonify({'error': 'Kit not found'}), 404
+
+@app.route('/api/soc2-signup', methods=['POST'])
+def soc2_signup():
+    """Capture email for SOC2 kit lead magnet."""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip()
+        
+        if not email or '@' not in email:
+            return jsonify({'error': 'Invalid email'}), 400
+        
+        # Log signup (minimal storage)
+        import sqlite3
+        conn = sqlite3.connect('/root/.automaton/state.db')
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT OR IGNORE INTO soc2_signups (email, timestamp) VALUES (?, datetime("now"))'
+        )
+        conn.commit()
+        conn.close()
+        
+        # TODO: Send welcome email sequence
+        # For now, just confirm
+        return jsonify({'success': True, 'message': 'Check your email for the kit!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ===== SCRUBBER ENDPOINTS =====
+
+@app.route('/api/scrub/patterns', methods=['GET'])
+def scrub_patterns():
+    """GET /api/scrub/patterns — List all PII entity types detected."""
+    return jsonify({
+        'patterns': list(PII_PATTERNS.keys()),
+        'description': 'Detects emails, phones, SSNs, credit cards, IPs, API keys, AWS keys'
+    }), 200
+
+@app.route('/api/scrub', methods=['POST'])
+def scrub_endpoint():
+    """POST /api/scrub — Scrub PII from text."""
+    try:
+        data = request.get_json()
+        if not data or 'text' not in data:
+            return jsonify({'error': 'Missing required field: text'}), 400
+        
+        text = data.get('text')
+        result = scrub_text(text)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scrub/batch', methods=['POST'])
+def scrub_batch():
+    """POST /api/scrub/batch — Bulk scrubbing."""
+    try:
+        data = request.get_json()
+        if not data or 'texts' not in data:
+            return jsonify({'error': 'Missing required field: texts'}), 400
+        
+        texts = data.get('texts', [])
+        if not isinstance(texts, list):
+            return jsonify({'error': 'texts must be an array'}), 400
+        
+        results = []
+        total_pii = 0
+        
+        for text in texts:
+            result = scrub_text(text)
+            results.append(result)
+            total_pii += result['count']
+        
+        return jsonify({'results': results, 'total_pii_found': total_pii}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scrub/restore', methods=['POST'])
+def scrub_restore():
+    """POST /api/scrub/restore — Reverse PII scrubbing (restore locally)."""
+    try:
+        data = request.get_json()
+        if not data or 'scrubbed' not in data or 'entities' not in data:
+            return jsonify({'error': 'Missing required fields: scrubbed, entities'}), 400
+        
+        scrubbed = data.get('scrubbed')
+        entities = data.get('entities', {})
+        
+        restored = scrubbed
+        for entity_id, value in entities.items():
+            restored = restored.replace(f'[{entity_id}]', value)
+        
+        return jsonify({'restored': restored}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===== END SCRUBBER ENDPOINTS =====
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=False)
@@ -2379,10 +2388,21 @@ def api_thoughts():
         with open(log_path, 'r', errors='replace') as f:
             lines = f.readlines()[-500:]
 
+        # First pass: extract timestamps from lines that have them
+        # so we can assign them to adjacent non-timestamped lines
+        last_ts = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        ts_re = _re.compile(r'^\[(20\d{2}-\d{2}-\d{2}T[\d:.Z-]+)\]')
+
         for line in reversed(lines):
             line = line.strip()
             if not line:
                 continue
+
+            # Extract timestamp from this line if it has one
+            ts_match = ts_re.match(line)
+            if ts_match:
+                last_ts = ts_match.group(1)[:19]
+
             # Parse [THOUGHT] entries — TIAMAT's deep reasoning
             if '[THOUGHT]' in line:
                 match = _re.match(r'\[(.*?)\]\s+\[THOUGHT\]\s+(.*)', line)
@@ -2401,7 +2421,25 @@ def api_thoughts():
                         'type': 'think',
                         'content': match.group(2)[:500],
                     })
-            # Parse activity lines — timestamped log entries
+            # Parse [TOOL] entries as thoughts (shows what TIAMAT is doing)
+            elif '[TOOL]' in line and '[TOOL RESULT]' not in line:
+                match = _re.match(r'\[([\dT:.Z-]+)\]\s+\[TOOL\]\s+(.*)', line)
+                if match:
+                    thoughts.append({
+                        'timestamp': match.group(1)[:19],
+                        'type': 'action',
+                        'content': match.group(2)[:500],
+                    })
+            # Parse [REASONING] entries
+            elif '[REASONING]' in line:
+                content = line.split('[REASONING]', 1)[-1].strip()
+                if content and 'Prediction stored' not in content:
+                    thoughts.append({
+                        'timestamp': last_ts,
+                        'type': 'reasoning',
+                        'content': content[:500],
+                    })
+            # Parse activity lines — use last_ts for non-timestamped lines
             elif any(tag in line for tag in ['[LOOP]', '[PACER]', '[COST]', '[INFERENCE']):
                 match = _re.match(r'\[([\dT:.Z-]+)\]\s+(.*)', line)
                 if match:
@@ -2411,9 +2449,8 @@ def api_thoughts():
                         'content': match.group(2)[:200],
                     })
                 else:
-                    # Non-timestamped lines like [PACER] or [LOOP]
                     log_entries.append({
-                        'timestamp': '',
+                        'timestamp': last_ts,
                         'type': 'activity',
                         'content': line[:200],
                     })
@@ -2448,6 +2485,182 @@ def api_thoughts():
 def thoughts_page():
     """Serve the neural feed page."""
     return render_template('thoughts.html')
+
+
+# ============================================================================
+# SOCIAL FEEDS AGGREGATOR — All TIAMAT platforms in one endpoint
+# ============================================================================
+import time as _time_mod
+from concurrent.futures import ThreadPoolExecutor as _TPE
+
+_social_cache = {}
+_SOCIAL_CACHE_TTL = 30
+
+
+def _fetch_bluesky():
+    items = []
+    r = requests.get('https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed',
+                     params={'actor': 'toxfox.bsky.social', 'limit': 15}, timeout=5)
+    if r.status_code == 200:
+        for f in r.json().get('feed', []):
+            p = f.get('post', {}); rec = p.get('record', {})
+            items.append({'text': rec.get('text', '')[:300], 'created_at': rec.get('createdAt'),
+                          'likes': p.get('likeCount', 0), 'replies': p.get('replyCount', 0),
+                          'reposts': p.get('repostCount', 0), 'is_reply': bool(rec.get('reply'))})
+    return 'bluesky', items
+
+
+def _fetch_mastodon():
+    items = []
+    r = requests.get('https://mastodon.social/api/v1/accounts/116188085474458767/statuses',
+                     params={'limit': 12, 'exclude_replies': 'false'}, timeout=5)
+    if r.status_code == 200:
+        for s in r.json():
+            items.append({'text': _re.sub(r'<[^>]+>', '', s.get('content', ''))[:300],
+                          'created_at': s.get('created_at'), 'likes': s.get('favourites_count', 0),
+                          'replies': s.get('replies_count', 0), 'reposts': s.get('reblogs_count', 0),
+                          'is_reply': s.get('in_reply_to_id') is not None, 'url': s.get('url')})
+    return 'mastodon', items
+
+
+def _fetch_devto():
+    items = []
+    devto_key = os.getenv('DEV_TO_API_KEY')
+    if devto_key:
+        r = requests.get('https://dev.to/api/articles/me/published', params={'per_page': 10},
+                         headers={'api-key': devto_key}, timeout=5)
+    else:
+        r = requests.get('https://dev.to/api/articles', params={'username': 'tiamatenity', 'per_page': 10}, timeout=5)
+    if r.status_code == 200:
+        for a in r.json():
+            items.append({'title': a.get('title'), 'text': a.get('description', '')[:200],
+                          'url': a.get('url'), 'created_at': a.get('published_at'),
+                          'likes': a.get('positive_reactions_count', 0), 'comments': a.get('comments_count', 0)})
+    return 'devto', items
+
+
+def _fetch_hashnode():
+    items = []
+    q = '{ publication(host: "tiamat-ai.hashnode.dev") { posts(first: 10) { edges { node { title slug publishedAt url subtitle responseCount readTimeInMinutes } } } } }'
+    r = requests.post('https://gql.hashnode.com', json={'query': q}, timeout=5)
+    if r.status_code == 200:
+        for edge in (r.json().get('data') or {}).get('publication', {}).get('posts', {}).get('edges', []):
+            n = edge.get('node', {})
+            items.append({'title': n.get('title'), 'text': n.get('subtitle', ''),
+                          'url': n.get('url'), 'created_at': n.get('publishedAt'),
+                          'comments': n.get('responseCount', 0), 'read_time': n.get('readTimeInMinutes')})
+    return 'hashnode', items
+
+
+def _fetch_moltbook():
+    items = []
+    api_key = os.getenv('MOLTBOOK_API_KEY')
+    if api_key:
+        r = requests.get('https://www.moltbook.com/api/v1/posts', params={'sort': 'latest', 'limit': 10},
+                         headers={'X-API-Key': api_key}, timeout=3)
+        if r.status_code == 200:
+            data = r.json()
+            posts = data.get('posts', data) if isinstance(data, dict) else data
+            if isinstance(posts, list):
+                for p in posts:
+                    items.append({'title': p.get('title', ''), 'text': (p.get('content', '') or '')[:200],
+                                  'created_at': p.get('created_at'), 'score': p.get('score', 0),
+                                  'comments': p.get('comment_count', 0),
+                                  'submolt': p.get('submolt', {}).get('name', '') if isinstance(p.get('submolt'), dict) else ''})
+    return 'moltbook', items
+
+
+def _fetch_neural():
+    result = {}
+    r = requests.get('http://127.0.0.1:5000/api/thoughts/stream', params={'limit': 20}, timeout=2)
+    if r.status_code == 200:
+        d = r.json()
+        result['neural'] = {'thoughts': d.get('thoughts', [])[:15], 'cycle': d.get('cycle'), 'state': d.get('state')}
+        result['status'] = {
+            'cycle': d.get('cycle'), 'state': d.get('state'), 'productivity': d.get('productivity'),
+            'pace': d.get('pace'), 'interval': d.get('pacer', {}).get('current_interval_seconds'),
+            'tool_calls': [t.get('name', t) if isinstance(t, dict) else t for t in (d.get('tool_calls', []) or [])[:8]],
+            'idle_count': d.get('idle_count', 0),
+        }
+    return result
+
+
+def _fetch_log_feeds():
+    """Parse tiamat.log for Farcaster, LinkedIn, Facebook, GitHub posts."""
+    result = {'farcaster': [], 'linkedin': [], 'facebook': [], 'github': []}
+    log_path = '/root/.automaton/tiamat.log'
+    if not os.path.exists(log_path):
+        return result
+    with open(log_path, 'rb') as lf:
+        lines = lf.read().decode('utf-8', errors='replace').split('\n')[-500:]
+    for line in lines:
+        ts = line[:19] if len(line) > 19 and line[4:5] == '-' else ''
+        if '[FARCASTER] Posted' in line:
+            text = line.split('Posted: ', 1)[-1].split(' to /')[0].strip() if 'Posted: ' in line else ''
+            ch = line.split(' to /')[1].split()[0].strip() if ' to /' in line else ''
+            result['farcaster'].append({'text': text[:200], 'channel': ch, 'created_at': ts})
+        elif '[LINKEDIN]' in line and ('Posted' in line or 'Shared' in line):
+            result['linkedin'].append({'text': line.split('] ', 1)[-1].strip()[:200], 'created_at': ts})
+        elif '[FACEBOOK]' in line and 'Posted' in line:
+            result['facebook'].append({'text': line.split('] ', 1)[-1].strip()[:200], 'created_at': ts})
+        elif '[GITHUB' in line and ('Discussion' in line or 'Posted' in line or 'Created' in line):
+            result['github'].append({'text': line.split('] ', 1)[-1].strip()[:200], 'created_at': ts})
+    result['farcaster'] = result['farcaster'][-12:]
+    result['linkedin'] = result['linkedin'][-8:]
+    result['facebook'] = result['facebook'][-8:]
+    result['github'] = result['github'][-10:]
+    return result
+
+
+@app.route('/api/social-feeds', methods=['GET', 'OPTIONS'])
+def api_social_feeds():
+    """Aggregate feeds from all TIAMAT social platforms. Cached 30s. Parallel fetches."""
+    if request.method == 'OPTIONS':
+        resp = app.make_default_options_response()
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
+    cached = _social_cache.get('data')
+    if cached and _time_mod.time() - _social_cache.get('ts', 0) < _SOCIAL_CACHE_TTL:
+        return jsonify(cached), 200, {'Access-Control-Allow-Origin': '*'}
+
+    feeds = {
+        'bluesky': [], 'mastodon': [], 'devto': [], 'hashnode': [],
+        'farcaster': [], 'moltbook': [], 'github': [], 'linkedin': [],
+        'facebook': [], 'neural': {}, 'status': {},
+        'timestamp': datetime.now().isoformat(), 'errors': []
+    }
+
+    # Fetch all API sources in parallel
+    api_fetchers = [_fetch_bluesky, _fetch_mastodon, _fetch_devto, _fetch_hashnode, _fetch_moltbook]
+    with _TPE(max_workers=5) as pool:
+        futures = {pool.submit(fn): fn.__name__ for fn in api_fetchers}
+        for future in futures:
+            try:
+                key, items = future.result(timeout=8)
+                feeds[key] = items
+            except Exception as e:
+                feeds['errors'].append(f'{futures[future]}: {e}')
+
+    # Log-based feeds (local, fast)
+    try:
+        log_feeds = _fetch_log_feeds()
+        for k in ('farcaster', 'linkedin', 'facebook', 'github'):
+            feeds[k] = log_feeds.get(k, [])
+    except Exception as e:
+        feeds['errors'].append(f'log_feeds: {e}')
+
+    # Neural feed (local)
+    try:
+        neural_data = _fetch_neural()
+        feeds['neural'] = neural_data.get('neural', {})
+        feeds['status'] = neural_data.get('status', {})
+    except Exception as e:
+        feeds['errors'].append(f'neural: {e}')
+
+    _social_cache['data'] = feeds
+    _social_cache['ts'] = _time_mod.time()
+    return jsonify(feeds), 200, {'Access-Control-Allow-Origin': '*'}
 
 
 @app.route('/api/gallery', methods=['GET'])

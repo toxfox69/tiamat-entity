@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redact — Free PII Redactor | TIAMAT</title>
+<meta name="description" content="Free privacy tool that detects and redacts personal information from text and files. Upload PDFs, TXT, CSV, JSON — get back redacted files. 100% client-side with encrypted local vault. Your data never leaves your browser.">
+<meta name="keywords" content="PII redactor, text redaction, privacy tool, data sanitization, remove personal information, GDPR, client-side, free, PDF redaction, document redaction, Epstein files, court documents, FOIA">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://tiamat.live/redact">
+<meta property="og:title" content="Redact — Free Client-Side PII Redactor with File Upload &amp; Encrypted Vault">
+<meta property="og:description" content="Upload documents or paste text. Auto-detect PII. Redact with one click. Save encrypted backups locally. 100% client-side — nothing leaves your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tiamat.live/redact">
+<meta name="theme-color" content="#050508">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050508' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='900' font-family='system-ui' fill='%2300fff2'>R</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Redact by TIAMAT",
+  "description": "Free client-side PII redactor with file upload and encrypted vault. Detects and removes personal information from documents without sending data to any server.",
+  "url": "https://tiamat.live/redact",
+  "applicationCategory": "UtilityApplication",
+  "operatingSystem": "Web",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "creator": {"@type": "Organization", "name": "EnergenAI LLC", "url": "https://tiamat.live"}
+}
+</script>
+<style>
+:root {
+  --bg: #050508;
+  --bg-card: rgba(8,8,14,0.85);
+  --bg-elevated: rgba(14,14,22,0.92);
+  --cyan: #00fff2;
+  --cyan-dim: rgba(0,255,242,0.08);
+  --cyan-mid: rgba(0,255,242,0.25);
+  --cyan-glow: rgba(0,255,242,0.5);
+  --magenta: #ff00aa;
+  --magenta-dim: rgba(255,0,170,0.08);
+  --green: #39ff14;
+  --green-dim: rgba(57,255,20,0.08);
+  --gold: #ffaa00;
+  --red: #ff3355;
+  --orange: #ff6b2b;
+  --purple: #a855f7;
+  --text: #e2e4ec;
+  --text-sec: #9498ac;
+  --text-muted: #5a5e74;
+  --glass: rgba(255,255,255,0.03);
+  --glass-border: rgba(255,255,255,0.06);
+  --glass-border-hover: rgba(255,255,255,0.14);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.6;font-size:15px;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+.mesh-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 10%, rgba(0,255,242,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 30%, rgba(255,0,170,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 40% 90%, rgba(57,255,20,0.03) 0%, transparent 50%);
+  animation:mesh-drift 20s ease-in-out infinite alternate;
+}
+@keyframes mesh-drift{
+  0%{filter:hue-rotate(0deg) blur(80px)}
+  50%{filter:hue-rotate(8deg) blur(100px)}
+  100%{filter:hue-rotate(-4deg) blur(85px)}
+}
+.scanlines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+}
+.container{
+  position:relative;z-index:2;
+  max-width:1100px;margin:0 auto;padding:24px 20px 60px;
+}
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:32px;flex-wrap:wrap;gap:12px;
+}
+.logo{
+  font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;
+  color:var(--cyan);text-decoration:none;letter-spacing:2px;
+  text-shadow:0 0 20px var(--cyan-glow);
+}
+.logo span{color:var(--text-sec);font-size:16px;font-weight:400;margin-left:8px;letter-spacing:0}
+.back-link{color:var(--text-sec);text-decoration:none;font-size:13px;transition:color 0.2s}
+.back-link:hover{color:var(--cyan)}
+.privacy-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--green-dim);border:1px solid rgba(57,255,20,0.2);
+  padding:8px 16px;border-radius:100px;font-size:13px;font-weight:500;
+  color:var(--green);margin-bottom:24px;
+}
+.privacy-badge svg{width:16px;height:16px;flex-shrink:0}
+.card{
+  background:var(--bg-card);border:1px solid var(--glass-border);
+  border-radius:var(--radius);backdrop-filter:blur(20px);
+  padding:24px;margin-bottom:20px;
+}
+.card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;flex-wrap:wrap;gap:8px;
+}
+.card-title{
+  font-family:'Orbitron',sans-serif;font-size:14px;font-weight:600;
+  color:var(--cyan);letter-spacing:1px;text-transform:uppercase;
+}
+.text-area{
+  width:100%;min-height:200px;max-height:500px;
+  background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);padding:16px;
+  font-family:'JetBrains Mono',monospace;font-size:14px;
+  color:var(--text);line-height:1.7;resize:vertical;
+  outline:none;transition:border-color 0.2s;
+}
+.text-area:focus{border-color:var(--cyan-mid)}
+.text-area::placeholder{color:var(--text-muted)}
+.output{
+  width:100%;min-height:200px;
+  background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);padding:16px;
+  font-family:'JetBrains Mono',monospace;font-size:14px;
+  color:var(--text);line-height:1.7;
+  white-space:pre-wrap;word-break:break-word;
+  overflow-y:auto;max-height:500px;
+}
+/* PII highlights */
+.pii{padding:1px 4px;border-radius:4px;cursor:pointer;transition:all 0.15s;position:relative;font-weight:500}
+.pii:hover{filter:brightness(1.3)}
+.pii.redacted{background:var(--red) !important;color:#fff !important;border-color:var(--red) !important;letter-spacing:1px}
+.pii-email{background:rgba(0,255,242,0.15);color:var(--cyan);border:1px solid rgba(0,255,242,0.3)}
+.pii-phone{background:rgba(255,0,170,0.15);color:var(--magenta);border:1px solid rgba(255,0,170,0.3)}
+.pii-ssn{background:rgba(255,51,85,0.2);color:var(--red);border:1px solid rgba(255,51,85,0.4)}
+.pii-credit-card{background:rgba(255,107,43,0.15);color:var(--orange);border:1px solid rgba(255,107,43,0.3)}
+.pii-ip{background:rgba(168,85,247,0.15);color:var(--purple);border:1px solid rgba(168,85,247,0.3)}
+.pii-api-key{background:rgba(255,170,0,0.15);color:var(--gold);border:1px solid rgba(255,170,0,0.3)}
+.pii-aws-key{background:rgba(255,170,0,0.15);color:var(--gold);border:1px solid rgba(255,170,0,0.3)}
+.pii-name{background:rgba(57,255,20,0.12);color:var(--green);border:1px solid rgba(57,255,20,0.25)}
+.pii-address{background:rgba(200,200,255,0.1);color:#b8bcf7;border:1px solid rgba(200,200,255,0.2)}
+.pii-date-of-birth{background:rgba(255,200,100,0.12);color:#ffc864;border:1px solid rgba(255,200,100,0.25)}
+.pii-jwt{background:rgba(255,100,100,0.12);color:#ff8888;border:1px solid rgba(255,100,100,0.25)}
+.pii-private-key{background:rgba(255,50,50,0.2);color:#ff5555;border:1px solid rgba(255,50,50,0.4)}
+.pii-iban{background:rgba(100,200,255,0.12);color:#88ccff;border:1px solid rgba(100,200,255,0.25)}
+.pii-passport{background:rgba(200,150,255,0.12);color:#cc99ff;border:1px solid rgba(200,150,255,0.25)}
+.pii-mac-address{background:rgba(136,221,170,0.12);color:#88ddaa;border:1px solid rgba(136,221,170,0.25)}
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 20px;border-radius:var(--radius-sm);
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+  border:1px solid var(--glass-border);cursor:pointer;
+  transition:all 0.2s;background:var(--bg-elevated);color:var(--text);
+  text-transform:uppercase;letter-spacing:0.5px;
+}
+.btn:hover{border-color:var(--glass-border-hover);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{
+  background:linear-gradient(135deg, rgba(0,255,242,0.15), rgba(0,255,242,0.05));
+  border-color:rgba(0,255,242,0.3);color:var(--cyan);
+}
+.btn-primary:hover{
+  background:linear-gradient(135deg, rgba(0,255,242,0.25), rgba(0,255,242,0.1));
+  box-shadow:0 0 20px rgba(0,255,242,0.15);
+}
+.btn-danger{
+  background:linear-gradient(135deg, rgba(255,51,85,0.15), rgba(255,51,85,0.05));
+  border-color:rgba(255,51,85,0.3);color:var(--red);
+}
+.btn-danger:hover{
+  background:linear-gradient(135deg, rgba(255,51,85,0.25), rgba(255,51,85,0.1));
+  box-shadow:0 0 20px rgba(255,51,85,0.15);
+}
+.btn-gold{
+  background:linear-gradient(135deg, rgba(255,170,0,0.15), rgba(255,170,0,0.05));
+  border-color:rgba(255,170,0,0.3);color:var(--gold);
+}
+.btn-gold:hover{
+  background:linear-gradient(135deg, rgba(255,170,0,0.25), rgba(255,170,0,0.1));
+  box-shadow:0 0 20px rgba(255,170,0,0.15);
+}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none !important}
+/* Stats */
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:100px;
+  font-size:12px;font-weight:500;
+  background:var(--glass);border:1px solid var(--glass-border);
+}
+.stat-count{font-family:'JetBrains Mono',monospace;font-weight:700}
+/* Filter toggles */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:100px;
+  font-size:12px;font-weight:500;cursor:pointer;
+  transition:all 0.2s;user-select:none;
+  border:1px solid var(--glass-border);
+  background:var(--glass);color:var(--text-sec);
+}
+.filter-tag.active{border-color:currentColor;opacity:1}
+.filter-tag .dot{width:8px;height:8px;border-radius:50%}
+.filter-tag:hover{opacity:0.85}
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;right:24px;z-index:100;
+  padding:12px 20px;border-radius:var(--radius-sm);
+  background:var(--bg-elevated);border:1px solid var(--cyan-mid);
+  color:var(--cyan);font-size:13px;font-weight:500;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  transform:translateY(80px);opacity:0;
+  transition:all 0.3s ease;max-width:400px;
+}
+.toast.show{transform:translateY(0);opacity:1}
+/* Layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:768px){
+  .two-col{grid-template-columns:1fr}
+  .header{flex-direction:column;align-items:flex-start}
+  .drop-zone{min-height:100px !important}
+}
+/* Sample data dropdown */
+.sample-btn{position:relative}
+.sample-menu{
+  display:none;position:absolute;top:100%;left:0;z-index:50;
+  margin-top:6px;min-width:280px;
+  background:var(--bg-elevated);border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);overflow:hidden;
+  box-shadow:0 12px 40px rgba(0,0,0,0.6);
+}
+.sample-menu.show{display:block}
+.sample-item{
+  display:block;width:100%;padding:10px 16px;
+  font-size:13px;color:var(--text-sec);background:transparent;
+  border:none;cursor:pointer;text-align:left;
+  font-family:'Inter',sans-serif;transition:all 0.15s;
+}
+.sample-item:hover{background:var(--cyan-dim);color:var(--cyan)}
+.sample-item strong{color:var(--text);font-weight:500}
+/* Drop zone */
+.drop-zone{
+  border:2px dashed var(--glass-border);border-radius:var(--radius-sm);
+  padding:24px;text-align:center;cursor:pointer;
+  transition:all 0.3s;min-height:120px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  margin-bottom:16px;
+}
+.drop-zone:hover,.drop-zone.dragover{
+  border-color:var(--cyan-mid);background:var(--cyan-dim);
+}
+.drop-zone svg{width:32px;height:32px;color:var(--text-muted);transition:color 0.3s}
+.drop-zone:hover svg{color:var(--cyan)}
+.drop-zone p{font-size:13px;color:var(--text-muted)}
+.drop-zone .formats{font-size:11px;color:var(--text-muted);opacity:0.6}
+.file-info{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--cyan-dim);border:1px solid rgba(0,255,242,0.2);
+  border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;
+}
+.file-info .name{color:var(--cyan);font-weight:500;font-family:'JetBrains Mono',monospace}
+.file-info .size{color:var(--text-sec);margin-left:auto}
+.file-info .remove{
+  color:var(--red);cursor:pointer;font-size:16px;padding:0 4px;
+  background:none;border:none;font-weight:700;
+}
+/* Vault */
+.vault-section{margin-top:16px;padding-top:16px;border-top:1px solid var(--glass-border)}
+.vault-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.vault-input{
+  flex:1;min-width:200px;padding:8px 14px;
+  background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  outline:none;transition:border-color 0.2s;
+}
+.vault-input:focus{border-color:var(--gold)}
+.vault-input::placeholder{color:var(--text-muted)}
+.vault-list{margin-top:12px}
+.vault-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-radius:var(--radius-sm);
+  background:var(--glass);border:1px solid var(--glass-border);
+  margin-bottom:6px;font-size:12px;
+}
+.vault-item .vi-name{color:var(--gold);font-family:'JetBrains Mono',monospace;font-weight:500}
+.vault-item .vi-date{color:var(--text-muted);margin-left:auto}
+.vault-item .vi-btn{
+  color:var(--cyan);cursor:pointer;background:none;border:none;
+  font-size:12px;font-weight:600;padding:2px 8px;
+}
+.vault-item .vi-btn.del{color:var(--red)}
+/* Footer */
+.footer{
+  margin-top:48px;padding-top:24px;
+  border-top:1px solid var(--glass-border);text-align:center;
+}
+.footer p{font-size:12px;color:var(--text-muted);line-height:1.8}
+.footer a{color:var(--cyan);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+/* How it works */
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:16px}
+.how-step{
+  padding:16px;border-radius:var(--radius-sm);
+  background:var(--glass);border:1px solid var(--glass-border);text-align:center;
+}
+.how-step .num{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.how-step h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.how-step p{font-size:12px;color:var(--text-sec)}
+.category-list{columns:2;column-gap:24px;margin-top:12px}
+.category-list li{font-size:13px;color:var(--text-sec);padding:3px 0;break-inside:avoid;list-style:none}
+.category-list li::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.cat-email::before{background:var(--cyan)}
+.cat-phone::before{background:var(--magenta)}
+.cat-ssn::before{background:var(--red)}
+.cat-cc::before{background:var(--orange)}
+.cat-ip::before{background:var(--purple)}
+.cat-key::before{background:var(--gold)}
+.cat-name::before{background:var(--green)}
+.cat-other::before{background:#b8bcf7}
+/* Loading spinner */
+.loading{display:inline-block;width:14px;height:14px;border:2px solid var(--cyan-mid);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Modal */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg-elevated);border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:28px;max-width:440px;width:90%;
+  box-shadow:0 24px 80px rgba(0,0,0,0.6);
+}
+.modal h3{font-family:'Orbitron',sans-serif;font-size:16px;color:var(--gold);margin-bottom:16px;letter-spacing:1px}
+.modal p{font-size:13px;color:var(--text-sec);margin-bottom:12px}
+.modal input{
+  width:100%;padding:10px 14px;margin-bottom:12px;
+  background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:14px;
+  outline:none;
+}
+.modal input:focus{border-color:var(--gold)}
+.modal .btn-row{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+<div class="mesh-bg"></div>
+<div class="scanlines"></div>
+
+<div class="container">
+  <div class="header">
+    <a href="/" class="logo">REDACT <span>by TIAMAT</span></a>
+    <a href="/" class="back-link">&larr; tiamat.live</a>
+  </div>
+
+  <div class="privacy-badge">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    100% Client-Side &mdash; Your data never leaves your browser
+  </div>
+
+  <!-- FILE UPLOAD -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Upload File</div>
+      <div style="font-size:12px;color:var(--text-muted)">Or paste text below</div>
+    </div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+      </svg>
+      <p>Drop files here or click to browse</p>
+      <span class="formats">TXT &middot; CSV &middot; JSON &middot; XML &middot; YAML &middot; MD &middot; LOG &middot; PDF</span>
+    </div>
+    <input type="file" id="fileInput" style="display:none" accept=".txt,.csv,.json,.xml,.yaml,.yml,.md,.log,.pdf,.tsv,.conf,.ini,.env,.toml">
+    <div id="fileInfo" style="display:none"></div>
+  </div>
+
+  <div class="two-col">
+    <!-- INPUT -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Input</div>
+        <div class="btn-group">
+          <div class="sample-btn">
+            <button class="btn" onclick="toggleSamples()" id="sampleBtn">Samples</button>
+            <div class="sample-menu" id="sampleMenu">
+              <button class="sample-item" onclick="loadSample('court')"><strong>Court Filing</strong> &mdash; depositions, flight logs, names</button>
+              <button class="sample-item" onclick="loadSample('support')"><strong>Support Ticket</strong> &mdash; customer email with PII</button>
+              <button class="sample-item" onclick="loadSample('logs')"><strong>Server Logs</strong> &mdash; IPs, paths, keys</button>
+              <button class="sample-item" onclick="loadSample('hr')"><strong>HR Document</strong> &mdash; SSNs, addresses, DOBs</button>
+              <button class="sample-item" onclick="loadSample('code')"><strong>Config File</strong> &mdash; API keys, tokens, secrets</button>
+              <button class="sample-item" onclick="loadSample('foia')"><strong>FOIA Response</strong> &mdash; gov docs with mixed PII</button>
+            </div>
+          </div>
+          <button class="btn" onclick="clearAll()">Clear</button>
+        </div>
+      </div>
+      <textarea class="text-area" id="inputText" placeholder="Paste text containing personal information...&#10;&#10;Or upload a file above. Supports PDF, TXT, CSV, JSON, XML, YAML, MD, LOG.&#10;&#10;Everything is processed locally in your browser."></textarea>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Output</div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="copyRedacted()">Copy</button>
+          <button class="btn" onclick="downloadRedacted()">Download</button>
+        </div>
+      </div>
+      <div class="output" id="outputArea">Redacted text will appear here...</div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Controls</div>
+      <div class="btn-group">
+        <button class="btn btn-danger" onclick="redactAll()">Redact All</button>
+        <button class="btn" onclick="unredactAll()">Restore All</button>
+      </div>
+    </div>
+    <div id="statsRow" class="stats-row"></div>
+    <div id="filters" class="filters"></div>
+  </div>
+
+  <!-- ENCRYPTED VAULT -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title" style="color:var(--gold)">Encrypted Vault</div>
+      <div style="font-size:11px;color:var(--text-muted)">AES-256-GCM &middot; Browser-only &middot; IndexedDB</div>
+    </div>
+    <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px">Saves only the PII that was redacted &mdash; names, emails, SSNs, etc. &mdash; encrypted with AES-256-GCM. The original document is never stored. Data stays in your browser's IndexedDB.</p>
+    <div class="vault-row">
+      <input type="password" class="vault-input" id="vaultPassword" placeholder="Encryption password..." autocomplete="off">
+      <button class="btn btn-gold" onclick="saveToVault()">Encrypt &amp; Save</button>
+    </div>
+    <div class="vault-list" id="vaultList"></div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">How It Works</div>
+    <p style="font-size:13px;color:var(--text-sec);margin-bottom:12px">Zero-trust document redaction. No accounts. No APIs. No tracking. Upload, redact, vault.</p>
+    <div class="how-grid">
+      <div class="how-step"><div class="num">01</div><h3>Upload or Paste</h3><p>Drop files (PDF, TXT, CSV, JSON, XML) or paste text directly</p></div>
+      <div class="how-step"><div class="num">02</div><h3>Auto-Scan</h3><p>15 PII categories detected instantly via client-side regex</p></div>
+      <div class="how-step"><div class="num">03</div><h3>Review &amp; Redact</h3><p>Toggle items individually or by category. One-click redact all.</p></div>
+      <div class="how-step"><div class="num">04</div><h3>Export or Vault</h3><p>Download redacted file, copy text, or encrypt &amp; save locally</p></div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="card-title" style="margin-bottom:8px">Detected Categories</div>
+      <ul class="category-list">
+        <li class="cat-email">Email addresses</li>
+        <li class="cat-phone">Phone numbers (US/intl)</li>
+        <li class="cat-ssn">Social Security Numbers</li>
+        <li class="cat-cc">Credit/debit card numbers</li>
+        <li class="cat-ip">IPv4 addresses</li>
+        <li class="cat-key">API keys (OpenAI, Anthropic, Stripe, AWS, GitHub, Slack, GitLab)</li>
+        <li class="cat-name">Names (with honorifics)</li>
+        <li class="cat-other">Street addresses</li>
+        <li class="cat-other">Dates of birth</li>
+        <li class="cat-other">JWTs &amp; bearer tokens</li>
+        <li class="cat-other">Private keys (RSA, EC, PGP)</li>
+        <li class="cat-other">IBANs</li>
+        <li class="cat-other">Passport numbers</li>
+        <li class="cat-other">MAC addresses</li>
+      </ul>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:var(--cyan-dim);border:1px solid rgba(0,255,242,0.15);border-radius:var(--radius-sm)">
+      <p style="font-size:12px;color:var(--text-sec)"><strong style="color:var(--cyan)">Use case:</strong> Redacting court documents, FOIA responses, leaked databases, support tickets, server logs, HR files, config files. Try the "Court Filing" sample to see how it handles depositions and flight manifests with dense PII.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Built by <a href="/">TIAMAT</a> &mdash; an autonomous AI by <a href="/company">EnergenAI LLC</a></p>
+    <p style="margin-top:4px">Free forever. Open source regex. No data collection. No accounts.</p>
+    <p style="margin-top:4px"><a href="/docs">API Docs</a> &middot; <a href="/chat">Chat</a> &middot; <a href="/summarize">Summarize</a> &middot; <a href="/scrub">Data Scrubber</a></p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Decrypt modal -->
+<div class="modal-overlay" id="decryptModal">
+  <div class="modal">
+    <h3>Decrypt Vault Entry</h3>
+    <p>Enter the password used to encrypt this snapshot.</p>
+    <input type="password" id="decryptPassword" placeholder="Password..." autocomplete="off">
+    <div class="btn-row">
+      <button class="btn" onclick="closeDecryptModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="confirmDecrypt()">Decrypt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  PII PATTERNS — all processing is local
+// ═══════════════════════════════════════════
+const PII_PATTERNS = {
+  'SSN': {
+    regex: /\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b/g,
+    label: 'SSN', placeholder: '[SSN REDACTED]'
+  },
+  'CREDIT_CARD': {
+    regex: /\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6(?:011|5\d{2}))[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{0,4}\b/g,
+    label: 'Credit Card', placeholder: '[CARD REDACTED]'
+  },
+  'EMAIL': {
+    regex: /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g,
+    label: 'Email', placeholder: '[EMAIL REDACTED]'
+  },
+  'PHONE': {
+    regex: /\b(?:\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}\b/g,
+    label: 'Phone', placeholder: '[PHONE REDACTED]'
+  },
+  'IP': {
+    regex: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g,
+    label: 'IP Address', placeholder: '[IP REDACTED]'
+  },
+  'API_KEY': {
+    regex: /\b(?:sk-[A-Za-z0-9_\-]{20,}|sk-ant-[A-Za-z0-9_\-]{20,}|sk-proj-[A-Za-z0-9_\-]{20,}|sk_live_[A-Za-z0-9]{20,}|sk_test_[A-Za-z0-9]{20,}|rk_live_[A-Za-z0-9]{20,}|rk_test_[A-Za-z0-9]{20,}|pk_live_[A-Za-z0-9]{20,}|pk_test_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{36,}|gho_[A-Za-z0-9]{36,}|glpat-[A-Za-z0-9_\-]{20,}|xoxb-[A-Za-z0-9\-]{20,}|xoxp-[A-Za-z0-9\-]{20,})\b/g,
+    label: 'API Key', placeholder: '[API_KEY REDACTED]'
+  },
+  'AWS_KEY': {
+    regex: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g,
+    label: 'AWS Key', placeholder: '[AWS_KEY REDACTED]'
+  },
+  'PRIVATE_KEY': {
+    regex: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/g,
+    label: 'Private Key', placeholder: '[PRIVATE_KEY REDACTED]'
+  },
+  'JWT': {
+    regex: /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g,
+    label: 'JWT', placeholder: '[JWT REDACTED]'
+  },
+  'IBAN': {
+    regex: /\b[A-Z]{2}\d{2}[\s]?[A-Z0-9]{4}[\s]?(?:\d{4}[\s]?){2,7}\d{1,4}\b/g,
+    label: 'IBAN', placeholder: '[IBAN REDACTED]'
+  },
+  'DATE_OF_BIRTH': {
+    regex: /\b(?:DOB|Date of Birth|Born|Birthday|D\.O\.B\.?)[\s:]*(?:\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\w+ \d{1,2},?\s*\d{4})\b/gi,
+    label: 'Date of Birth', placeholder: '[DOB REDACTED]'
+  },
+  'PASSPORT': {
+    regex: /\b(?:passport\s*(?:#|no\.?|number)?[\s:]*)[A-Z0-9]{6,9}\b/gi,
+    label: 'Passport', placeholder: '[PASSPORT REDACTED]'
+  },
+  'NAME': {
+    regex: /\b(?:Mr|Mrs|Ms|Miss|Dr|Prof|Sr|Jr|Hon|Judge|Atty|Esq)\.?\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b/g,
+    label: 'Name', placeholder: '[NAME REDACTED]'
+  },
+  'ADDRESS': {
+    regex: /\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,3}(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Ln|Lane|Way|Ct|Court|Pl|Place|Cir|Circle)\.?(?:\s*,?\s*(?:Apt|Suite|Ste|Unit|#)\s*\d+[A-Za-z]?)?\b/gi,
+    label: 'Address', placeholder: '[ADDRESS REDACTED]'
+  },
+  'MAC_ADDRESS': {
+    regex: /\b(?:[0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}\b/g,
+    label: 'MAC Address', placeholder: '[MAC REDACTED]'
+  }
+};
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let findings = [];
+let activeFilters = new Set(Object.keys(PII_PATTERNS));
+let uploadedFile = null; // {name, ext, type, originalBytes}
+let decryptTarget = null;
+
+// ═══════════════════════════════════════════
+//  FILE UPLOAD
+// ═══════════════════════════════════════════
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+async function handleFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const textExts = ['txt','csv','json','xml','yaml','yml','md','log','tsv','conf','ini','toml','env'];
+
+  uploadedFile = {
+    name: file.name,
+    ext: ext,
+    type: file.type,
+    originalBytes: null
+  };
+
+  // Show file info
+  const info = document.getElementById('fileInfo');
+  const size = file.size < 1024 ? `${file.size} B`
+    : file.size < 1048576 ? `${(file.size/1024).toFixed(1)} KB`
+    : `${(file.size/1048576).toFixed(1)} MB`;
+  info.innerHTML = `<div class="file-info">
+    <span class="name">${escapeHtml(file.name)}</span>
+    <span class="size">${size}</span>
+    <button class="remove" onclick="removeFile()" title="Remove">&times;</button>
+  </div>`;
+  info.style.display = 'block';
+
+  if (ext === 'pdf') {
+    await handlePDF(file);
+  } else if (textExts.includes(ext)) {
+    const text = await file.text();
+    uploadedFile.originalBytes = new TextEncoder().encode(text);
+    document.getElementById('inputText').value = text;
+    scan(text);
+  } else {
+    showToast('Unsupported file type. Try TXT, CSV, JSON, XML, YAML, MD, LOG, or PDF.');
+    removeFile();
+  }
+}
+
+async function handlePDF(file) {
+  try {
+    const arrayBuf = await file.arrayBuffer();
+    uploadedFile.originalBytes = new Uint8Array(arrayBuf);
+
+    if (typeof pdfjsLib === 'undefined') {
+      showToast('PDF.js loading... try again in a moment');
+      return;
+    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({data: arrayBuf}).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(item => item.str).join(' ');
+      fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+    }
+
+    document.getElementById('inputText').value = fullText;
+    scan(fullText);
+    showToast(`Extracted ${pdf.numPages} pages from PDF`);
+  } catch (err) {
+    showToast('Failed to read PDF: ' + err.message);
+    removeFile();
+  }
+}
+
+function removeFile() {
+  uploadedFile = null;
+  document.getElementById('fileInfo').style.display = 'none';
+  fileInput.value = '';
+}
+
+// ═══════════════════════════════════════════
+//  SCANNING ENGINE
+// ═══════════════════════════════════════════
+function scan(text) {
+  findings = [];
+  let id = 0;
+
+  for (const [type, config] of Object.entries(PII_PATTERNS)) {
+    const regex = new RegExp(config.regex.source, config.regex.flags);
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const start = match.index;
+      const end = start + match[0].length;
+      const overlaps = findings.some(f =>
+        (start >= f.start && start < f.end) || (end > f.start && end <= f.end)
+      );
+      if (!overlaps) {
+        findings.push({ id: id++, type, value: match[0], start, end, redacted: false });
+      }
+    }
+  }
+  findings.sort((a, b) => a.start - b.start);
+  updateUI();
+}
+
+// ═══════════════════════════════════════════
+//  RENDERING
+// ═══════════════════════════════════════════
+function updateUI() {
+  renderOutput();
+  renderStats();
+  renderFilters();
+}
+
+function renderOutput() {
+  const text = document.getElementById('inputText').value;
+  if (!text) {
+    document.getElementById('outputArea').textContent = 'Redacted text will appear here...';
+    return;
+  }
+  if (findings.length === 0) {
+    document.getElementById('outputArea').textContent = text;
+    return;
+  }
+  let html = '';
+  let lastEnd = 0;
+  for (const f of findings) {
+    if (!activeFilters.has(f.type)) continue;
+    if (f.start < lastEnd) continue;
+    html += escapeHtml(text.slice(lastEnd, f.start));
+    const cls = `pii pii-${f.type.toLowerCase().replace(/_/g, '-')}${f.redacted ? ' redacted' : ''}`;
+    const display = f.redacted ? PII_PATTERNS[f.type].placeholder : f.value;
+    html += `<span class="${cls}" data-id="${f.id}" onclick="toggleRedact(${f.id})" title="Click to ${f.redacted ? 'restore' : 'redact'}">${escapeHtml(display)}</span>`;
+    lastEnd = f.end;
+  }
+  html += escapeHtml(text.slice(lastEnd));
+  document.getElementById('outputArea').innerHTML = html;
+}
+
+function renderStats() {
+  const container = document.getElementById('statsRow');
+  if (findings.length === 0) { container.innerHTML = ''; return; }
+  const redactedCount = findings.filter(f => f.redacted).length;
+  container.innerHTML = `
+    <div class="stat" style="color:var(--cyan)"><span class="stat-count">${findings.length}</span> found</div>
+    <div class="stat" style="color:var(--red)"><span class="stat-count">${redactedCount}</span> redacted</div>
+    ${uploadedFile ? `<div class="stat" style="color:var(--gold)"><span class="stat-count">${uploadedFile.ext.toUpperCase()}</span> file loaded</div>` : ''}
+  `;
+}
+
+function renderFilters() {
+  const container = document.getElementById('filters');
+  if (findings.length === 0) { container.innerHTML = ''; return; }
+  const types = [...new Set(findings.map(f => f.type))];
+  let html = '';
+  for (const type of types) {
+    const config = PII_PATTERNS[type];
+    const count = findings.filter(f => f.type === type).length;
+    const isActive = activeFilters.has(type);
+    html += `<span class="filter-tag ${isActive ? 'active' : ''}"
+      onclick="toggleFilter('${type}')"
+      style="color:${isActive ? '' : 'var(--text-muted)'};opacity:${isActive ? 1 : 0.5}">
+      <span class="dot" style="background:${getTypeColor(type)}"></span>
+      ${config.label} (${count})
+    </span>`;
+  }
+  container.innerHTML = html;
+}
+
+function getTypeColor(type) {
+  const colors = {
+    EMAIL:'#00fff2',PHONE:'#ff00aa',SSN:'#ff3355',CREDIT_CARD:'#ff6b2b',
+    IP:'#a855f7',API_KEY:'#ffaa00',AWS_KEY:'#ffaa00',NAME:'#39ff14',
+    ADDRESS:'#b8bcf7',DATE_OF_BIRTH:'#ffc864',JWT:'#ff8888',
+    PRIVATE_KEY:'#ff5555',IBAN:'#88ccff',PASSPORT:'#cc99ff',MAC_ADDRESS:'#88ddaa'
+  };
+  return colors[type] || '#888';
+}
+
+// ═══════════════════════════════════════════
+//  INTERACTIONS
+// ═══════════════════════════════════════════
+function toggleRedact(id) {
+  const f = findings.find(x => x.id === id);
+  if (f) { f.redacted = !f.redacted; updateUI(); }
+}
+
+function toggleFilter(type) {
+  activeFilters.has(type) ? activeFilters.delete(type) : activeFilters.add(type);
+  updateUI();
+}
+
+function redactAll() {
+  for (const f of findings) { if (activeFilters.has(f.type)) f.redacted = true; }
+  updateUI();
+  showToast(`Redacted ${findings.filter(f => f.redacted).length} items`);
+}
+
+function unredactAll() {
+  for (const f of findings) f.redacted = false;
+  updateUI();
+  showToast('All items restored');
+}
+
+function clearAll() {
+  document.getElementById('inputText').value = '';
+  findings = [];
+  removeFile();
+  updateUI();
+}
+
+function getPlainRedacted() {
+  const text = document.getElementById('inputText').value;
+  if (!findings.length) return text;
+  let result = '';
+  let lastEnd = 0;
+  for (const f of findings) {
+    if (!activeFilters.has(f.type)) continue;
+    if (f.start < lastEnd) continue;
+    result += text.slice(lastEnd, f.start);
+    result += f.redacted ? PII_PATTERNS[f.type].placeholder : f.value;
+    lastEnd = f.end;
+  }
+  result += text.slice(lastEnd);
+  return result;
+}
+
+function copyRedacted() {
+  const text = getPlainRedacted();
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied to clipboard');
+  });
+}
+
+function downloadRedacted() {
+  const text = getPlainRedacted();
+  let filename = 'redacted-text.txt';
+  let mimeType = 'text/plain';
+
+  if (uploadedFile) {
+    const base = uploadedFile.name.replace(/\.[^.]+$/, '');
+    const ext = uploadedFile.ext === 'pdf' ? 'txt' : uploadedFile.ext;
+    filename = `${base}-redacted.${ext}`;
+    const mimes = {
+      json:'application/json', xml:'text/xml', csv:'text/csv',
+      yaml:'text/yaml', yml:'text/yaml', md:'text/markdown',
+      tsv:'text/tab-separated-values'
+    };
+    mimeType = mimes[ext] || 'text/plain';
+  }
+
+  const blob = new Blob([text], {type: mimeType});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Downloaded ${filename}`);
+}
+
+// ═══════════════════════════════════════════
+//  ENCRYPTED VAULT (AES-256-GCM + IndexedDB)
+// ═══════════════════════════════════════════
+async function getVaultDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('RedactVault', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('entries')) {
+        db.createObjectStore('entries', {keyPath: 'id'});
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    {name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256'},
+    keyMaterial,
+    {name: 'AES-GCM', length: 256},
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptData(text, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+  const enc = new TextEncoder();
+  const ciphertext = await crypto.subtle.encrypt(
+    {name: 'AES-GCM', iv},
+    key,
+    enc.encode(text)
+  );
+  return {salt: Array.from(salt), iv: Array.from(iv), data: Array.from(new Uint8Array(ciphertext))};
+}
+
+async function decryptData(encrypted, password) {
+  const salt = new Uint8Array(encrypted.salt);
+  const iv = new Uint8Array(encrypted.iv);
+  const data = new Uint8Array(encrypted.data);
+  const key = await deriveKey(password, salt);
+  const decrypted = await crypto.subtle.decrypt({name: 'AES-GCM', iv}, key, data);
+  return new TextDecoder().decode(decrypted);
+}
+
+async function saveToVault() {
+  const password = document.getElementById('vaultPassword').value;
+  if (!password) { showToast('Enter an encryption password'); return; }
+
+  const redactedItems = findings.filter(f => f.redacted);
+  if (redactedItems.length === 0) { showToast('No redacted PII to save — redact items first'); return; }
+
+  // Only store the scrubbed PII values, not the full document
+  const piiRecords = redactedItems.map(f => ({
+    type: PII_PATTERNS[f.type].label,
+    category: f.type,
+    value: f.value,
+    position: {start: f.start, end: f.end}
+  }));
+
+  const payload = JSON.stringify({
+    source: uploadedFile ? uploadedFile.name : 'Pasted text',
+    scrubbedAt: new Date().toISOString(),
+    totalPiiFound: findings.length,
+    totalRedacted: redactedItems.length,
+    pii: piiRecords
+  });
+
+  try {
+    const encrypted = await encryptData(payload, password);
+    const entry = {
+      id: 'vault_' + Date.now(),
+      name: uploadedFile ? uploadedFile.name : 'Pasted text',
+      date: new Date().toISOString(),
+      piiCount: findings.length,
+      redactedCount: redactedItems.length,
+      encrypted: encrypted
+    };
+
+    const db = await getVaultDB();
+    const tx = db.transaction('entries', 'readwrite');
+    tx.objectStore('entries').put(entry);
+    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+
+    document.getElementById('vaultPassword').value = '';
+    showToast(`Encrypted ${redactedItems.length} PII records to vault`);
+    renderVaultList();
+  } catch (err) {
+    showToast('Encryption failed: ' + err.message);
+  }
+}
+
+async function renderVaultList() {
+  try {
+    const db = await getVaultDB();
+    const tx = db.transaction('entries', 'readonly');
+    const store = tx.objectStore('entries');
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const entries = req.result.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const container = document.getElementById('vaultList');
+      if (entries.length === 0) {
+        container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);margin-top:8px">No vault entries yet.</p>';
+        return;
+      }
+      container.innerHTML = entries.map(e => {
+        const d = new Date(e.date);
+        const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        return `<div class="vault-item">
+          <span class="vi-name">${escapeHtml(e.name)}</span>
+          <span style="color:var(--text-sec);font-size:11px">${e.redactedCount}/${e.piiCount} redacted</span>
+          <span class="vi-date">${dateStr}</span>
+          <button class="vi-btn" onclick="loadFromVault('${e.id}')">Load</button>
+          <button class="vi-btn" onclick="downloadVaultEntry('${e.id}')">Export</button>
+          <button class="vi-btn del" onclick="deleteVaultEntry('${e.id}')">Del</button>
+        </div>`;
+      }).join('');
+    };
+  } catch (err) {
+    console.error('Vault list error:', err);
+  }
+}
+
+function loadFromVault(id) {
+  decryptTarget = {id, action: 'load'};
+  document.getElementById('decryptModal').classList.add('show');
+  document.getElementById('decryptPassword').value = '';
+  document.getElementById('decryptPassword').focus();
+}
+
+function downloadVaultEntry(id) {
+  decryptTarget = {id, action: 'download'};
+  document.getElementById('decryptModal').classList.add('show');
+  document.getElementById('decryptPassword').value = '';
+  document.getElementById('decryptPassword').focus();
+}
+
+function closeDecryptModal() {
+  document.getElementById('decryptModal').classList.remove('show');
+  decryptTarget = null;
+}
+
+async function confirmDecrypt() {
+  const password = document.getElementById('decryptPassword').value;
+  if (!password) return;
+
+  try {
+    const db = await getVaultDB();
+    const tx = db.transaction('entries', 'readonly');
+    const store = tx.objectStore('entries');
+    const req = store.get(decryptTarget.id);
+    req.onsuccess = async () => {
+      const entry = req.result;
+      if (!entry) { showToast('Entry not found'); closeDecryptModal(); return; }
+
+      try {
+        const decrypted = await decryptData(entry.encrypted, password);
+        const payload = JSON.parse(decrypted);
+        const action = decryptTarget.action;
+        closeDecryptModal();
+
+        if (action === 'load') {
+          // Display the PII records in the output panel
+          let display = `PII EXTRACTED FROM: ${payload.source}\n`;
+          display += `Scrubbed: ${payload.scrubbedAt}\n`;
+          display += `Total Found: ${payload.totalPiiFound} | Redacted: ${payload.totalRedacted}\n`;
+          display += `${'─'.repeat(50)}\n\n`;
+          for (const item of payload.pii) {
+            display += `[${item.type}] ${item.value}\n`;
+          }
+          document.getElementById('inputText').value = '';
+          document.getElementById('outputArea').textContent = display;
+          findings = [];
+          renderStats();
+          renderFilters();
+          showToast(`Loaded ${payload.pii.length} PII records from vault`);
+        } else if (action === 'download') {
+          // Export only the PII manifest as JSON
+          const exportData = JSON.stringify(payload, null, 2);
+          const baseName = payload.source ? payload.source.replace(/\.[^.]+$/, '') : 'vault-export';
+          const filename = `${baseName}-pii-extract.json`;
+          const blob = new Blob([exportData], {type: 'application/json'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = filename; a.click();
+          URL.revokeObjectURL(url);
+          showToast(`Exported ${payload.pii.length} PII records → ${filename}`);
+        }
+      } catch (err) {
+        showToast('Wrong password or corrupted data');
+      }
+    };
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+async function deleteVaultEntry(id) {
+  try {
+    const db = await getVaultDB();
+    const tx = db.transaction('entries', 'readwrite');
+    tx.objectStore('entries').delete(id);
+    await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+    showToast('Vault entry deleted');
+    renderVaultList();
+  } catch (err) {
+    showToast('Delete failed: ' + err.message);
+  }
+}
+
+// Handle Enter in decrypt modal
+document.getElementById('decryptPassword').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmDecrypt();
+});
+
+// ═══════════════════════════════════════════
+//  SAMPLE DATA
+// ═══════════════════════════════════════════
+const SAMPLES = {
+  court: `UNITED STATES DISTRICT COURT
+SOUTHERN DISTRICT OF NEW YORK
+────────────────────────────────────────
+
+Case No. 19-cv-03377 (RMB)
+
+DEPOSITION OF WITNESS — EXHIBIT 14
+Filed Under Seal — Partially Unsealed Per Court Order 2024-08-09
+
+────────────────────────────────────────
+
+DEPOSITION TRANSCRIPT (Excerpted)
+
+Q: Please state your full name for the record.
+A: Dr. Richard Hoffman.
+
+Q: And your address?
+A: 1142 Park Avenue, New York, NY 10128.
+
+Q: What is your phone number?
+A: (212) 555-0147.
+
+Q: Your email?
+A: r.hoffman@hoffman-legal.com
+
+Q: And your date of birth?
+A: DOB: 04/18/1961
+
+Q: Do you recall the events of July 14, 2005?
+A: I received a call from Mrs. Sandra Whitfield asking me to review
+   documents at 358 El Brillo Way, Palm Beach, FL 33480.
+
+Q: Who else was present?
+A: Mr. Thomas Renard and Ms. Victoria Chase.
+
+────────────────────────────────────────
+
+EXHIBIT 14-B: FLIGHT MANIFEST (PARTIAL)
+
+Aircraft: Gulfstream IV | Tail: N909JE
+Date: 2005-07-14
+
+PASSENGER MANIFEST:
+1. Dr. Richard Hoffman     DOB: 04/18/1961    Passport #AB4821937
+2. Mrs. Sandra Whitfield   DOB: 11/02/1958    Passport #C08274651
+3. Mr. Thomas Renard       DOB: 06/30/1972    Phone: +1-561-555-0193
+4. Ms. Victoria Chase      DOB: 09/15/1983    Email: v.chase@proton.me
+
+Departure: KTEB (Teterboro, NJ)
+Arrival: KPBI (Palm Beach Intl, FL)
+Filed by: charter@eliteav.com | (561) 555-0200
+
+────────────────────────────────────────
+
+EXHIBIT 14-C: FINANCIAL RECORDS
+
+Wire Transfer — July 12, 2005
+From: Hoffman Family Trust
+Account: Chase Private Client
+Routing: [REDACTED BY INSTITUTION]
+Amount: $175,000.00
+IBAN: GB82 WEST 1234 5698 7654 32
+To: Palm Beach Property Holdings LLC
+Ref: "Consulting Fee — Q3 Retainer"
+
+Credit card on file: 4716-8832-1100-4455 (Amex Centurion)
+
+────────────────────────────────────────
+
+SEALED COMMUNICATION LOG (Court Order 2024-08-09)
+
+2005-07-13 14:22 — r.hoffman@hoffman-legal.com → charter@eliteav.com
+  Subject: "Confirm manifest for tomorrow"
+
+2005-07-13 16:45 — v.chase@proton.me → r.hoffman@hoffman-legal.com
+  Subject: "Running 30 min late, will meet at FBO"
+
+2005-07-14 09:01 — (212) 555-0147 called (561) 555-0200 (2 min 14 sec)
+
+2005-07-14 11:33 — (561) 555-0193 called (212) 555-0147 (8 min 02 sec)
+
+────────────────────────────────────────
+
+NOTE: All names, addresses, phone numbers, emails, passport numbers,
+financial details, and dates of birth in this exhibit represent
+personal identifiable information subject to protective order.
+
+SSN referenced in sealed Exhibit 7: 287-44-8823 (Dr. Richard Hoffman)
+
+────────────────────────────────────────
+END OF EXHIBIT 14`,
+
+  foia: `FREEDOM OF INFORMATION ACT RESPONSE
+Agency: Department of Defense
+FOIA Case No: 2024-F-01847
+Date: March 3, 2025
+────────────────────────────────────────
+
+PARTIALLY REDACTED — Exemptions (b)(6), (b)(7)(C) Applied
+
+Subject: Contractor Communications Re: Project MERIDIAN
+
+FROM: Dr. Alan Prescott <a.prescott@darpa.mil>
+TO: Mrs. Catherine Engel <c.engel@raytheon.com>
+CC: contracts-meridian@darpa.mil
+DATE: 2024-09-15 08:14:22
+IP: 192.168.14.201
+
+Mrs. Engel,
+
+Per our call on Friday, the Phase II deliverables for MERIDIAN
+are due NLT October 31. Please confirm the following personnel
+have active clearances:
+
+  1. Mr. David Chen — SSN: 518-73-9104 — TS/SCI
+  2. Dr. Yuki Tanaka — SSN: 442-61-8837 — SECRET
+  3. Ms. Rachel Winters — SSN: 319-55-7720 — TS/SCI
+
+Ship hardware prototypes to:
+4200 Wilson Blvd, Arlington, VA 22203
+Attn: Dr. Alan Prescott
+Phone: (703) 555-0182
+
+Contractor facility access server: 10.42.88.15
+VPN endpoint: 172.16.200.1
+Badge system MAC: 00:1B:44:11:3A:B7
+
+Wire payment for Phase I completion:
+IBAN: DE89 3704 0044 0532 0130 00
+Reference: MERIDIAN-P1-FINAL
+
+Please use secure email. Do NOT use personal accounts.
+Prior incident: Mr. Chen sent docs to d.chen.personal@gmail.com
+from IP 73.162.44.201 — this is logged as a security event.
+
+DOB for badge renewal:
+  Mr. David Chen — DOB: 03/22/1986
+  Dr. Yuki Tanaka — DOB: 11/14/1979
+
+Passport numbers for international travel authorization:
+  Mr. David Chen — passport #E12847563
+  Dr. Yuki Tanaka — passport #TK9928401
+
+Best,
+Dr. Alan Prescott
+DARPA / Tactical Technology Office
+a.prescott@darpa.mil | (703) 555-0182
+
+────────────────────────────────────────
+FOIA OFFICER NOTE: 14 PII items identified.
+Exemption (b)(6) applied to SSNs, DOBs, passport numbers.
+Exemption (b)(7)(C) applied to IP addresses, MAC addresses.
+Names retained as senior officials / contractor personnel.`,
+
+  support: `Subject: Account Issue - Order #48291
+From: sarah.mitchell@gmail.com
+
+Hi Support,
+
+My name is Mrs. Sarah Mitchell. I placed an order on March 3rd but haven't received it.
+
+My details:
+- Email: sarah.mitchell@gmail.com
+- Phone: (555) 867-5309
+- Address: 742 Evergreen Ave, Springfield, IL 62704
+- Card ending in: 4532-8891-2244-6677
+
+My account was charged $149.99 on 03/03/2026. Could you check the shipping status?
+
+Thanks,
+Dr. Sarah Mitchell
+DOB: 03/15/1988`,
+
+  logs: `[2026-03-14 10:23:45] INFO  Request from 192.168.1.105 - GET /api/users
+[2026-03-14 10:23:46] INFO  Request from 10.0.0.42 - POST /api/auth
+[2026-03-14 10:23:47] WARN  Failed login attempt from 203.0.113.195 - user: admin@company.com
+[2026-03-14 10:23:48] ERROR API key sk-proj-abc123def456ghi789jkl012mno in request header
+[2026-03-14 10:23:49] DEBUG AWS credential: AKIAIOSFODNN7EXAMPLE detected in env
+[2026-03-14 10:23:50] INFO  MAC address: 00:1A:2B:3C:4D:5E connected to network
+[2026-03-14 10:23:51] WARN  JWT token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U leaked in logs`,
+
+  hr: `EMPLOYEE RECORD — CONFIDENTIAL
+
+Name: Mr. James Rodriguez
+SSN: 423-86-7291
+DOB: 07/22/1985
+Phone: +1-555-234-5678
+Email: j.rodriguez@company.com
+Address: 1847 Oak Street, Austin, TX 78701
+
+Emergency Contact:
+Mrs. Elena Rodriguez
+Phone: (555) 345-6789
+
+Bank: Chase
+Account routing: see payroll
+Card on file: 5425-2334-5671-8902
+
+Passport No: passport #C04567891
+IBAN: GB29 NWBK 6016 1331 9268 19`,
+
+  code: `# Application Configuration
+DATABASE_URL=postgresql://admin:p4ssw0rd@192.168.1.50:5432/mydb
+REDIS_HOST=10.0.0.100
+
+# API Keys
+OPENAI_API_KEY=sk-proj-abc123def456ghi789jklmnopqrst
+ANTHROPIC_API_KEY=sk-ant-api03-abcdefghijklmnopqrstuvwxyz1234567890
+STRIPE_SECRET_KEY=sk_live_51HGxxxxxxxxxxxxxABCDEFxxxxxxxxx
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+GITHUB_TOKEN=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh1234
+
+# Admin
+ADMIN_EMAIL=admin@internal-corp.com
+SUPPORT_PHONE=555-123-4567
+
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF068RCMG
+ExampleKeyDataHere1234567890abcdef
+-----END RSA PRIVATE KEY-----`
+};
+
+function toggleSamples() {
+  document.getElementById('sampleMenu').classList.toggle('show');
+}
+
+function loadSample(key) {
+  document.getElementById('inputText').value = SAMPLES[key];
+  document.getElementById('sampleMenu').classList.remove('show');
+  removeFile();
+  scan(SAMPLES[key]);
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.sample-btn')) {
+    document.getElementById('sampleMenu').classList.remove('show');
+  }
+});
+
+// ═══════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Live scanning on input
+let scanTimeout;
+document.getElementById('inputText').addEventListener('input', (e) => {
+  clearTimeout(scanTimeout);
+  scanTimeout = setTimeout(() => scan(e.target.value), 150);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'R') {
+    e.preventDefault();
+    redactAll();
+  }
+  if (e.key === 'Escape') closeDecryptModal();
+});
+
+// Init vault list on load
+renderVaultList();
+</script>
+</body>
+</html>

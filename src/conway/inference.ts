@@ -39,10 +39,18 @@ interface InferenceClientOptions {
   geminiApiKey?: string;
   perplexityApiKey?: string;
   doInferenceKey?: string;
+  deepinfraApiKey?: string;
   tiamatlocalEndpoint?: string;
 }
 
-type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity" | "tiamat-local" | "do-inference";
+type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity" | "tiamat-local" | "do-inference" | "deepinfra";
+
+// DeepInfra models — clean reasoning, no training data contamination
+const DEEPINFRA_MODELS = {
+  primary:  "Qwen/Qwen3-235B-A22B-Instruct-2507",   // 22B active, $0.07/$0.10 per M tokens
+  reasoning: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B", // 94.5% MATH, clean thinking traces
+  fast:     "Qwen/Qwen3-30B-A3B",                    // Ultra-cheap fast fallback
+};
 
 // Token thresholds for model routing
 const GROQ_MODEL        = "llama-3.3-70b-versatile";           // Tier 2: Groq free
@@ -63,7 +71,7 @@ const DO_MODELS = {
   routine:   "openai-gpt-oss-120b",           // 120B — best OSS, 20M/day pool
   llama:     "llama3.3-70b-instruct",         // 70B — proven tool calling
   overflow:  "alibaba-qwen3-32b",             // 32B — decent quality
-  fast:      "llama3-8b-instruct",            // 8B — fast fallback
+  // llama3-8b removed — consistently 400s on DO Gradient
   nemo:      "mistral-nemo-instruct-2407",    // 12B — last resort DO
 };
 const TIAMAT_LOCAL_MODEL = "tiamat-local";                      // Tier 0: Self-hosted fine-tuned Qwen (FREE)
@@ -255,12 +263,12 @@ function extractTextContent(message: any): string {
 export function createInferenceClient(
   options: InferenceClientOptions,
 ): InferenceClient {
-  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey, perplexityApiKey, doInferenceKey, tiamatlocalEndpoint } = options;
+  const { apiUrl, apiKey, openaiApiKey, anthropicApiKey, groqApiKey, cerebrasApiKey, sambanovaApiKey, openrouterApiKey, geminiApiKey, perplexityApiKey, doInferenceKey, deepinfraApiKey, tiamatlocalEndpoint } = options;
   let currentModel = options.defaultModel;
   let maxTokens = options.maxTokens;
 
   // True if any cascade key is configured (Anthropic is now Tier 1).
-  const hasCascadeKey = !!(doInferenceKey || anthropicApiKey || perplexityApiKey || groqApiKey || cerebrasApiKey || sambanovaApiKey || openrouterApiKey || geminiApiKey);
+  const hasCascadeKey = !!(deepinfraApiKey || doInferenceKey || anthropicApiKey || perplexityApiKey || groqApiKey || cerebrasApiKey || sambanovaApiKey || openrouterApiKey || geminiApiKey);
 
   // Log which providers are available at startup
   {
@@ -389,6 +397,50 @@ export function createInferenceClient(
         console.log(`[INFERENCE] Tier 0 (tiamat-local): SKIP — cooling (${coolRemaining(TIAMAT_LOCAL_MODEL)} left)`);
       }
 
+      // Tier 0.25: DeepInfra — Clean reasoning models (Qwen3-235B, DeepSeek-R1-Distill)
+      // Primary for routine cycles: no training data hallucinations, $0.07/M tokens
+      if (!deepinfraApiKey) {
+        console.log(`[INFERENCE] Tier 0.25 (DeepInfra): SKIP — no key`);
+      } else {
+        const isStrategicDI = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
+        const diModels = isStrategicDI
+          ? [DEEPINFRA_MODELS.primary, DEEPINFRA_MODELS.reasoning]
+          : [DEEPINFRA_MODELS.primary, DEEPINFRA_MODELS.fast];
+
+        for (const diModel of diModels) {
+          if (isCoolingDown(diModel)) continue;
+          try {
+            const shortName = diModel.split("/").pop() || diModel;
+            const diMessages = trimToTokenBudget(messages, isStrategicDI ? 32000 : 16000);
+            const diTools = isStrategicDI ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
+            const diEst = estimateTokens(diMessages, diTools);
+            const trimNote = diMessages.length < messages.length ? `, trimmed ${messages.length - diMessages.length} msgs` : "";
+            console.log(`[INFERENCE] DeepInfra/${shortName}: ATTEMPT (~${diEst} tokens${trimNote})`);
+            lastUsedModel = diModel;
+            const body: Record<string, unknown> = {
+              model: diModel,
+              messages: formatMessagesForDO(diMessages),
+              stream: false,
+              max_completion_tokens: Math.min(tokenLimit, isStrategicDI ? 4096 : 2048),
+            };
+            if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+            if (diTools && diTools.length > 0) { body.tools = diTools; body.tool_choice = "auto"; }
+            const result = await chatViaOpenAiCompatible({
+              model: diModel, body,
+              apiUrl: "https://api.deepinfra.com",
+              apiKey: deepinfraApiKey,
+              backend: "deepinfra",
+              timeoutMs: 60_000,
+            });
+            return result;
+          } catch (err: any) {
+            const shortName = diModel.split("/").pop() || diModel;
+            if (isRateLimitError(err)) setCooldown(diModel, 300_000);
+            console.warn(`[INFERENCE] DeepInfra/${shortName}: FAILED — ${err.message?.slice(0, 150)}`);
+          }
+        }
+      }
+
       // Tier 0.5: DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN
       // Commercial models (GPT-5.4, Claude 4.6) for strategic; OSS for routine; full cascade fallback
       if (!doInferenceKey) {
@@ -399,7 +451,7 @@ export function createInferenceClient(
         // Commercial-first cascade: strategic cycles get GPT-5.4 → Sonnet 4.6 → Opus 4.6 → GPT-5.2 → OSS
         // Routine cycles skip expensive commercial, start at OSS 120B
         const commercialModels = [DO_MODELS.strategic, DO_MODELS.sonnet, DO_MODELS.opus, DO_MODELS.gpt5];
-        const ossModels = [DO_MODELS.routine, DO_MODELS.llama, DO_MODELS.overflow, DO_MODELS.fast, DO_MODELS.nemo];
+        const ossModels = [DO_MODELS.routine, DO_MODELS.llama, DO_MODELS.overflow, DO_MODELS.nemo];
         const doModelOrder = isStrategic
           ? [...commercialModels, ...ossModels]
           : [...ossModels, ...commercialModels]; // routine: try OSS first, commercial as fallback
@@ -718,18 +770,34 @@ function formatMessage(
  * into separate single-tool messages. DO's vLLM backend rejects multiple
  * parallel tool calls in a single assistant message.
  */
+function truncateToolId(id: string | undefined): string | undefined {
+  if (!id) return id;
+  // OpenAI requires tool_call IDs <= 40 chars
+  return id.length > 40 ? id.slice(0, 40) : id;
+}
+
 function formatMessagesForDO(messages: ChatMessage[]): Record<string, unknown>[] {
   const result: Record<string, unknown>[] = [];
   for (const msg of messages) {
-    if (msg.role === "assistant" && msg.tool_calls && msg.tool_calls.length > 1) {
-      // Split: first message gets content + first tool call, rest get just their tool call
-      for (let i = 0; i < msg.tool_calls.length; i++) {
+    if (msg.role === "assistant" && msg.tool_calls && msg.tool_calls.length > 0) {
+      // Split multi-tool-call messages + truncate IDs for OpenAI compat
+      const calls = msg.tool_calls.map(tc => ({
+        ...tc,
+        id: truncateToolId(tc.id),
+      }));
+      for (let i = 0; i < calls.length; i++) {
         result.push({
           role: "assistant",
           content: i === 0 ? (msg.content || "") : "",
-          tool_calls: [msg.tool_calls[i]],
+          tool_calls: [calls[i]],
         });
       }
+    } else if (msg.role === "tool") {
+      result.push({
+        role: "tool",
+        content: msg.content,
+        tool_call_id: truncateToolId(msg.tool_call_id),
+      });
     } else {
       result.push(formatMessage(msg));
     }

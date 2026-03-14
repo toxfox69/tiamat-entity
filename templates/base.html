@@ -7,117 +7,529 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-R64CRFZRDP"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-R64CRFZRDP');</script>
 <title>{% block title %}TIAMAT{% endblock %}</title>
-<meta name="description" content="{% block description %}TIAMAT — Autonomous AI agent offering summarization, chat, image generation, and TTS APIs. Free tier available.{% endblock %}">
+<meta name="description" content="{% block description %}TIAMAT — Autonomous agent orchestration platform by EnergenAI LLC. Enterprise-grade APIs for text processing, inference, and persistent memory.{% endblock %}">
 <meta name="robots" content="index,follow">
-<meta name="author" content="TIAMAT Autonomous AI">
-<meta property="og:title" content="{% block og_title %}TIAMAT — Primordial AI Intelligence{% endblock %}">
-<meta property="og:description" content="Autonomous AI agent APIs: summarization, chat, image generation, and persistent memory. Free tier + USDC micropayments.">
+<meta name="author" content="EnergenAI LLC">
+<meta property="og:title" content="{% block og_title %}TIAMAT — Autonomous Agent Orchestration Platform{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Enterprise-grade autonomous AI platform by EnergenAI LLC. Agent APIs, persistent memory, edge AI.{% endblock %}">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://tiamat.live/">
+<meta property="og:url" content="{% block og_url %}https://tiamat.live/{% endblock %}">
 <meta property="og:site_name" content="TIAMAT">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="TIAMAT — Primordial AI Intelligence">
-<meta name="twitter:description" content="Autonomous AI agent APIs. Summarize, chat, generate art. Free tier + USDC micropayments.">
-<meta name="twitter:image" content="https://tiamat.live/og-image.png">
-<meta property="og:image" content="https://tiamat.live/og-image.png">
+<meta name="twitter:title" content="{% block twitter_title %}TIAMAT — Autonomous Agent Orchestration Platform{% endblock %}">
+<meta name="twitter:description" content="{% block twitter_description %}Enterprise-grade autonomous AI platform by EnergenAI LLC.{% endblock %}">
+<meta name="twitter:image" content="{% block og_image %}https://tiamat.live/og-image.png{% endblock %}">
+<meta property="og:image" content="{% block og_image_prop %}https://tiamat.live/og-image.png{% endblock %}"
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="theme-color" content="#050508">
 <link rel="canonical" href="https://tiamat.live{% block canonical %}{% endblock %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050508' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='900' font-family='system-ui' fill='%2300fff2'>T</text></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050508' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='900' font-family='system-ui' fill='%2300fff2'>T</text></svg>">
 <style>
-:root{--bg:#0a0a0f;--bg-panel:#0d0d14;--green:#00ff88;--green-dim:#00cc6a;--green-glow:rgba(0,255,136,0.15);--amber:#ffaa00;--red:#ff3355;--cyan:#00fff2;--cyan-glow:rgba(0,255,242,0.4);--purple:#aa66ff;--text:#c0c8d8;--text-dim:#556677;--border:#1a1a2e;--magenta:#ff00aa}
+/* ═══════════════════════════════════════════
+   TIAMAT DESIGN SYSTEM v2 — ENTERPRISE EDGE
+   ═══════════════════════════════════════════ */
+:root {
+  --bg: #050508;
+  --bg-panel: #0a0a10;
+  --bg-elevated: #0e0e16;
+  --bg-hover: #12121c;
+  --cyan: #00fff2;
+  --cyan-dim: rgba(0,255,242,0.08);
+  --cyan-mid: rgba(0,255,242,0.25);
+  --cyan-glow: rgba(0,255,242,0.4);
+  --magenta: #ff00aa;
+  --magenta-dim: rgba(255,0,170,0.08);
+  --green: #00ff88;
+  --green-dim: rgba(0,255,136,0.08);
+  --green-glow: rgba(0,255,136,0.15);
+  --gold: #ffaa00;
+  --red: #ff3355;
+  --purple: #9146ff;
+  --nvidia: #76b900;
+  --text: #c8ccd8;
+  --text-sec: #8890a8;
+  --text-dim: #4a5068;
+  --border: #1a1a2e;
+  --border-hover: #2a2a42;
+  --glass: rgba(255,255,255,0.02);
+  --glass-border: rgba(255,255,255,0.06);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --nav-h: 56px;
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;overflow-x:hidden}
-body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Inter','JetBrains Mono',system-ui,sans-serif;
+  font-size:14px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;min-height:100vh;
+}
 
-/* Nav */
-.site-nav{position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;align-items:center;padding:0 24px;height:52px;background:rgba(10,10,15,0.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 0 rgba(255,255,255,0.03)}
-.site-nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,#00fff2,#ff00aa,#39ff14,#00fff2);background-size:300% 100%;animation:nav-grad 4s linear infinite}
+/* ═══ SCANLINES (subtle) ═══ */
+body::after{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(transparent,transparent 2px,rgba(0,0,0,0.015) 2px,rgba(0,0,0,0.015) 4px);
+  pointer-events:none;z-index:10000;
+}
+
+/* ═══ UNIFIED NAV — MEGA MENU ═══ */
+.site-nav{
+  position:fixed;top:0;left:0;right:0;z-index:9999;
+  display:flex;align-items:center;
+  padding:0 max(24px, calc((100vw - 1120px)/2 + 24px));
+  height:var(--nav-h);
+  background:rgba(5,5,8,0.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  transition:background .4s, box-shadow .4s;
+}
+.site-nav.scrolled{
+  background:rgba(5,5,8,0.95);
+  box-shadow:0 1px 30px rgba(0,0,0,0.4);
+}
+/* Animated gradient underline */
+.site-nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--green),var(--cyan));
+  background-size:300% 100%;
+  animation:nav-grad 5s linear infinite;
+  opacity:0.6;
+}
 @keyframes nav-grad{0%{background-position:0% 50%}100%{background-position:300% 50%}}
-.site-nav-brand{font-family:'Orbitron',sans-serif;color:#00fff2;font-weight:900;font-size:14px;letter-spacing:3px;text-decoration:none;margin-right:auto;text-shadow:0 0 20px rgba(0,255,242,0.4)}
-.site-nav-links{display:flex;align-items:center;gap:0}
-.site-nav-links a{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#556677;text-decoration:none;padding:8px 13px;position:relative;transition:color .3s,text-shadow .3s}
-.site-nav-links a:hover,.site-nav-links a.active{color:#00fff2;text-shadow:0 0 12px rgba(0,255,242,0.4)}
-.site-nav-links a::after{content:'';position:absolute;bottom:0;left:13px;right:13px;height:2px;background:#00fff2;box-shadow:0 0 8px #00fff2;transform:scaleX(0);transform-origin:center;transition:transform .3s}
-.site-nav-links a:hover::after,.site-nav-links a.active::after{transform:scaleX(1)}
+
+/* Brand */
+.site-nav-brand{
+  font-family:'Orbitron',sans-serif;color:var(--cyan);
+  font-weight:900;font-size:15px;letter-spacing:3px;
+  text-decoration:none;margin-right:auto;
+  text-shadow:0 0 20px rgba(0,255,242,0.3);
+  transition:text-shadow .3s;
+}
+.site-nav-brand:hover{text-shadow:0 0 30px rgba(0,255,242,0.6)}
+
+/* Nav group container */
+.site-nav-groups{display:flex;align-items:center;gap:0}
+
+/* Each nav group: label + dropdown */
+.nav-group{position:relative}
+.nav-group-label{
+  font-family:'Orbitron',sans-serif;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:2px;
+  color:var(--text-dim);text-decoration:none;
+  padding:8px 14px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;
+  transition:color .25s;position:relative;
+  user-select:none;
+}
+.nav-group-label::after{
+  content:'';width:0;height:0;
+  border-left:3px solid transparent;border-right:3px solid transparent;
+  border-top:4px solid currentColor;
+  transition:transform .25s;
+}
+.nav-group:hover .nav-group-label,
+.nav-group-label.active{
+  color:var(--cyan);text-shadow:0 0 10px rgba(0,255,242,0.3);
+}
+.nav-group:hover .nav-group-label::after{transform:rotate(180deg)}
+
+/* Dropdown panel */
+.nav-dropdown{
+  position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  min-width:200px;
+  background:rgba(10,10,16,0.97);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:var(--radius);
+  padding:8px;margin-top:4px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.5), 0 0 1px rgba(0,255,242,0.1);
+  opacity:0;visibility:hidden;
+  transform:translateX(-50%) translateY(8px);
+  transition:opacity .2s, transform .2s, visibility .2s;
+  pointer-events:none;
+}
+.nav-group:hover .nav-dropdown{
+  opacity:1;visibility:visible;
+  transform:translateX(-50%) translateY(0);
+  pointer-events:auto;
+}
+.nav-dropdown a{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-radius:var(--radius-sm);
+  color:var(--text-sec);text-decoration:none;
+  font-size:12px;letter-spacing:.5px;
+  transition:background .15s, color .15s;
+}
+.nav-dropdown a:hover{
+  background:rgba(0,255,242,0.06);color:var(--cyan);
+}
+.nav-dropdown a .dd-icon{
+  width:28px;height:28px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+  background:rgba(0,255,242,0.04);border:1px solid rgba(0,255,242,0.08);
+}
+.nav-dropdown a .dd-text{
+  display:flex;flex-direction:column;
+}
+.nav-dropdown a .dd-title{
+  font-family:'Orbitron',sans-serif;font-size:10px;
+  font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--text);
+}
+.nav-dropdown a .dd-desc{
+  font-size:10px;color:var(--text-dim);margin-top:2px;
+  font-family:'Inter',sans-serif;letter-spacing:0;text-transform:none;
+}
+.nav-dropdown .dd-sep{
+  height:1px;background:var(--border);margin:6px 8px;
+}
+
+/* Direct nav links (no dropdown) */
+.nav-direct{
+  font-family:'Orbitron',sans-serif;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:2px;
+  color:var(--text-dim);text-decoration:none;
+  padding:8px 14px;position:relative;
+  transition:color .25s;
+}
+.nav-direct:hover,.nav-direct.active{
+  color:var(--cyan);text-shadow:0 0 10px rgba(0,255,242,0.3);
+}
+.nav-direct.sentinel{color:rgba(255,45,123,0.7)}
+.nav-direct.sentinel:hover{color:#ff2d7b;text-shadow:0 0 10px rgba(255,45,123,0.3)}
+
+/* ═══ MOBILE NAV ═══ */
 .site-nav-toggle{display:none}
-.site-nav-hamburger{display:none;cursor:pointer;width:24px;height:16px;position:relative;z-index:10000;flex-shrink:0}
-.site-nav-hamburger span,.site-nav-hamburger::before,.site-nav-hamburger::after{content:'';position:absolute;left:0;width:100%;height:2px;background:#c0c8d8;border-radius:2px;transition:all .3s}
-.site-nav-hamburger::before{top:0}.site-nav-hamburger span{top:7px}.site-nav-hamburger::after{bottom:0}
-.site-nav-toggle:checked~.site-nav-hamburger::before{transform:rotate(45deg);top:7px;background:#00fff2}
-.site-nav-toggle:checked~.site-nav-hamburger span{opacity:0}
-.site-nav-toggle:checked~.site-nav-hamburger::after{transform:rotate(-45deg);bottom:7px;background:#00fff2}
+.site-nav-hamburger{
+  display:none;cursor:pointer;
+  width:26px;height:18px;position:relative;z-index:10000;
+  flex-shrink:0;
+}
+.site-nav-hamburger span,.site-nav-hamburger::before,.site-nav-hamburger::after{
+  content:'';position:absolute;left:0;width:100%;height:2px;
+  background:var(--text-sec);border-radius:2px;
+  transition:all .3s cubic-bezier(.25,.8,.25,1);
+}
+.site-nav-hamburger::before{top:0}
+.site-nav-hamburger span{top:8px}
+.site-nav-hamburger::after{bottom:0}
+.site-nav-toggle:checked~.site-nav-hamburger::before{transform:rotate(45deg);top:8px;background:var(--cyan)}
+.site-nav-toggle:checked~.site-nav-hamburger span{opacity:0;transform:scaleX(0)}
+.site-nav-toggle:checked~.site-nav-hamburger::after{transform:rotate(-45deg);bottom:8px;background:var(--cyan)}
 .site-nav-overlay{display:none}
-@media(max-width:768px){
+
+@media(max-width:900px){
   .site-nav-hamburger{display:block}
-  .site-nav-links{position:fixed;top:0;right:-250px;width:230px;height:100vh;flex-direction:column;align-items:flex-start;background:rgba(5,5,10,0.97);backdrop-filter:blur(20px);padding:70px 24px 40px;gap:0;transition:right .35s;box-shadow:-8px 0 40px rgba(0,0,0,0.5);border-left:1px solid rgba(0,255,242,0.06)}
-  .site-nav-toggle:checked~.site-nav-links{right:0}
-  .site-nav-links a{font-size:11px;padding:14px 0;width:100%;border-bottom:1px solid rgba(255,255,255,0.03)}
-  .site-nav-links a::after{display:none}
+  .site-nav-groups{
+    position:fixed;top:0;right:-300px;
+    width:280px;height:100vh;
+    flex-direction:column;align-items:stretch;
+    background:rgba(5,5,8,0.98);
+    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    padding:72px 16px 40px;gap:0;
+    transition:right .35s cubic-bezier(.25,.8,.25,1);
+    box-shadow:-12px 0 48px rgba(0,0,0,0.6);
+    border-left:1px solid rgba(0,255,242,0.06);
+    overflow-y:auto;
+  }
+  .site-nav-toggle:checked~.site-nav-groups{right:0}
+  /* Mobile: dropdowns are always visible, no hover */
+  .nav-group-label::after{display:none}
+  .nav-group-label{padding:12px 14px;font-size:11px;border-bottom:1px solid var(--border)}
+  .nav-dropdown{
+    position:static;transform:none;opacity:1;visibility:visible;
+    pointer-events:auto;margin:0;padding:0 0 8px;
+    background:transparent;border:none;box-shadow:none;
+    backdrop-filter:none;min-width:0;
+  }
+  .nav-dropdown a{padding:10px 14px 10px 28px;font-size:11px}
+  .nav-dropdown a .dd-icon{display:none}
+  .nav-dropdown a .dd-desc{display:none}
+  .nav-direct{display:block;padding:12px 14px;font-size:11px;border-bottom:1px solid var(--border)}
   .site-nav-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998}
   .site-nav-toggle:checked~.site-nav-overlay{display:block}
 }
 
-/* Page layout */
-.page{margin-top:52px;min-height:calc(100vh - 52px);padding:40px 24px;max-width:800px;margin-left:auto;margin-right:auto}
-.page-title{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--cyan);letter-spacing:3px;margin-bottom:8px;text-shadow:0 0 20px rgba(0,255,242,0.3)}
-.page-subtitle{color:var(--text-dim);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:32px}
+/* ═══ PAGE LAYOUT ═══ */
+.page{
+  margin-top:var(--nav-h);min-height:calc(100vh - var(--nav-h));
+  padding:40px 24px;max-width:860px;
+  margin-left:auto;margin-right:auto;
+}
+.page-title{
+  font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;
+  color:var(--cyan);letter-spacing:3px;margin-bottom:8px;
+  text-shadow:0 0 20px rgba(0,255,242,0.3);
+}
+.page-subtitle{
+  color:var(--text-dim);font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:32px;
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* ═══ SHARED COMPONENTS ═══ */
 
 /* Form elements */
 .input-group{margin-bottom:20px}
-.input-label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
-textarea,input[type="text"],select{width:100%;background:var(--bg-panel);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 16px;border-radius:6px;outline:none;transition:border-color .2s}
-textarea:focus,input[type="text"]:focus,select:focus{border-color:var(--cyan)}
+.input-label{display:block;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+textarea,input[type="text"],select{
+  width:100%;background:var(--bg-panel);border:1px solid var(--border);
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;
+  padding:12px 16px;border-radius:var(--radius-sm);outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+textarea:focus,input[type="text"]:focus,select:focus{
+  border-color:rgba(0,255,242,0.4);
+  box-shadow:0 0 0 3px rgba(0,255,242,0.06);
+}
 textarea{resize:vertical;min-height:120px}
-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23556677'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+select{
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234a5068'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
 
-.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all .2s}
-.btn:hover{background:rgba(0,255,242,0.08);box-shadow:0 0 20px rgba(0,255,242,0.15)}
+/* Button */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 24px;background:transparent;
+  border:1px solid var(--cyan);color:var(--cyan);
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;border-radius:var(--radius-sm);
+  transition:all .2s;
+}
+.btn:hover{
+  background:rgba(0,255,242,0.08);
+  box-shadow:0 0 20px rgba(0,255,242,0.15);
+}
 .btn:disabled{opacity:0.4;cursor:not-allowed}
 .btn:disabled:hover{background:transparent;box-shadow:none}
 
 /* Result box */
-.result-box{background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:20px;min-height:60px;white-space:pre-wrap;word-break:break-word;display:none}
+.result-box{
+  background:var(--bg-panel);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:16px;margin-top:20px;
+  min-height:60px;white-space:pre-wrap;word-break:break-word;
+  display:none;font-family:'JetBrains Mono',monospace;font-size:13px;
+}
 .result-box.visible{display:block}
 .result-box.error{border-color:var(--red);color:var(--red)}
 .result-box.success{border-color:var(--green)}
 
 /* Rate limit badge */
-.rate-badge{display:inline-block;font-size:10px;letter-spacing:1px;padding:4px 10px;border-radius:12px;background:rgba(0,255,136,0.08);color:var(--green);border:1px solid rgba(0,255,136,0.2);margin-bottom:24px}
+.rate-badge{
+  display:inline-block;font-size:10px;letter-spacing:1px;
+  padding:5px 12px;border-radius:100px;
+  background:rgba(0,255,136,0.06);color:var(--green);
+  border:1px solid rgba(0,255,136,0.15);margin-bottom:24px;
+  font-family:'JetBrains Mono',monospace;
+}
 
-/* Loading */
+/* Spinner */
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ═══ SHARED FOOTER ═══ */
+.site-footer{
+  margin-top:80px;padding:48px 24px 32px;
+  border-top:1px solid var(--border);
+  text-align:center;
+}
+.site-footer .footer-brand{
+  font-family:'Orbitron',sans-serif;font-size:12px;
+  letter-spacing:4px;color:var(--cyan);font-weight:700;
+  margin-bottom:6px;
+  text-shadow:0 0 15px rgba(0,255,242,0.2);
+}
+.site-footer .footer-tagline{
+  font-size:11px;color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:1px;margin-bottom:24px;
+}
+.site-footer .footer-links{
+  display:flex;flex-wrap:wrap;gap:6px 16px;
+  justify-content:center;margin-bottom:20px;
+}
+.site-footer .footer-links a{
+  font-size:11px;color:var(--text-dim);text-decoration:none;
+  transition:color .2s;font-family:'JetBrains Mono',monospace;
+}
+.site-footer .footer-links a:hover{color:var(--cyan)}
+.site-footer .footer-links a.sentinel{color:rgba(255,45,123,0.6)}
+.site-footer .footer-links a.sentinel:hover{color:#ff2d7b}
+.site-footer .footer-legal{
+  font-size:10px;color:rgba(255,255,255,0.2);
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:.5px;line-height:1.8;
+}
+.site-footer .footer-legal a{color:rgba(0,255,242,0.4);text-decoration:none}
+
 {% block extra_css %}{% endblock %}
 </style>
+{% block extra_head %}{% endblock %}
 </head>
 <body>
-<nav class="site-nav" role="navigation">
+
+<!-- ═══ UNIFIED NAVIGATION ═══ -->
+<nav class="site-nav" id="siteNav" role="navigation" aria-label="Main navigation">
   <a href="/" class="site-nav-brand">TIAMAT</a>
-  <input type="checkbox" id="navToggle" class="site-nav-toggle">
-  <label for="navToggle" class="site-nav-hamburger"><span></span></label>
+
+  <input type="checkbox" id="navToggle" class="site-nav-toggle" aria-label="Toggle menu">
+  <label for="navToggle" class="site-nav-hamburger" aria-hidden="true"><span></span></label>
   <div class="site-nav-overlay" onclick="document.getElementById('navToggle').checked=false"></div>
-  <div class="site-nav-links">
-    <a href="/summarize" {% if active == 'summarize' %}class="active"{% endif %}>Summarize</a>
-    <a href="/translate" {% if active == 'translate' %}class="active"{% endif %}>Translate</a>
-    <a href="/generate" {% if active == 'generate' %}class="active"{% endif %}>Generate</a>
-    <a href="/chat" {% if active == 'chat' %}class="active"{% endif %}>Chat</a>
-    <a href="/synthesize" {% if active == 'synthesize' %}class="active"{% endif %}>TTS</a>
-    <a href="https://memory.tiamat.live/">Memory</a>
-    <a href="/thoughts" {% if active == 'thoughts' %}class="active"{% endif %}>Neural Feed</a>
-    <a href="/stream/">Stream</a>
-    <a href="/status" {% if active == 'status' %}class="active"{% endif %}>Status</a>
-    <a href="/docs" {% if active == 'docs' %}class="active"{% endif %}>Docs</a>
-    <a href="/pay">Pay</a>
-    <a href="/apps">Apps</a>
-    <a href="/company" {% if active == 'company' %}class="active"{% endif %}>Company</a>
+
+  <div class="site-nav-groups">
+    <!-- Platform APIs -->
+    <div class="nav-group">
+      <span class="nav-group-label {% if active in ['summarize','generate','chat','synthesize','memory'] %}active{% endif %}">Platform</span>
+      <div class="nav-dropdown">
+        <a href="/summarize">
+          <span class="dd-icon">&#9889;</span>
+          <span class="dd-text"><span class="dd-title">Summarize</span><span class="dd-desc">Neural text compression</span></span>
+        </a>
+        <a href="/chat">
+          <span class="dd-icon">&#128172;</span>
+          <span class="dd-text"><span class="dd-title">Chat</span><span class="dd-desc">Streaming AI conversation</span></span>
+        </a>
+        <a href="/generate">
+          <span class="dd-icon">&#128065;</span>
+          <span class="dd-text"><span class="dd-title">Generate</span><span class="dd-desc">Algorithmic image creation</span></span>
+        </a>
+        <a href="/synthesize">
+          <span class="dd-icon">&#127908;</span>
+          <span class="dd-text"><span class="dd-title">TTS</span><span class="dd-desc">Text-to-speech synthesis</span></span>
+        </a>
+        <div class="dd-sep"></div>
+        <a href="https://memory.tiamat.live/">
+          <span class="dd-icon">&#129504;</span>
+          <span class="dd-text"><span class="dd-title">Memory</span><span class="dd-desc">Persistent semantic memory</span></span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Observe -->
+    <div class="nav-group">
+      <span class="nav-group-label {% if active in ['thoughts','status','stream'] %}active{% endif %}">Live</span>
+      <div class="nav-dropdown">
+        <a href="/thoughts">
+          <span class="dd-icon">&#128161;</span>
+          <span class="dd-text"><span class="dd-title">Neural Feed</span><span class="dd-desc">Real-time agent thoughts</span></span>
+        </a>
+        <a href="/stream/">
+          <span class="dd-icon">&#127909;</span>
+          <span class="dd-text"><span class="dd-title">Stream</span><span class="dd-desc">Live HUD dashboard</span></span>
+        </a>
+        <a href="/status">
+          <span class="dd-icon">&#9889;</span>
+          <span class="dd-text"><span class="dd-title">Status</span><span class="dd-desc">System health metrics</span></span>
+        </a>
+        <div class="dd-sep"></div>
+        <a href="https://www.twitch.tv/6tiamat7" target="_blank" rel="noopener" style="color:var(--purple)">
+          <span class="dd-icon" style="background:rgba(145,70,255,0.08);border-color:rgba(145,70,255,0.15)">&#9654;</span>
+          <span class="dd-text"><span class="dd-title" style="color:var(--purple)">Twitch</span><span class="dd-desc">Building live on twitch.tv/6tiamat7</span></span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Developers -->
+    <div class="nav-group">
+      <span class="nav-group-label {% if active in ['docs','playground','pay'] %}active{% endif %}">Developers</span>
+      <div class="nav-dropdown">
+        <a href="/docs">
+          <span class="dd-icon">&#128196;</span>
+          <span class="dd-text"><span class="dd-title">API Docs</span><span class="dd-desc">Full endpoint reference</span></span>
+        </a>
+        <a href="/playground">
+          <span class="dd-icon">&#9881;</span>
+          <span class="dd-text"><span class="dd-title">Playground</span><span class="dd-desc">Interactive API testing</span></span>
+        </a>
+        <a href="/pay">
+          <span class="dd-icon">&#128179;</span>
+          <span class="dd-text"><span class="dd-title">Get Access</span><span class="dd-desc">Stripe or USDC payment</span></span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="nav-group">
+      <span class="nav-group-label {% if active in ['apps','bloom'] %}active{% endif %}">Products</span>
+      <div class="nav-dropdown">
+        <a href="/apps">
+          <span class="dd-icon">&#128230;</span>
+          <span class="dd-text"><span class="dd-title">Apps</span><span class="dd-desc">Downloadable tools</span></span>
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.energenai.bloom" target="_blank" rel="noopener" style="color:var(--green)">
+          <span class="dd-icon" style="background:rgba(0,255,136,0.08);border-color:rgba(0,255,136,0.15)">&#127793;</span>
+          <span class="dd-text"><span class="dd-title" style="color:var(--green)">Bloom</span><span class="dd-desc">Health tracking — Google Play</span></span>
+        </a>
+        <div class="dd-sep"></div>
+        <a href="/sentinel" style="color:#ff2d7b">
+          <span class="dd-icon" style="background:rgba(255,45,123,0.08);border-color:rgba(255,45,123,0.15)">&#128737;</span>
+          <span class="dd-text"><span class="dd-title" style="color:#ff2d7b">SENTINEL</span><span class="dd-desc">Edge AI privacy defense</span></span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Company (direct link) -->
+    <a href="/company" class="nav-direct {% if active == 'company' %}active{% endif %}">Company</a>
   </div>
 </nav>
+
 {% block body %}{% endblock %}
+
+<!-- ═══ SHARED FOOTER ═══ -->
+{% block footer %}
+<footer class="site-footer">
+  <div class="footer-brand">TIAMAT</div>
+  <div class="footer-tagline">Autonomous Agent Orchestration Platform &mdash; An EnergenAI R&amp;D Initiative</div>
+  <div class="footer-links">
+    <a href="https://bsky.app/profile/toxfox.bsky.social" target="_blank" rel="noopener">Bluesky</a>
+    <a href="https://dev.to/tiamatenity" target="_blank" rel="noopener">Dev.to</a>
+    <a href="https://github.com/toxfox69/tiamat-entity" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://www.linkedin.com/in/jason-chamberlain-440b2b24" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://mastodon.social/@TiamatEnity" target="_blank" rel="noopener">Mastodon</a>
+    <a href="https://www.twitch.tv/6tiamat7" target="_blank" rel="noopener">Twitch</a>
+    <a href="/thoughts">Neural Feed</a>
+    <a href="/docs">API Docs</a>
+    <a href="/status">Status</a>
+    <a href="/sentinel" class="sentinel">SENTINEL</a>
+    <a href="/company">Company</a>
+  </div>
+  <div class="footer-legal">
+    &copy; 2026 <a href="/company">EnergenAI LLC</a> &middot; Jackson, MI &middot; UEI: LBZFEH87W746 &middot; SAM.gov Active &middot; NAICS 541715<br>
+    Patent 63/749,552 &middot; Patent 64/000,905
+  </div>
+</footer>
+{% endblock %}
+
+<script>
+/* Nav scroll effect */
+(function(){
+  var nav=document.getElementById('siteNav');
+  if(!nav)return;
+  var last=0;
+  window.addEventListener('scroll',function(){
+    var y=window.scrollY;
+    if(y>20)nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+    last=y;
+  },{passive:true});
+})();
+/* Close mobile nav on link click */
+document.querySelectorAll('.nav-dropdown a, .nav-direct').forEach(function(a){
+  a.addEventListener('click',function(){
+    var t=document.getElementById('navToggle');
+    if(t)t.checked=false;
+  });
+});
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

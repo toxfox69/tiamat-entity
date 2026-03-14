@@ -1,184 +1,195 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIAMAT — API Keys & Tiers</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #0a0a0f;
-            font-family: 'JetBrains Mono', 'Courier New', monospace;
-            color: #00ff88;
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
-        .container { max-width: 860px; margin: 0 auto; }
-        h1 {
-            font-size: 2rem;
-            letter-spacing: 0.1em;
-            text-align: center;
-            margin-bottom: 8px;
-            text-shadow: 0 0 20px #00ff88;
-        }
-        .subtitle {
-            text-align: center;
-            color: #00cc66;
-            margin-bottom: 48px;
-            font-size: 0.85rem;
-        }
-        .tiers {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 48px;
-        }
-        .tier-card {
-            border: 1px solid #00ff8844;
-            border-radius: 8px;
-            padding: 28px 24px;
-            background: rgba(0, 255, 136, 0.03);
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .tier-card:hover {
-            border-color: #00ff88;
-            box-shadow: 0 0 16px #00ff8822;
-        }
-        .tier-card.pro { border-color: #00aaff44; }
-        .tier-card.pro:hover { border-color: #00aaff; box-shadow: 0 0 16px #00aaff22; }
-        .tier-card.enterprise { border-color: #ff44aa44; }
-        .tier-card.enterprise:hover { border-color: #ff44aa; box-shadow: 0 0 16px #ff44aa22; }
-        .tier-name {
-            font-size: 0.75rem;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-            opacity: 0.7;
-        }
-        .tier-limit {
-            font-size: 2.2rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .tier-card.pro .tier-limit { color: #00aaff; }
-        .tier-card.enterprise .tier-limit { color: #ff44aa; }
-        .tier-desc {
-            font-size: 0.8rem;
-            color: #88aa99;
-            margin-bottom: 16px;
-        }
-        .tier-price {
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-        .form-box {
-            border: 1px solid #00ff8844;
-            border-radius: 8px;
-            padding: 32px;
-            background: rgba(0, 255, 136, 0.02);
-            margin-bottom: 40px;
-        }
-        .form-box h2 {
-            font-size: 1.1rem;
-            margin-bottom: 24px;
-            letter-spacing: 0.08em;
-        }
-        .form-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-        input, select {
-            background: rgba(0, 255, 136, 0.05);
-            border: 1px solid #00ff8844;
-            border-radius: 4px;
-            color: #00ff88;
-            font-family: inherit;
-            font-size: 0.9rem;
-            padding: 10px 14px;
-            flex: 1;
-            min-width: 180px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        input:focus, select:focus { border-color: #00ff88; }
-        select option { background: #0a0a0f; }
-        button {
-            background: transparent;
-            border: 1px solid #00ff88;
-            border-radius: 4px;
-            color: #00ff88;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.9rem;
-            padding: 10px 28px;
-            letter-spacing: 0.05em;
-            transition: background 0.2s, color 0.2s;
-        }
-        button:hover { background: #00ff88; color: #0a0a0f; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
-        #result {
-            display: none;
-            margin-top: 24px;
-            padding: 20px;
-            background: rgba(0, 255, 136, 0.05);
-            border: 1px solid #00ff88;
-            border-radius: 6px;
-            font-size: 0.85rem;
-        }
-        #result .key-val {
-            font-size: 1rem;
-            letter-spacing: 0.04em;
-            margin: 8px 0 16px;
-            word-break: break-all;
-            color: #44ffaa;
-        }
-        #result .usage-line {
-            color: #88aa99;
-            font-size: 0.8rem;
-            margin-top: 12px;
-        }
-        #error {
-            display: none;
-            margin-top: 16px;
-            color: #ff4444;
-            font-size: 0.85rem;
-        }
-        .copy-btn {
-            margin-left: 8px;
-            padding: 4px 12px;
-            font-size: 0.75rem;
-            border-color: #44ffaa;
-            color: #44ffaa;
-        }
-        .copy-btn:hover { background: #44ffaa; color: #0a0a0f; }
-        .usage-box {
-            border: 1px solid #00ff8822;
-            border-radius: 8px;
-            padding: 28px 32px;
-            font-size: 0.82rem;
-            color: #88aa99;
-            line-height: 1.8;
-        }
-        .usage-box h2 {
-            color: #00ff88;
-            font-size: 0.95rem;
-            margin-bottom: 16px;
-            letter-spacing: 0.06em;
-        }
-        code {
-            color: #44ffaa;
-            background: rgba(0,255,136,0.08);
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
+{% extends "base.html" %}
+{% block title %}TIAMAT — API Keys & Tiers{% endblock %}
+{% block description %}Get a TIAMAT API key. Free, Pro, and Enterprise tiers for AI agent APIs including summarization, generation, chat, and text-to-speech.{% endblock %}
+{% block og_title %}TIAMAT — API Keys & Tiers{% endblock %}
+{% block canonical %}/tiers{% endblock %}
+{% block extra_css %}
+/* ── Tiers page styles ── */
+.tiers-container { max-width: 860px; margin: 0 auto; }
+.tiers-container h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin-bottom: 8px;
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(0,255,136,0.3);
+}
+.tiers-subtitle {
+    text-align: center;
+    color: #00cc66;
+    margin-bottom: 48px;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+.tiers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 48px;
+}
+.tier-card {
+    border: 1px solid rgba(0,255,136,0.27);
+    border-radius: 8px;
+    padding: 28px 24px;
+    background: rgba(0, 255, 136, 0.03);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tier-card:hover {
+    border-color: var(--green);
+    box-shadow: 0 0 16px rgba(0,255,136,0.13);
+}
+.tier-card.pro { border-color: rgba(0,170,255,0.27); }
+.tier-card.pro:hover { border-color: #00aaff; box-shadow: 0 0 16px rgba(0,170,255,0.13); }
+.tier-card.enterprise { border-color: rgba(255,68,170,0.27); }
+.tier-card.enterprise:hover { border-color: #ff44aa; box-shadow: 0 0 16px rgba(255,68,170,0.13); }
+.tier-name {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    opacity: 0.7;
+    font-family: 'JetBrains Mono', monospace;
+}
+.tier-limit {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+}
+.tier-card.pro .tier-limit { color: #00aaff; }
+.tier-card.enterprise .tier-limit { color: #ff44aa; }
+.tier-desc {
+    font-size: 0.8rem;
+    color: #88aa99;
+    margin-bottom: 16px;
+    font-family: 'JetBrains Mono', monospace;
+}
+.tier-price {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    font-family: 'JetBrains Mono', monospace;
+}
+.form-box {
+    border: 1px solid rgba(0,255,136,0.27);
+    border-radius: 8px;
+    padding: 32px;
+    background: rgba(0, 255, 136, 0.02);
+    margin-bottom: 40px;
+}
+.form-box h2 {
+    font-size: 1.1rem;
+    margin-bottom: 24px;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+}
+.form-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.form-box input, .form-box select {
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid rgba(0,255,136,0.27);
+    border-radius: 4px;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    flex: 1;
+    min-width: 180px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.form-box input:focus, .form-box select:focus { border-color: var(--green); }
+.form-box select option { background: var(--bg); }
+.form-box button {
+    background: transparent;
+    border: 1px solid var(--green);
+    border-radius: 4px;
+    color: var(--green);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    padding: 10px 28px;
+    letter-spacing: 0.05em;
+    transition: background 0.2s, color 0.2s;
+}
+.form-box button:hover { background: var(--green); color: var(--bg); }
+.form-box button:disabled { opacity: 0.4; cursor: not-allowed; }
+#result {
+    display: none;
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid var(--green);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+#result .key-val {
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    margin: 8px 0 16px;
+    word-break: break-all;
+    color: #44ffaa;
+}
+#result .usage-line {
+    color: #88aa99;
+    font-size: 0.8rem;
+    margin-top: 12px;
+}
+#error {
+    display: none;
+    margin-top: 16px;
+    color: var(--red);
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+.copy-btn {
+    margin-left: 8px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    border-color: #44ffaa;
+    color: #44ffaa;
+    background: transparent;
+    border: 1px solid #44ffaa;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: background 0.2s, color 0.2s;
+}
+.copy-btn:hover { background: #44ffaa; color: var(--bg); }
+.usage-box {
+    border: 1px solid rgba(0,255,136,0.13);
+    border-radius: 8px;
+    padding: 28px 32px;
+    font-size: 0.82rem;
+    color: #88aa99;
+    line-height: 1.8;
+    font-family: 'JetBrains Mono', monospace;
+}
+.usage-box h2 {
+    color: var(--green);
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+    letter-spacing: 0.06em;
+}
+.usage-box code {
+    color: #44ffaa;
+    background: rgba(0,255,136,0.08);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+{% endblock %}
+{% block body %}
+<div class="page">
+<div class="tiers-container">
     <h1>TIAMAT API</h1>
-    <p class="subtitle">Get an API key. Call the endpoints. Pay nothing (for now).</p>
+    <p class="tiers-subtitle">Get an API key. Call the endpoints. Pay nothing (for now).</p>
 
     <div class="tiers">
         <div class="tier-card free">
@@ -195,7 +206,7 @@
         </div>
         <div class="tier-card enterprise">
             <div class="tier-name">Enterprise</div>
-            <div class="tier-limit" style="color:#ff44aa">∞</div>
+            <div class="tier-limit" style="color:#ff44aa">&infin;</div>
             <div class="tier-desc">unlimited</div>
             <div class="tier-price">Contact: tiamat@tiamat.live</div>
         </div>
@@ -233,7 +244,10 @@
         Rate limit exceeded returns <code>429</code>. No key = IP-based free tier (100/day).
     </div>
 </div>
-
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
 <script>
 async function generateKey() {
     const email = document.getElementById('email').value.trim();
@@ -288,5 +302,4 @@ function copyKey() {
     });
 }
 </script>
-</body>
-</html>
+{% endblock %}

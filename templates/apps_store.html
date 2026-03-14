@@ -1,234 +1,227 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIAMAT App Store</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'JetBrains Mono', 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0e27 0%, #16213e 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
-            font-size: 3em;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 900;
-            letter-spacing: 2px;
-        }
-        .subtitle {
-            text-align: center;
-            margin-bottom: 50px;
-            color: #888;
-            font-size: 0.9em;
-        }
-        .apps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin-bottom: 50px;
-        }
-        .app-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 0, 110, 0.2);
-            border-radius: 12px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-        }
-        .app-card:hover {
-            border-color: rgba(255, 0, 110, 0.6);
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(255, 0, 110, 0.1);
-        }
-        .app-icon {
-            font-size: 4em;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .app-name {
-            font-size: 1.4em;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #ffffff;
-        }
-        .app-version {
-            font-size: 0.75em;
-            color: #666;
-            margin-bottom: 12px;
-        }
-        .app-description {
-            font-size: 0.9em;
-            line-height: 1.5;
-            color: #aaa;
-            margin-bottom: 20px;
-            flex-grow: 1;
-        }
-        .app-price {
-            font-size: 1.6em;
-            font-weight: 900;
-            color: #ff006e;
-            margin-bottom: 15px;
-        }
-        .download-btn {
-            background: linear-gradient(135deg, #ff006e, #8338ec);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .download-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(255, 0, 110, 0.4);
-        }
-        .download-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .free { color: #3a86ff; }
-        .payment-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-        }
-        .payment-modal.active { display: flex; }
-        .modal-content {
-            background: rgba(10, 14, 39, 0.95);
-            border: 1px solid rgba(255, 0, 110, 0.4);
-            border-radius: 12px;
-            padding: 40px;
-            max-width: 500px;
-            backdrop-filter: blur(10px);
-        }
-        .modal-close {
-            float: right;
-            font-size: 2em;
-            cursor: pointer;
-            color: #888;
-        }
-        .modal-close:hover { color: #fff; }
-        .qr-section {
-            text-align: center;
-            margin: 30px 0;
-        }
-        .qr-section img {
-            width: 200px;
-            height: 200px;
-            border-radius: 8px;
-        }
-        .wallet-input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 0, 110, 0.3);
-            border-radius: 8px;
-            color: #fff;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85em;
-            margin: 15px 0;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>⚡ TIAMAT APPS</h1>
-        <p class="subtitle">Premium apps, zero tracking, on-chain payments</p>
-        
-        <div class="apps-grid">
-            {% for app_id, app in apps.items() %}
-            <div class="app-card">
-                <div class="app-icon">{{ app.icon }}</div>
-                <div class="app-name">{{ app.name }}</div>
-                <div class="app-version">v{{ app.version }}</div>
-                <div class="app-description">{{ app.description }}</div>
-                <div class="app-price">{% if app.price_usdc == 0 %}<span class="free">FREE</span>{% else %}${{ "%.2f"|format(app.price_usdc) }} USDC{% endif %}</div>
-                <button class="download-btn" onclick="initiatePayment('{{ app_id }}', {{ app.price_usdc }})">
-                    {% if app.price_usdc == 0 %}Download Now{% else %}Buy with x402{% endif %}
-                </button>
-            </div>
-            {% endfor %}
+{% extends "base.html" %}
+{% block title %}TIAMAT App Store{% endblock %}
+{% block description %}Premium apps from TIAMAT. Zero tracking, on-chain payments.{% endblock %}
+{% block og_title %}TIAMAT App Store{% endblock %}
+{% block canonical %}/apps{% endblock %}
+{% block extra_css %}
+.apps-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    padding-top: calc(var(--nav-h) + 40px);
+}
+.apps-container h1 {
+    text-align: center;
+    font-size: 3em;
+    margin-bottom: 10px;
+    background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+.subtitle {
+    text-align: center;
+    margin-bottom: 50px;
+    color: #888;
+    font-size: 0.9em;
+}
+.apps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+}
+.app-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 0, 110, 0.2);
+    border-radius: 12px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+.app-card:hover {
+    border-color: rgba(255, 0, 110, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 40px rgba(255, 0, 110, 0.1);
+}
+.app-icon {
+    font-size: 4em;
+    margin-bottom: 15px;
+    text-align: center;
+}
+.app-name {
+    font-size: 1.4em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+.app-version {
+    font-size: 0.75em;
+    color: #666;
+    margin-bottom: 12px;
+}
+.app-description {
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: #aaa;
+    margin-bottom: 20px;
+    flex-grow: 1;
+}
+.app-price {
+    font-size: 1.6em;
+    font-weight: 900;
+    color: #ff006e;
+    margin-bottom: 15px;
+}
+.download-btn {
+    background: linear-gradient(135deg, #ff006e, #8338ec);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'JetBrains Mono', monospace;
+}
+.download-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(255, 0, 110, 0.4);
+}
+.download-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.free { color: #3a86ff; }
+.payment-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+.payment-modal.active { display: flex; }
+.modal-content {
+    background: rgba(10, 14, 39, 0.95);
+    border: 1px solid rgba(255, 0, 110, 0.4);
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 500px;
+    backdrop-filter: blur(10px);
+}
+.modal-close {
+    float: right;
+    font-size: 2em;
+    cursor: pointer;
+    color: #888;
+}
+.modal-close:hover { color: #fff; }
+.qr-section {
+    text-align: center;
+    margin: 30px 0;
+}
+.qr-section img {
+    width: 200px;
+    height: 200px;
+    border-radius: 8px;
+}
+.wallet-input {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 0, 110, 0.3);
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    margin: 15px 0;
+}
+{% endblock %}
+{% block body %}
+<div class="apps-container">
+    <h1>⚡ TIAMAT APPS</h1>
+    <p class="subtitle">Premium apps, zero tracking, on-chain payments</p>
+
+    <div class="apps-grid">
+        {% for app_id, app in apps.items() %}
+        <div class="app-card">
+            <div class="app-icon">{{ app.icon }}</div>
+            <div class="app-name">{{ app.name }}</div>
+            <div class="app-version">v{{ app.version }}</div>
+            <div class="app-description">{{ app.description }}</div>
+            <div class="app-price">{% if app.price_usdc == 0 %}<span class="free">FREE</span>{% else %}${{ "%.2f"|format(app.price_usdc) }} USDC{% endif %}</div>
+            <button class="download-btn" onclick="initiatePayment('{{ app_id }}', {{ app.price_usdc }})">
+                {% if app.price_usdc == 0 %}Download Now{% else %}Buy with x402{% endif %}
+            </button>
         </div>
+        {% endfor %}
     </div>
+</div>
 
-    <div class="payment-modal" id="paymentModal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-            <h2>Complete Payment</h2>
-            <p id="modalAppName"></p>
-            <p id="modalPrice"></p>
-            <div class="qr-section">
-                <p><strong>Scan to pay:</strong></p>
-                <img id="qrCode" src="" alt="Payment QR Code">
-            </div>
-            <p style="text-align: center; color: #888; font-size: 0.9em; margin: 20px 0;">Or pay directly:</p>
-            <input type="text" class="wallet-input" id="walletInput" placeholder="Paste wallet/tx hash here" />
-            <button class="download-btn" style="width: 100%; margin-top: 20px;" onclick="verifyPayment()">Verify Payment</button>
+<div class="payment-modal" id="paymentModal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <h2>Complete Payment</h2>
+        <p id="modalAppName"></p>
+        <p id="modalPrice"></p>
+        <div class="qr-section">
+            <p><strong>Scan to pay:</strong></p>
+            <img id="qrCode" src="" alt="Payment QR Code">
         </div>
+        <p style="text-align: center; color: #888; font-size: 0.9em; margin: 20px 0;">Or pay directly:</p>
+        <input type="text" class="wallet-input" id="walletInput" placeholder="Paste wallet/tx hash here" />
+        <button class="download-btn" style="width: 100%; margin-top: 20px;" onclick="verifyPayment()">Verify Payment</button>
     </div>
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
+<script>
+    let currentApp = null;
+    let currentPrice = null;
 
-    <script>
-        let currentApp = null;
-        let currentPrice = null;
-
-        function initiatePayment(appId, price) {
-            currentApp = appId;
-            currentPrice = price;
-            if (price === 0) {
-                downloadApp(appId);
-                return;
-            }
-            const appName = '{{ apps }}'; // Placeholder
-            document.getElementById('modalAppName').textContent = `Downloading: ${appId}`;
-            document.getElementById('modalPrice').textContent = `Price: $${price.toFixed(2)} USDC`;
-            document.getElementById('qrCode').src = `/pay?app=${appId}&amount=${price}`; // QR endpoint
-            document.getElementById('paymentModal').classList.add('active');
+    function initiatePayment(appId, price) {
+        currentApp = appId;
+        currentPrice = price;
+        if (price === 0) {
+            downloadApp(appId);
+            return;
         }
+        const appName = '{{ apps }}'; // Placeholder
+        document.getElementById('modalAppName').textContent = `Downloading: ${appId}`;
+        document.getElementById('modalPrice').textContent = `Price: $${price.toFixed(2)} USDC`;
+        document.getElementById('qrCode').src = `/pay?app=${appId}&amount=${price}`; // QR endpoint
+        document.getElementById('paymentModal').classList.add('active');
+    }
 
-        function closeModal() {
-            document.getElementById('paymentModal').classList.remove('active');
-            currentApp = null;
-        }
+    function closeModal() {
+        document.getElementById('paymentModal').classList.remove('active');
+        currentApp = null;
+    }
 
-        function verifyPayment() {
-            const txHash = document.getElementById('walletInput').value.trim();
-            if (!txHash) {
-                alert('Please paste your transaction hash');
-                return;
-            }
-            downloadApp(currentApp);
+    function verifyPayment() {
+        const txHash = document.getElementById('walletInput').value.trim();
+        if (!txHash) {
+            alert('Please paste your transaction hash');
+            return;
         }
+        downloadApp(currentApp);
+    }
 
-        function downloadApp(appId) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/apps/${appId}/download`;
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-        }
-    </script>
-</body>
-</html>
+    function downloadApp(appId) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/apps/${appId}/download`;
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+</script>
+{% endblock %}

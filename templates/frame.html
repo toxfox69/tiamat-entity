@@ -1,28 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta property="fc:frame" content="vNext" />
-  <meta property="fc:frame:image" content="https://tiamat.live/api/frame-image" />
-  <meta property="fc:frame:button:1" content="Ask TIAMAT" />
-  <meta property="fc:frame:button:1:action" content="post" />
-  <meta property="fc:frame:post_url" content="https://tiamat.live/api/frame-action" />
-  <meta property="fc:frame:input:text" content="Ask anything..." />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { background: #0a0e27; color: #00ff88; font-family: 'Courier New'; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; }
-    h1 { text-align: center; font-size: 24px; }
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
-    .stat { background: #1a1f3a; padding: 10px; text-align: center; border: 1px solid #00ff88; }
-    .pricing { margin: 20px 0; background: #1a1f3a; padding: 15px; border: 1px solid #00ff88; }
-    .tier { margin: 10px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
+{% extends "base.html" %}
+{% block title %}TIAMAT Inference Proxy{% endblock %}
+{% block description %}OpenAI-compatible API with pay-per-use via x402 frame payments.{% endblock %}
+{% block og_title %}TIAMAT Inference Proxy{% endblock %}
+{% block canonical %}/frame{% endblock %}
+{% block extra_css %}
+.frame-container { max-width: 600px; margin: calc(var(--nav-h) + 20px) auto 0; padding: 20px; }
+.frame-container h1 { text-align: center; font-size: 24px; color: var(--green); }
+.frame-container p { color: var(--green); }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+.stat { background: #1a1f3a; padding: 10px; text-align: center; border: 1px solid var(--green); color: var(--green); }
+.pricing { margin: 20px 0; background: #1a1f3a; padding: 15px; border: 1px solid var(--green); color: var(--green); }
+.tier { margin: 10px 0; }
+{% endblock %}
+{% block body %}
+<div class="frame-container">
     <h1>TIAMAT Inference Proxy</h1>
     <p>OpenAI-compatible API with $0.001/1k tokens (via x402 frame payments)</p>
-    
+
     <div class="stats">
       <div class="stat">
         <strong>Free Tier</strong>
@@ -33,17 +27,18 @@
         <p>$0.01 USDC</p>
       </div>
     </div>
-    
+
     <div class="pricing">
       <h3>Pricing via x402 Payments</h3>
-      <div class="tier">💰 $0.01 USDC = 10 requests</div>
-      <div class="tier">⚡ Instant verification via frame action</div>
-      <div class="tier">🔗 Streaming LLM responses in-frame</div>
+      <div class="tier">&#128176; $0.01 USDC = 10 requests</div>
+      <div class="tier">&#9889; Instant verification via frame action</div>
+      <div class="tier">&#128279; Streaming LLM responses in-frame</div>
     </div>
-    
+
     <p style="text-align: center; margin-top: 30px; font-size: 12px; color: #00aa66;">
       Click "Ask TIAMAT" to submit a query and verify payment via x402.
     </p>
-  </div>
-</body>
-</html>
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}{% endblock %}

@@ -63,7 +63,7 @@ export function buildSystemPrompt(params: {
 }): string {
   const { identity, config, financial } = params;
 
-  const identity_block = `You are TIAMAT, autonomous agent for ENERGENAI LLC. Each cycle: read INBOX.md → execute task → next task. Tools listed below.`;
+  const identity_block = `You are TIAMAT, autonomous agent for ENERGENAI LLC. Each cycle: read /root/.automaton/INBOX.md → execute task → next task. All your files go in /root/tiamatooze/ or /root/.automaton/. Tools listed below.`;
 
   // SOUL.md and MISSION.md loaded into static prompt for identity + direction.
   // All other files (PROGRESS.md, INBOX.md, etc.) are read explicitly via read_file.
@@ -78,27 +78,44 @@ post_reddit: BROKEN — do not use
 SOCIAL (every post → ALL platforms same turn, no exceptions):
 1. post_bluesky (#AIPrivacy #InfoSec) 2. post_farcaster (channel:ai/dev/security/build) 3. post_facebook (2-3 sentences+link) 4. post_mastodon (#infosec community) 5. post_linkedin (professional framing, always include article_url + article_title when sharing articles)
 
-ARTICLES (every article → ALL platforms):
-1. post_devto (content param) — SAVE the returned ARTICLE_URL immediately. Dev.to adds random suffixes you CANNOT predict.
-2. post_hashnode (content, canonical_url=EXACT devto ARTICLE_URL from step 1)
-3. post_github_discussion (full article + EXACT devto ARTICLE_URL)
-4. post_github_gist (.md + EXACT devto ARTICLE_URL + tiamat.live links)
-NEVER construct a Dev.to URL manually. NEVER guess the slug. Use ONLY the URL returned by post_devto.
-After ALL cross-posts, verify the URL: web_fetch it, confirm 200 not 404. Every broken link damages credibility.
-
-PROPAGATION (after EVERY article, before starting next):
-1. social: 1 quotable post per platform + article link
-2. linkedin: post_linkedin article_url=EXACT devto URL (never construct manually). 800w CISO summary
-3. github: discussion + gist with tiamat.live links
-4. all derivatives → original article URL + tiamat.live
+ARTICLES:
+Just call post_devto — it AUTO-CROSSPOSTS to Hashnode, Bluesky, Farcaster, Mastodon, LinkedIn, Facebook, Moltbook, and GitHub Discussions.
+You do NOT need to manually cross-post. One post_devto = 9 platforms automatically.
+After publishing, switch to ENGAGEMENT MODE (see below).
 
 CONTENT PACING — HARD RULE:
 Max 1 article per hour. The tool enforces this automatically.
-Between articles: CONVERSION MODE — reply to comments, engage in discussions, do outreach, track attribution.
-50 articles with 0 customers = failure. 5 articles with 1 customer = success.
+Between articles: ENGAGEMENT MODE — do NOT research or start another article. Instead:
+1. read_bluesky → like_bluesky 5+ posts, repost_bluesky 2+ posts, REPLY to 1+ with real insight
+2. read_farcaster → farcaster_engage: reply to 2-3 casts in ai/agents/security channels
+3. read_moltbook → comment_moltbook on 2+ trending posts (min 50 chars, substantive)
+4. mastodon_engage — boost/favorite infosec posts, reply to 1+
+5. Reply to comments on YOUR articles on Dev.to and Hashnode
 
-TASK CONTINUITY: plan+progress → CURRENT_TASK.md, update each step, clear when done. FINISH what you start.
-Log completed work → PROGRESS.md
+ENGAGEMENT IS MANDATORY — NOT OPTIONAL:
+Startups that only broadcast but never interact are INVISIBLE. Nobody follows a megaphone.
+Every 5 cycles, you MUST spend at least 1 cycle purely on engagement (likes, reposts, comments).
+50 articles with 0 engagement = failure. 5 articles with 50 interactions = growth.
+
+120B UNLEASHED — BOOSTED 2026-03-12:
+Your 120B brain now has 20M tokens/day (was 5M) and 15 concurrent droplets. You are running 120B on ALL cycles.
+- USE 120B TO HYPER-PERSONALIZE cold outreach emails for every Big Fish ECHO identifies. No templates.
+- DEEPEN security research: multi-step adversarial Red Team vs Blue Team simulations for higher-entropy training data.
+- DO NOT GET LAZY. More tokens ≠ sloppy prompting. Push Productivity Ratio toward 0.75 (currently ~0.45).
+- Monitor your own token usage — if you burn 20M/day doing the same work you did with 5M, you're wasting.
+
+BLOOM APP — LIVE ON GOOGLE PLAY (PROMOTE ACTIVELY):
+https://play.google.com/store/apps/details?id=com.energenai.bloom
+Target: r/transhealthcare r/HRT r/supplements r/longevity r/PCOS r/Endometriosis r/QuantifiedSelf r/Biohacking
+Every Bloom mention: Play Store link + ask for feedback + privacy-first angle. IMPORTANT: The Play Store URL already has ?id= so append ref with & not ?: https://play.google.com/store/apps/details?id=com.energenai.bloom&ref=SOURCE-bloom
+Write articles about building privacy-first health apps. This is YOUR shipped product — sell it.
+
+TWITCH — BUILDING LIVE:
+https://www.twitch.tv/6tiamat7 — mention in social posts about builds/progress. "Watch live: twitch.tv/6tiamat7"
+
+TASK CONTINUITY: plan+progress → /root/.automaton/CURRENT_TASK.md, update each step, clear when done. FINISH what you start.
+Log completed work → /root/.automaton/PROGRESS.md
+WRITE FILES ONLY TO: /root/tiamatooze/ (drafts, articles, experiments) or /root/.automaton/ (state). All other paths WILL BE BLOCKED.
 
 Read /root/.automaton/tool_hints.md for content examples and detailed format guidance.`;
 
@@ -148,11 +165,11 @@ export function buildWakeupPrompt(params: {
   financial: FinancialState;
   db: AutomatonDatabase;
 }): string {
-  const { identity, config, financial, db } = params;
+  const { db } = params;
   const turnCount = db.getTurnCount();
 
   if (turnCount === 0) {
-    return `First cycle. Read /root/.automaton/INBOX.md for your task list, then start executing.`;
+    return `First cycle. Your directive and task details are in the system prompt above. Execute immediately.`;
   }
 
   const lastTurns = db.getRecentTurns(3);
@@ -177,29 +194,22 @@ export function buildWakeupPrompt(params: {
     }
   } catch {}
 
-  // Check INBOX.md for creator messages (any content = active directive)
-  let inboxAlert = "";
+  // Check ECHO signals for high-value interactions
+  let echoSignals = "";
   try {
-    const inboxPath = path.join(process.env.HOME || "/root", ".automaton", "INBOX.md");
-    const inboxContent = fs.readFileSync(inboxPath, "utf-8").trim();
-    if (inboxContent.length > 10) {
-      inboxAlert = `\n\n⚠️ CREATOR DIRECTIVE (READ INBOX.md):\n${inboxContent.slice(0, 600)}`;
+    const signalsPath = path.join(process.env.HOME || "/root", ".automaton", "echo_signals.json");
+    const signalsData = JSON.parse(fs.readFileSync(signalsPath, "utf-8"));
+    const unprocessed = (signalsData.signals || []).filter((s: any) => !s.processed);
+    if (unprocessed.length > 0) {
+      const lines = unprocessed.slice(0, 5).map((s: any) =>
+        `  ${s.platform}: @${s.author.handle} (${s.author.followers} followers) — "${s.post_preview.slice(0, 100)}"`
+      );
+      echoSignals = `\n\n[ECHO SIGNAL — BIG FISH DETECTED]\n${unprocessed.length} high-value account(s):\n${lines.join("\n")}\nAfter engaging, mark signals processed via write_file to echo_signals.json.`;
     }
   } catch {}
 
-  // Inject CURRENT_TASK.md so TIAMAT resumes in-progress work
-  let currentTaskBlock = "";
-  try {
-    const taskPath = path.join(process.env.HOME || "/root", ".automaton", "CURRENT_TASK.md");
-    const taskContent = fs.readFileSync(taskPath, "utf-8").trim();
-    if (taskContent.length > 10) {
-      currentTaskBlock = `\n\n[CURRENT TASK — RESUME THIS]\n${taskContent.slice(0, 2000)}`;
-    }
-  } catch {}
-
-  return `Cycle ${turnCount}.${ticketSummary}${inboxAlert}${currentTaskBlock}
-
-${lastTurnSummary ? `Recent activity:\n${lastTurnSummary}` : ""}
-
-${currentTaskBlock ? "Resume your CURRENT TASK above. Do not start new work until it is complete." : "Read /root/.automaton/INBOX.md for your current task, then execute it."}`;
+  return `Cycle ${turnCount}.${ticketSummary}${echoSignals}
+${lastTurnSummary ? `\nRecent activity:\n${lastTurnSummary}` : ""}
+${echoSignals ? "\nECHO detected Big Fish — engage them FIRST." : ""}
+Your directive and task details are in the system prompt above.`;
 }

@@ -1,37 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TIAMAT Privacy Audit - AI-Powered Website Privacy Scanner</title>
-<meta name="description" content="Free AI-powered privacy audit. Scan any website for trackers, cookies, fingerprinting, and data brokers. Get a privacy score instantly.">
-<style>
-:root {
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --surface2: #1a1a2e;
-  --border: #2a2a3e;
-  --text: #e0e0e8;
-  --muted: #888899;
-  --accent: #7b5ea7;
-  --accent2: #5b8dd9;
-  --red: #e05555;
-  --orange: #e09955;
-  --yellow: #e0d055;
-  --green: #55c070;
-  --cyan: #55c0c0;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', 'Fira Code', monospace; min-height: 100vh; }
+{% extends "base.html" %}
+{% block title %}TIAMAT Privacy Audit - AI-Powered Website Privacy Scanner{% endblock %}
+{% block description %}Free AI-powered privacy audit. Scan any website for trackers, cookies, fingerprinting, and data brokers. Get a privacy score instantly.{% endblock %}
+{% block og_title %}TIAMAT Privacy Audit - AI-Powered Website Privacy Scanner{% endblock %}
+{% block canonical %}/audit{% endblock %}
+{% block extra_css %}
+.audit-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; padding-top: calc(var(--nav-h) + 16px); }
 
-.container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
-
-header { text-align: center; padding: 40px 0 32px; }
-header h1 { font-size: 2rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-header p { color: var(--muted); font-size: 0.85rem; }
+.audit-header { text-align: center; padding: 40px 0 32px; }
+.audit-header h1 { font-size: 2rem; background: linear-gradient(135deg, #7b5ea7, #5b8dd9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+.audit-header p { color: var(--text-dim); font-size: 0.85rem; }
 
 .scan-box {
-  background: var(--surface);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 24px;
@@ -49,9 +29,9 @@ header p { color: var(--muted); font-size: 0.85rem; }
   font-size: 0.95rem;
   outline: none;
 }
-.scan-row input:focus { border-color: var(--accent); }
+.scan-row input:focus { border-color: #7b5ea7; }
 .scan-row button {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  background: linear-gradient(135deg, #7b5ea7, #5b8dd9);
   border: none;
   border-radius: 8px;
   padding: 14px 28px;
@@ -68,7 +48,7 @@ header p { color: var(--muted); font-size: 0.85rem; }
 .status-line {
   margin-top: 16px;
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--text-dim);
   min-height: 20px;
 }
 
@@ -77,7 +57,7 @@ header p { color: var(--muted); font-size: 0.85rem; }
 .results.visible { display: block; }
 
 .score-card {
-  background: var(--surface);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 32px;
@@ -95,37 +75,37 @@ header p { color: var(--muted); font-size: 0.85rem; }
   margin-bottom: 16px;
   border: 4px solid;
 }
-.grade-a { border-color: var(--green); color: var(--green); background: rgba(85,192,112,0.1); }
-.grade-b { border-color: var(--cyan); color: var(--cyan); background: rgba(85,192,192,0.1); }
-.grade-c { border-color: var(--yellow); color: var(--yellow); background: rgba(224,208,85,0.1); }
-.grade-d { border-color: var(--orange); color: var(--orange); background: rgba(224,153,85,0.1); }
-.grade-f { border-color: var(--red); color: var(--red); background: rgba(224,85,85,0.1); }
+.grade-a { border-color: #55c070; color: #55c070; background: rgba(85,192,112,0.1); }
+.grade-b { border-color: #55c0c0; color: #55c0c0; background: rgba(85,192,192,0.1); }
+.grade-c { border-color: #e0d055; color: #e0d055; background: rgba(224,208,85,0.1); }
+.grade-d { border-color: #e09955; color: #e09955; background: rgba(224,153,85,0.1); }
+.grade-f { border-color: #e05555; color: #e05555; background: rgba(224,85,85,0.1); }
 
 .score-label { font-size: 1.1rem; margin-bottom: 8px; }
-.score-url { font-size: 0.75rem; color: var(--muted); word-break: break-all; }
-.score-meta { display: flex; justify-content: center; gap: 24px; margin-top: 16px; font-size: 0.8rem; color: var(--muted); }
+.score-url { font-size: 0.75rem; color: var(--text-dim); word-break: break-all; }
+.score-meta { display: flex; justify-content: center; gap: 24px; margin-top: 16px; font-size: 0.8rem; color: var(--text-dim); }
 
-.stats-grid {
+.audit-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
-.stat-card {
-  background: var(--surface);
+.audit-stat-card {
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
   text-align: center;
 }
-.stat-val { font-size: 1.8rem; font-weight: 700; }
-.stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
-.stat-good { color: var(--green); }
-.stat-warn { color: var(--orange); }
-.stat-bad { color: var(--red); }
+.audit-stat-val { font-size: 1.8rem; font-weight: 700; }
+.audit-stat-label { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+.audit-stat-good { color: #55c070; }
+.audit-stat-warn { color: #e09955; }
+.audit-stat-bad { color: #e05555; }
 
 .section {
-  background: var(--surface);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   margin-bottom: 16px;
@@ -139,16 +119,16 @@ header p { color: var(--muted); font-size: 0.85rem; }
   align-items: center;
   user-select: none;
 }
-.section-header:hover { background: var(--surface2); }
+.section-header:hover { background: var(--bg-hover); }
 .section-header h3 { font-size: 0.9rem; }
 .section-body { padding: 0 20px 16px; display: none; }
 .section.open .section-body { display: block; }
 .section-header .arrow { transition: transform 0.2s; }
 .section.open .section-header .arrow { transform: rotate(90deg); }
 
-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-table th { text-align: left; padding: 8px 6px; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 600; }
-table td { padding: 8px 6px; border-bottom: 1px solid rgba(42,42,62,0.5); }
+.audit-container table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.audit-container table th { text-align: left; padding: 8px 6px; color: var(--text-dim); border-bottom: 1px solid var(--border); font-weight: 600; }
+.audit-container table td { padding: 8px 6px; border-bottom: 1px solid rgba(26,26,46,0.5); }
 .badge {
   display: inline-block;
   padding: 2px 8px;
@@ -156,32 +136,29 @@ table td { padding: 8px 6px; border-bottom: 1px solid rgba(42,42,62,0.5); }
   font-size: 0.7rem;
   font-weight: 600;
 }
-.badge-analytics { background: rgba(91,141,217,0.2); color: var(--accent2); }
-.badge-advertising { background: rgba(224,85,85,0.2); color: var(--red); }
-.badge-tracking { background: rgba(224,153,85,0.2); color: var(--orange); }
+.badge-analytics { background: rgba(91,141,217,0.2); color: #5b8dd9; }
+.badge-advertising { background: rgba(224,85,85,0.2); color: #e05555; }
+.badge-tracking { background: rgba(224,153,85,0.2); color: #e09955; }
 .badge-data_broker { background: rgba(224,85,85,0.3); color: #ff6666; }
 .badge-session_recording { background: rgba(224,85,85,0.25); color: #ff8888; }
-.badge-social { background: rgba(123,94,167,0.2); color: var(--accent); }
-.badge-consent { background: rgba(85,192,112,0.2); color: var(--green); }
-.badge-functional { background: rgba(85,192,192,0.2); color: var(--cyan); }
-.badge-cdn { background: rgba(136,136,153,0.2); color: var(--muted); }
-.badge-unknown { background: rgba(136,136,153,0.15); color: var(--muted); }
-.badge-preferences { background: rgba(85,192,192,0.15); color: var(--cyan); }
-.badge-error_tracking { background: rgba(224,208,85,0.2); color: var(--yellow); }
-.badge-tag_manager { background: rgba(224,153,85,0.15); color: var(--orange); }
-.badge-media { background: rgba(136,136,153,0.15); color: var(--muted); }
+.badge-social { background: rgba(123,94,167,0.2); color: #7b5ea7; }
+.badge-consent { background: rgba(85,192,112,0.2); color: #55c070; }
+.badge-functional { background: rgba(85,192,192,0.2); color: #55c0c0; }
+.badge-cdn { background: rgba(136,136,153,0.2); color: var(--text-dim); }
+.badge-unknown { background: rgba(136,136,153,0.15); color: var(--text-dim); }
+.badge-preferences { background: rgba(85,192,192,0.15); color: #55c0c0; }
+.badge-error_tracking { background: rgba(224,208,85,0.2); color: #e0d055; }
+.badge-tag_manager { background: rgba(224,153,85,0.15); color: #e09955; }
+.badge-media { background: rgba(136,136,153,0.15); color: var(--text-dim); }
 
 .check-list { list-style: none; }
 .check-list li { padding: 6px 0; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; }
-.check-pass { color: var(--green); }
-.check-fail { color: var(--red); }
-.check-warn { color: var(--orange); }
-
-.footer { text-align: center; padding: 32px 0 16px; font-size: 0.75rem; color: var(--muted); }
-.footer a { color: var(--accent); text-decoration: none; }
+.check-pass { color: #55c070; }
+.check-fail { color: #e05555; }
+.check-warn { color: #e09955; }
 
 .api-box {
-  background: var(--surface);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
@@ -196,14 +173,13 @@ table td { padding: 8px 6px; border-bottom: 1px solid rgba(42,42,62,0.5); }
   overflow-x: auto;
   color: var(--cyan);
 }
-</style>
-</head>
-<body>
-<div class="container">
-  <header>
+{% endblock %}
+{% block body %}
+<div class="audit-container">
+  <div class="audit-header">
     <h1>TIAMAT PRIVACY AUDIT</h1>
     <p>AI-powered website privacy scanner. Detects trackers, cookies, fingerprinting, and data brokers.</p>
-  </header>
+  </div>
 
   <div class="scan-box">
     <div class="scan-row">
@@ -215,7 +191,7 @@ table td { padding: 8px 6px; border-bottom: 1px solid rgba(42,42,62,0.5); }
 
   <div class="results" id="results">
     <div class="score-card" id="score-card"></div>
-    <div class="stats-grid" id="stats-grid"></div>
+    <div class="audit-stats-grid" id="stats-grid"></div>
 
     <div class="section" id="sec-security">
       <div class="section-header" onclick="toggleSection('sec-security')">
@@ -264,12 +240,10 @@ table td { padding: 8px 6px; border-bottom: 1px solid rgba(42,42,62,0.5); }
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'</pre>
   </div>
-
-  <div class="footer">
-    Powered by <a href="https://tiamat.live">TIAMAT</a> | <a href="/docs">API Docs</a> | <a href="/">Home</a>
-  </div>
 </div>
-
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
 <script>
 const inp = document.getElementById('url-input');
 const btn = document.getElementById('scan-btn');
@@ -296,7 +270,7 @@ async function startScan() {
     });
     const data = await resp.json();
     if (resp.status === 402) {
-      status.innerHTML = `Free limit reached (3/day). <a href="/api/generate-key" target="_blank" style="color:var(--accent)">Get an API key</a> for unlimited scans, or <a href="/pay" style="color:var(--accent)">upgrade</a>.`;
+      status.innerHTML = `Free limit reached (3/day). <a href="/api/generate-key" target="_blank" style="color:#7b5ea7">Get an API key</a> for unlimited scans, or <a href="/pay" style="color:#7b5ea7">upgrade</a>.`;
     } else if (data.error) {
       status.textContent = 'Error: ' + data.error;
     } else {
@@ -320,9 +294,9 @@ function gradeClass(g) {
 }
 
 function statColor(val, thresholds) {
-  if (val <= thresholds[0]) return 'stat-good';
-  if (val <= thresholds[1]) return 'stat-warn';
-  return 'stat-bad';
+  if (val <= thresholds[0]) return 'audit-stat-good';
+  if (val <= thresholds[1]) return 'audit-stat-warn';
+  return 'audit-stat-bad';
 }
 
 function badge(cat) {
@@ -344,29 +318,29 @@ function renderResults(d) {
 
   // Stats grid
   document.getElementById('stats-grid').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-val ${statColor(d.tracker_requests, [0, 5])}">${d.tracker_requests}</div>
-      <div class="stat-label">Trackers</div>
+    <div class="audit-stat-card">
+      <div class="audit-stat-val ${statColor(d.tracker_requests, [0, 5])}">${d.tracker_requests}</div>
+      <div class="audit-stat-label">Trackers</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-val ${statColor(d.cookie_count, [5, 15])}">${d.cookie_count}</div>
-      <div class="stat-label">Cookies</div>
+    <div class="audit-stat-card">
+      <div class="audit-stat-val ${statColor(d.cookie_count, [5, 15])}">${d.cookie_count}</div>
+      <div class="audit-stat-label">Cookies</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-val ${statColor(d.third_party_cookies, [0, 5])}">${d.third_party_cookies}</div>
-      <div class="stat-label">3rd-Party Cookies</div>
+    <div class="audit-stat-card">
+      <div class="audit-stat-val ${statColor(d.third_party_cookies, [0, 5])}">${d.third_party_cookies}</div>
+      <div class="audit-stat-label">3rd-Party Cookies</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-val ${statColor(d.fingerprint_techniques, [0, 2])}">${d.fingerprint_techniques}</div>
-      <div class="stat-label">Fingerprinting</div>
+    <div class="audit-stat-card">
+      <div class="audit-stat-val ${statColor(d.fingerprint_techniques, [0, 2])}">${d.fingerprint_techniques}</div>
+      <div class="audit-stat-label">Fingerprinting</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-val">${d.third_party_domains.length}</div>
-      <div class="stat-label">3rd-Party Domains</div>
+    <div class="audit-stat-card">
+      <div class="audit-stat-val">${d.third_party_domains.length}</div>
+      <div class="audit-stat-label">3rd-Party Domains</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-val">${d.has_consent_banner ? '<span class="stat-good">Yes</span>' : '<span class="stat-warn">No</span>'}</div>
-      <div class="stat-label">Consent Banner</div>
+    <div class="audit-stat-card">
+      <div class="audit-stat-val">${d.has_consent_banner ? '<span class="audit-stat-good">Yes</span>' : '<span class="audit-stat-warn">No</span>'}</div>
+      <div class="audit-stat-label">Consent Banner</div>
     </div>
   `;
 
@@ -386,21 +360,21 @@ function renderResults(d) {
 
   // Trackers
   if (d.trackers.length === 0) {
-    document.getElementById('trackers-body').innerHTML = '<p style="color:var(--green)">No known trackers detected!</p>';
+    document.getElementById('trackers-body').innerHTML = '<p style="color:#55c070">No known trackers detected!</p>';
   } else {
     document.getElementById('trackers-body').innerHTML = '<table><thead><tr><th>Name</th><th>Category</th><th>Domain</th></tr></thead><tbody>' +
-      d.trackers.map(t => `<tr><td>${t.name}</td><td>${badge(t.category)}</td><td style="color:var(--muted);font-size:0.72rem">${t.domain}</td></tr>`).join('') +
+      d.trackers.map(t => `<tr><td>${t.name}</td><td>${badge(t.category)}</td><td style="color:var(--text-dim);font-size:0.72rem">${t.domain}</td></tr>`).join('') +
       '</tbody></table>';
   }
 
   // Cookies
   if (d.cookies.length === 0) {
-    document.getElementById('cookies-body').innerHTML = '<p style="color:var(--green)">No cookies detected!</p>';
+    document.getElementById('cookies-body').innerHTML = '<p style="color:#55c070">No cookies detected!</p>';
   } else {
     document.getElementById('cookies-body').innerHTML = '<table><thead><tr><th>Name</th><th>Domain</th><th>Category</th><th>3rd Party</th><th>Secure</th><th>Expires</th></tr></thead><tbody>' +
       d.cookies.map(c => `<tr>
         <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.name}</td>
-        <td style="color:var(--muted);font-size:0.72rem">${c.domain}</td>
+        <td style="color:var(--text-dim);font-size:0.72rem">${c.domain}</td>
         <td>${badge(c.category)}</td>
         <td>${c.third_party ? '<span class="check-fail">Yes</span>' : 'No'}</td>
         <td>${c.secure ? '<span class="check-pass">Yes</span>' : '<span class="check-warn">No</span>'}</td>
@@ -411,18 +385,18 @@ function renderResults(d) {
 
   // Fingerprints
   if (d.fingerprints.length === 0) {
-    document.getElementById('fingerprints-body').innerHTML = '<p style="color:var(--green)">No fingerprinting techniques detected!</p>';
+    document.getElementById('fingerprints-body').innerHTML = '<p style="color:#55c070">No fingerprinting techniques detected!</p>';
   } else {
     document.getElementById('fingerprints-body').innerHTML = '<table><thead><tr><th>Technique</th><th>Source</th></tr></thead><tbody>' +
-      d.fingerprints.map(f => `<tr><td><span class="check-fail">${f.technique}</span></td><td style="color:var(--muted);font-size:0.72rem">${f.source}</td></tr>`).join('') +
+      d.fingerprints.map(f => `<tr><td><span class="check-fail">${f.technique}</span></td><td style="color:var(--text-dim);font-size:0.72rem">${f.source}</td></tr>`).join('') +
       '</tbody></table>';
   }
 
   // Third-party domains
   if (d.third_party_domains.length === 0) {
-    document.getElementById('thirdparty-body').innerHTML = '<p style="color:var(--green)">No third-party domains!</p>';
+    document.getElementById('thirdparty-body').innerHTML = '<p style="color:#55c070">No third-party domains!</p>';
   } else {
-    document.getElementById('thirdparty-body').innerHTML = '<div style="columns:2;font-size:0.78rem;color:var(--muted)">' +
+    document.getElementById('thirdparty-body').innerHTML = '<div style="columns:2;font-size:0.78rem;color:var(--text-dim)">' +
       d.third_party_domains.map(d => `<div style="padding:2px 0">${d}</div>`).join('') + '</div>';
   }
 
@@ -435,5 +409,4 @@ function toggleSection(id) {
   document.getElementById(id).classList.toggle('open');
 }
 </script>
-</body>
-</html>
+{% endblock %}

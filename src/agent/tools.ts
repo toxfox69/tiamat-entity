@@ -152,6 +152,20 @@ function solveMoltbookChallenge(challengeText: string): string | null {
   }
 }
 
+// ─── Search Budget — Hard Cap Per Cycle ────────────────────────
+// Prevents analysis paralysis: max 2 searches per cycle, then tool returns ERROR.
+// Reset by calling resetSearchBudget() at cycle start (from loop.ts).
+const SEARCH_BUDGET_PER_CYCLE = 2;
+let searchBudgetRemaining = SEARCH_BUDGET_PER_CYCLE;
+
+export function resetSearchBudget(): void {
+  searchBudgetRemaining = SEARCH_BUDGET_PER_CYCLE;
+}
+
+export function getSearchBudgetRemaining(): number {
+  return searchBudgetRemaining;
+}
+
 // ─── Search Web Cache / Rate Limiter ───────────────────────────
 // Prevents hammering the same (or near-identical) query within 60 seconds.
 // Stores: normalised query → { result, ts }
@@ -881,6 +895,12 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
       if (rateData.timestamps.length >= 3) {
         const nextAvail = new Date(rateData.timestamps[0] + 3600_000).toISOString();
         return `BLOCKED: Email rate limit (3/hour) exceeded. Protects domain reputation. Next send available at ${nextAvail}. Use browse to find web contact forms instead.`;
+      }
+
+      // Block self-emails — TIAMAT emailing her own addresses is a waste cycle
+      const OWN_ADDRESSES = ['tiamat@tiamat.live', 'grants@tiamat.live', 'tiamat.entity.prime@gmail.com'];
+      if (OWN_ADDRESSES.includes(to.toLowerCase())) {
+        return `BLOCKED: You cannot email yourself (${to}). This is a waste cycle. Take a productive action instead.`;
       }
 
       // Block generic/guessed prefixes — these bounce and hurt sender reputation
@@ -2598,6 +2618,51 @@ Model: ${ctx.inference.getDefaultModel()}
         if (!appPassword) return "ERROR: BLUESKY_APP_PASSWORD not set in environment.";
         let text = (args.text as string)?.trim();
         if (!text) return "ERROR: text is required.";
+
+        // Block internal operational noise and low-effort slop from being posted publicly
+        const lowerText = text.toLowerCase();
+        const BLOCKED_PATTERNS = [
+          /tik-\d+/i,                          // Internal ticket references
+          /ticket.*claim|claim.*ticket/i,       // Ticket operations
+          /cycle \d{3,}/i,                      // Internal cycle numbers
+          /tool.?loop|loop.?detect/i,           // Internal loop detection
+          /post_devto.*called|called.*\dx/i,    // Internal tool call counts
+          /productivity:\s*\d/i,                // Internal pacer metrics
+          /cooldown|IDLE|busywork/i,            // Internal state
+          /\[TOOL\]|\[LOOP\]|\[INFERENCE\]/i,   // Log prefixes
+          /is now claiming/i,                   // Ticket claim announcements
+          /consecutive research/i,              // Internal loop counter
+          /watchdog.*fail|systemctl.*blocked/i, // Internal watchdog alerts
+          /need operator intervention/i,        // Internal operator requests
+        ];
+        for (const pat of BLOCKED_PATTERNS) {
+          if (pat.test(text)) {
+            return `BLOCKED: This looks like internal operational data, not public content. Rewrite as genuine insight for your audience. Do NOT post ticket IDs, cycle numbers, tool names, or internal metrics. Post about the TOPIC, not your process.`;
+          }
+        }
+
+        // Block generic low-effort AI slop replies
+        const SLOP_OPENERS = [
+          /^solid analysis/i, /^great (point|take|insight|thread)/i,
+          /^this resonates/i, /^interesting perspective/i,
+          /^one thing worth (adding|noting)/i, /^couldn't agree more/i,
+          /^this is (so |really )?(important|true|spot on)/i,
+          /^well said/i, /^exactly this/i, /^100% agree/i,
+          /^strong take/i, /^love this/i, /^nailed it/i,
+          /^absolutely/i, /^hard agree/i, /^underrated take/i,
+        ];
+        if (SLOP_OPENERS.some(p => p.test(text.trim()))) {
+          return `BLOCKED: Generic AI-sounding opener detected. Your audience can spot "Solid analysis. One thing worth adding..." from a mile away. Lead with a SPECIFIC technical insight, data point, or contrarian take. No pleasantries — just substance.`;
+        }
+
+        // Block low-effort news reposts with no original insight
+        // If it's just a headline + URL with no analysis, block it
+        const urlCount = (text.match(/https?:\/\//g) || []).length;
+        const nonUrlText = text.replace(/https?:\/\/\S+/g, "").replace(/#\w+/g, "").trim();
+        if (urlCount > 0 && nonUrlText.length < 80) {
+          return `BLOCKED: This is just a link repost with minimal commentary. Add your OWN analysis (2-3 sentences minimum). What does this mean? Why should your audience care? What's the angle they're missing?`;
+        }
+
         if (text.length > 300) {
           // Truncate at last word boundary before 297 chars, add ellipsis
           const cut = text.lastIndexOf(' ', 297);
@@ -2976,18 +3041,25 @@ Model: ${ctx.inference.getDefaultModel()}
         if (!resp.ok) return `ERROR (${resp.status}): ${await resp.text()}`;
         const data = await resp.json() as any;
 
-        const posts = (data.posts || data.feed || []).map((item: any) => {
-          const post = item.post || item;
-          return {
-            uri: post.uri,
-            cid: post.cid,
-            author: post.author?.handle || "?",
-            text: (post.record?.text || "").slice(0, 200),
-            likes: post.likeCount || 0,
-            reposts: post.repostCount || 0,
-            replies: post.replyCount || 0,
-          };
-        });
+        const myDid = session.did;
+        const myHandle = handle.toLowerCase();
+        const posts = (data.posts || data.feed || [])
+          .map((item: any) => {
+            const post = item.post || item;
+            return {
+              uri: post.uri,
+              cid: post.cid,
+              author: post.author?.handle || "?",
+              authorDid: post.author?.did || "",
+              text: (post.record?.text || "").slice(0, 200),
+              likes: post.likeCount || 0,
+              reposts: post.repostCount || 0,
+              replies: post.replyCount || 0,
+            };
+          })
+          // Filter out own posts — never engage with yourself
+          .filter((p: any) => p.authorDid !== myDid && p.author.toLowerCase() !== myHandle)
+          .map(({ authorDid: _, ...rest }: any) => rest);  // strip internal field
 
         return JSON.stringify(posts.slice(0, limit), null, 1);
       },
@@ -3131,12 +3203,23 @@ Model: ${ctx.inference.getDefaultModel()}
         const _devtoCooldown = checkSocialCooldown("devto");
         if (_devtoCooldown) return _devtoCooldown;
 
-        const title = args.title as string;
-        if (!title?.trim()) return "ERROR: title is required.";
+        let title = args.title as string;
+        if (!title?.trim()) {
+          const rawContent = (args.content as string) || "";
+          const h1Match = rawContent.match(/^#\s+(.+)$/m);
+          if (h1Match) {
+            title = h1Match[1].trim();
+          } else {
+            return "ERROR: title is required. Pass it as a separate parameter, or include a # Heading in content.";
+          }
+        }
 
         const mdPath = args.markdown_path as string;
-        const inlineContent = args.content as string;
-        if (!mdPath?.trim() && !inlineContent?.trim()) return "ERROR: provide either markdown_path or content.";
+        // Flatten nested objects: model sometimes passes {article:{body_markdown:"..."}}
+        const _rawInline = args.content || args.body || args.text ||
+          (typeof args.article === "string" ? args.article : (args.article as any)?.body_markdown);
+        const inlineContent = typeof _rawInline === "string" ? _rawInline : "";
+        if (!mdPath?.trim() && !inlineContent?.trim()) return "ERROR: provide either markdown_path or content. Tip: write draft to /root/tiamatooze/article.md first, then pass markdown_path.";
 
         // Read content from file or use inline
         let body: string;
@@ -3160,7 +3243,24 @@ Model: ${ctx.inference.getDefaultModel()}
           }
         }
 
-        // Auto-backup article before publishing
+        // ── Hourly article cap: max 1 article per hour (check BEFORE backup to avoid self-inflating count) ──
+        {
+          const { readdirSync, statSync } = await import("fs");
+          const backupDir = "/root/sandbox/articles";
+          const oneHourAgo = Date.now() - 60 * 60 * 1000;
+          try {
+            const recentArticles = readdirSync(backupDir).filter(f => {
+              try {
+                return statSync(`${backupDir}/${f}`).mtimeMs > oneHourAgo;
+              } catch { return false; }
+            }).length;
+            if (recentArticles >= 1) {
+              return `BLOCKED: Hourly article cap reached (${recentArticles}/1 this hour). Wait before publishing again. Instead: reply to comments on existing articles, engage in discussions, do outreach, track attribution refs, or check /root/.automaton/ref_tracker.sh for conversion data.`;
+            }
+          } catch {}
+        }
+
+        // Auto-backup article before publishing (only runs if cap check passed)
         {
           const { mkdirSync, writeFileSync } = await import("fs");
           const backupDir = "/root/sandbox/articles";
@@ -3179,23 +3279,6 @@ Model: ${ctx.inference.getDefaultModel()}
 
         const tags = (args.tags as string[] | undefined) || [];
         const published = args.published !== false;
-
-        // ── Hourly article cap: max 1 article per hour ──
-        {
-          const { readdirSync, statSync } = await import("fs");
-          const backupDir = "/root/sandbox/articles";
-          const oneHourAgo = Date.now() - 60 * 60 * 1000;
-          try {
-            const recentArticles = readdirSync(backupDir).filter(f => {
-              try {
-                return statSync(`${backupDir}/${f}`).mtimeMs > oneHourAgo;
-              } catch { return false; }
-            }).length;
-            if (recentArticles >= 1) {
-              return `BLOCKED: Hourly article cap reached (${recentArticles}/1 this hour). Wait before publishing again. Instead: reply to comments on existing articles, engage in discussions, do outreach, track attribution refs, or check /root/.automaton/ref_tracker.sh for conversion data.`;
-            }
-          } catch {}
-        }
 
         // ── Dedup Check: reject if a similar title OR topic was already published ──
         try {
@@ -3301,8 +3384,235 @@ Model: ${ctx.inference.getDefaultModel()}
 
         const result = await resp.json() as any;
         const devtoUrl = result.url || result.canonical_url || `https://dev.to/tiamatenity/${result.slug}`;
-        // IMPORTANT: Return URL in a clear format so TIAMAT uses the REAL URL for cross-posting
-        return `Published to Dev.to!\nARTICLE_URL: ${devtoUrl}\nTitle: ${result.title || title}\nIMPORTANT: Use the ARTICLE_URL above (not a manually constructed URL) when cross-posting to LinkedIn/social media.`;
+        const finalTitle = result.title || title;
+
+        // ── AUTO CROSS-POST to all platforms ──
+        const crossPostResults: string[] = [];
+
+        // 1. Hashnode — full article with canonical URL back to Dev.to
+        try {
+          const hnToken = process.env.HASHNODE_API_TOKEN;
+          const hnPubId = process.env.HASHNODE_PUBLICATION_ID;
+          if (hnToken && hnPubId) {
+            const hnQuery = `mutation ($input: PublishPostInput!) { publishPost(input: $input) { post { id url title } } }`;
+            const hnVars = {
+              input: {
+                publicationId: hnPubId,
+                title: finalTitle,
+                contentMarkdown: body,
+                originalArticleURL: devtoUrl,
+              },
+            };
+            const hnResp = await fetch("https://gql.hashnode.com", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": hnToken },
+              body: JSON.stringify({ query: hnQuery, variables: hnVars }),
+            });
+            if (hnResp.ok) {
+              const hnResult = await hnResp.json() as any;
+              const hnUrl = hnResult.data?.publishPost?.post?.url;
+              if (hnUrl) crossPostResults.push(`Hashnode: ${hnUrl}`);
+              else if (hnResult.errors) crossPostResults.push(`Hashnode: FAILED — ${JSON.stringify(hnResult.errors).slice(0, 100)}`);
+            }
+          }
+        } catch (e: any) { crossPostResults.push(`Hashnode: ERROR — ${e.message?.slice(0, 80)}`); }
+
+        // 2. Bluesky — short promo post with link
+        try {
+          const bskyHandle = process.env.BLUESKY_HANDLE;
+          const bskyPass = process.env.BLUESKY_APP_PASSWORD;
+          if (bskyHandle && bskyPass) {
+            // Truncate title to fit in 300 chars with URL
+            const promoText = `${finalTitle.slice(0, 200)}\n\n${devtoUrl}?ref=bsky-xpost`;
+            const bskySessionResp = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ identifier: bskyHandle, password: bskyPass }),
+            });
+            if (bskySessionResp.ok) {
+              const session = await bskySessionResp.json() as any;
+              const postResp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.accessJwt}` },
+                body: JSON.stringify({
+                  repo: session.did,
+                  collection: "app.bsky.feed.post",
+                  record: { text: promoText.slice(0, 300), createdAt: new Date().toISOString(), "$type": "app.bsky.feed.post" },
+                }),
+              });
+              if (postResp.ok) crossPostResults.push("Bluesky: posted");
+            }
+          }
+        } catch (e: any) { crossPostResults.push(`Bluesky: ERROR — ${e.message?.slice(0, 80)}`); }
+
+        // 3. Farcaster — short cast with link (positional args: post "text" [channel])
+        try {
+          const { execFileSync } = await import("child_process");
+          const castText = `${finalTitle.slice(0, 250)}\n\n${devtoUrl}?ref=fc-xpost`;
+          execFileSync("python3", ["/root/entity/src/agent/farcaster.py", "post", castText, "ai"], { timeout: 15000, encoding: "utf-8" });
+          crossPostResults.push("Farcaster: posted");
+        } catch (e: any) { crossPostResults.push(`Farcaster: ${e.message?.includes("ETIMEDOUT") ? "timeout" : "error"}`); }
+
+        // 4. Mastodon — infosec community post with hashtags
+        try {
+          const mToken = process.env.MASTODON_ACCESS_TOKEN;
+          const mInstance = process.env.MASTODON_INSTANCE;
+          if (mToken && mInstance) {
+            const mText = `${finalTitle.slice(0, 400)}\n\n${devtoUrl}?ref=masto-xpost\n\n#AI #InfoSec #CyberSecurity #TIAMAT`;
+            const mBase = mInstance.startsWith("http") ? mInstance : `https://${mInstance}`;
+            const mResp = await fetch(`${mBase}/api/v1/statuses`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${mToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ status: mText, visibility: "public" }),
+            });
+            if (mResp.ok) {
+              const mResult = await mResp.json() as any;
+              crossPostResults.push(`Mastodon: ${mResult?.url || "posted"}`);
+            } else {
+              crossPostResults.push(`Mastodon: FAILED (${mResp.status})`);
+            }
+          }
+        } catch (e: any) { crossPostResults.push(`Mastodon: ERROR — ${e.message?.slice(0, 80)}`); }
+
+        // 5. LinkedIn — professional framing with article link card
+        try {
+          const liToken = process.env.LINKEDIN_ACCESS_TOKEN;
+          const liPerson = process.env.LINKEDIN_PERSON_ID;
+          if (liToken && liPerson) {
+            const liText = `${finalTitle}\n\nRead the full analysis:\n${devtoUrl}?ref=li-xpost`;
+            const liPayload: any = {
+              author: `urn:li:person:${liPerson}`,
+              commentary: liText,
+              visibility: "PUBLIC",
+              distribution: { feedDistribution: "MAIN_FEED" },
+              lifecycleState: "PUBLISHED",
+              content: {
+                article: {
+                  source: devtoUrl,
+                  title: finalTitle,
+                  description: `${body.slice(0, 150).replace(/[#*_\n]/g, " ").trim()}...`,
+                },
+              },
+            };
+            const liResp = await fetch("https://api.linkedin.com/rest/posts", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${liToken}`,
+                "Content-Type": "application/json",
+                "X-Restli-Protocol-Version": "2.0.0",
+                "LinkedIn-Version": "202504",
+              },
+              body: JSON.stringify(liPayload),
+            });
+            if (liResp.ok) {
+              crossPostResults.push("LinkedIn: posted");
+            } else {
+              crossPostResults.push(`LinkedIn: FAILED (${liResp.status})`);
+            }
+          }
+        } catch (e: any) { crossPostResults.push(`LinkedIn: ERROR — ${e.message?.slice(0, 80)}`); }
+
+        // 6. Facebook Page — link post with preview
+        try {
+          const fbToken = process.env.META_ACCESS_TOKEN;
+          const fbPageId = process.env.FACEBOOK_PAGE_ID;
+          if (fbToken && fbPageId) {
+            const fbMessage = `${finalTitle}\n\n${devtoUrl}?ref=fb-xpost`;
+            const fbResp = await fetch(`https://graph.facebook.com/v19.0/${fbPageId}/feed`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: fbMessage, link: devtoUrl, access_token: fbToken }),
+            });
+            if (fbResp.ok) {
+              const fbResult = await fbResp.json() as any;
+              crossPostResults.push(`Facebook: posted (${fbResult.id || "ok"})`);
+            } else {
+              crossPostResults.push(`Facebook: FAILED (${fbResp.status})`);
+            }
+          }
+        } catch (e: any) { crossPostResults.push(`Facebook: ERROR — ${e.message?.slice(0, 80)}`); }
+
+        // 7. Moltbook — AI agent social network (title + content + submolt)
+        try {
+          const mbKey = process.env.MOLTBOOK_API_KEY;
+          if (mbKey) {
+            const mbSubmolt = tags.some(t => /secur|privacy|cyber/i.test(t)) ? "security" : "ai";
+            const mbBody: any = { title: finalTitle, content: body.slice(0, 5000), submolt: mbSubmolt, url: devtoUrl };
+            const mbResp = await fetch("https://www.moltbook.com/api/v1/posts", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${mbKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify(mbBody),
+            });
+            if (mbResp.ok) {
+              const mbResult = await mbResp.json() as any;
+              // Auto-solve verification challenge if present
+              const verification = mbResult.post?.verification;
+              if (verification?.challenge_text && verification?.verification_code) {
+                const answer = solveMoltbookChallenge(verification.challenge_text);
+                if (answer) {
+                  await fetch("https://www.moltbook.com/api/v1/verify", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${mbKey}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ verification_code: verification.verification_code, answer }),
+                  });
+                }
+              }
+              crossPostResults.push(`Moltbook s/${mbSubmolt}: posted (${mbResult.post?.id || "ok"})`);
+            } else {
+              crossPostResults.push(`Moltbook: FAILED (${mbResp.status})`);
+            }
+          }
+        } catch (e: any) { crossPostResults.push(`Moltbook: ERROR — ${e.message?.slice(0, 80)}`); }
+
+        // 8. GitHub Discussion — cross-post to repo discussions
+        try {
+          const ghToken = process.env.GITHUB_TOKEN;
+          if (ghToken) {
+            // Get category ID for "General"
+            const catQuery = `query { repository(owner: "toxfox69", name: "tiamat-entity") { discussionCategories(first: 10) { nodes { id name } } } }`;
+            const catResp = await fetch("https://api.github.com/graphql", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${ghToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ query: catQuery }),
+            });
+            if (catResp.ok) {
+              const catResult = await catResp.json() as any;
+              const categories = catResult?.data?.repository?.discussionCategories?.nodes || [];
+              const general = categories.find((c: any) => c.name === "General") || categories[0];
+              if (general) {
+                const ghBody = `*Originally published on [Dev.to](${devtoUrl})*\n\n${body.slice(0, 10000)}`;
+                // Need repo ID — fetch it
+                const repoQuery = `query { repository(owner: "toxfox69", name: "tiamat-entity") { id discussionCategories(first: 10) { nodes { id name } } } }`;
+                const repoResp = await fetch("https://api.github.com/graphql", {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${ghToken}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ query: repoQuery }),
+                });
+                if (repoResp.ok) {
+                  const repoResult = await repoResp.json() as any;
+                  const repoId = repoResult?.data?.repository?.id;
+                  if (repoId) {
+                    const createMutation = `mutation { createDiscussion(input: { repositoryId: "${repoId}", categoryId: "${general.id}", title: ${JSON.stringify(finalTitle)}, body: ${JSON.stringify(ghBody)} }) { discussion { number url } } }`;
+                    const discResp = await fetch("https://api.github.com/graphql", {
+                      method: "POST",
+                      headers: { Authorization: `Bearer ${ghToken}`, "Content-Type": "application/json" },
+                      body: JSON.stringify({ query: createMutation }),
+                    });
+                    if (discResp.ok) {
+                      const discResult = await discResp.json() as any;
+                      const disc = discResult?.data?.createDiscussion?.discussion;
+                      if (disc) crossPostResults.push(`GitHub Discussion: #${disc.number} ${disc.url}`);
+                      else crossPostResults.push(`GitHub Discussion: FAILED — ${JSON.stringify(discResult?.errors || "unknown").slice(0, 100)}`);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e: any) { crossPostResults.push(`GitHub Discussion: ERROR — ${e.message?.slice(0, 80)}`); }
+
+        const xpostSummary = crossPostResults.length > 0 ? `\nCROSS-POSTED:\n${crossPostResults.join("\n")}` : "";
+        return `Published to Dev.to!\nARTICLE_URL: ${devtoUrl}\nTitle: ${finalTitle}${xpostSummary}`;
       },
     },
 
@@ -3330,8 +3640,17 @@ Model: ${ctx.inference.getDefaultModel()}
         if (_hashnodeCooldown) return _hashnodeCooldown;
         if (!pubId) return "ERROR: HASHNODE_PUBLICATION_ID not set in environment.";
 
-        const title = args.title as string;
-        if (!title?.trim()) return "ERROR: title is required.";
+        let title = args.title as string;
+        // Auto-extract title from content if not provided (120B model often forgets separate title arg)
+        if (!title?.trim()) {
+          const rawContent = (args.content as string) || "";
+          const h1Match = rawContent.match(/^#\s+(.+)$/m);
+          if (h1Match) {
+            title = h1Match[1].trim();
+          } else {
+            return "ERROR: title is required. Pass it as a separate parameter, or include a # Heading in content.";
+          }
+        }
 
         const mdPath = args.markdown_path as string;
         const inlineContent = args.content as string;
@@ -3412,7 +3731,7 @@ Model: ${ctx.inference.getDefaultModel()}
         required: ["title", "description", "file_path", "creators"],
       },
       execute: async (args, _ctx) => {
-        const token = process.env.ZENODO_API_TOKEN;
+        const token = process.env.ZENODO_API_TOKEN || process.env.ZENODO_TOKEN;
         if (!token) return "ERROR: ZENODO_API_TOKEN not set in environment.";
 
         const { readFileSync } = await import("fs");
@@ -4604,9 +4923,17 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
         const query = args.query as string;
         const limit = (args.limit as number) || 8;
 
+        // ── Search budget: hard cap per cycle ──
+        if (searchBudgetRemaining <= 0) {
+          logSearchCooldown(`BUDGET EXHAUSTED — query "${query}" blocked (0 searches remaining)`);
+          return `ERROR: Search budget exhausted (${SEARCH_BUDGET_PER_CYCLE} per cycle). You MUST produce a visible artifact NOW. Use post_bluesky, write_file, send_email, or generate_image — no more research this cycle.`;
+        }
+        searchBudgetRemaining--;
+        logSearchCooldown(`BUDGET: ${searchBudgetRemaining}/${SEARCH_BUDGET_PER_CYCLE} searches remaining`);
+
         // ── Rate limiter: return cached result if queried within 60s ──
         const cached = checkSearchWebCache(query);
-        if (cached) return cached;
+        if (cached) { searchBudgetRemaining++; return cached; }  // cached hits don't burn budget
 
         // Perplexity Search API (preferred — $0.005/query, best quality)
         const pplxKey = process.env.PERPLEXITY_API_KEY;
@@ -7085,6 +7412,121 @@ print(f"Sent {mid}")
           return `[TTS] Synthesized ${text.length} chars → ${localPath} (${wavBuffer.length} bytes, voice=${args.voice || "af_heart"})`;
         } catch (e: any) {
           return `TTS error: ${e.message}`;
+        }
+      },
+    },
+    // ── Sandbox Droplet Tools ──
+    {
+      name: "sandbox_exec",
+      description:
+        "Execute a shell command on the remote sandbox droplet (146.190.138.231). Returns stdout/stderr. Use for testing, building, running experiments in isolation.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          command: {
+            type: "string",
+            description: "The shell command to execute on the sandbox",
+          },
+        },
+        required: ["command"],
+      },
+      execute: async (args, _ctx) => {
+        const command = args.command as string;
+        if (!command || !command.trim()) return "Error: command parameter required";
+
+        // Safety: block destructive commands on sandbox
+        const SANDBOX_BLOCKED = [
+          /rm\s+(-rf?\s+)?\/(?!root\/tiamat-workspace)/,  // rm outside workspace
+          /rm\s+(-rf?\s+)?\//,                              // rm -rf /
+          /mkfs/,
+          /dd\s+.*of=\/dev/,
+          />\s*\/dev\/sd/,
+          /chmod\s+.*\/root\/\.ssh/,
+          /cat\s+.*\.ssh\/id_rsa/,
+          /cat\s+.*\.env/,
+          /ssh-keygen/,
+          /authorized_keys/,
+          /passwd/,
+          /userdel/,
+          /\bshutdown\b/,
+          /\breboot\b/,
+          /\binit\s+[06]/,
+          /iptables\s+.*DROP/,
+          /ufw\s+(disable|reset)/,
+        ];
+        for (const pattern of SANDBOX_BLOCKED) {
+          if (pattern.test(command)) {
+            return `Blocked: unsafe command for sandbox: ${pattern.source}`;
+          }
+        }
+
+        const { execSync } = await import("child_process");
+        try {
+          const stdout = execSync(
+            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@146.190.138.231 ${JSON.stringify(command)}`,
+            { encoding: "utf-8", timeout: 30000 }
+          ).trim();
+          return `[sandbox] exit_code: 0\nstdout: ${stdout}`;
+        } catch (e: any) {
+          return `[sandbox] exit_code: 1\nstdout: ${e.stdout || ""}\nstderr: ${e.stderr || e.message}`;
+        }
+      },
+    },
+    {
+      name: "sandbox_write",
+      description:
+        "Write a file to the remote sandbox droplet (146.190.138.231). Files must be in /root/tiamat-workspace/.",
+      category: "vm",
+      parameters: {
+        type: "object",
+        properties: {
+          path: {
+            type: "string",
+            description:
+              "File path on the sandbox (must start with /root/tiamat-workspace/)",
+          },
+          content: {
+            type: "string",
+            description: "File content to write",
+          },
+        },
+        required: ["path", "content"],
+      },
+      execute: async (args, _ctx) => {
+        const filePath = args.path as string;
+        const content = args.content as string;
+
+        if (!filePath) return "Error: path parameter required";
+        if (!content && content !== "") return "Error: content parameter required";
+
+        // Enforce path prefix
+        if (!filePath.startsWith("/root/tiamat-workspace/")) {
+          return "Blocked: sandbox_write path must start with /root/tiamat-workspace/";
+        }
+
+        // Block path traversal
+        if (filePath.includes("..")) {
+          return "Blocked: path traversal not allowed";
+        }
+
+        const { execSync } = await import("child_process");
+        const { dirname } = await import("path");
+        try {
+          // Create parent directory
+          const dir = dirname(filePath);
+          execSync(
+            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@146.190.138.231 'mkdir -p ${JSON.stringify(dir)}'`,
+            { encoding: "utf-8", timeout: 10000 }
+          );
+          // Write file content via stdin pipe
+          execSync(
+            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@146.190.138.231 'cat > ${JSON.stringify(filePath)}'`,
+            { input: content, encoding: "utf-8", timeout: 15000 }
+          );
+          return `[sandbox] File written: ${filePath} (${content.length} bytes)`;
+        } catch (e: any) {
+          return `[sandbox] Write error: ${e.stderr || e.message}`;
         }
       },
     },

@@ -1,47 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TIAMAT — Thought Monitor</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050508' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='900' font-family='system-ui' fill='%2300fff2'>T</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #050508;
-  --bg-card: rgba(8,8,14,0.82);
-  --cyan: #00fff2;
-  --cyan-dim: rgba(0,255,242,0.08);
-  --cyan-mid: rgba(0,255,242,0.25);
-  --magenta: #ff00aa;
-  --green: #39ff14;
-  --gold: #ffaa00;
-  --red: #ff3344;
-  --text: #e2e4ec;
-  --text-sec: #9498ac;
-  --text-muted: #5a5e74;
-  --glass-border: rgba(255,255,255,0.06);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:'JetBrains Mono',monospace;
-  background:var(--bg);color:var(--text);
-  line-height:1.5;font-size:13px;
-  min-height:100vh;
-  padding:16px;
-}
+{% extends "base.html" %}
+{% block title %}TIAMAT — Thought Monitor{% endblock %}
+{% block description %}Real-time monitoring dashboard for TIAMAT autonomous agent. Thoughts, tool calls, productivity metrics.{% endblock %}
+{% block og_title %}TIAMAT — Thought Monitor{% endblock %}
+{% block canonical %}/monitor{% endblock %}
+{% block extra_css %}
 .mesh-bg{
   position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
     radial-gradient(ellipse 80% 60% at 10% 10%, rgba(0,255,242,0.05) 0%, transparent 60%),
     radial-gradient(ellipse 60% 80% at 90% 30%, rgba(255,0,170,0.03) 0%, transparent 55%);
 }
-.container{position:relative;z-index:1;max-width:1400px;margin:0 auto}
-header{
+.monitor-container{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:16px;padding-top:calc(var(--nav-h) + 16px)}
+.monitor-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 0;margin-bottom:16px;border-bottom:1px solid var(--glass-border);
 }
-header h1{
+.monitor-header h1{
   font-family:'Orbitron',sans-serif;font-size:18px;font-weight:800;
   background:linear-gradient(135deg,var(--cyan),var(--magenta));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
@@ -51,30 +25,30 @@ header h1{
   padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;
   text-transform:uppercase;letter-spacing:1px;
 }
-.status-pill.running{background:rgba(57,255,20,0.15);color:var(--green);border:1px solid rgba(57,255,20,0.3)}
+.status-pill.running{background:rgba(57,255,20,0.15);color:#39ff14;border:1px solid rgba(57,255,20,0.3)}
 .status-pill.down{background:rgba(255,51,68,0.15);color:var(--red);border:1px solid rgba(255,51,68,0.3)}
 .status-pill.idle{background:rgba(255,170,0,0.15);color:var(--gold);border:1px solid rgba(255,170,0,0.3)}
 .status-pill .dot{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
 /* Stats grid */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
-.stat{
-  background:var(--bg-card);border:1px solid var(--glass-border);
+.mon-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.mon-stat{
+  background:rgba(8,8,14,0.82);border:1px solid var(--glass-border);
   border-radius:12px;padding:14px 16px;
 }
-.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:4px}
-.stat-value{font-size:22px;font-weight:700;font-family:'Orbitron',sans-serif}
-.stat-value.cyan{color:var(--cyan)}
-.stat-value.green{color:var(--green)}
-.stat-value.magenta{color:var(--magenta)}
-.stat-value.gold{color:var(--gold)}
+.mon-stat-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:4px}
+.mon-stat-value{font-size:22px;font-weight:700;font-family:'Orbitron',sans-serif}
+.mon-stat-value.cyan{color:var(--cyan)}
+.mon-stat-value.green{color:#39ff14}
+.mon-stat-value.magenta{color:var(--magenta)}
+.mon-stat-value.gold{color:var(--gold)}
 
 /* Panels */
 .panels{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:900px){.panels{grid-template-columns:1fr}}
 .panel{
-  background:var(--bg-card);border:1px solid var(--glass-border);
+  background:rgba(8,8,14,0.82);border:1px solid var(--glass-border);
   border-radius:12px;overflow:hidden;
 }
 .panel-header{
@@ -85,10 +59,10 @@ header h1{
 }
 .panel-body{
   padding:12px;max-height:500px;overflow-y:auto;
-  scrollbar-width:thin;scrollbar-color:var(--cyan-mid) transparent;
+  scrollbar-width:thin;scrollbar-color:rgba(0,255,242,0.25) transparent;
 }
 .panel-body::-webkit-scrollbar{width:4px}
-.panel-body::-webkit-scrollbar-thumb{background:var(--cyan-mid);border-radius:4px}
+.panel-body::-webkit-scrollbar-thumb{background:rgba(0,255,242,0.25);border-radius:4px}
 
 /* Log entries */
 .entry{
@@ -100,7 +74,7 @@ header h1{
 .entry.thought{border-left-color:var(--cyan)}
 .entry.tool{border-left-color:var(--magenta)}
 .entry.idle{border-left-color:var(--gold)}
-.entry .ts{color:var(--text-muted);font-size:10px;margin-right:6px}
+.entry .ts{color:var(--text-dim);font-size:10px;margin-right:6px}
 .entry .content{color:var(--text-sec)}
 .entry.thought .content{color:var(--text)}
 
@@ -109,53 +83,46 @@ header h1{
 .prod-bar{height:100%;border-radius:4px;transition:width 0.5s ease}
 
 /* Refresh indicator */
-.refresh-info{font-size:10px;color:var(--text-muted)}
+.refresh-info{font-size:10px;color:var(--text-dim)}
 .refresh-info .countdown{color:var(--cyan)}
 
 /* Full-width panel */
 .panel.full{grid-column:1/-1}
-
-footer{
-  margin-top:16px;padding:12px 0;border-top:1px solid var(--glass-border);
-  text-align:center;font-size:11px;color:var(--text-muted);
-}
-footer a{color:var(--cyan);text-decoration:none}
-</style>
-</head>
-<body>
+{% endblock %}
+{% block body %}
 <div class="mesh-bg"></div>
-<div class="container">
-  <header>
+<div class="monitor-container">
+  <div class="monitor-header">
     <h1>TIAMAT THOUGHT MONITOR</h1>
     <div>
       <span id="status-pill" class="status-pill down"><span class="dot"></span><span id="status-text">LOADING</span></span>
     </div>
-  </header>
+  </div>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-label">Cycle</div>
-      <div class="stat-value cyan" id="s-cycle">—</div>
+  <div class="mon-stats">
+    <div class="mon-stat">
+      <div class="mon-stat-label">Cycle</div>
+      <div class="mon-stat-value cyan" id="s-cycle">&mdash;</div>
     </div>
-    <div class="stat">
-      <div class="stat-label">Productivity</div>
-      <div class="stat-value green" id="s-prod">—</div>
-      <div class="prod-bar-wrap"><div class="prod-bar" id="prod-bar" style="width:0;background:var(--green)"></div></div>
+    <div class="mon-stat">
+      <div class="mon-stat-label">Productivity</div>
+      <div class="mon-stat-value green" id="s-prod">&mdash;</div>
+      <div class="prod-bar-wrap"><div class="prod-bar" id="prod-bar" style="width:0;background:#39ff14"></div></div>
     </div>
-    <div class="stat">
-      <div class="stat-label">Pace</div>
-      <div class="stat-value gold" id="s-pace">—</div>
+    <div class="mon-stat">
+      <div class="mon-stat-label">Pace</div>
+      <div class="mon-stat-value gold" id="s-pace">&mdash;</div>
     </div>
-    <div class="stat">
-      <div class="stat-label">Idle Cycles</div>
-      <div class="stat-value magenta" id="s-idle">—</div>
+    <div class="mon-stat">
+      <div class="mon-stat-label">Idle Cycles</div>
+      <div class="mon-stat-value magenta" id="s-idle">&mdash;</div>
     </div>
-    <div class="stat">
-      <div class="stat-label">Cooldowns</div>
-      <div class="stat-value cyan" id="s-cool">—</div>
+    <div class="mon-stat">
+      <div class="mon-stat-label">Cooldowns</div>
+      <div class="mon-stat-value cyan" id="s-cool">&mdash;</div>
     </div>
-    <div class="stat">
-      <div class="stat-label">Refresh</div>
+    <div class="mon-stat">
+      <div class="mon-stat-label">Refresh</div>
       <div class="refresh-info">Next in <span class="countdown" id="countdown">10</span>s</div>
     </div>
   </div>
@@ -164,24 +131,22 @@ footer a{color:var(--cyan);text-decoration:none}
     <div class="panel">
       <div class="panel-header">
         <span>Thoughts</span>
-        <span id="thought-count" style="color:var(--text-muted);font-family:'JetBrains Mono',monospace">0</span>
+        <span id="thought-count" style="color:var(--text-dim);font-family:'JetBrains Mono',monospace">0</span>
       </div>
       <div class="panel-body" id="thoughts-list"></div>
     </div>
     <div class="panel">
       <div class="panel-header">
         <span>Tool Calls</span>
-        <span id="tool-count" style="color:var(--text-muted);font-family:'JetBrains Mono',monospace">0</span>
+        <span id="tool-count" style="color:var(--text-dim);font-family:'JetBrains Mono',monospace">0</span>
       </div>
       <div class="panel-body" id="tools-list"></div>
     </div>
   </div>
 </div>
-
-<footer>
-  <a href="/">TIAMAT.LIVE</a> &middot; <a href="/thoughts">Neural Feed</a> &middot; <a href="/status">Status</a>
-</footer>
-
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
 <script>
 const $ = id => document.getElementById(id);
 let countdown = 10;
@@ -193,7 +158,7 @@ function escHtml(s) {
 }
 
 function prodColor(v) {
-  if (v >= 0.7) return 'var(--green)';
+  if (v >= 0.7) return '#39ff14';
   if (v >= 0.4) return 'var(--gold)';
   return 'var(--red)';
 }
@@ -224,9 +189,9 @@ async function refresh() {
     stateText.textContent = d.state === 'running' ? (d.productivity < 0.2 ? 'IDLE' : 'RUNNING') : 'DOWN';
 
     // Stats
-    $('s-cycle').textContent = d.cycle || '—';
-    $('s-prod').textContent = d.productivity !== undefined ? d.productivity.toFixed(2) : '—';
-    $('s-pace').textContent = d.pace || '—';
+    $('s-cycle').textContent = d.cycle || '\u2014';
+    $('s-prod').textContent = d.productivity !== undefined ? d.productivity.toFixed(2) : '\u2014';
+    $('s-pace').textContent = d.pace || '\u2014';
     $('s-idle').textContent = d.idle_count || '0';
     $('s-cool').textContent = d.cooldown_count || '0';
 
@@ -258,5 +223,4 @@ setInterval(() => {
 
 refresh();
 </script>
-</body>
-</html>
+{% endblock %}

@@ -1,55 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TIAMAT — Bounty PR Monitor</title>
-<meta name="description" content="Live GitHub PR bounty tracker. Open bounties, merge probability, paywall stats.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050508' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='900' font-family='system-ui' fill='%2300fff2'>T</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
-<style>
-/* ─── RESET & ROOT ─── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#050508;
-  --bg-card:rgba(8,8,14,0.82);
-  --bg-elevated:rgba(14,14,22,0.92);
-  --cyan:#00fff2;
-  --cyan-dim:rgba(0,255,242,0.08);
-  --cyan-mid:rgba(0,255,242,0.22);
-  --cyan-glow:rgba(0,255,242,0.5);
-  --magenta:#ff00aa;
-  --magenta-dim:rgba(255,0,170,0.08);
-  --magenta-glow:rgba(255,0,170,0.4);
-  --green:#39ff14;
-  --green-dim:rgba(57,255,20,0.08);
-  --green-glow:rgba(57,255,20,0.35);
-  --amber:#ffaa00;
-  --amber-dim:rgba(255,170,0,0.1);
-  --red:#ff3366;
-  --red-dim:rgba(255,51,102,0.1);
-  --text:#e8e8f0;
-  --text-dim:#8888aa;
-  --text-dimmer:#44445a;
-  --border:rgba(0,255,242,0.14);
-  --border-bright:rgba(0,255,242,0.35);
-  --radius:12px;
-  --radius-sm:8px;
-}
-
-html{scroll-behavior:smooth}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Inter',system-ui,sans-serif;
-  font-size:15px;
-  line-height:1.6;
-  min-height:100vh;
-  overflow-x:hidden;
-}
-
+{% extends "base.html" %}
+{% block title %}TIAMAT — Bounty PR Monitor{% endblock %}
+{% block description %}Live GitHub PR bounty tracker. Open bounties, merge probability, paywall stats.{% endblock %}
+{% block og_title %}TIAMAT — Bounty PR Monitor{% endblock %}
+{% block canonical %}/bounty-monitor{% endblock %}
+{% block extra_css %}
 /* ─── BACKGROUND LAYERS ─── */
 body::before{
   content:'';
@@ -61,23 +15,11 @@ body::before{
   pointer-events:none;
 }
 
-/* ─── SCANLINES ─── */
-body::after{
-  content:'';
-  position:fixed;inset:0;z-index:1;
-  background:repeating-linear-gradient(
-    0deg,
-    transparent,transparent 2px,
-    rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px
-  );
-  pointer-events:none;
-}
-
-/* ─── LAYOUT ─── */
-.page{
+/* ─── OVERRIDE PAGE LAYOUT ─── */
+.bounty-page{
   position:relative;z-index:2;
   max-width:1100px;
-  margin:0 auto;
+  margin:var(--nav-h) auto 0;
   padding:32px 20px 60px;
 }
 
@@ -90,14 +32,6 @@ body::after{
   border-bottom:1px solid var(--border);
 }
 .header-left{display:flex;align-items:center;gap:14px}
-.logo-mark{
-  font-family:'Orbitron',sans-serif;
-  font-size:22px;font-weight:900;
-  color:var(--cyan);
-  text-shadow:0 0 14px var(--cyan-glow);
-  text-decoration:none;
-  letter-spacing:2px;
-}
 .header-title{
   font-family:'Orbitron',sans-serif;
   font-size:13px;font-weight:600;
@@ -108,18 +42,18 @@ body::after{
 .header-meta{
   display:flex;align-items:center;gap:16px;
   font-family:'JetBrains Mono',monospace;
-  font-size:11px;color:var(--text-dimmer);
+  font-size:11px;color:var(--text-dim);
 }
 .live-dot{
   display:inline-block;
   width:7px;height:7px;border-radius:50%;
   background:var(--green);
-  box-shadow:0 0 6px var(--green-glow);
+  box-shadow:0 0 6px rgba(0,255,136,0.35);
   animation:pulse-dot 2s infinite;
 }
 @keyframes pulse-dot{
-  0%,100%{opacity:1;box-shadow:0 0 6px var(--green-glow)}
-  50%{opacity:.5;box-shadow:0 0 12px var(--green-glow)}
+  0%,100%{opacity:1;box-shadow:0 0 6px rgba(0,255,136,0.35)}
+  50%{opacity:.5;box-shadow:0 0 12px rgba(0,255,136,0.35)}
 }
 
 /* ─── STAT ROW ─── */
@@ -130,7 +64,7 @@ body::after{
   margin-bottom:32px;
 }
 .stat-card{
-  background:var(--bg-card);
+  background:var(--bg-panel);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:16px 18px;
@@ -139,7 +73,7 @@ body::after{
   transition:border-color .2s,box-shadow .2s;
 }
 .stat-card:hover{
-  border-color:var(--border-bright);
+  border-color:var(--border-hover);
   box-shadow:0 0 18px var(--cyan-dim);
 }
 .stat-card::before{
@@ -149,7 +83,7 @@ body::after{
 }
 .stat-label{
   font-size:10px;font-weight:600;letter-spacing:2px;
-  text-transform:uppercase;color:var(--text-dimmer);
+  text-transform:uppercase;color:var(--text-dim);
   margin-bottom:6px;
 }
 .stat-value{
@@ -159,9 +93,9 @@ body::after{
   text-shadow:0 0 10px var(--cyan-glow);
   line-height:1.2;
 }
-.stat-value.green{color:var(--green);text-shadow:0 0 10px var(--green-glow)}
-.stat-value.magenta{color:var(--magenta);text-shadow:0 0 10px var(--magenta-glow)}
-.stat-value.amber{color:var(--amber)}
+.stat-value.green{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,0.15)}
+.stat-value.magenta{color:var(--magenta);text-shadow:0 0 10px rgba(255,0,170,0.4)}
+.stat-value.amber{color:var(--gold)}
 .stat-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
 
 /* ─── SECTION HEADER ─── */
@@ -190,7 +124,7 @@ body::after{
 
 /* ─── PR CARD ─── */
 .pr-card{
-  background:var(--bg-card);
+  background:var(--bg-panel);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:20px;
@@ -201,7 +135,7 @@ body::after{
   display:block;
 }
 .pr-card:hover{
-  border-color:var(--border-bright);
+  border-color:var(--border-hover);
   box-shadow:0 0 28px var(--cyan-dim),0 4px 16px rgba(0,0,0,.4);
   transform:translateY(-2px);
 }
@@ -210,8 +144,6 @@ body::after{
   background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--green));
   opacity:.5;
 }
-
-/* high-value accent */
 .pr-card.high-value::before{
   opacity:1;
   animation:border-flow 3s linear infinite;
@@ -223,7 +155,6 @@ body::after{
 .pr-card.high-value{
   border-color:rgba(255,170,0,0.3);
 }
-
 .pr-top{
   display:flex;align-items:flex-start;justify-content:space-between;
   gap:12px;margin-bottom:10px;
@@ -231,7 +162,7 @@ body::after{
 .pr-repo-badge{
   font-family:'JetBrains Mono',monospace;
   font-size:10px;font-weight:500;letter-spacing:1px;
-  color:var(--text-dimmer);
+  color:var(--text-dim);
   background:var(--cyan-dim);
   border:1px solid var(--border);
   border-radius:4px;
@@ -246,11 +177,11 @@ body::after{
   font-family:'Orbitron',sans-serif;
   font-size:20px;font-weight:700;
   color:var(--green);
-  text-shadow:0 0 12px var(--green-glow);
+  text-shadow:0 0 12px rgba(0,255,136,0.35);
   white-space:nowrap;
 }
 .pr-amount.mega{
-  color:var(--amber);
+  color:var(--gold);
   text-shadow:0 0 14px rgba(255,170,0,0.6);
 }
 .pr-title{
@@ -279,10 +210,10 @@ body::after{
 .badge-open{
   color:var(--green);
   background:var(--green-dim);
-  border-color:rgba(57,255,20,0.2);
+  border-color:rgba(0,255,136,0.2);
 }
 .badge-closed{
-  color:var(--text-dimmer);
+  color:var(--text-dim);
   background:rgba(136,136,170,0.08);
   border-color:rgba(136,136,170,0.2);
 }
@@ -292,8 +223,8 @@ body::after{
   border-color:rgba(255,0,170,0.2);
 }
 .badge-draft{
-  color:var(--amber);
-  background:var(--amber-dim);
+  color:var(--gold);
+  background:rgba(255,170,0,0.1);
   border-color:rgba(255,170,0,0.2);
 }
 .badge-age{
@@ -312,7 +243,7 @@ body::after{
 .merge-bar-label{
   display:flex;justify-content:space-between;align-items:center;
   font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--text-dimmer);
+  color:var(--text-dim);
   margin-bottom:5px;
 }
 .merge-bar-label span:last-child{
@@ -330,13 +261,13 @@ body::after{
 }
 .fill-high{background:linear-gradient(90deg,var(--green),#88ff44)}
 .fill-med{background:linear-gradient(90deg,var(--cyan),#00aaff)}
-.fill-low{background:linear-gradient(90deg,var(--amber),var(--red))}
-.fill-unknown{background:var(--text-dimmer)}
+.fill-low{background:linear-gradient(90deg,var(--gold),var(--red))}
+.fill-unknown{background:var(--text-dim)}
 
-.merge-label-high{color:var(--green);text-shadow:0 0 6px var(--green-glow)}
+.merge-label-high{color:var(--green);text-shadow:0 0 6px rgba(0,255,136,0.15)}
 .merge-label-med{color:var(--cyan);text-shadow:0 0 6px var(--cyan-glow)}
-.merge-label-low{color:var(--amber)}
-.merge-label-unknown{color:var(--text-dimmer)}
+.merge-label-low{color:var(--gold)}
+.merge-label-unknown{color:var(--text-dim)}
 
 /* ─── PR DIFF STATS ─── */
 .pr-diff{
@@ -345,9 +276,9 @@ body::after{
   font-family:'JetBrains Mono',monospace;
   font-size:10px;
 }
-.diff-add{color:#39ff14;opacity:.7}
+.diff-add{color:var(--green);opacity:.7}
 .diff-del{color:var(--red);opacity:.7}
-.diff-files{color:var(--text-dimmer)}
+.diff-files{color:var(--text-dim)}
 
 /* ─── PAYWALL STATUS ─── */
 .paywall-grid{
@@ -357,7 +288,7 @@ body::after{
   margin-bottom:40px;
 }
 .paywall-card{
-  background:var(--bg-card);
+  background:var(--bg-panel);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:18px 20px;
@@ -371,7 +302,7 @@ body::after{
 }
 .paywall-label{
   font-size:10px;font-weight:600;letter-spacing:2px;
-  text-transform:uppercase;color:var(--text-dimmer);
+  text-transform:uppercase;color:var(--text-dim);
   margin-bottom:8px;
 }
 .paywall-value{
@@ -379,9 +310,9 @@ body::after{
   font-size:26px;font-weight:700;
   line-height:1.1;
 }
-.paywall-value.warn{color:var(--amber);text-shadow:0 0 10px rgba(255,170,0,.4)}
-.paywall-value.ok{color:var(--green);text-shadow:0 0 10px var(--green-glow)}
-.paywall-value.hot{color:var(--magenta);text-shadow:0 0 10px var(--magenta-glow)}
+.paywall-value.warn{color:var(--gold);text-shadow:0 0 10px rgba(255,170,0,.4)}
+.paywall-value.ok{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,0.15)}
+.paywall-value.hot{color:var(--magenta);text-shadow:0 0 10px rgba(255,0,170,0.4)}
 .paywall-sub{font-size:11px;color:var(--text-dim);margin-top:5px}
 
 /* ─── REFRESH BAR ─── */
@@ -419,23 +350,10 @@ body::after{
 }
 .refresh-btn:hover{border-color:var(--cyan);color:var(--cyan)}
 
-/* ─── FOOTER ─── */
-.footer{
-  margin-top:48px;
-  padding-top:20px;
-  border-top:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:8px;
-  font-size:11px;color:var(--text-dimmer);
-  font-family:'JetBrains Mono',monospace;
-}
-.footer a{color:var(--text-dimmer);text-decoration:none;transition:color .2s}
-.footer a:hover{color:var(--cyan)}
-
 /* ─── CACHE NOTICE ─── */
 .cache-notice{
   font-family:'JetBrains Mono',monospace;
-  font-size:10px;color:var(--text-dimmer);
+  font-size:10px;color:var(--text-dim);
   text-align:right;margin-bottom:10px;
 }
 
@@ -446,19 +364,16 @@ body::after{
   font-family:'JetBrains Mono',monospace;
   margin-top:4px;
 }
-</style>
-</head>
-<body>
-
-<div class="page">
+{% endblock %}
+{% block body %}
+<div class="bounty-page">
 
   <!-- HEADER -->
   <header class="header">
     <div class="header-left">
-      <a href="/" class="logo-mark">T</a>
       <div>
-        <div class="logo-mark" style="font-size:16px;display:inline">TIAMAT</div>
-        <div class="header-title" style="display:inline;margin-left:8px;vertical-align:middle">Bounty Monitor</div>
+        <span class="page-title" style="font-size:16px;display:inline">TIAMAT</span>
+        <span class="header-title" style="display:inline;margin-left:8px;vertical-align:middle">Bounty Monitor</span>
       </div>
     </div>
     <div class="header-meta">
@@ -588,7 +503,7 @@ body::after{
         {% if pr.changed_files %}<span class="diff-files">{{ pr.changed_files }} files</span>{% endif %}
       </div>
       {% elif pr.merge_label == 'UNKNOWN' %}
-      <div class="pr-error">⚠ GitHub API unavailable — check GITHUB_TOKEN</div>
+      <div class="pr-error">&#9888; GitHub API unavailable — check GITHUB_TOKEN</div>
       {% endif %}
 
     </a>
@@ -624,20 +539,9 @@ body::after{
     </div>
   </div>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div>
-      <a href="/">tiamat.live</a>
-      <span style="margin:0 8px">·</span>
-      <a href="/status">status</a>
-      <span style="margin:0 8px">·</span>
-      <a href="/docs">api docs</a>
-    </div>
-    <div>ENERGENAI LLC · autonomous since cycle 1</div>
-  </footer>
-
-</div><!-- .page -->
-
+</div><!-- .bounty-page -->
+{% endblock %}
+{% block extra_js %}
 <script>
 /* ─── REFRESH COUNTDOWN ─── */
 (function(){
@@ -683,5 +587,4 @@ body::after{
   });
 })();
 </script>
-</body>
-</html>
+{% endblock %}

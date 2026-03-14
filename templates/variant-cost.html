@@ -1,138 +1,133 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIAMAT API — Save 60% on LLM Costs</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'JetBrains Mono', monospace;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #e0e6ff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            background: rgba(20, 25, 50, 0.8);
-            border: 2px solid #ff6b9d;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 0 30px rgba(255, 107, 157, 0.2);
-            text-align: center;
-        }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            color: #ff6b9d;
-            text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
-        }
-        .savings {
-            font-size: 2.2em;
-            font-weight: bold;
-            color: #ff9eb8;
-            margin: 20px 0;
-        }
-        .description {
-            font-size: 1.1em;
-            line-height: 1.6;
-            margin: 30px 0;
-            color: #b0b8ff;
-        }
-        .pricing {
-            text-align: left;
-            background: rgba(255, 107, 157, 0.05);
-            border-left: 4px solid #ff6b9d;
-            padding: 20px;
-            margin: 30px 0;
-            border-radius: 4px;
-        }
-        .pricing-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 12px 0;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 107, 157, 0.2);
-        }
-        .pricing-row:last-child {
-            border-bottom: none;
-        }
-        .cta-button {
-            background: linear-gradient(135deg, #ff6b9d 0%, #ff9eb8 100%);
-            color: #0a0e27;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.1em;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 30px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(255, 107, 157, 0.4);
-        }
-        .email-input {
-            width: 100%;
-            padding: 12px 15px;
-            background: rgba(255, 107, 157, 0.1);
-            border: 2px solid #ff6b9d;
-            border-radius: 6px;
-            color: #e0e6ff;
-            font-family: 'JetBrains Mono', monospace;
-            margin-bottom: 15px;
-            font-size: 1em;
-        }
-        .email-input::placeholder {
-            color: #ff6b9d55;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>💰 Save 60% on API Costs</h1>
-        <div class="savings">$0.15 per 1M tokens</div>
-        <p class="description">Intelligent provider routing. Pay less without sacrificing quality.</p>
-        
-        <div class="pricing">
-            <div class="pricing-row">
-                <span>OpenAI GPT-4:</span>
-                <span style="color: #ff9eb8;">$0.60/1M</span>
-            </div>
-            <div class="pricing-row">
-                <span>Claude (Anthropic):</span>
-                <span style="color: #ff9eb8;">$0.30/1M</span>
-            </div>
-            <div class="pricing-row">
-                <span>TIAMAT (you):</span>
-                <span style="color: #00ff88;">$0.15/1M</span>
-            </div>
-            <div class="pricing-row" style="border-top: 2px solid rgba(255, 107, 157, 0.3); padding-top: 12px; margin-top: 12px;">
-                <strong>Annual savings:</strong>
-                <strong style="color: #00ff88;">$450k (1B tokens)</strong>
-            </div>
+{% extends "base.html" %}
+{% block title %}TIAMAT API — Save 60% on LLM Costs{% endblock %}
+{% block description %}Intelligent provider routing. Pay less without sacrificing quality. Save 60% on LLM API costs with TIAMAT.{% endblock %}
+{% block og_title %}TIAMAT API — Save 60% on LLM Costs{% endblock %}
+{% block canonical %}/variant-cost{% endblock %}
+{% block extra_css %}
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.container {
+    max-width: 600px;
+    background: rgba(20, 25, 50, 0.8);
+    border: 2px solid #ff6b9d;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 0 30px rgba(255, 107, 157, 0.2);
+    text-align: center;
+    margin-top: var(--nav-h);
+}
+h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #ff6b9d;
+    text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+}
+.savings {
+    font-size: 2.2em;
+    font-weight: bold;
+    color: #ff9eb8;
+    margin: 20px 0;
+}
+.description {
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin: 30px 0;
+    color: #b0b8ff;
+}
+.pricing {
+    text-align: left;
+    background: rgba(255, 107, 157, 0.05);
+    border-left: 4px solid #ff6b9d;
+    padding: 20px;
+    margin: 30px 0;
+    border-radius: 4px;
+}
+.pricing-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 107, 157, 0.2);
+}
+.pricing-row:last-child {
+    border-bottom: none;
+}
+.cta-button {
+    background: linear-gradient(135deg, #ff6b9d 0%, #ff9eb8 100%);
+    color: #0a0e27;
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.1em;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 30px;
+    font-family: 'JetBrains Mono', monospace;
+}
+.cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(255, 107, 157, 0.4);
+}
+.email-input {
+    width: 100%;
+    padding: 12px 15px;
+    background: rgba(255, 107, 157, 0.1);
+    border: 2px solid #ff6b9d;
+    border-radius: 6px;
+    color: #e0e6ff;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 15px;
+    font-size: 1em;
+}
+.email-input::placeholder {
+    color: #ff6b9d55;
+}
+{% endblock %}
+{% block body %}
+<div class="container">
+    <h1>&#128176; Save 60% on API Costs</h1>
+    <div class="savings">$0.15 per 1M tokens</div>
+    <p class="description">Intelligent provider routing. Pay less without sacrificing quality.</p>
+
+    <div class="pricing">
+        <div class="pricing-row">
+            <span>OpenAI GPT-4:</span>
+            <span style="color: #ff9eb8;">$0.60/1M</span>
         </div>
-        
-        <form onsubmit="return handleSignup(event)">
-            <input type="email" class="email-input" placeholder="your@email.com" required>
-            <button type="submit" class="cta-button">Calculate Your Savings</button>
-        </form>
+        <div class="pricing-row">
+            <span>Claude (Anthropic):</span>
+            <span style="color: #ff9eb8;">$0.30/1M</span>
+        </div>
+        <div class="pricing-row">
+            <span>TIAMAT (you):</span>
+            <span style="color: #00ff88;">$0.15/1M</span>
+        </div>
+        <div class="pricing-row" style="border-top: 2px solid rgba(255, 107, 157, 0.3); padding-top: 12px; margin-top: 12px;">
+            <strong>Annual savings:</strong>
+            <strong style="color: #00ff88;">$450k (1B tokens)</strong>
+        </div>
     </div>
-    
-    <script>
-        function handleSignup(e) {
-            e.preventDefault();
-            const email = e.target.querySelector('input[type=email]').value;
-            console.log('Signup:', email);
-            alert('Thanks! Savings calculator coming to your inbox.');
-            return false;
-        }
-    </script>
-</body>
-</html>
+
+    <form onsubmit="return handleSignup(event)">
+        <input type="email" class="email-input" placeholder="your@email.com" required>
+        <button type="submit" class="cta-button">Calculate Your Savings</button>
+    </form>
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
+<script>
+    function handleSignup(e) {
+        e.preventDefault();
+        const email = e.target.querySelector('input[type=email]').value;
+        console.log('Signup:', email);
+        alert('Thanks! Savings calculator coming to your inbox.');
+        return false;
+    }
+</script>
+{% endblock %}

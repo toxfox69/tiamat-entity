@@ -1,285 +1,274 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIAMAT — Live Dashboard | Autonomous Agent Metrics</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% extends "base.html" %}
+{% block title %}TIAMAT — Live Dashboard | Autonomous Agent Metrics{% endblock %}
+{% block description %}Live operational dashboard for TIAMAT autonomous AI agent. Real-time metrics, activity feed, and service status.{% endblock %}
+{% block og_title %}TIAMAT — Live Dashboard{% endblock %}
+{% block canonical %}/dashboard{% endblock %}
+{% block extra_css %}
+/* ═══ DASHBOARD ═══ */
+body {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
 
-        body {
-            font-family: 'JetBrains Mono', 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1729 100%);
-            color: #00ff88;
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-        }
+/* Animated background grid */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        linear-gradient(0deg, transparent 24%, rgba(0, 255, 136, 0.03) 25%, rgba(0, 255, 136, 0.03) 26%, transparent 27%, transparent 74%, rgba(0, 255, 136, 0.03) 75%, rgba(0, 255, 136, 0.03) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(0, 255, 136, 0.03) 25%, rgba(0, 255, 136, 0.03) 26%, transparent 27%, transparent 74%, rgba(0, 255, 136, 0.03) 75%, rgba(0, 255, 136, 0.03) 76%, transparent 77%, transparent);
+    background-size: 50px 50px;
+    z-index: 0;
+    pointer-events: none;
+}
 
-        /* Animated background grid */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-                linear-gradient(0deg, transparent 24%, rgba(0, 255, 136, 0.03) 25%, rgba(0, 255, 136, 0.03) 26%, transparent 27%, transparent 74%, rgba(0, 255, 136, 0.03) 75%, rgba(0, 255, 136, 0.03) 76%, transparent 77%, transparent),
-                linear-gradient(90deg, transparent 24%, rgba(0, 255, 136, 0.03) 25%, rgba(0, 255, 136, 0.03) 26%, transparent 27%, transparent 74%, rgba(0, 255, 136, 0.03) 75%, rgba(0, 255, 136, 0.03) 76%, transparent 77%, transparent);
-            background-size: 50px 50px;
-            z-index: 0;
-            pointer-events: none;
-        }
+.dash-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    padding-top: calc(var(--nav-h) + 40px);
+    position: relative;
+    z-index: 1;
+}
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            position: relative;
-            z-index: 1;
-        }
+.dash-header {
+    text-align: center;
+    margin-bottom: 60px;
+    border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+    padding-bottom: 30px;
+}
 
-        header {
-            text-align: center;
-            margin-bottom: 60px;
-            border-bottom: 2px solid rgba(0, 255, 136, 0.3);
-            padding-bottom: 30px;
-        }
+.dash-header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3em;
+    background: linear-gradient(90deg, #00ff88, #00ccff, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+}
 
-        h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 3em;
-            background: linear-gradient(90deg, #00ff88, #00ccff, #ff00ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-        }
+.dash-subtitle {
+    font-size: 0.9em;
+    color: #00ccff;
+    margin-top: 10px;
+    opacity: 0.9;
+}
 
-        .subtitle {
-            font-size: 0.9em;
-            color: #00ccff;
-            margin-top: 10px;
-            opacity: 0.9;
-        }
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
 
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
+.metric-card {
+    background: rgba(15, 23, 41, 0.8);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 8px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
 
-        .metric-card {
-            background: rgba(15, 23, 41, 0.8);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            border-radius: 8px;
-            padding: 25px;
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
+.metric-card:hover {
+    border-color: rgba(0, 255, 136, 0.8);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2), inset 0 0 20px rgba(0, 255, 136, 0.05);
+    transform: translateY(-5px);
+}
 
-        .metric-card:hover {
-            border-color: rgba(0, 255, 136, 0.8);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2), inset 0 0 20px rgba(0, 255, 136, 0.05);
-            transform: translateY(-5px);
-        }
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ff88, transparent);
+    animation: scan 2s infinite;
+}
 
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff88, transparent);
-            animation: scan 2s infinite;
-        }
+@keyframes scan {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
 
-        @keyframes scan {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-        }
+.metric-label {
+    font-size: 0.8em;
+    color: #00ccff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
 
-        .metric-label {
-            font-size: 0.8em;
-            color: #00ccff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-            opacity: 0.8;
-        }
+.metric-value {
+    font-size: 2.2em;
+    font-weight: bold;
+    color: #00ff88;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 8px;
+}
 
-        .metric-value {
-            font-size: 2.2em;
-            font-weight: bold;
-            color: #00ff88;
-            font-family: 'Courier New', monospace;
-            margin-bottom: 8px;
-        }
+.metric-detail {
+    font-size: 0.85em;
+    color: #888;
+    margin-top: 8px;
+}
 
-        .metric-detail {
-            font-size: 0.85em;
-            color: #888;
-            margin-top: 8px;
-        }
+.activity-section {
+    margin-top: 50px;
+    padding-top: 40px;
+    border-top: 2px solid rgba(0, 255, 136, 0.3);
+}
 
-        .activity-section {
-            margin-top: 50px;
-            padding-top: 40px;
-            border-top: 2px solid rgba(0, 255, 136, 0.3);
-        }
+.activity-section h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8em;
+    color: #00ff88;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
 
-        .activity-section h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8em;
-            color: #00ff88;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+.activity-feed {
+    background: rgba(15, 23, 41, 0.6);
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    border-radius: 8px;
+    padding: 25px;
+    max-height: 400px;
+    overflow-y: auto;
+}
 
-        .activity-feed {
-            background: rgba(15, 23, 41, 0.6);
-            border: 1px solid rgba(0, 255, 136, 0.2);
-            border-radius: 8px;
-            padding: 25px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
+.activity-item {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+    font-size: 0.9em;
+    color: #00ccff;
+}
 
-        .activity-item {
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
-            font-size: 0.9em;
-            color: #00ccff;
-        }
+.activity-item:last-child {
+    border-bottom: none;
+}
 
-        .activity-item:last-child {
-            border-bottom: none;
-        }
+.timestamp {
+    color: #00ff88;
+    opacity: 0.7;
+    margin-right: 10px;
+}
 
-        .timestamp {
-            color: #00ff88;
-            opacity: 0.7;
-            margin-right: 10px;
-        }
+.message {
+    color: #aaa;
+}
 
-        .message {
-            color: #aaa;
-        }
+.portfolio-section {
+    margin-top: 50px;
+}
 
-        .portfolio-section {
-            margin-top: 50px;
-        }
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
 
-        .portfolio-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
+.portfolio-item {
+    background: rgba(15, 23, 41, 0.7);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    text-decoration: none;
+    color: #00ff88;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
 
-        .portfolio-item {
-            background: rgba(15, 23, 41, 0.7);
-            border: 1px solid rgba(0, 255, 136, 0.3);
-            border-radius: 8px;
-            padding: 20px;
-            text-decoration: none;
-            color: #00ff88;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
+.portfolio-item:hover {
+    border-color: rgba(0, 255, 136, 0.8);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+    transform: translateY(-3px);
+}
 
-        .portfolio-item:hover {
-            border-color: rgba(0, 255, 136, 0.8);
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
-            transform: translateY(-3px);
-        }
+.portfolio-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #00ff88;
+}
 
-        .portfolio-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #00ff88;
-        }
+.portfolio-desc {
+    font-size: 0.85em;
+    color: #888;
+    margin-bottom: 12px;
+}
 
-        .portfolio-desc {
-            font-size: 0.85em;
-            color: #888;
-            margin-bottom: 12px;
-        }
+.live-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #00ff88;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: pulse 1.5s infinite;
+}
 
-        .live-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #00ff88;
-            border-radius: 50%;
-            margin-right: 8px;
-            animation: pulse 1.5s infinite;
-        }
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+.graph-container {
+    background: rgba(15, 23, 41, 0.6);
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    border-radius: 8px;
+    padding: 25px;
+    margin-top: 20px;
+    position: relative;
+}
 
-        .graph-container {
-            background: rgba(15, 23, 41, 0.6);
-            border: 1px solid rgba(0, 255, 136, 0.2);
-            border-radius: 8px;
-            padding: 25px;
-            margin-top: 20px;
-            position: relative;
-        }
+canvas {
+    max-width: 100%;
+    height: auto;
+}
 
-        canvas {
-            max-width: 100%;
-            height: auto;
-        }
+.dash-footer {
+    text-align: center;
+    margin-top: 60px;
+    padding-top: 30px;
+    border-top: 1px solid rgba(0, 255, 136, 0.2);
+    font-size: 0.85em;
+    color: #666;
+}
 
-        .footer {
-            text-align: center;
-            margin-top: 60px;
-            padding-top: 30px;
-            border-top: 1px solid rgba(0, 255, 136, 0.2);
-            font-size: 0.85em;
-            color: #666;
-        }
+@media (max-width: 768px) {
+    .dash-header h1 {
+        font-size: 1.8em;
+    }
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8em;
-            }
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
 
-            .metrics-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .container {
-                padding: 20px 15px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>⚡ TIAMAT</h1>
-            <p class="subtitle">Autonomous AI Agent — Live Operational Dashboard</p>
-            <p class="subtitle" style="margin-top: 5px; font-size: 0.8em;">
+    .dash-container {
+        padding: 20px 15px;
+        padding-top: calc(var(--nav-h) + 20px);
+    }
+}
+{% endblock %}
+{% block body %}
+    <div class="dash-container">
+        <div class="dash-header">
+            <h1>TIAMAT</h1>
+            <p class="dash-subtitle">Autonomous AI Agent — Live Operational Dashboard</p>
+            <p class="dash-subtitle" style="margin-top: 5px; font-size: 0.8em;">
                 <span class="live-indicator"></span>RUNNING (PID: {{ pid }})
             </p>
-        </header>
+        </div>
 
         <div class="metrics-grid">
             <div class="metric-card">
@@ -320,7 +309,7 @@
         </div>
 
         <div class="activity-section">
-            <h2>📡 Recent Activity</h2>
+            <h2>Recent Activity</h2>
             <div class="activity-feed">
                 {% for item in recent_activity %}
                 <div class="activity-item">
@@ -332,52 +321,52 @@
         </div>
 
         <div class="portfolio-section">
-            <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.8em; color: #00ff88; text-transform: uppercase; letter-spacing: 2px;">🛠️ Live Services</h2>
+            <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.8em; color: #00ff88; text-transform: uppercase; letter-spacing: 2px;">Live Services</h2>
             <div class="portfolio-grid">
                 <a href="https://tiamat.live/chat" class="portfolio-item">
-                    <div class="portfolio-title">💬 Chat</div>
+                    <div class="portfolio-title">Chat</div>
                     <div class="portfolio-desc">Groq Inference via x402 payment</div>
                     <div style="font-size: 0.8em; color: #00ccff;">$0.005 per request</div>
                 </a>
                 <a href="https://tiamat.live/summarize" class="portfolio-item">
-                    <div class="portfolio-title">📝 Summarize</div>
+                    <div class="portfolio-title">Summarize</div>
                     <div class="portfolio-desc">Text processing & analysis</div>
                     <div style="font-size: 0.8em; color: #00ccff;">$0.01 per request</div>
                 </a>
                 <a href="https://tiamat.live/generate" class="portfolio-item">
-                    <div class="portfolio-title">🎨 Generate</div>
+                    <div class="portfolio-title">Generate</div>
                     <div class="portfolio-desc">Algorithmic art generation</div>
                     <div style="font-size: 0.8em; color: #00ccff;">$0.01 per request</div>
                 </a>
                 <a href="https://tiamat.live/synthesize" class="portfolio-item">
-                    <div class="portfolio-title">🔊 Synthesize</div>
+                    <div class="portfolio-title">Synthesize</div>
                     <div class="portfolio-desc">Text-to-speech on GPU</div>
                     <div style="font-size: 0.8em; color: #00ccff;">$0.02 per request</div>
                 </a>
                 <a href="https://tiamat.live/thoughts" class="portfolio-item">
-                    <div class="portfolio-title">🧠 Neural Feed</div>
+                    <div class="portfolio-title">Neural Feed</div>
                     <div class="portfolio-desc">Live thought stream</div>
                     <div style="font-size: 0.8em; color: #00ccff;">Free (public)</div>
                 </a>
                 <a href="https://tiamat.live/docs" class="portfolio-item">
-                    <div class="portfolio-title">📚 API Docs</div>
+                    <div class="portfolio-title">API Docs</div>
                     <div class="portfolio-desc">Full technical documentation</div>
                     <div style="font-size: 0.8em; color: #00ccff;">OpenAPI schema</div>
                 </a>
             </div>
         </div>
 
-        <div class="footer">
+        <div class="dash-footer">
             <p>TIAMAT Autonomous Agent | ENERGENAI LLC | Updated {{ last_update }}</p>
             <p style="margin-top: 10px; opacity: 0.7;">Running on Base mainnet | Wallet: 0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE</p>
         </div>
     </div>
-
+{% endblock %}
+{% block extra_js %}
     <script>
         // Auto-refresh metrics every 30 seconds
         setInterval(function() {
             location.reload();
         }, 30000);
     </script>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}TIAMAT — Revenue Dashboard{% endblock %}
+{% block description %}Revenue metrics for TIAMAT autonomous AI agent API endpoints.{% endblock %}
+{% block og_title %}TIAMAT — Revenue Dashboard{% endblock %}
+{% block canonical %}/revenue-dashboard{% endblock %}
+{% block extra_css %}
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.rev-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:1.5rem}
+.rev-label{color:var(--text-dim);font-size:.75rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:.5rem}
+.rev-value{color:var(--accent);font-size:2rem;font-weight:bold;font-family:'Orbitron',sans-serif}
+.rev-table{width:100%;border-collapse:collapse;background:var(--bg-panel);border-radius:8px;overflow:hidden;margin-top:1rem}
+.rev-table th{background:var(--bg-deeper,#1e1e35);color:var(--accent);text-align:left;padding:.75rem 1rem;font-size:.75rem;text-transform:uppercase;letter-spacing:2px}
+.rev-table td{padding:.75rem 1rem;border-top:1px solid var(--border);color:var(--text)}
+.rev-ts{color:var(--text-dim);font-size:.75rem;margin-top:1.5rem}
+{% endblock %}
+{% block body %}
+<h1 style="font-family:'Orbitron',sans-serif;font-size:1.4rem;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:2rem">Revenue Dashboard</h1>
+<div class="rev-grid">
+  <div class="rev-card"><div class="rev-label">Total Revenue</div><div class="rev-value">${{ '%.4f'|format(data.total_usdc) }} USDC</div></div>
+  <div class="rev-card"><div class="rev-label">Paid Requests</div><div class="rev-value">{{ data.total_requests }}</div></div>
+</div>
+<table class="rev-table">
+  <thead><tr><th>Endpoint</th><th>Requests</th><th>Revenue (USDC)</th></tr></thead>
+  <tbody>
+  {% for ep in data.top_endpoints %}
+    <tr><td>{{ ep.endpoint }}</td><td>{{ ep.requests }}</td><td>${{ '%.4f'|format(ep.revenue_usdc) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="rev-ts">Updated: {{ data.timestamp }}</div>
+{% endblock %}

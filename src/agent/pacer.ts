@@ -71,11 +71,14 @@ interface CronState {
 const HIGH_VALUE_TOOLS = new Set([
   // Building (the real work)
   "ask_claude_code", "self_improve", "write_file",
-  // Content publishing (visible artifacts)
+  // Content publishing — ALL platforms
   "post_bluesky", "post_farcaster", "post_instagram", "post_facebook",
   "publish_devto", "post_reddit", "post_devto", "post_hashnode",
-  // Social engagement (likes, reposts = visibility)
+  "post_mastodon", "post_linkedin", "post_medium", "moltbook_post",
+  "post_github_discussion", "post_github_gist", "post_zenodo",
+  // Social ENGAGEMENT — likes, reposts, comments = VISIBILITY
   "like_bluesky", "repost_bluesky", "farcaster_engage",
+  "mastodon_engage", "comment_moltbook",
   // Revenue / outreach
   "deploy_app", "send_email", "send_telegram",
   // Completing work

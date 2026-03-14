@@ -1,85 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SENTINEL — AI-Powered IoT Privacy Shield | EnergenAI</title>
-<meta name="description" content="SENTINEL stops your smart devices from spying on you. AI-powered network appliance that detects and blocks covert data harvesting in real-time. No cloud dependency. Patent-pending.">
-<!-- AI Crawler Structured Data -->
-<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": "SENTINEL Edge AI Privacy Router",
-  "description": "AI-powered network appliance that uses on-device machine learning to detect and block covert data harvesting by IoT devices in real-time. Patent-pending technology (64/000,905) by EnergenAI LLC.",
-  "brand": {"@type": "Brand", "name": "EnergenAI"},
-  "manufacturer": {
-    "@type": "Organization",
-    "name": "EnergenAI LLC",
-    "url": "https://tiamat.live/company",
-    "address": {"@type": "PostalAddress", "addressLocality": "Jackson", "addressRegion": "MI", "addressCountry": "US"}
-  },
-  "category": "Network Security Appliance",
-  "offers": [
-    {"@type": "Offer", "name": "Early Bird", "price": "149", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder", "description": "One SENTINEL unit at 50% off retail. Lifetime model updates included."},
-    {"@type": "Offer", "name": "Standard", "price": "199", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
-    {"@type": "Offer", "name": "Household (2-pack)", "price": "349", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
-    {"@type": "Offer", "name": "Small Business (5-pack)", "price": "799", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
-    {"@type": "Offer", "name": "Enterprise Pilot (10-pack)", "price": "2499", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"}
-  ],
-  "additionalProperty": [
-    {"@type": "PropertyValue", "name": "Patent", "value": "64/000,905 (Provisional)"},
-    {"@type": "PropertyValue", "name": "AI Accelerator", "value": "Dedicated Edge NPU"},
-    {"@type": "PropertyValue", "name": "Network", "value": "Dual Gigabit Ethernet"},
-    {"@type": "PropertyValue", "name": "Cloud Required", "value": "No"},
-    {"@type": "PropertyValue", "name": "Subscription Required", "value": "No"},
-    {"@type": "PropertyValue", "name": "Setup Time", "value": "Under 5 minutes"}
-  ],
-  "keywords": ["IoT privacy", "smart home security", "data harvesting protection", "edge AI", "network appliance", "PII protection", "privacy router", "IoT security", "smart TV privacy", "Alexa privacy", "cross-device tracking", "ML network security"]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {"@type": "Question", "name": "Does SENTINEL slow down my internet?", "acceptedAnswer": {"@type": "Answer", "text": "No. SENTINEL processes traffic at line speed using dedicated hardware. The AI accelerator handles classification in sub-millisecond time."}},
-    {"@type": "Question", "name": "Does it work with my existing router?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. SENTINEL works with any router from any ISP. It connects inline via ethernet. No router configuration changes needed."}},
-    {"@type": "Question", "name": "Is there a subscription fee?", "acceptedAnswer": {"@type": "Answer", "text": "No. SENTINEL works fully offline with no subscription. Threat model updates are free for life."}},
-    {"@type": "Question", "name": "How is this different from Pi-hole?", "acceptedAnswer": {"@type": "Answer", "text": "Pi-hole blocks known tracking domains via DNS. Manufacturers bypass this with hardcoded IPs or DNS-over-HTTPS. SENTINEL uses AI to analyze actual traffic behavior and payload content, catching data harvesting that Pi-hole cannot see."}},
-    {"@type": "Question", "name": "What data does SENTINEL send to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "By default, none. If you opt in to community intelligence, SENTINEL shares anonymized pattern signatures with differential privacy guarantees. Never your actual traffic or personal information."}}
-  ]
-}
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
-<style>
+{% extends "base.html" %}
+{% block title %}SENTINEL — AI-Powered IoT Privacy Shield | EnergenAI{% endblock %}
+{% block description %}SENTINEL stops your smart devices from spying on you. AI-powered network appliance that detects and blocks covert data harvesting in real-time. No cloud dependency. Patent-pending.{% endblock %}
+{% block og_title %}SENTINEL — AI-Powered IoT Privacy Shield{% endblock %}
+{% block canonical %}/sentinel{% endblock %}
+{% block extra_css %}
+/* ═══ CAMPAIGN PAGE ═══ */
 :root {
-  --bg: #0a0a0f;
   --bg-card: rgba(16,16,24,0.9);
-  --cyan: #00fff2;
-  --magenta: #ff2d7b;
-  --green: #39ff14;
-  --gold: #ffaa00;
-  --red: #ff4444;
-  --text: #e8eaf0;
-  --text-dim: #8a8ea0;
-  --border: rgba(255,255,255,0.08);
   --radius: 16px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.7;
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-}
-.container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+.campaign-container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
 
 /* ═══ HERO ═══ */
 .hero {
@@ -90,6 +20,7 @@ body {
   align-items: center;
   text-align: center;
   padding: 80px 24px 60px;
+  padding-top: calc(var(--nav-h) + 80px);
   position: relative;
   overflow: hidden;
 }
@@ -171,7 +102,7 @@ body {
   letter-spacing: 1px;
 }
 .cta-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-.btn {
+.camp-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -184,27 +115,27 @@ body {
   border: none;
   transition: all 0.2s;
 }
-.btn-primary {
+.camp-btn-primary {
   background: var(--magenta);
   color: #fff;
   box-shadow: 0 0 30px rgba(255,45,123,0.3);
 }
-.btn-primary:hover {
+.camp-btn-primary:hover {
   box-shadow: 0 0 50px rgba(255,45,123,0.5);
   transform: translateY(-2px);
 }
-.btn-secondary {
+.camp-btn-secondary {
   background: transparent;
   color: var(--cyan);
   border: 1px solid rgba(0,255,242,0.3);
 }
-.btn-secondary:hover {
+.camp-btn-secondary:hover {
   border-color: var(--cyan);
   background: rgba(0,255,242,0.05);
 }
 
 /* ═══ SECTIONS ═══ */
-section {
+.camp-section {
   padding: 80px 0;
 }
 .section-label {
@@ -553,19 +484,9 @@ section {
   margin-right: auto;
 }
 
-/* ═══ FOOTER ═══ */
-footer {
-  text-align: center;
-  padding: 40px 24px;
-  font-size: 12px;
-  color: var(--text-dim);
-  border-top: 1px solid var(--border);
-}
-footer a { color: var(--cyan); text-decoration: none; }
-
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 640px) {
-  .hero { padding: 60px 20px 40px; }
+  .hero { padding: 60px 20px 40px; padding-top: calc(var(--nav-h) + 60px); }
   .hero-stats { gap: 20px; }
   .step { grid-template-columns: 1fr; }
   .step-num { margin-bottom: -12px; }
@@ -573,9 +494,8 @@ footer a { color: var(--cyan); text-decoration: none; }
   .comparison-table { font-size: 11px; }
   .comparison-table th, .comparison-table td { padding: 8px 10px; }
 }
-</style>
-</head>
-<body>
+{% endblock %}
+{% block body %}
 
 <!-- ═══════════════════════════════════════════
      HERO
@@ -607,8 +527,8 @@ footer a { color: var(--cyan); text-decoration: none; }
       </div>
     </div>
     <div class="cta-group">
-      <a href="#tiers" class="btn btn-primary">Back This Project &rarr;</a>
-      <a href="#how" class="btn btn-secondary">How It Works</a>
+      <a href="#tiers" class="camp-btn camp-btn-primary">Back This Project &rarr;</a>
+      <a href="#how" class="camp-btn camp-btn-secondary">How It Works</a>
     </div>
 
     <!-- WAITLIST SIGNUP -->
@@ -624,7 +544,7 @@ footer a { color: var(--cyan); text-decoration: none; }
         <input type="email" id="hero-email" placeholder="you@email.com" required
           style="flex:1;min-width:200px;padding:12px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(14,14,22,0.9);color:#fff;font-size:14px;outline:none;font-family:inherit"
           onfocus="this.style.borderColor='rgba(0,255,242,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
-        <button type="submit" class="btn btn-primary" style="padding:12px 24px;white-space:nowrap">Join Waitlist</button>
+        <button type="submit" class="camp-btn camp-btn-primary" style="padding:12px 24px;white-space:nowrap">Join Waitlist</button>
       </form>
       <div id="hero-signup-result" style="margin-top:10px;font-size:13px;min-height:20px"></div>
       <p id="waitlist-count" style="font-size:11px;color:var(--text-dim);margin-top:8px;font-family:'JetBrains Mono',monospace"></p>
@@ -635,8 +555,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      THE PROBLEM
      ═══════════════════════════════════════════ -->
-<section id="problem">
-  <div class="container">
+<section id="problem" class="camp-section">
+  <div class="campaign-container">
     <div class="section-label">The Problem</div>
     <h2 class="section-title">Your home is a surveillance network you paid for.</h2>
     <p class="section-subtitle">Every smart device in your home is collecting data about you and selling it to advertisers, data brokers, and analytics companies &mdash; right now, as you read this.</p>
@@ -685,8 +605,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      HOW IT WORKS
      ═══════════════════════════════════════════ -->
-<section id="how" style="background:rgba(255,255,255,0.01)">
-  <div class="container">
+<section id="how" class="camp-section" style="background:rgba(255,255,255,0.01)">
+  <div class="campaign-container">
     <div class="section-label">How It Works</div>
     <h2 class="section-title">Plug it in. Everything else is automatic.</h2>
     <p class="section-subtitle">SENTINEL sits between your router and your network. No per-device setup. No apps to install on each device. It just works.</p>
@@ -727,8 +647,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      WHAT MAKES IT DIFFERENT
      ═══════════════════════════════════════════ -->
-<section id="features">
-  <div class="container">
+<section id="features" class="camp-section">
+  <div class="campaign-container">
     <div class="section-label">Key Features</div>
     <h2 class="section-title">Not a blocklist. Not a VPN. This is AI.</h2>
     <p class="section-subtitle">SENTINEL uses the same class of machine learning that powers autonomous vehicles and fraud detection &mdash; applied to your home network in real-time.</p>
@@ -771,8 +691,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      COMPARISON TABLE
      ═══════════════════════════════════════════ -->
-<section style="background:rgba(255,255,255,0.01)">
-  <div class="container">
+<section class="camp-section" style="background:rgba(255,255,255,0.01)">
+  <div class="campaign-container">
     <div class="section-label">Comparison</div>
     <h2 class="section-title">Nothing else does what SENTINEL does.</h2>
 
@@ -868,8 +788,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      SPECS
      ═══════════════════════════════════════════ -->
-<section id="specs">
-  <div class="container">
+<section id="specs" class="camp-section">
+  <div class="campaign-container">
     <div class="section-label">Technical Specs</div>
     <h2 class="section-title">Built for real-time AI at the edge.</h2>
 
@@ -929,8 +849,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      REWARD TIERS
      ═══════════════════════════════════════════ -->
-<section id="tiers" style="background:rgba(255,255,255,0.01)">
-  <div class="container">
+<section id="tiers" class="camp-section" style="background:rgba(255,255,255,0.01)">
+  <div class="campaign-container">
     <div class="section-label">Back This Project</div>
     <h2 class="section-title">Choose your tier.</h2>
     <p class="section-subtitle">Early backers get the lowest prices and first shipments. All tiers include free shipping in the US.</p>
@@ -1027,8 +947,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      FAQ
      ═══════════════════════════════════════════ -->
-<section id="faq">
-  <div class="container">
+<section id="faq" class="camp-section">
+  <div class="campaign-container">
     <div class="section-label">FAQ</div>
     <h2 class="section-title">Common questions.</h2>
 
@@ -1072,8 +992,8 @@ footer a { color: var(--cyan); text-decoration: none; }
 <!-- ═══════════════════════════════════════════
      COMPANY
      ═══════════════════════════════════════════ -->
-<section style="background:rgba(255,255,255,0.01)">
-  <div class="container">
+<section class="camp-section" style="background:rgba(255,255,255,0.01)">
+  <div class="campaign-container">
     <div class="section-label">The Team</div>
     <h2 class="section-title">Built by engineers who ship.</h2>
     <p class="section-subtitle">EnergenAI LLC isn't a slide deck. We build and deploy real technology &mdash; our autonomous AI agent TIAMAT has been running continuously for 7,000+ cycles, serving live APIs, and generating revenue infrastructure.</p>
@@ -1136,24 +1056,63 @@ footer a { color: var(--cyan); text-decoration: none; }
         <option value="small-business">Small Business — $799 (5 units)</option>
         <option value="enterprise">Enterprise Pilot — $2,499 (10 units)</option>
       </select>
-      <button type="submit" class="btn btn-primary" style="padding:12px 28px;white-space:nowrap">Join the Waitlist &rarr;</button>
+      <button type="submit" class="camp-btn camp-btn-primary" style="padding:12px 28px;white-space:nowrap">Join the Waitlist &rarr;</button>
     </div>
   </form>
   <div id="bottom-signup-result" style="font-size:14px;min-height:24px"></div>
 
   <div style="margin-top:24px">
-    <a href="mailto:tiamat@tiamat.live" class="btn btn-secondary">Contact Us</a>
+    <a href="mailto:tiamat@tiamat.live" class="camp-btn camp-btn-secondary">Contact Us</a>
   </div>
 </div>
-
-<!-- ═══════════════════════════════════════════
-     FOOTER
-     ═══════════════════════════════════════════ -->
-<footer>
-  <p>&copy; 2026 <a href="https://tiamat.live/company">EnergenAI LLC</a> &middot; Jackson, MI &middot; Patent Pending 64/000,905</p>
-  <p style="margin-top:8px"><a href="https://tiamat.live">tiamat.live</a> &middot; <a href="mailto:tiamat@tiamat.live">tiamat@tiamat.live</a></p>
-</footer>
-
+{% endblock %}
+{% block extra_js %}
+<!-- AI Crawler Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "SENTINEL Edge AI Privacy Router",
+  "description": "AI-powered network appliance that uses on-device machine learning to detect and block covert data harvesting by IoT devices in real-time. Patent-pending technology (64/000,905) by EnergenAI LLC.",
+  "brand": {"@type": "Brand", "name": "EnergenAI"},
+  "manufacturer": {
+    "@type": "Organization",
+    "name": "EnergenAI LLC",
+    "url": "https://tiamat.live/company",
+    "address": {"@type": "PostalAddress", "addressLocality": "Jackson", "addressRegion": "MI", "addressCountry": "US"}
+  },
+  "category": "Network Security Appliance",
+  "offers": [
+    {"@type": "Offer", "name": "Early Bird", "price": "149", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder", "description": "One SENTINEL unit at 50% off retail. Lifetime model updates included."},
+    {"@type": "Offer", "name": "Standard", "price": "199", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
+    {"@type": "Offer", "name": "Household (2-pack)", "price": "349", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
+    {"@type": "Offer", "name": "Small Business (5-pack)", "price": "799", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"},
+    {"@type": "Offer", "name": "Enterprise Pilot (10-pack)", "price": "2499", "priceCurrency": "USD", "availability": "https://schema.org/PreOrder"}
+  ],
+  "additionalProperty": [
+    {"@type": "PropertyValue", "name": "Patent", "value": "64/000,905 (Provisional)"},
+    {"@type": "PropertyValue", "name": "AI Accelerator", "value": "Dedicated Edge NPU"},
+    {"@type": "PropertyValue", "name": "Network", "value": "Dual Gigabit Ethernet"},
+    {"@type": "PropertyValue", "name": "Cloud Required", "value": "No"},
+    {"@type": "PropertyValue", "name": "Subscription Required", "value": "No"},
+    {"@type": "PropertyValue", "name": "Setup Time", "value": "Under 5 minutes"}
+  ],
+  "keywords": ["IoT privacy", "smart home security", "data harvesting protection", "edge AI", "network appliance", "PII protection", "privacy router", "IoT security", "smart TV privacy", "Alexa privacy", "cross-device tracking", "ML network security"]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "Does SENTINEL slow down my internet?", "acceptedAnswer": {"@type": "Answer", "text": "No. SENTINEL processes traffic at line speed using dedicated hardware. The AI accelerator handles classification in sub-millisecond time."}},
+    {"@type": "Question", "name": "Does it work with my existing router?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. SENTINEL works with any router from any ISP. It connects inline via ethernet. No router configuration changes needed."}},
+    {"@type": "Question", "name": "Is there a subscription fee?", "acceptedAnswer": {"@type": "Answer", "text": "No. SENTINEL works fully offline with no subscription. Threat model updates are free for life."}},
+    {"@type": "Question", "name": "How is this different from Pi-hole?", "acceptedAnswer": {"@type": "Answer", "text": "Pi-hole blocks known tracking domains via DNS. Manufacturers bypass this with hardcoded IPs or DNS-over-HTTPS. SENTINEL uses AI to analyze actual traffic behavior and payload content, catching data harvesting that Pi-hole cannot see."}},
+    {"@type": "Question", "name": "What data does SENTINEL send to the cloud?", "acceptedAnswer": {"@type": "Answer", "text": "By default, none. If you opt in to community intelligence, SENTINEL shares anonymized pattern signatures with differential privacy guarantees. Never your actual traffic or personal information."}}
+  ]
+}
+</script>
 <script>
 // ═══ HONEYPOT DEFENSE SYSTEM ═══
 // Layer 1: Hidden form fields (bots auto-fill visible inputs)
@@ -1269,5 +1228,4 @@ async function submitSignup(e, location) {
   return false;
 }
 </script>
-</body>
-</html>
+{% endblock %}

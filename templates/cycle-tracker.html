@@ -1,15 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#FFF0F5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Luna — Private Cycle Tracker</title>
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTHVuYSIsInNob3J0X25hbWUiOiJMdW5hIiwiZGVzY3JpcHRpb24iOiJQcml2YWN5LWZpcnN0IHBlcmlvZCB0cmFja2VyLiBZb3VyIGRhdGEgbmV2ZXIgbGVhdmVzIHlvdXIgcGhvbmUuIiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNGRkYwRjUiLCJ0aGVtZV9jb2xvciI6IiNGRkYwRjUifQ==">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
+{% extends "base.html" %}
+{% block title %}Luna — Private Cycle Tracker{% endblock %}
+{% block description %}Privacy-first period tracker. Your data never leaves your phone.{% endblock %}
+{% block og_title %}Luna — Private Cycle Tracker{% endblock %}
+{% block canonical %}/cycle-tracker{% endblock %}
+{% block extra_css %}
+/* ═══ LUNA CYCLE TRACKER ═══ */
 :root{
   --bg:#FFF5F7;--surface:#FFFFFF;--card:#FFFFFF;--border:#F2D4DC;
   --rose:#E8A0BF;--rose-deep:#D4789C;--rose-soft:#F4C6D7;--rose-pale:#FDE8EF;
@@ -19,7 +14,8 @@
   --text:#4A3346;--text-dim:#8B7082;--text-muted:#B8A0B0;
   --danger:#E88B9C;--success:#7BC8A4;--warn:#E8C97B;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg) !important;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body::after{display:none !important}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:15px;outline:none}
 input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(232,160,191,.15)}
@@ -37,9 +33,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
 .privacy-banner svg{flex-shrink:0}
 
 /* Nav */
-.nav{display:flex;gap:4px;padding:4px 16px 12px}
-.nav-btn{flex:1;padding:10px;border-radius:12px;font-size:13px;font-weight:600;color:var(--text-muted);transition:all .2s;text-align:center}
-.nav-btn.active{background:var(--surface);color:var(--rose-deep);border:1px solid var(--border);box-shadow:0 2px 8px rgba(74,51,70,.06)}
+.luna-nav{display:flex;gap:4px;padding:4px 16px 12px}
+.luna-nav-btn{flex:1;padding:10px;border-radius:12px;font-size:13px;font-weight:600;color:var(--text-muted);transition:all .2s;text-align:center}
+.luna-nav-btn.active{background:var(--surface);color:var(--rose-deep);border:1px solid var(--border);box-shadow:0 2px 8px rgba(74,51,70,.06)}
 
 /* Content */
 .content{flex:1;padding:0 16px 100px;overflow-y:auto}
@@ -65,11 +61,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
 
 /* Stats cards */
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 2px 8px rgba(74,51,70,.04)}
-.stat-card .label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600}
-.stat-card .value{font-size:22px;font-weight:700}
-.stat-card .value.pink{color:var(--rose-deep)}
-.stat-card .value.purple{color:var(--lavender)}
+.luna-stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 2px 8px rgba(74,51,70,.04)}
+.luna-stat-card .label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:600}
+.luna-stat-card .value{font-size:22px;font-weight:700}
+.luna-stat-card .value.pink{color:var(--rose-deep)}
+.luna-stat-card .value.purple{color:var(--lavender)}
 
 /* Log panel */
 .log-panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-top:12px;box-shadow:0 2px 12px rgba(74,51,70,.04)}
@@ -95,10 +91,10 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
 .notes-area{width:100%;min-height:60px;resize:vertical;border-radius:12px;margin-top:8px}
 
 /* Primary button */
-.btn-primary{width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,var(--rose),var(--lavender));color:#fff;font-size:15px;font-weight:600;margin-top:14px;transition:all .2s;box-shadow:0 4px 12px rgba(212,120,156,.25);letter-spacing:.2px}
-.btn-primary:hover{opacity:.92;transform:translateY(-1px)}
-.btn-primary:active{opacity:.85;transform:translateY(0)}
-.btn-secondary{width:100%;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:14px;font-weight:500;margin-top:8px}
+.luna-btn-primary{width:100%;padding:14px;border-radius:14px;background:linear-gradient(135deg,var(--rose),var(--lavender));color:#fff;font-size:15px;font-weight:600;margin-top:14px;transition:all .2s;box-shadow:0 4px 12px rgba(212,120,156,.25);letter-spacing:.2px}
+.luna-btn-primary:hover{opacity:.92;transform:translateY(-1px)}
+.luna-btn-primary:active{opacity:.85;transform:translateY(0)}
+.luna-btn-secondary{width:100%;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);font-size:14px;font-weight:500;margin-top:8px}
 
 /* History list */
 .history-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(74,51,70,.03)}
@@ -142,9 +138,12 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-</style>
-</head>
-<body>
+
+/* Hide base nav for this standalone app */
+.site-nav{display:none !important}
+.site-footer{display:none !important}
+{% endblock %}
+{% block body %}
 <div class="app" id="app">
   <!-- PIN overlay (hidden by default) -->
   <div class="pin-overlay" id="pinOverlay" style="display:none">
@@ -168,17 +167,19 @@ input:focus,textarea:focus,select:focus{border-color:var(--rose);box-shadow:0 0 
       Your data never leaves this device
     </div>
 
-    <div class="nav">
-      <button class="nav-btn active" data-view="calendar" onclick="showView('calendar')">Calendar</button>
-      <button class="nav-btn" data-view="log" onclick="showView('log')">Log</button>
-      <button class="nav-btn" data-view="history" onclick="showView('history')">History</button>
-      <button class="nav-btn" data-view="settings" onclick="showView('settings')">Settings</button>
+    <div class="luna-nav">
+      <button class="luna-nav-btn active" data-view="calendar" onclick="showView('calendar')">Calendar</button>
+      <button class="luna-nav-btn" data-view="log" onclick="showView('log')">Log</button>
+      <button class="luna-nav-btn" data-view="history" onclick="showView('history')">History</button>
+      <button class="luna-nav-btn" data-view="settings" onclick="showView('settings')">Settings</button>
     </div>
 
     <div class="content" id="content"></div>
   </div>
 </div>
-
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
 <script>
 // ─── Data Layer (localStorage only) ─────────────────────────
 const STORAGE_KEY = 'luna_cycle_data';
@@ -436,11 +437,11 @@ function renderCalendar() {
 
   let html = `
     <div class="stats fade-in">
-      <div class="stat-card">
+      <div class="luna-stat-card">
         <div class="label">Cycle Length</div>
         <div class="value pink">${avgCycle}<span style="font-size:13px;color:var(--text-dim)"> days</span></div>
       </div>
-      <div class="stat-card">
+      <div class="luna-stat-card">
         <div class="label">Next Period</div>
         <div class="value purple">${daysUntil}<span style="font-size:13px;color:var(--text-dim)">${typeof daysUntil === 'number' ? ' days' : ''}</span></div>
       </div>
@@ -523,11 +524,11 @@ function addDays(dateStr, n) {
 function renderLog() {
   const today = new Date().toISOString().split('T')[0];
   const existing = getSymptoms(today) || {};
-  const moods = ['😊','😐','😢','😠','😴'];
+  const moods = ['\u{1F60A}','\u{1F610}','\u{1F622}','\u{1F620}','\u{1F634}'];
 
   let html = `
     <div class="log-panel fade-in">
-      <h3>Log Today — ${new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'})}</h3>
+      <h3>Log Today \u2014 ${new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'})}</h3>
 
       <div class="log-row">
         <label>Period</label>
@@ -573,7 +574,7 @@ function renderLog() {
         <textarea class="notes-area" id="logNotes" placeholder="How are you feeling?">${existing.notes||''}</textarea>
       </div>
 
-      <button class="btn-primary" onclick="saveLog()">Save Today's Log</button>
+      <button class="luna-btn-primary" onclick="saveLog()">Save Today's Log</button>
     </div>
   `;
 
@@ -633,7 +634,7 @@ function saveLog() {
   saveData(data);
   tempLog = {};
 
-  const btn = document.querySelector('.btn-primary');
+  const btn = document.querySelector('.luna-btn-primary');
   btn.textContent = 'Saved!';
   btn.style.background = 'var(--mint)';
   btn.style.color = 'var(--text)';
@@ -720,11 +721,11 @@ function renderSettings() {
         </div>
       </div>
 
-      <button class="btn-primary" onclick="exportCSV()">Export Data as CSV</button>
-      <button class="btn-secondary" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem('${STORAGE_KEY}');data={periods:[],symptoms:[]};showView('calendar')}">Delete All Data</button>
+      <button class="luna-btn-primary" onclick="exportCSV()">Export Data as CSV</button>
+      <button class="luna-btn-secondary" onclick="if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem('${STORAGE_KEY}');data={periods:[],symptoms:[]};showView('calendar')}">Delete All Data</button>
 
       <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-size:12px;line-height:1.8">
-        <strong style="color:var(--rose-deep)">Luna</strong> — Privacy-first cycle tracker<br>
+        <strong style="color:var(--rose-deep)">Luna</strong> \u2014 Privacy-first cycle tracker<br>
         All data stored locally on your device.<br>
         No accounts. No cloud. No tracking. Ever.<br>
         <span style="font-size:11px">by ENERGENAI LLC</span>
@@ -778,7 +779,7 @@ function exportCSV() {
 // ─── Navigation ─────────────────────────────────────────────
 function showView(view) {
   currentView = view;
-  document.querySelectorAll('.nav-btn').forEach(b => {
+  document.querySelectorAll('.luna-nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.view === view);
   });
   switch(view) {
@@ -793,5 +794,4 @@ function showView(view) {
 checkPinLock();
 showView('calendar');
 </script>
-</body>
-</html>
+{% endblock %}

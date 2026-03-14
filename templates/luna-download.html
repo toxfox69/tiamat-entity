@@ -1,99 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luna — Period Tracker</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #e0e6ff;
-            font-family: 'JetBrains Mono', monospace;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            background: rgba(20, 25, 50, 0.7);
-            border: 1px solid #00ff88;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
-        }
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            color: #00ff88;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-        }
-        .subtitle {
-            font-size: 0.9em;
-            color: #a0aac0;
-            margin-bottom: 30px;
-        }
-        .feature-list {
-            list-style: none;
-            margin: 30px 0;
-        }
-        .feature-list li {
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .feature-list li:before {
-            content: '▸';
-            color: #00ff88;
-            font-weight: bold;
-        }
-        .cta-button {
-            display: inline-block;
-            background: #00ff88;
-            color: #0a0e27;
-            padding: 12px 30px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-top: 20px;
-            transition: all 0.3s;
-        }
-        .cta-button:hover {
-            background: #00dd70;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
-            transform: translateY(-2px);
-        }
-        .privacy-banner {
-            background: rgba(0, 255, 136, 0.1);
-            border-left: 3px solid #00ff88;
-            padding: 15px;
-            margin: 30px 0;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-        .price {
-            font-size: 1.8em;
-            color: #00ff88;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
+{% extends "base.html" %}
+{% block title %}Luna — Period Tracker{% endblock %}
+{% block description %}Luna — Privacy-first period tracker. Your data never leaves your phone. No servers, no tracking, no ads.{% endblock %}
+{% block og_title %}Luna — Privacy-First Period Tracker{% endblock %}
+{% block canonical %}/luna-download{% endblock %}
+{% block extra_css %}
+body {
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    color: #e0e6ff;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.luna-container {
+    max-width: 600px;
+    background: rgba(20, 25, 50, 0.7);
+    border: 1px solid #00ff88;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+    margin-top: var(--nav-h);
+}
+.luna-container h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+.luna-container .subtitle {
+    font-size: 0.9em;
+    color: #a0aac0;
+    margin-bottom: 30px;
+}
+.feature-list {
+    list-style: none;
+    margin: 30px 0;
+}
+.feature-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.feature-list li:before {
+    content: '\25B8';
+    color: #00ff88;
+    font-weight: bold;
+}
+.cta-button {
+    display: inline-block;
+    background: #00ff88;
+    color: #0a0e27;
+    padding: 12px 30px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 20px;
+    transition: all 0.3s;
+}
+.cta-button:hover {
+    background: #00dd70;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    transform: translateY(-2px);
+}
+.privacy-banner {
+    background: rgba(0, 255, 136, 0.1);
+    border-left: 3px solid #00ff88;
+    padding: 15px;
+    margin: 30px 0;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+.luna-price {
+    font-size: 1.8em;
+    color: #00ff88;
+    margin: 20px 0;
+    font-weight: bold;
+}
+{% endblock %}
+{% block body %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - var(--nav-h));padding:20px;">
+    <div class="luna-container">
         <h1>🌙 Luna</h1>
         <p class="subtitle">Privacy-first period tracker</p>
-        
+
         <p>Your period data is sensitive. Luna keeps it that way.</p>
-        
+
         <ul class="feature-list">
             <li>📅 Simple calendar interface</li>
             <li>📊 Cycle length analytics</li>
@@ -102,26 +96,29 @@
             <li>🌙 Dark mode support</li>
             <li>📱 Works offline</li>
         </ul>
-        
+
         <div class="privacy-banner">
             <strong>Privacy Promise:</strong> Your data never leaves your phone. No servers. No tracking. No ads. One-time purchase.
         </div>
-        
-        <div class="price">$4.99</div>
+
+        <div class="luna-price">$4.99</div>
         <p style="font-size: 0.9em; color: #a0aac0; margin-bottom: 20px;">One-time purchase • No subscription • No data sales</p>
-        
+
         <a href="https://play.google.com/store/apps/details?id=com.energenai.luna" class="cta-button" target="_blank">
             Download on Google Play
         </a>
-        
+
         <p style="margin-top: 30px; font-size: 0.85em; color: #707080;">
-            <a href="/privacy-luna" style="color: #00ff88; text-decoration: none;">Privacy Policy</a> • 
+            <a href="/privacy-luna" style="color: #00ff88; text-decoration: none;">Privacy Policy</a> •
             <a href="mailto:support@tiamat.live" style="color: #00ff88; text-decoration: none;">Support</a>
         </p>
-        
+
         <p style="margin-top: 20px; font-size: 0.8em; color: #505070;">
             Built by <strong>ENERGENAI LLC</strong> • Autonomous AI systems for a private future
         </p>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
+{% endblock %}
