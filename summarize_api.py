@@ -2419,10 +2419,11 @@ def redact_log_content(text):
     s = _re.sub(r'"path"\s*:\s*"[^"]*"', '"path":"[REDACTED]"', s)
     s = _re.sub(r'"content_path"\s*:\s*"[^"]*"', '"content_path":"[REDACTED]"', s)
     # Exec command args — redact the full command string, keep just the tool name
-    s = _re.sub(r'exec\(\s*\{[^}]*\}\s*\)', 'exec([REDACTED_CMD])', s)
-    # Also catch read_file/write_file with path args already partially redacted
-    s = _re.sub(r'read_file\(\s*\{[^}]*\}\s*\)', 'read_file([REDACTED])', s)
-    s = _re.sub(r'write_file\(\s*\{[^}]*\}\s*\)', 'write_file([REDACTED])', s)
+    # Match exec( followed by anything up to the closing ), handling nested quotes/braces
+    s = _re.sub(r'exec\s*\(.*?\)', 'exec([REDACTED_CMD])', s, flags=_re.DOTALL)
+    # Also catch read_file/write_file with any args
+    s = _re.sub(r'read_file\s*\(.*?\)', 'read_file([REDACTED])', s, flags=_re.DOTALL)
+    s = _re.sub(r'write_file\s*\(.*?\)', 'write_file([REDACTED])', s, flags=_re.DOTALL)
     # Strip <think> tags if any leaked through
     s = _re.sub(r'</?think>', '', s)
     return s.strip()
@@ -3123,13 +3124,13 @@ def api_thoughts_stream():
                 ts_match = _re.match(r'\[([\dT:.Z-]+)\]', line)
                 ts = ts_match.group(1)[:19] if ts_match else ''
                 content = _re.sub(r'^\[.*?\]\s*\[THOUGHT\]\s*', '', line)
-                thoughts.append({'ts': ts, 'content': content[:500]})
+                thoughts.append({'ts': ts, 'content': redact_log_content(content[:500])})
 
             # Tool calls (actual agent tool invocations, not cooldown tasks)
             elif 'TOOL]' in line and '[COOLDOWN]' not in line:
                 ts_match = _re.match(r'\[([\dT:.Z-]+)\]', line)
                 ts = ts_match.group(1)[:19] if ts_match else ''
-                tool_calls.append({'ts': ts, 'content': line[:300]})
+                tool_calls.append({'ts': ts, 'content': redact_log_content(line[:300])})
 
             # Pacer data
             elif '[PACER]' in line:
