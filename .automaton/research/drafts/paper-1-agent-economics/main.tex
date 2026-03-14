@@ -239,6 +239,13 @@ Q4 (recent) & 5,280 & \$60.77 & \$0.0115 & $-$55.6\% \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1_cost_trajectory.pdf}
+\caption{Cost per cycle over 21,111 autonomous cycles. Blue line: 200-cycle rolling average. Red dashed lines: quartile means. Green line: linear trend. The 40\% decline from Q2 peak to Q4 reflects autonomous cost optimization through model routing refinement.}
+\label{fig:cost_trajectory}
+\end{figure}
+
 The cost per cycle declined 55.6\% from the Q2 peak (\$0.0259) to Q4 (\$0.0115). Q1 was cheaper than Q2 because the agent had not yet activated its full tool set and strategic burst system during initial ramp-up. The Q2 peak corresponds to the period of maximum strategic burst frequency and CLI-based infrastructure building. The subsequent decline reflects two factors: (1) model routing optimization, shifting more cycles to cheaper providers; and (2) reduced CLI session frequency as infrastructure stabilized.
 
 \subsubsection{Model Routing Economics}
@@ -253,7 +260,14 @@ The Haiku/Sonnet routing split achieves a 5.74$\times$ cost differential per cyc
 
 Despite accounting for only 17\% of Anthropic API calls, Sonnet consumed 54\% of Anthropic-tier spend. The cascade models (Llama-3.3-70b, GPT-OSS-120b, Qwen3-32b, and others) provided intermediate-cost inference at \$0.014--0.018 per call, handling cycles when Anthropic rate limits were active.
 
-Xu et al.\ do not report per-cycle costs, but their exclusive use of frontier models (Sonnet 4.5 and Opus 4.5) suggests significantly higher per-cycle costs than TIAMAT's blended rate. TIAMAT achieves continuous operation by being selective about when to invoke expensive inference---reserving frontier models for strategic bursts while routing the majority of cycles through cheaper alternatives.
+Xu et al.\ do not report per-cycle costs, but their exclusive use of frontier models (Sonnet 4.5 and Opus 4.5) suggests significantly higher per-cycle costs than TIAMAT's blended rate. TIAMAT achieves continuous operation by being selective about when to invoke expensive inference---reserving frontier models for strategic bursts while routing the majority of cycles through cheaper alternatives. Figure~\ref{fig:model_routing} shows the cost distribution across model categories.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/fig3_model_routing.pdf}
+\caption{Inference cost distribution by model category. Claude Code CLI sessions account for 66.9\% of total spend despite representing multi-turn agentic work. Direct API calls (Sonnet + Haiku + cascade models) provide the single-turn inference at lower per-call costs.}
+\label{fig:model_routing}
+\end{figure}
 
 \subsection{Memory Compression}
 
@@ -295,6 +309,13 @@ Social & 99 & 6.5\% & 0.921 \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.65\textwidth]{figures/fig2_memory_funnel.pdf}
+\caption{Three-tier memory compression pipeline. 6,346 raw observations are compressed through 3,190 autonomous consolidation runs into 1,533 distilled facts (4.14:1 overall compression). L2 uses Jaccard-similarity clustering; L3 extracts core knowledge with confidence scoring.}
+\label{fig:memory_funnel}
+\end{figure}
+
 The heavy skew toward technical knowledge (65.2\%) reflects the agent's operational focus on infrastructure building and maintenance. Behavioral knowledge has the lowest mean confidence (0.868), suggesting that self-knowledge is harder to distill with certainty than technical facts. The 3,190 consolidation runs indicate the compression pipeline executes frequently---approximately once every 6.6 cycles on average.
 
 \subsection{Memory Quality}
@@ -318,6 +339,13 @@ Garbage / Noise & 290 & 18.9\% \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig4_l3_quality.pdf}
+\caption{L3 core knowledge quality evaluation. Heuristic classification of all 1,533 distilled facts. 56.6\% are accurate and actionable; 18.9\% represent noise that the compression pipeline should have filtered.}
+\label{fig:l3_quality}
+\end{figure}
 
 Of 1,533 distilled L3 facts, 56.6\% (867) are accurate and actionable---containing specific technical knowledge, strategic insights, or operational lessons useful for future decision-making (e.g., ``SendGrid API requires verified sender identity,'' ``Dev.to rate limit is 1 article per hour''). An additional 21.8\% (335) are accurate but trivially obvious. The garbage rate of 18.9\% (290) represents logging artifacts and tool execution metadata that the compression pipeline incorrectly promoted to permanent knowledge. The staleness rate is low (2.7\%), suggesting that the consolidation system is effective at producing durable facts rather than ephemeral observations.
 
