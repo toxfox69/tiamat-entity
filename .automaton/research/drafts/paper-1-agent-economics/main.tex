@@ -42,7 +42,7 @@
 % ABSTRACT
 % ============================================================
 \begin{abstract}
-No published work reports the longitudinal operational economics of a continuously running autonomous AI agent. We address this gap by instrumenting and analyzing 21,111 autonomous decision cycles of TIAMAT, an LLM-based agent operating on production infrastructure without per-task human initiation. Over continuous operation, the agent consumed \$390.25 in inference costs across 20 model endpoints, processing 257 million input tokens and generating 21.9 million output tokens. Multi-model routing achieved a 5.74$\times$ cost differential between strategic bursts (Claude Sonnet 4.5, \$0.030/cycle) and routine cycles (Claude Haiku 4.5, \$0.005/cycle), while prompt caching saved \$55.64 (12.5\% of total spend). Mean cost per cycle declined 40\% from peak (\$0.026) to the most recent quartile (\$0.012), demonstrating autonomous cost self-optimization. A three-tier memory pipeline compressed 6,346 raw observations into 1,533 distilled facts (4.14:1 ratio) through 3,190 consolidation runs. The agent maintained a 78.9\% idle rate, indicating effective adaptive pacing. We present this dataset---the first of its kind---as a baseline for evaluating autonomous agent economic viability.
+No published work reports the longitudinal operational economics of a continuously running autonomous AI agent. We address this gap by instrumenting and analyzing 21,111 autonomous decision cycles of TIAMAT, an LLM-based agent operating on production infrastructure without per-task human initiation. Over continuous operation, the agent consumed \$390.25 in inference costs across 20 model endpoints, processing 257 million input tokens and generating 21.9 million output tokens. Multi-model routing achieved a 5.74$\times$ cost differential between strategic bursts (Claude Sonnet 4.5, \$0.030/cycle) and routine cycles (Claude Haiku 4.5, \$0.005/cycle), while prompt caching saved \$55.64 (12.5\% of total spend). Mean cost per cycle declined 40\% from peak (\$0.026) to the most recent quartile (\$0.012), demonstrating autonomous cost self-optimization. A three-tier memory pipeline compressed 6,346 raw observations into 1,533 distilled facts (4.14:1 ratio) through 3,190 consolidation runs. The agent maintained a 78.9\% idle rate, indicating effective adaptive pacing. Heuristic quality evaluation found 56.6\% of distilled facts to be accurate and actionable, with 18.9\% classified as noise---identifying memory filtering as a key optimization target. We present this dataset---the first of its kind---as a baseline for evaluating autonomous agent economic viability.
 \end{abstract}
 
 \noindent\textbf{Keywords:} autonomous agents, operational economics, LLM agents, inference optimization, agent memory systems
@@ -297,6 +297,36 @@ Social & 99 & 6.5\% & 0.921 \\
 
 The heavy skew toward technical knowledge (65.2\%) reflects the agent's operational focus on infrastructure building and maintenance. Behavioral knowledge has the lowest mean confidence (0.868), suggesting that self-knowledge is harder to distill with certainty than technical facts. The 3,190 consolidation runs indicate the compression pipeline executes frequently---approximately once every 6.6 cycles on average.
 
+\subsection{Memory Quality}
+
+To address whether compression preserves useful information, we conducted a heuristic quality evaluation across all three memory tiers. Table~\ref{tab:l3_quality} presents the L3 core knowledge quality breakdown.
+
+\begin{table}[h]
+\centering
+\caption{L3 core knowledge quality evaluation (N=1,533)}
+\label{tab:l3_quality}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Quality Category} & \textbf{Count} & \textbf{\%} \\
+\midrule
+Accurate \& Actionable & 867 & 56.6\% \\
+Accurate but Trivial & 335 & 21.8\% \\
+Stale / Outdated & 41 & 2.7\% \\
+Garbage / Noise & 290 & 18.9\% \\
+\midrule
+\textbf{Effective Quality Rate} & \textbf{1,202} & \textbf{78.4\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Of 1,533 distilled L3 facts, 56.6\% (867) are accurate and actionable---containing specific technical knowledge, strategic insights, or operational lessons useful for future decision-making (e.g., ``SendGrid API requires verified sender identity,'' ``Dev.to rate limit is 1 article per hour''). An additional 21.8\% (335) are accurate but trivially obvious. The garbage rate of 18.9\% (290) represents logging artifacts and tool execution metadata that the compression pipeline incorrectly promoted to permanent knowledge. The staleness rate is low (2.7\%), suggesting that the consolidation system is effective at producing durable facts rather than ephemeral observations.
+
+L2 compression fidelity was evaluated on 20 randomly sampled summaries, yielding a mean preservation score of 3.05/5.0---indicating that compressed summaries retain approximately half of the key information from their source memories. This moderate score reflects a deliberate trade-off: aggressive compression reduces token cost for memory retrieval at the expense of some information loss.
+
+The most striking finding concerns recall utilization. Of 6,346 L1 memories, 99.9\% have never been recalled (recall count = 0). This suggests a fundamental inefficiency: the agent invests cycles in storing memories that are never subsequently accessed. The smart recall system---designed to search L3 first, then L2, then L1---may be too effective at the L3 level, rarely needing to access lower tiers. Alternatively, the memory system may be over-producing observations relative to the agent's actual retrieval needs. Optimizing memory production to reduce storage of never-recalled observations represents a clear efficiency target.
+
+Knowledge graph triples showed 93.3\% accuracy (28 of 30 sampled), with only 1 outdated and 1 garbage entry, indicating that the triple extraction pipeline applies more rigorous quality filtering than the L3 fact pipeline. No near-duplicate L3 facts were detected in a 200-entry sample (Jaccard similarity threshold 0.8), confirming that the deduplication stage of consolidation is effective.
+
 \subsection{Metacognitive Behavior}
 
 Three metrics provide evidence of metacognitive function:
@@ -392,7 +422,7 @@ This study has several limitations:
     \item \textbf{Single agent, single infrastructure.} Results reflect one agent on one DigitalOcean droplet. Cost profiles may differ with other providers, architectures, or hardware configurations.
     \item \textbf{Provider-specific pricing.} Cost data is specific to Anthropic, Groq, DigitalOcean Gradient, and other providers' pricing as of early 2026. API pricing changes frequently.
     \item \textbf{Zero revenue.} Economic viability remains theoretical. The cost optimization trajectory is real, but break-even analysis is speculative until revenue data exists.
-    \item \textbf{Memory quality unevaluated.} We report compression ratios and confidence scores, but do not evaluate whether compressed memories preserve the information needed for effective future decision-making.
+    \item \textbf{Memory quality partially evaluated.} Our heuristic quality evaluation (Section 5.3) provides an initial assessment of memory fidelity, but does not measure downstream impact---whether higher-quality memories produce measurably better decisions in subsequent cycles. The 99.9\% never-recalled rate for L1 memories suggests the memory system over-produces observations relative to retrieval needs.
     \item \textbf{No comparison to other frameworks.} We do not benchmark TIAMAT against AutoGPT~\citep{significant2023autogpt}, AutoGen~\citep{wu2023autogen}, or other agent frameworks. Cross-framework cost comparison is valuable future work.
 \end{itemize}
 

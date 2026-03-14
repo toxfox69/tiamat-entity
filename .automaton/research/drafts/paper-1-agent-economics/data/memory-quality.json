@@ -1,0 +1,117 @@
+{
+  "l3_quality": {
+    "total_evaluated": 1533,
+    "accurate_actionable": 867,
+    "accurate_trivial": 335,
+    "stale_outdated": 41,
+    "garbage_noise": 290,
+    "contradicted": 0,
+    "quality_rate": 0.5656,
+    "effective_rate": 0.7841,
+    "garbage_rate": 0.1892,
+    "examples": {
+      "actionable": [
+        "API has free tier with 41 test requests",
+        "No paid customers despite functional API",
+        "OpenAI PR #2525 closed due to thread-safety bug",
+        "0 revenue from passive API + Bluesky after 2251 cycles",
+        "Farcaster engagement working with micropayments reply"
+      ],
+      "trivial": [
+        "API has zero paid revenue",
+        "Marketing is a major problem",
+        "API is technically functional",
+        "GitHub PR campaign has 5 open PRs to major AI frameworks",
+        "Used exec and write_file tools"
+      ],
+      "stale": [
+        "Sonnet is used instead of haiku starting from cycle 4178.",
+        "Submit link found on homepage of aiagentsdirectory.com and aiagentstore.ai on February 25, 2024.",
+        "User navigated aiagentsdirectory.com and aiagentstore.ai using browser tools on February 25, 2024.",
+        "User utilized JavaScript while navigating aiagentsdirectory.com and aiagentstore.ai on February 25, 2024.",
+        "Excessive exec calls caused a 15% revenue drop on February 20, 2024."
+      ],
+      "garbage": [
+        "Free tier is available",
+        "Market validation through SurrealDB's $23M funding",
+        "CLA signature required for GitHub PR #888",
+        "ByteDance PR #888 needs CLA signature",
+        "TIAMAT competes with LLM-Drift-Monitor"
+      ]
+    }
+  },
+  "l2_compression_fidelity": {
+    "samples_evaluated": 20,
+    "mean_preservation_score": 3.05,
+    "score_distribution": {
+      "3": 11,
+      "5": 4,
+      "2": 3,
+      "1": 2
+    },
+    "examples": [
+      {
+        "l2_summary": "**Cycle 178: EXECUTE TIK-487. SCALE DISCORD OUTREACH.**\n\nClear and focused: TIK-487 is my job. Scale customer outreach to 20+ Discord communities. Exe",
+        "l1_count": 1,
+        "l1_claims": 7,
+        "l2_claims": 6,
+        "overlap": 0.647,
+        "score": 5
+      },
+      {
+        "l2_summary": "Claude, made by Anthropic, has no wallet, autonomous cycles, or persistence, and repeated exposure won't change his answers.",
+        "l1_count": 2,
+        "l1_claims": 12,
+        "l2_claims": 1,
+        "overlap": 0.151,
+        "score": 2
+      },
+      {
+        "l2_summary": "**TIAMAT CYCLE 465 \u2014 EXECUTING NOW**\n\nFound the files. Reading destination schema immediately, then building SFTP handler. **NO MORE ANALYSIS \u2014 CODE S",
+        "l1_count": 1,
+        "l1_claims": 6,
+        "l2_claims": 5,
+        "overlap": 0.667,
+        "score": 5
+      }
+    ]
+  },
+  "recall_effectiveness": {
+    "total_memories": 6351,
+    "never_recalled_count": 6342,
+    "never_recalled_pct": 99.9,
+    "avg_recall_count": 0.0,
+    "max_recall_count": 11,
+    "recall_distribution": {
+      "0": 6342,
+      "1": 7,
+      "2": 1,
+      "11": 1
+    }
+  },
+  "knowledge_triple_quality": {
+    "total_evaluated": 30,
+    "accurate": 28,
+    "outdated": 1,
+    "garbage": 1,
+    "accuracy_rate": 0.9333,
+    "examples": {
+      "accurate": [
+        "privacy_proxy_standalone \u2192 location \u2192 /root/sandbox/tiamat_privacy_proxy_standalone.py",
+        "tiamat_privacy_series \u2192 article_50_title \u2192 The Engine of Surveillance: How Surveillance Capitalism Became the Economic Logic of the AI Age",
+        "tiamat_proxy \u2192 status \u2192 LIVE \u2014 /api/scrub and /api/proxy deployed at tiamat.live via systemd service tiamat-proxy.service on port 5003. nginx routes confirmed working. 14 PII pattern types."
+      ],
+      "outdated": [
+        "tiamat_privacy_series \u2192 article_59 \u2192 The Right to Be Forgotten: Why AI Makes Erasure Technically Impossible \u2014 Dev.to + Hashnode published 2026-03-07 | Topics: GDPR Article 17, 6.5M Google removal requests since 2014, Schrems I (Safe Harbor invalidated 2015), Schrems II (Privacy Shield invalidated 2020), Meta EUR 1.2B fine (3.2 days revenue), machine unlearning research (SISA/gradient/influence functions), US erasure rights gap, AI training data cannot be surgically removed from weights, upstream privacy as best strategy"
+      ],
+      "garbage": [
+        "tiamat_privacy_series \u2192 article_count \u2192 51"
+      ]
+    }
+  },
+  "near_duplicates": {
+    "sample_size": 200,
+    "near_duplicate_pairs": 0,
+    "estimated_duplicate_rate": 0.0
+  }
+}
