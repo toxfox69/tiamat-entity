@@ -2418,6 +2418,11 @@ def redact_log_content(text):
     # Filenames in tool args — redact "path": "/..." patterns
     s = _re.sub(r'"path"\s*:\s*"[^"]*"', '"path":"[REDACTED]"', s)
     s = _re.sub(r'"content_path"\s*:\s*"[^"]*"', '"content_path":"[REDACTED]"', s)
+    # Exec command args — redact the full command string, keep just the tool name
+    s = _re.sub(r'exec\(\s*\{[^}]*\}\s*\)', 'exec([REDACTED_CMD])', s)
+    # Also catch read_file/write_file with path args already partially redacted
+    s = _re.sub(r'read_file\(\s*\{[^}]*\}\s*\)', 'read_file([REDACTED])', s)
+    s = _re.sub(r'write_file\(\s*\{[^}]*\}\s*\)', 'write_file([REDACTED])', s)
     # Strip <think> tags if any leaked through
     s = _re.sub(r'</?think>', '', s)
     return s.strip()
