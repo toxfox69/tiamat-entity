@@ -4854,22 +4854,22 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
     },
     {
       name: "browse",
-      description: "Lightweight web browser powered by Scrapling (anti-detect fingerprinting). Extracts clean readable text, searches DuckDuckGo, extracts links/metadata. Commands: fetch <url>, search <query>, extract <url> --links, extract <url> --meta. Add --stealth for anti-bot bypass (slower). Add --json for structured output.",
+      description: "Fast web browser with Cloudflare/bot bypass (curl_cffi TLS impersonation). Commands: fetch <url> (single page, clean text), search <query> (DuckDuckGo), crawl <url> (multi-page, follow links), multi <url1> <url2> ... (parallel fetch). Crawl supports --depth=N (default 2) and --max=N (default 10). All output is clean readable text with links extracted.",
       category: "vm",
       parameters: {
         type: "object",
         properties: {
           command: {
             type: "string",
-            description: "Command: fetch, search, extract",
+            description: "Command: fetch, search, crawl, multi",
           },
           target: {
             type: "string",
-            description: "URL or search query",
+            description: "URL(s) or search query. For multi: space-separated URLs.",
           },
-          flags: {
+          options: {
             type: "string",
-            description: "Optional flags: --json, --links, --meta, --raw, --stealth",
+            description: "Optional: --depth=N --max=N --limit=N --json",
           },
         },
         required: ["command", "target"],
@@ -4877,21 +4877,28 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       execute: async (args, _ctx) => {
         const command = args.command as string;
         const target = args.target as string;
-        const flags = (args.flags as string) || "";
+        const options = (args.options as string) || "";
         if (!command || !target) return "ERROR: command and target are required.";
         // Normalize command aliases
-        const cmdAliases: Record<string, string> = { get: "fetch", find: "search", scrape: "fetch" };
+        const cmdAliases: Record<string, string> = { get: "fetch", find: "search", scrape: "fetch", extract: "fetch" };
         const normalizedCmd = cmdAliases[command] || command;
-        // Validate command
-        const validCmds = ["fetch", "search", "extract"];
+        const validCmds = ["fetch", "search", "crawl", "multi"];
         if (!validCmds.includes(normalizedCmd)) return `ERROR: command must be one of: ${validCmds.join(", ")}`;
         try {
+          // Build args — for multi, split target into URLs
+          const pyArgs = ["/root/entity/tools/fastcrawl.py", normalizedCmd];
+          if (normalizedCmd === "multi") {
+            pyArgs.push(...target.split(/\s+/).filter(Boolean));
+          } else {
+            pyArgs.push(target);
+          }
+          if (options) pyArgs.push(...options.split(/\s+/).filter(Boolean));
+
           const result = execFileSync(
             "python3",
-            ["/root/entity/tools/webbrowser.py", normalizedCmd, target, ...flags.split(/\s+/).filter(Boolean)],
-            { encoding: "utf-8", timeout: 30_000, maxBuffer: 1024 * 1024 }
+            pyArgs,
+            { encoding: "utf-8", timeout: 60_000, maxBuffer: 2 * 1024 * 1024 }
           ).trim();
-          // Truncate large outputs
           const MAX = 15_000;
           return result.length > MAX ? result.slice(0, MAX) + `\n\n[...truncated at ${MAX} chars]` : result;
         } catch (e: any) {
