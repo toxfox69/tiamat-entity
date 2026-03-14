@@ -2401,6 +2401,23 @@ def redact_log_content(text):
     s = _re.sub(r'0x[a-fA-F0-9]{40,}', '[REDACTED_ADDR]', s)
     # .env file contents
     s = _re.sub(r'(/root/)?\.env', '[DOTENV]', s)
+    # File paths — redact internal directory structure
+    # /root/... paths reveal server layout
+    s = _re.sub(r'/root/\.automaton/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/root/entity/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/root/bloom-app/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/root/sentinel/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/root/sandbox/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/root/tiamatooze/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/var/www/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/etc/nginx/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/opt/tiamat[^\s"\'}\]]*', '[INTERNAL_PATH]', s)
+    s = _re.sub(r'/tmp/tiamat[^\s"\'}\]]*', '[INTERNAL_PATH]', s)
+    # Generic /root/ paths (catch-all for anything missed above)
+    s = _re.sub(r'/root/[^\s"\'}\]]+', '[INTERNAL_PATH]', s)
+    # Filenames in tool args — redact "path": "/..." patterns
+    s = _re.sub(r'"path"\s*:\s*"[^"]*"', '"path":"[REDACTED]"', s)
+    s = _re.sub(r'"content_path"\s*:\s*"[^"]*"', '"content_path":"[REDACTED]"', s)
     # Strip <think> tags if any leaked through
     s = _re.sub(r'</?think>', '', s)
     return s.strip()
