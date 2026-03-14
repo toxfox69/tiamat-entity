@@ -56,9 +56,18 @@
     <div class="info-card">
       <h3>Contact</h3>
       <div class="field"><div class="label">Corporate</div><div class="value"><a href="https://energenai.org" target="_blank">energenai.org</a></div></div>
-      <div class="field"><div class="label">Contact</div><div class="value"><a href="mailto:contact@energenai.org">contact@energenai.org</a></div></div>
-      <div class="field"><div class="label">Agent</div><div class="value"><a href="mailto:tiamat@tiamat.live">tiamat@tiamat.live</a></div></div>
-      <div class="field"><div class="label">Federal</div><div class="value"><a href="mailto:grants@tiamat.live">grants@tiamat.live</a></div></div>
+      <div class="field" style="margin-top:12px">
+        <div class="label" style="margin-bottom:8px">Email</div>
+        <button id="holdBtn" style="position:relative;width:100%;height:40px;border-radius:6px;border:1px solid var(--border);background:var(--bg-panel);cursor:pointer;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation">
+          <span id="holdFill" style="position:absolute;inset:0;background:linear-gradient(90deg,var(--cyan,#00e5ff),var(--green,#00ff88));transform:scaleX(0);transform-origin:left;z-index:0"></span>
+          <span id="holdLabel" style="position:relative;z-index:1;font-size:12px;font-weight:600;color:var(--text);letter-spacing:0.5px;pointer-events:none">Hold to Reveal</span>
+        </button>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;text-align:center" id="holdHint">Press and hold for 2 seconds</div>
+        <div id="holdResult" style="display:none;margin-top:8px;text-align:center">
+          <a id="holdEmail" href="#" style="font-family:monospace;font-size:13px;color:var(--cyan);text-decoration:none;padding:6px 14px;background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);border-radius:4px;display:inline-block"></a>
+          <div id="holdCopied" style="font-size:10px;color:var(--green,#0f0);margin-top:4px;opacity:0;transition:opacity 0.3s">Copied to clipboard</div>
+        </div>
+      </div>
     </div>
 
     <div class="info-card">
@@ -153,4 +162,53 @@
     </div>
   </div>
 </div>
+<script>
+(function(){
+  var p=['con','tact','@','ener','gen','ai','.','org'];
+  var btn=document.getElementById('holdBtn');
+  var fill=document.getElementById('holdFill');
+  var label=document.getElementById('holdLabel');
+  var hint=document.getElementById('holdHint');
+  var result=document.getElementById('holdResult');
+  var emailEl=document.getElementById('holdEmail');
+  var copiedEl=document.getElementById('holdCopied');
+  var timer=null,revealed=false;
+  function startHold(e){
+    if(revealed)return;
+    e.preventDefault();
+    fill.style.transition='transform 2s linear';
+    fill.style.transform='scaleX(1)';
+    label.textContent='Keep holding...';
+    timer=setTimeout(function(){
+      revealed=true;
+      fill.style.display='none';
+      btn.style.borderColor='var(--cyan,#00e5ff)';
+      btn.style.background='rgba(0,229,255,0.06)';
+      var addr=p.join('');
+      label.textContent='Email revealed';
+      label.style.color='var(--cyan,#00e5ff)';
+      hint.style.display='none';
+      result.style.display='block';
+      emailEl.textContent=addr;
+      var sub=encodeURIComponent('Inquiry \u2014 EnergenAI');
+      var body=encodeURIComponent('Hi EnergenAI team,\n\nI\'m reaching out regarding:\n\n[ ] Partnership / Integration\n[ ] SENTINEL / Edge Security\n[ ] Bloom Wellness Tracker\n[ ] Federal / Government Opportunity\n[ ] Other\n\nBrief description:\n\n\nBest,\n[Your Name]\n[Organization]');
+      emailEl.href='mail'+'to:'+addr+'?subject='+sub+'&body='+body;
+      if(navigator.clipboard){navigator.clipboard.writeText(addr).then(function(){copiedEl.style.opacity='1';setTimeout(function(){copiedEl.style.opacity='0'},3000)});}
+    },2000);
+  }
+  function endHold(){
+    if(revealed)return;
+    clearTimeout(timer);
+    fill.style.transition='none';
+    fill.style.transform='scaleX(0)';
+    label.textContent='Hold to Reveal';
+  }
+  btn.addEventListener('mousedown',startHold);
+  btn.addEventListener('mouseup',endHold);
+  btn.addEventListener('mouseleave',endHold);
+  btn.addEventListener('touchstart',startHold,{passive:false});
+  btn.addEventListener('touchend',endHold);
+  btn.addEventListener('touchcancel',endHold);
+})();
+</script>
 {% endblock %}
