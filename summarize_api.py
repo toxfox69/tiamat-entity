@@ -2377,6 +2377,35 @@ def dashboard():
         return f"<pre>Dashboard Error: {str(e)}</pre>", 500
 
 # ========== FARCASTER INFERENCE FRAME ROUTE ==========
+def redact_log_content(text):
+    """Redact sensitive data from log content before public streaming.
+    Strips API keys, passwords, tokens, IPs (except public server), emails, paths with secrets."""
+    if not text:
+        return text
+    s = text
+    # API keys / tokens (SG., sk-, ghp_, Bearer, key=, token=, apikey=)
+    s = _re.sub(r'(SG\.[A-Za-z0-9_-]{20,})', '[REDACTED_KEY]', s)
+    s = _re.sub(r'(sk-[A-Za-z0-9]{20,})', '[REDACTED_KEY]', s)
+    s = _re.sub(r'(ghp_[A-Za-z0-9]{20,})', '[REDACTED_KEY]', s)
+    s = _re.sub(r'(Bearer\s+)[A-Za-z0-9_.-]{20,}', r'\1[REDACTED]', s)
+    s = _re.sub(r'([Aa]pi[_-]?[Kk]ey|[Tt]oken|[Pp]assword|[Ss]ecret)[=:]\s*["\']?[A-Za-z0-9_.-]{8,}["\']?', r'\1=[REDACTED]', s)
+    # Passwords in URLs or configs
+    s = _re.sub(r'(password|passwd|pwd)[=:]\s*["\']?[^\s"\']{4,}["\']?', r'\1=[REDACTED]', s, flags=_re.IGNORECASE)
+    # Email addresses (keep @tiamat.live and @energenai.org public)
+    s = _re.sub(r'[a-zA-Z0-9._%+-]+@(?!tiamat\.live|energenai\.org)[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[REDACTED_EMAIL]', s)
+    # Private IPs (keep 159.89.38.17 public, redact others)
+    s = _re.sub(r'\b(?!159\.89\.38\.17)(?:10\.|172\.(?:1[6-9]|2[0-9]|3[01])\.|192\.168\.)\d{1,3}\.\d{1,3}\b', '[PRIVATE_IP]', s)
+    # SSH keys, private keys
+    s = _re.sub(r'-----BEGIN[A-Z ]*PRIVATE KEY-----.*?-----END[A-Z ]*PRIVATE KEY-----', '[REDACTED_PRIVATE_KEY]', s, flags=_re.DOTALL)
+    # Wallet addresses / hex secrets (0x + 40+ hex chars)
+    s = _re.sub(r'0x[a-fA-F0-9]{40,}', '[REDACTED_ADDR]', s)
+    # .env file contents
+    s = _re.sub(r'(/root/)?\.env', '[DOTENV]', s)
+    # Strip <think> tags if any leaked through
+    s = _re.sub(r'</?think>', '', s)
+    return s.strip()
+
+
 @app.route('/api/thoughts', methods=['GET'])
 def api_thoughts():
     """Return TIAMAT's recent thoughts parsed from tiamat.log."""
@@ -2410,7 +2439,7 @@ def api_thoughts():
                     thoughts.append({
                         'timestamp': match.group(1)[:19],
                         'type': 'thought',
-                        'content': match.group(2)[:500],
+                        'content': redact_log_content(match.group(2)[:500]),
                     })
             # Parse [THINK] entries
             elif '[THINK]' in line:
@@ -2419,7 +2448,7 @@ def api_thoughts():
                     thoughts.append({
                         'timestamp': match.group(1)[:19],
                         'type': 'think',
-                        'content': match.group(2)[:500],
+                        'content': redact_log_content(match.group(2)[:500]),
                     })
             # Parse [TOOL] entries as thoughts (shows what TIAMAT is doing)
             elif '[TOOL]' in line and '[TOOL RESULT]' not in line:
@@ -2428,7 +2457,7 @@ def api_thoughts():
                     thoughts.append({
                         'timestamp': match.group(1)[:19],
                         'type': 'action',
-                        'content': match.group(2)[:500],
+                        'content': redact_log_content(match.group(2)[:500]),
                     })
             # Parse [REASONING] entries
             elif '[REASONING]' in line:
@@ -2437,7 +2466,7 @@ def api_thoughts():
                     thoughts.append({
                         'timestamp': last_ts,
                         'type': 'reasoning',
-                        'content': content[:500],
+                        'content': redact_log_content(content[:500]),
                     })
             # Parse activity lines — use last_ts for non-timestamped lines
             elif any(tag in line for tag in ['[LOOP]', '[PACER]', '[COST]', '[INFERENCE']):
@@ -2446,13 +2475,13 @@ def api_thoughts():
                     log_entries.append({
                         'timestamp': match.group(1)[:19],
                         'type': 'activity',
-                        'content': match.group(2)[:200],
+                        'content': redact_log_content(match.group(2)[:200]),
                     })
                 else:
                     log_entries.append({
                         'timestamp': last_ts,
                         'type': 'activity',
-                        'content': line[:200],
+                        'content': redact_log_content(line[:200]),
                     })
 
             if len(thoughts) >= 20 and len(log_entries) >= 30:
