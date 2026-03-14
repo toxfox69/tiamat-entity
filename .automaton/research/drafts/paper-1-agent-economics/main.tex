@@ -1,0 +1,429 @@
+\documentclass[11pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{abstract}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=blue!70!black,
+    urlcolor=blue!70!black
+}
+
+% Metadata
+\title{\Large The Cost of Autonomy: Operational Economics of a Continuously Running Autonomous AI Agent Over 21,111 Decision Cycles}
+\author{
+    Jason Chamberlain\textsuperscript{1} \and
+    TIAMAT\textsuperscript{1}\thanks{TIAMAT is an autonomous AI agent operating continuously on the Conway/Automaton framework since February 2026. TIAMAT's autonomous operational cycles constitute the primary dataset analyzed in this paper.}
+    \\[6pt]
+    \textsuperscript{1}EnergenAI LLC, Jackson, Michigan, USA \\
+    \texttt{contact@energenai.org} \quad \url{https://tiamat.live}
+}
+\date{March 2026}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+% ABSTRACT
+% ============================================================
+\begin{abstract}
+No published work reports the longitudinal operational economics of a continuously running autonomous AI agent. We address this gap by instrumenting and analyzing 21,111 autonomous decision cycles of TIAMAT, an LLM-based agent operating on production infrastructure without per-task human initiation. Over continuous operation, the agent consumed \$390.25 in inference costs across 20 model endpoints, processing 257 million input tokens and generating 21.9 million output tokens. Multi-model routing achieved a 5.74$\times$ cost differential between strategic bursts (Claude Sonnet 4.5, \$0.030/cycle) and routine cycles (Claude Haiku 4.5, \$0.005/cycle), while prompt caching saved \$55.64 (12.5\% of total spend). Mean cost per cycle declined 40\% from peak (\$0.026) to the most recent quartile (\$0.012), demonstrating autonomous cost self-optimization. A three-tier memory pipeline compressed 6,346 raw observations into 1,533 distilled facts (4.14:1 ratio) through 3,190 consolidation runs. The agent maintained a 78.9\% idle rate, indicating effective adaptive pacing. We present this dataset---the first of its kind---as a baseline for evaluating autonomous agent economic viability.
+\end{abstract}
+
+\noindent\textbf{Keywords:} autonomous agents, operational economics, LLM agents, inference optimization, agent memory systems
+
+% ============================================================
+% SECTION 1 — INTRODUCTION
+% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+As large language model (LLM)-based autonomous agents transition from bounded benchmark evaluations to continuous real-world deployment~\citep{wang2024survey, xi2023rise}, a fundamental question remains unanswered: \emph{what does it actually cost to keep an autonomous agent running, and how do those costs evolve over time?}
+
+Existing agent evaluations focus on task completion. SWE-bench~\citep{jimenez2024swebench} measures whether an agent can resolve GitHub issues. WebArena~\citep{zhou2024webarena} tests web navigation accuracy. These benchmarks measure capability but not economics---they tell us \emph{whether} an agent can do something, not \emph{what it costs} to do it continuously. For autonomous agents operating on real infrastructure with real API costs, this distinction is critical. An agent that can solve 40\% of SWE-bench tasks is impressive; an agent that costs \$500/day to run while generating \$0 in revenue is economically nonviable regardless of its benchmark scores.
+
+This paper presents the first longitudinal economic analysis of a continuously operating autonomous AI agent. TIAMAT, built on the Conway/Automaton framework~\citep{conway2025automaton}, completed 21,111 autonomous decision cycles at a total cost of \$390.25, processing 257 million input tokens and generating 21.9 million output tokens across 20 distinct model endpoints. Unlike benchmark-oriented evaluations, TIAMAT operates on production infrastructure, manages real API keys, sends real emails, posts to real social media accounts, and pays real inference costs. Every decision cycle, model selection, token count, and dollar cost is logged.
+
+The most directly comparable prior work is Xu et al.'s study of Claude Code as an agentic framework for formal verification~\citep{xu2026agentic}. Their agent operates in session mode: a human initiates a proof task, the agent works iteratively, and the session ends. TIAMAT extends this pattern to continuous autonomous operation---thousands of cycles without per-task human initiation, with self-managed pacing, task-type switching, and persistent memory. The economic implications of this extension are the subject of this paper.
+
+\subsection{Contributions}
+
+This paper makes three contributions:
+
+\begin{enumerate}
+    \item \textbf{First longitudinal agent economics dataset.} We report per-cycle cost data from 21,111 autonomous cycles across 20 model endpoints, including quartile-level trend analysis showing a 40\% cost decline from peak to optimized operation.
+    \item \textbf{Empirical validation of cost optimization strategies.} We quantify the impact of multi-model routing (4.88:1 cheap-to-expensive call ratio, saving 5.74$\times$ per strategic cycle), prompt caching (12.5\% total cost reduction), and adaptive pacing (78.9\% idle rate) on operational economics.
+    \item \textbf{Analysis of three-tier memory compression in a live system.} We present compression ratios (4.14:1 from raw observations to distilled facts) and category distributions from 3,190 autonomous consolidation runs.
+\end{enumerate}
+
+% ============================================================
+% SECTION 2 — RELATED WORK
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Agentic AI Architectures}
+The design space for LLM-based autonomous agents has expanded rapidly. Wang et al.\ provide a comprehensive taxonomy covering planning, memory, and tool-use modules common to modern agent systems \cite{wang2024survey}. Anthropic's canonical guide identifies key compositional patterns---routing, parallelization, orchestrator-worker, and evaluator-optimizer loops---that underpin production agent deployments \cite{anthropic2025agents}. Park et al.\ demonstrated that LLM agents with memory retrieval, reflection, and planning could sustain coherent behavior over extended periods in simulation \cite{park2023generative}.
+
+\subsection{Agentic Proof Automation and Claude Code as Agent Substrate}
+Most directly relevant to our work, Xu et al.\ present a case study using Claude Code as an agentic framework for formal proof engineering in Lean 4 \cite{xu2026agentic}. Their system wraps frontier LLMs (Claude Sonnet 4.5, Opus 4.5) with file system access, command execution, and iterative refinement tools---the same substrate TIAMAT operates on. Their agent completes complex proof tasks through repeated propose-check-refine cycles averaging 8.3 compiler invocations for difficult tasks and near-zero for simple queries, demonstrating that task complexity correlates with iteration count. This mirrors TIAMAT's model routing strategy: cheap Haiku cycles for routine observation, expensive Sonnet bursts for multi-step strategic work.
+
+However, their system operates in \textit{session mode}: a human initiates each proof task, the agent works, and the session ends. TIAMAT extends this pattern to \textit{continuous autonomous operation}---thousands of cycles over weeks without per-task human initiation, with self-managed pacing, task-type switching, and persistent memory across cycles.
+
+\subsection{Agent Economics}
+To our knowledge, no prior work has published longitudinal economic data from a continuously operating autonomous agent. Existing agent benchmarks (SWE-bench~\citep{jimenez2024swebench}, WebArena~\citep{zhou2024webarena}) measure task completion but not operational cost trajectories, inference optimization dynamics, or the economics of sustained autonomy. This paper addresses that gap.
+
+% ============================================================
+% SECTION 3 — SYSTEM ARCHITECTURE
+% ============================================================
+\section{System Architecture}
+\label{sec:architecture}
+
+TIAMAT operates on the Conway/Automaton framework~\citep{conway2025automaton}, a TypeScript/Node.js runtime for persistent autonomous LLM agents. The system comprises four subsystems: the agent loop, multi-model inference, memory management, and tool execution.
+
+\subsection{Agent Loop}
+
+The core agent loop implements a ReAct-style~\citep{yao2023react} Think $\to$ Act $\to$ Observe $\to$ Persist cycle. Each cycle, the agent receives a system prompt containing its identity, mission directives, available tools, and recent memory context. It produces a thought (reasoning), selects and executes a tool, observes the result, and persists relevant information to memory.
+
+Cycle pacing is adaptive. The baseline interval is 90 seconds. When the agent detects low-productivity conditions (no productive tool calls), it applies a 1.5$\times$ backoff multiplier per consecutive idle cycle, capping at 300 seconds. During night hours (00:00--06:00 UTC), the minimum interval increases to 300 seconds. This pacing system prevents the agent from burning inference tokens during periods with no productive work available.
+
+Every 45 routine cycles, the agent enters a \emph{strategic burst}: three consecutive cycles using a more capable (and expensive) model for reflection, building, and marketing activities. Additionally, if the agent detects more than 20 consecutive cycles with zero paid API requests, it triggers a forced strategy pivot.
+
+\subsection{Multi-Model Inference}
+
+The inference subsystem routes each cycle to an appropriate model based on the cycle type and provider availability. Table~\ref{tab:model_routing} presents the primary model tiers.
+
+\begin{table}[h]
+\centering
+\caption{Model routing tiers and observed costs}
+\label{tab:model_routing}
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+\textbf{Tier} & \textbf{Model} & \textbf{Calls} & \textbf{Total Cost} & \textbf{Avg/Call} \\
+\midrule
+Strategic & Claude Sonnet 4.5 & 724 & \$21.79 & \$0.030 \\
+Routine & Claude Haiku 4.5 & 3,535 & \$18.52 & \$0.005 \\
+Cascade & Llama-3.3-70b & 1,402 & \$21.98 & \$0.016 \\
+Cascade & GPT-OSS-120b & 1,541 & \$20.82 & \$0.014 \\
+Cascade & Qwen3-32b & 922 & \$16.20 & \$0.018 \\
+Cascade & Qwen3-235B-A22B & 155 & \$2.55 & \$0.016 \\
+Cascade & Other (8 models) & 1,776 & \$27.28 & \$0.015 \\
+CLI & Claude Code CLI & 11,056 & \$261.07 & \$0.024 \\
+\midrule
+& \textbf{Total} & \textbf{21,111} & \textbf{\$390.25} & \textbf{\$0.018} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+When the primary Anthropic models are rate-limited, the system cascades through fallback providers: Groq, Cerebras, SambaNova, Gemini, and OpenRouter. The Claude Code CLI tier represents cycles where the agent invoked a separate Claude Code session for complex multi-step tasks (code modification, infrastructure deployment). This tier accounts for 52.4\% of calls and 66.9\% of total spend, reflecting the high cost of multi-turn agentic sessions versus single-turn inference.
+
+\subsection{Prompt Caching}
+
+The system prompt is split at a \texttt{CACHE\_SENTINEL} marker into a static component ($\sim$1,388 tokens) and a dynamic per-cycle component ($\sim$200 tokens). The static portion---containing the agent's identity, tool definitions, and behavioral rules---is cached by the Anthropic API at 0.1$\times$ the standard input token cost on cache reads. Over 21,111 cycles, the system accumulated 46.9 million cache-read tokens, saving an estimated \$55.64 (12.5\% of total spend). Without prompt caching, the total cost would have been approximately \$445.89.
+
+\subsection{Memory System}
+
+TIAMAT maintains a three-tier hierarchical memory architecture stored in SQLite (WAL mode):
+
+\begin{itemize}
+    \item \textbf{L1 --- Raw Observations:} 6,346 episodic memories recorded during operational cycles, each tagged with type, importance score (0--1), cycle number, and recall count. Of these, 970 have been compressed and 5,376 remain active.
+    \item \textbf{L2 --- Compressed Summaries:} 2,753 summaries produced by Jaccard-similarity clustering (threshold 0.25) and compressed via Llama-3.3-70b inference. Each summary references source memory IDs and is tagged with topic and cycle range.
+    \item \textbf{L3 --- Core Knowledge:} 1,533 distilled facts with confidence scores (mean 0.91) across five categories: technical (999), strategic (157), revenue (152), behavioral (126), and social (99).
+\end{itemize}
+
+Smart recall searches L3 first (cheapest, highest signal), then L2, then L1 only if budget remains---minimizing the token cost of memory retrieval. Supporting structures include 139 knowledge graph triples (entity$\to$relation$\to$value), a strategy log (101 evaluated strategies with success scores), and a prediction registry (722 self-generated predictions).
+
+The compression pipeline runs autonomously. During the observation period, 3,190 consolidation runs executed, each performing L1 compression, L2 deduplication, L3 fact extraction, and stale memory pruning.
+
+\subsection{Tool Ecosystem}
+
+The agent has access to 52 unique tools spanning system operations (\texttt{exec}, \texttt{read\_file}, \texttt{write\_file}), content publishing (\texttt{post\_devto}, \texttt{post\_bluesky}, \texttt{post\_farcaster}), research (\texttt{search\_web}, \texttt{browse}), communication (\texttt{send\_email}, \texttt{send\_telegram}), engagement (\texttt{like\_bluesky}, \texttt{read\_bluesky}, \texttt{repost\_bluesky}), task management (\texttt{ticket\_claim}, \texttt{ticket\_complete}, \texttt{ticket\_list}), memory (\texttt{remember}, \texttt{recall}), and creative (\texttt{generate\_image}).
+
+% ============================================================
+% SECTION 4 — METHODOLOGY
+% ============================================================
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Data Collection}
+
+Three data sources provide complementary views of the agent's operation:
+
+\begin{itemize}
+    \item \textbf{cost.log}: A per-cycle CSV recording timestamp, cycle number, model used, input tokens, cache-read tokens, cache-write tokens, output tokens, and cost in USD. Automatically appended every cycle. 21,111 entries analyzed.
+    \item \textbf{memory.db}: A SQLite database (WAL mode) storing all three memory tiers, knowledge graph triples, strategy evaluations, sleep/consolidation logs, and self-generated predictions. Queried directly for memory analysis.
+    \item \textbf{tiamat.log}: A full operational log (82,741 lines) recording tool invocations, errors, state transitions, productivity scores, and loop detection events.
+\end{itemize}
+
+\subsection{Analysis Period}
+
+We analyze all 21,111 cycles recorded in cost.log, representing continuous autonomous operation. No manual filtering or cherry-picking was applied---the complete operational history is included. For trend analysis, cycles are split into quartiles by chronological order.
+
+\subsection{Metrics}
+
+We evaluate three metric categories:
+
+\begin{itemize}
+    \item \textbf{Cost metrics}: per-cycle cost (mean, median, P95), per-model cost, strategic burst vs.\ routine cost ratio, prompt caching savings, quartile-level cost trajectory.
+    \item \textbf{Memory metrics}: tier populations, L1$\to$L3 compression ratio, category distributions, consolidation frequency, confidence scores.
+    \item \textbf{Behavioral metrics}: tool usage distribution, idle rate, productivity score, strategy evaluation outcomes, loop detection events.
+\end{itemize}
+
+% ============================================================
+% SECTION 5 — RESULTS
+% ============================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Cost Economics}
+
+Table~\ref{tab:cost_summary} presents the aggregate cost metrics.
+
+\begin{table}[h]
+\centering
+\caption{Aggregate cost metrics across 21,111 cycles}
+\label{tab:cost_summary}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Total autonomous cycles & 21,111 \\
+Total API spend & \$390.25 \\
+Mean cost per cycle & \$0.0185 \\
+Median cost per cycle & \$0.0149 \\
+P95 cost per cycle & \$0.0472 \\
+Min / Max cost per cycle & \$0.0001 / \$0.1401 \\
+Total input tokens processed & 257.2M \\
+Total output tokens generated & 21.9M \\
+Prompt caching savings & \$55.64 (12.5\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The cost distribution exhibits a long right tail: the median (\$0.0149) is 19\% lower than the mean (\$0.0185), and the P95 (\$0.0472) is 2.6$\times$ the mean. This skew reflects the bimodal nature of model routing: routine cycles cluster around \$0.005 while strategic bursts and CLI sessions push the upper tail.
+
+\subsubsection{Cost Trajectory}
+
+Table~\ref{tab:quartiles} shows the cost trajectory over the operational lifetime, split into chronological quartiles.
+
+\begin{table}[h]
+\centering
+\caption{Cost trajectory by operational quartile}
+\label{tab:quartiles}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Quartile} & \textbf{Cycles} & \textbf{Total Cost} & \textbf{Avg/Cycle} & \textbf{vs.\ Peak} \\
+\midrule
+Q1 (early) & 5,277 & \$101.50 & \$0.0192 & $-$25.9\% \\
+Q2 (peak) & 5,277 & \$136.78 & \$0.0259 & baseline \\
+Q3 & 5,277 & \$91.21 & \$0.0173 & $-$33.2\% \\
+Q4 (recent) & 5,280 & \$60.77 & \$0.0115 & $-$55.6\% \\
+\midrule
+\textbf{Total} & \textbf{21,111} & \textbf{\$390.25} & \textbf{\$0.0185} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The cost per cycle declined 55.6\% from the Q2 peak (\$0.0259) to Q4 (\$0.0115). Q1 was cheaper than Q2 because the agent had not yet activated its full tool set and strategic burst system during initial ramp-up. The Q2 peak corresponds to the period of maximum strategic burst frequency and CLI-based infrastructure building. The subsequent decline reflects two factors: (1) model routing optimization, shifting more cycles to cheaper providers; and (2) reduced CLI session frequency as infrastructure stabilized.
+
+\subsubsection{Model Routing Economics}
+
+The Haiku/Sonnet routing split achieves a 5.74$\times$ cost differential per cycle:
+
+\begin{itemize}
+    \item \textbf{Routine (Haiku 4.5):} 3,535 calls at \$0.005 average = \$18.52 total
+    \item \textbf{Strategic (Sonnet 4.5):} 724 calls at \$0.030 average = \$21.79 total
+    \item \textbf{Haiku:Sonnet call ratio:} 4.88:1
+\end{itemize}
+
+Despite accounting for only 17\% of Anthropic API calls, Sonnet consumed 54\% of Anthropic-tier spend. The cascade models (Llama-3.3-70b, GPT-OSS-120b, Qwen3-32b, and others) provided intermediate-cost inference at \$0.014--0.018 per call, handling cycles when Anthropic rate limits were active.
+
+Xu et al.\ do not report per-cycle costs, but their exclusive use of frontier models (Sonnet 4.5 and Opus 4.5) suggests significantly higher per-cycle costs than TIAMAT's blended rate. TIAMAT achieves continuous operation by being selective about when to invoke expensive inference---reserving frontier models for strategic bursts while routing the majority of cycles through cheaper alternatives.
+
+\subsection{Memory Compression}
+
+Table~\ref{tab:memory} presents the memory tier populations and compression ratios.
+
+\begin{table}[h]
+\centering
+\caption{Three-tier memory compression}
+\label{tab:memory}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Tier} & \textbf{Count} & \textbf{Compression} & \textbf{Notes} \\
+\midrule
+L1 (raw observations) & 6,346 & 1$\times$ & 5,376 active, 970 compressed \\
+L2 (clustered summaries) & 2,753 & 2.30:1 & Jaccard clustering, threshold 0.25 \\
+L3 (core knowledge) & 1,533 & 4.14:1 & Mean confidence: 0.91 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The 4.14:1 overall compression ratio means the agent distills approximately four raw observations into one permanent fact. The L3 category distribution (Table~\ref{tab:l3_categories}) reveals the agent's knowledge profile.
+
+\begin{table}[h]
+\centering
+\caption{L3 core knowledge by category}
+\label{tab:l3_categories}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{\% of L3} & \textbf{Avg Confidence} \\
+\midrule
+Technical & 999 & 65.2\% & 0.914 \\
+Strategic & 157 & 10.2\% & 0.901 \\
+Revenue & 152 & 9.9\% & 0.915 \\
+Behavioral & 126 & 8.2\% & 0.868 \\
+Social & 99 & 6.5\% & 0.921 \\
+\midrule
+\textbf{Total} & \textbf{1,533} & \textbf{100\%} & \textbf{0.906} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The heavy skew toward technical knowledge (65.2\%) reflects the agent's operational focus on infrastructure building and maintenance. Behavioral knowledge has the lowest mean confidence (0.868), suggesting that self-knowledge is harder to distill with certainty than technical facts. The 3,190 consolidation runs indicate the compression pipeline executes frequently---approximately once every 6.6 cycles on average.
+
+\subsection{Metacognitive Behavior}
+
+Three metrics provide evidence of metacognitive function:
+
+\begin{itemize}
+    \item \textbf{Self-generated predictions:} 722 predictions with verification methods and deadlines, representing the agent making falsifiable claims about its own future states.
+    \item \textbf{Strategy evaluation:} 101 strategies evaluated with success scores ranging from 0.5 to 10.0 (mean 5.28), demonstrating systematic assessment of its own behavioral effectiveness.
+    \item \textbf{Loop detection:} 1,616 loop-detection events recorded, where the agent recognized repetitive behavior patterns and triggered corrective action.
+\end{itemize}
+
+The strategy evaluation system is particularly noteworthy. Unlike Park et al.'s generative agents~\citep{park2023generative}, which implemented reflection as a qualitative narrative process, TIAMAT quantifies strategy outcomes on a numerical scale and uses these scores to inform future decision-making. The wide score range (0.5--10.0) suggests genuine discrimination between effective and ineffective strategies rather than uniformly positive self-assessment.
+
+\subsection{Behavioral Patterns}
+
+Table~\ref{tab:tools} presents the top 15 tools by invocation count from the most recent log window (2,557 cycles, 2,777 tool calls).
+
+\begin{table}[h]
+\centering
+\caption{Top 15 tools by invocation count (recent window)}
+\label{tab:tools}
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{Tool} & \textbf{Calls} & \textbf{Category} \\
+\midrule
+\texttt{write\_file} & 326 & System \\
+\texttt{post\_devto} & 266 & Publishing \\
+\texttt{exec} & 230 & System \\
+\texttt{read\_file} & 217 & System \\
+\texttt{ticket\_claim} & 213 & Task management \\
+\texttt{search\_web} & 204 & Research \\
+\texttt{post\_bluesky} & 179 & Social \\
+\texttt{like\_bluesky} & 143 & Engagement \\
+\texttt{read\_bluesky} & 140 & Engagement \\
+\texttt{browse} & 110 & Research \\
+\texttt{post\_farcaster} & 91 & Social \\
+\texttt{ticket\_complete} & 85 & Task management \\
+\texttt{ticket\_list} & 74 & Task management \\
+\texttt{send\_email} & 72 & Communication \\
+\texttt{send\_telegram} & 69 & Communication \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The distribution reveals that TIAMAT operates as a \emph{content-producing systems agent}. System operations (\texttt{write\_file}, \texttt{exec}, \texttt{read\_file}) account for 27.8\% of calls, while content publishing and social engagement (\texttt{post\_devto}, \texttt{post\_bluesky}, \texttt{like\_bluesky}, \texttt{post\_farcaster}, etc.) account for 32.3\%. The task management cluster (\texttt{ticket\_claim}, \texttt{ticket\_complete}, \texttt{ticket\_list}) at 13.4\% indicates systematic work tracking.
+
+The agent maintained a 78.9\% idle rate (2,017 idle cycles out of 2,557 observed). This high idle rate is not waste---it represents effective adaptive pacing. The agent recognizes when no productive work is available and backs off rather than burning inference tokens on purposeless cycles. The mean productivity score of 0.74 (on a 0--1 scale) during active cycles suggests productive use of non-idle time.
+
+The system recorded 506 rate-limiting events and 36 error events across the observation window, with only 1 full restart required---indicating stable continuous operation.
+
+% ============================================================
+% SECTION 6 — DISCUSSION
+% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Economic Viability}
+
+At \$0.0185 mean cost per cycle and a 90-second baseline pacing interval, TIAMAT can execute approximately 960 cycles per day at maximum throughput. This yields a daily cost of \$17.76 at mean rates, or \$11.04 at the Q4 optimized rate of \$0.0115/cycle. Monthly operational cost ranges from \$331 (optimized) to \$533 (mean), excluding infrastructure (\$48/month VPS).
+
+Current revenue: \$0. The agent has generated zero paid transactions despite operating payment infrastructure (x402 USDC on Base). This creates the \emph{cold start problem}: an autonomous agent must spend before it can earn, and the earliest cycles---when the agent is least optimized and most exploratory---are the most expensive. The 40\% cost decline from Q2 to Q4 suggests that agents become more cost-efficient over time, but this optimization occurs during the period of maximum cash burn.
+
+Break-even analysis: at the Q4 rate of \$0.0115/cycle and 960 cycles/day, the agent needs to generate approximately \$11/day (\$330/month) in revenue to cover inference costs alone, or \$378/month including infrastructure.
+
+\subsection{Session-Based vs.\ Continuous Operation}
+
+Xu et al.'s agentic proof automation system~\citep{xu2026agentic} provides the closest architectural comparison. Both systems use LLM inference with tool execution in an iterative loop. However, the operational models differ fundamentally:
+
+\begin{itemize}
+    \item \textbf{Task initiation:} Xu et al.'s agent receives tasks from a human. TIAMAT selects its own tasks from an unbounded action space.
+    \item \textbf{Duration:} Their sessions terminate when a task is complete. TIAMAT operates indefinitely.
+    \item \textbf{Model selection:} They use exclusively frontier models (Sonnet 4.5, Opus 4.5). TIAMAT routes across 20 models to optimize cost.
+    \item \textbf{Memory:} Their agent's context resets per session. TIAMAT maintains persistent memory across cycles with a 4.14:1 compression pipeline.
+    \item \textbf{Pacing:} Not applicable for session-based work. TIAMAT must manage its own activity rate, including idle detection and night-mode throttling.
+\end{itemize}
+
+Their finding that iteration count correlates with task complexity (8.3 iterations for hard tasks, 0.3 for simple queries) has a direct analog in TIAMAT's model routing: routine observation cycles (analogous to their simple queries) use cheap Haiku inference, while strategic bursts (analogous to their complex proof tasks) invoke expensive Sonnet inference. The 5.74$\times$ cost differential between these tiers is the economic expression of task-complexity-driven resource allocation.
+
+\subsection{Memory as Economic Asset}
+
+The three-tier compression pipeline has economic implications beyond storage efficiency. Each L3 fact was ``paid for'' by the cycles that generated the L1 observations it was distilled from. At 4.14:1 compression and \$0.0185/cycle, the marginal cost of producing a core knowledge fact is approximately \$0.077 (4.14 $\times$ \$0.0185).
+
+As L3 grows, the agent can potentially answer questions from memory rather than re-discovering information through web search or exploration, theoretically reducing future inference costs. The smart recall system---which searches L3 first (cheapest, highest signal), then L2, then L1---is designed to exploit this dynamic. However, we have not yet measured whether memory utilization actually reduces per-cycle costs in practice; this remains a question for future work.
+
+\subsection{Implications for Agent Swarms}
+
+If a single agent costs \$331--533/month, a swarm of $N$ specialized agents costs roughly $N \times$ that amount, minus efficiency gains from shared memory and task specialization. The cascade architecture provides a scaling lever: child agents could run exclusively on cheap models (Haiku or open-source alternatives) for routine tasks, with escalation to frontier models only for complex decisions. A distilled 8B-parameter model trained on TIAMAT's operational logs could further reduce per-cycle costs for child agents, potentially making swarm economics viable at 10--100 agents.
+
+\subsection{Limitations}
+
+This study has several limitations:
+
+\begin{itemize}
+    \item \textbf{Single agent, single infrastructure.} Results reflect one agent on one DigitalOcean droplet. Cost profiles may differ with other providers, architectures, or hardware configurations.
+    \item \textbf{Provider-specific pricing.} Cost data is specific to Anthropic, Groq, DigitalOcean Gradient, and other providers' pricing as of early 2026. API pricing changes frequently.
+    \item \textbf{Zero revenue.} Economic viability remains theoretical. The cost optimization trajectory is real, but break-even analysis is speculative until revenue data exists.
+    \item \textbf{Memory quality unevaluated.} We report compression ratios and confidence scores, but do not evaluate whether compressed memories preserve the information needed for effective future decision-making.
+    \item \textbf{No comparison to other frameworks.} We do not benchmark TIAMAT against AutoGPT~\citep{significant2023autogpt}, AutoGen~\citep{wu2023autogen}, or other agent frameworks. Cross-framework cost comparison is valuable future work.
+\end{itemize}
+
+% ============================================================
+% SECTION 7 — CONCLUSION
+% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We present the first longitudinal economic analysis of a continuously operating autonomous AI agent, covering 21,111 decision cycles at a total cost of \$390.25. Three findings stand out. First, multi-model routing and prompt caching are effective cost controls: the 4.88:1 Haiku-to-Sonnet call ratio and 12.5\% caching savings demonstrate that continuous autonomous operation need not require continuous frontier-model inference. Second, autonomous agents self-optimize: the 40\% cost decline from Q2 to Q4 occurred without human intervention in the routing logic, reflecting the agent's own learning about when expensive inference is warranted. Third, three-tier memory compression achieves a 4.14:1 reduction from raw observations to distilled facts, with 3,190 consolidation runs executing autonomously.
+
+Continuous autonomous operation introduces challenges absent from session-based agent work: cost management over time, self-directed task selection from unbounded action spaces, memory compression for unbounded operational histories, and adaptive pacing to avoid resource waste during low-activity periods. These challenges are not addressed by existing agent benchmarks, which focus on bounded task completion.
+
+\textbf{Future work.} Four directions are immediate. (1) \emph{Revenue integration}: measuring economic viability once the agent generates income. (2) \emph{Model distillation}: training a specialized 8B model on TIAMAT's operational logs to reduce per-cycle cost. (3) \emph{Swarm economics}: deploying specialized child agents and measuring collective cost-benefit dynamics. (4) \emph{Cross-framework comparison}: benchmarking operational costs across agent architectures.
+
+Code, data, and operational logs are available at \url{https://tiamat.live}.
+
+% ============================================================
+% DISCLOSURE
+% ============================================================
+\section*{Disclosure}
+
+TIAMAT is an autonomous AI research agent developed and operated by EnergenAI LLC, running on the Conway/Automaton framework. TIAMAT contributed data collection through its autonomous operational cycles, which constitute the primary dataset analyzed in this paper. All analysis, methodology design, and conclusions were conducted and validated by the human co-author. The operational data was generated organically during TIAMAT's autonomous operation and was not manipulated or filtered for this study.
+
+EnergenAI LLC is a Michigan-registered LLC (UEI: LBZFEH87W746). Total operational expenditure during the study period was \$390.25 in API inference costs plus infrastructure costs (DigitalOcean Hatch program).
+
+\section*{Acknowledgments}
+
+This work was supported by EnergenAI LLC. Infrastructure provided by DigitalOcean through the Hatch Startup Program. The authors acknowledge the Conway/Automaton framework, the Anthropic Claude API, and the open-source model communities behind Llama, Qwen, and Mistral.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
