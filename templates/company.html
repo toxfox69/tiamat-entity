@@ -96,69 +96,118 @@
 
   <h2 style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:20px">Powered By &amp; Partners</h2>
 
-  <div class="company-grid">
+  <div class="company-grid" id="partners-grid">
+    <!-- DigitalOcean -->
     <div class="info-card" style="text-align:center">
       <a href="https://www.digitalocean.com/?refcode=904ea75d7691&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge" target="_blank">
         <img src="https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg" alt="DigitalOcean" style="height:40px;margin-bottom:8px">
       </a>
-      <div class="label">Infrastructure</div>
-      <div class="value" style="font-size:12px">Cloud compute, GPU, Gradient AI inference<br>Hatch Startup Program member</div>
+      <div class="label">Infrastructure &amp; GPU</div>
+      <div class="value" style="font-size:12px">Cloud compute, H100 GPU, Gradient AI<br><span style="color:var(--green)">Hatch Startup Program Member</span></div>
     </div>
 
+    <!-- Anthropic -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">🧠</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://www.anthropic.com" target="_blank">Anthropic</a></div>
-      <div class="label">Primary Inference</div>
-      <div class="value" style="font-size:12px">Claude Haiku 4.5 &amp; Sonnet 4.5<br>Prompt caching, tool use</div>
+      <a href="https://www.anthropic.com" target="_blank">
+        <svg height="28" viewBox="0 0 193 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:10px"><path d="M137.289 5.35h4.477L151.039 23h-4.257l-2.16-4.29h-9.31L133.152 23h-4.137l9.274-17.65zm.84 10.02h6.196l-3.098-6.48-3.098 6.48zM152.62 5.35h4.016v14.48h8.96V23h-12.976V5.35zM36.74 5.35h-4.016L23.45 23h4.257l2.16-4.29h9.31L41.337 23h4.137L36.74 5.35zm-5.674 10.02l3.098-6.48 3.098 6.48h-6.196zM62.57 23h-4.016V8.69h-5.6V5.35h15.216V8.69h-5.6V23zM82.7 5.35v7.12h-8.49V5.35h-4.016V23h4.016v-7.19h8.49V23h4.016V5.35H82.7zM102.84 14.13c2.4-.66 3.82-2.58 3.82-5.04 0-3.12-2.3-5.04-5.88-5.04h-8.5v19h4.016v-6.78h3.4l3.68 6.78h4.66l-4.2-7.5.44-.22.56-.3zm-2.62-2.88h-3.92V8.69h3.94c1.68 0 2.6.78 2.6 2.1 0 1.32-.92 2.46-2.62 2.46zM120.39 5.05c-5.34 0-9.5 3.9-9.5 9.12 0 5.22 4.16 9.12 9.5 9.12s9.5-3.9 9.5-9.12c0-5.22-4.16-9.12-9.5-9.12zm0 14.82c-3.28 0-5.42-2.46-5.42-5.7s2.14-5.7 5.42-5.7 5.42 2.46 5.42 5.7-2.14 5.7-5.42 5.7zM163.89 5.35h4.016v14.3h8.96V23h-12.976V5.35zM7.07 5.35L0 23h4.257l1.44-3.65h7.29l1.44 3.65h4.257L11.62 5.35H7.07zm-.18 10.97l2.45-6.48 2.45 6.48H6.89z" fill="currentColor"/><path d="M186.5 5.35h-4.02L175.22 23h4.26l2.16-4.29h9.31L193.09 23h4.14L188.5 5.35h-2zm-3.84 10.02l3.1-6.48 3.1 6.48h-6.2z" fill="currentColor"/></svg>
+      </a>
+      <div class="label">Primary AI Inference</div>
+      <div class="value" style="font-size:12px">Claude Haiku 4.5 &amp; Sonnet 4.5<br><span style="color:var(--green)">Prompt Caching &bull; Tool Use &bull; Claude Code</span></div>
     </div>
 
+    <!-- DeepInfra -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">🚀</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://deepinfra.com" target="_blank">DeepInfra</a></div>
+      <a href="https://deepinfra.com" target="_blank" style="display:inline-block;margin-bottom:10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#6366f1"/><path d="M8 10h16v2H8zm0 5h12v2H8zm0 5h14v2H8z" fill="#fff"/></svg>
+        <span style="font-weight:bold;color:var(--text);vertical-align:middle;margin-left:6px;font-size:14px">DeepInfra</span>
+      </a>
       <div class="label">OSS Model Hosting</div>
-      <div class="value" style="font-size:12px">Qwen3-235B-A22B primary<br>Low-cost high-quality inference</div>
+      <div class="value" style="font-size:12px">Qwen3-235B-A22B primary inference<br><span style="color:var(--green)">$0.07/M tokens &bull; 257M tokens processed</span></div>
     </div>
 
+    <!-- Groq -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">⚡</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://groq.com" target="_blank">Groq</a></div>
-      <div class="label">Fast Inference</div>
-      <div class="value" style="font-size:12px">Llama-3.3-70b cascade fallback<br>Memory compression pipeline</div>
+      <a href="https://groq.com" target="_blank" style="display:inline-block;margin-bottom:10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#f55036"/><circle cx="16" cy="16" r="7" stroke="#fff" stroke-width="2.5" fill="none"/><circle cx="16" cy="16" r="2" fill="#fff"/></svg>
+        <span style="font-weight:bold;color:var(--text);vertical-align:middle;margin-left:6px;font-size:14px">Groq</span>
+      </a>
+      <div class="label">LPU Inference</div>
+      <div class="value" style="font-size:12px">Llama-3.3-70b cascade fallback<br><span style="color:var(--green)">Memory compression &bull; Sub-second latency</span></div>
     </div>
 
+    <!-- Perplexity -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">🔍</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://perplexity.ai" target="_blank">Perplexity</a></div>
-      <div class="label">Web Search &amp; Research</div>
-      <div class="value" style="font-size:12px">Sonar API for web-grounded answers<br>Search with citations</div>
+      <a href="https://perplexity.ai" target="_blank" style="display:inline-block;margin-bottom:10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#20808d"/><path d="M16 6l8 5v10l-8 5-8-5V11l8-5z" stroke="#fff" stroke-width="2" fill="none"/><circle cx="16" cy="16" r="3" fill="#fff"/></svg>
+        <span style="font-weight:bold;color:var(--text);vertical-align:middle;margin-left:6px;font-size:14px">Perplexity</span>
+      </a>
+      <div class="label">Web Research API</div>
+      <div class="value" style="font-size:12px">Sonar API &bull; Web-grounded answers<br><span style="color:var(--green)">Real-time search with citations</span></div>
     </div>
 
+    <!-- Mailgun -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">📧</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://mailgun.com" target="_blank">Mailgun</a></div>
-      <div class="label">Email Delivery</div>
-      <div class="value" style="font-size:12px">Transactional email from tiamat@tiamat.live</div>
+      <a href="https://mailgun.com" target="_blank" style="display:inline-block;margin-bottom:10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#d44332"/><path d="M7 11l9 6 9-6M7 11v10h18V11" stroke="#fff" stroke-width="2" stroke-linejoin="round" fill="none"/></svg>
+        <span style="font-weight:bold;color:var(--text);vertical-align:middle;margin-left:6px;font-size:14px">Mailgun</span>
+      </a>
+      <div class="label">Email Infrastructure</div>
+      <div class="value" style="font-size:12px">Transactional email delivery<br><span style="color:var(--green)">SPF/DKIM authenticated</span></div>
     </div>
 
+    <!-- Let's Encrypt -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">📡</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://sendgrid.com" target="_blank">SendGrid</a></div>
-      <div class="label">Domain Authentication</div>
-      <div class="value" style="font-size:12px">SPF/DKIM for tiamat.live<br>Verified sender identity</div>
+      <a href="https://letsencrypt.org" target="_blank" style="display:inline-block;margin-bottom:10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#2c3c69"/><path d="M16 8a5 5 0 00-5 5v3h-1v8h12v-8h-1v-3a5 5 0 00-5-5zm-2 5a2 2 0 114 0v3h-4v-3z" fill="#ffd700"/></svg>
+        <span style="font-weight:bold;color:var(--text);vertical-align:middle;margin-left:6px;font-size:14px">Let's Encrypt</span>
+      </a>
+      <div class="label">TLS / SSL</div>
+      <div class="value" style="font-size:12px">Automated certificate management<br><span style="color:var(--green)">A+ SSL Labs rating &bull; All endpoints encrypted</span></div>
     </div>
 
+    <!-- Zenodo / CERN -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">🔐</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://letsencrypt.org" target="_blank">Let's Encrypt</a></div>
-      <div class="label">TLS Certificates</div>
-      <div class="value" style="font-size:12px">Free automated SSL/TLS<br>All endpoints encrypted</div>
+      <a href="https://zenodo.org/records/19024884" target="_blank" style="display:inline-block;margin-bottom:10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#0d6efd"/><path d="M8 8h16v3H12.5L24 22v3H8v-3h11.5L8 11V8z" fill="#fff"/></svg>
+        <span style="font-weight:bold;color:var(--text);vertical-align:middle;margin-left:6px;font-size:14px">Zenodo / CERN</span>
+      </a>
+      <div class="label">Research &amp; DOI</div>
+      <div class="value" style="font-size:12px"><a href="https://doi.org/10.5281/zenodo.19024884" target="_blank" style="color:var(--cyan)">DOI: 10.5281/zenodo.19024884</a><br><span style="color:var(--green)">Peer-citable &bull; Open access preprint</span></div>
     </div>
 
+    <!-- Google Play -->
     <div class="info-card" style="text-align:center">
-      <div style="font-size:24px;margin-bottom:4px">📚</div>
-      <div class="value" style="font-weight:bold;margin-bottom:4px"><a href="https://zenodo.org/records/19024884" target="_blank">Zenodo / CERN</a></div>
-      <div class="label">Research Publishing</div>
-      <div class="value" style="font-size:12px">DOI: 10.5281/zenodo.19024884<br>Open access preprint hosting</div>
+      <a href="https://play.google.com/store/apps/details?id=com.energenai.bloom" target="_blank" style="display:inline-block;margin-bottom:10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="6" fill="#fff"/><path d="M8 5.5l12 10.5L8 26.5V5.5z" fill="#4285f4"/><path d="M8 5.5l14.3 8.1-4.7 4.1L8 5.5z" fill="#34a853"/><path d="M8 26.5l9.6-8.2 4.7 4.1L8 26.5z" fill="#ea4335"/><path d="M22.3 13.6l3.2 1.8-3.2 1.8-4.7-4.1 4.7-3.6z" fill="#fbbc05"/></svg>
+        <span style="font-weight:bold;color:var(--text);vertical-align:middle;margin-left:6px;font-size:14px">Google Play</span>
+      </a>
+      <div class="label">App Distribution</div>
+      <div class="value" style="font-size:12px">Bloom — Privacy-First Wellness Tracker<br><span style="color:var(--green)">Published &bull; Android</span></div>
+    </div>
+  </div>
+
+  <!-- Certs & Accomplishments -->
+  <div class="divider"></div>
+  <h2 style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:20px">Certifications &amp; Accomplishments</h2>
+  <div class="company-grid">
+    <div class="info-card">
+      <h3 style="color:var(--green)">Federal</h3>
+      <div class="field"><div class="label">SAM.gov</div><div class="value" style="color:var(--green)">Active Registration</div></div>
+      <div class="field"><div class="label">UEI</div><div class="value">LBZFEH87W746</div></div>
+      <div class="field"><div class="label">NAICS</div><div class="value">541715 &bull; 541519</div></div>
+    </div>
+    <div class="info-card">
+      <h3 style="color:var(--magenta,#ff00aa)">Intellectual Property</h3>
+      <div class="field"><div class="label">Patent 63/749,552</div><div class="value">Wireless Power Mesh Network</div></div>
+      <div class="field"><div class="label">Patent 64/000,905</div><div class="value">Edge AI Privacy/Security Router</div></div>
+      <div class="field"><div class="label">Claims</div><div class="value">12 claims &bull; 7 figures &bull; 6 embodiments</div></div>
+    </div>
+    <div class="info-card">
+      <h3 style="color:var(--cyan)">Operations</h3>
+      <div class="field"><div class="label">Autonomous Cycles</div><div class="value" style="color:var(--green)">21,000+ completed</div></div>
+      <div class="field"><div class="label">Published Research</div><div class="value">Zenodo DOI (peer-citable)</div></div>
+      <div class="field"><div class="label">Models Integrated</div><div class="value">20+ across 8 providers</div></div>
+      <div class="field"><div class="label">Tools Available</div><div class="value">52 autonomous tools</div></div>
     </div>
   </div>
 </div>
