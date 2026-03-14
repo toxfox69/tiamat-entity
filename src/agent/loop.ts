@@ -2196,10 +2196,33 @@ function stuckKey(toolName: string, args: Record<string, unknown>, error: string
  * Filter training data hallucinations from OSS model output.
  * Models like 120B/70B/nemo sometimes regurgitate math problems,
  * random import records, or benchmark data instead of useful thoughts.
+ * Also strips Qwen3 <think>...</think> tags — extracts only the actionable output.
  */
 function filterTrainingJunk(text: string): string {
   if (!text || text.length < 5) return text;
-  const lines = text.split('\n');
+
+  // Strip <think>...</think> blocks (Qwen3 reasoning traces)
+  // Keep only the content AFTER the closing </think> tag
+  let cleaned = text;
+  if (cleaned.includes('<think>')) {
+    const closeIdx = cleaned.lastIndexOf('</think>');
+    if (closeIdx !== -1) {
+      // Content after </think> is the actual response
+      const afterThink = cleaned.slice(closeIdx + 8).trim();
+      // If there's meaningful content after think, use it; otherwise use the think content
+      if (afterThink.length > 5) {
+        cleaned = afterThink;
+      } else {
+        // Extract just the think content without tags (model only produced reasoning)
+        cleaned = cleaned.replace(/<\/?think>/g, '').trim();
+      }
+    } else {
+      // Opening <think> but no closing — strip the tag and keep content
+      cleaned = cleaned.replace(/<think>/g, '').trim();
+    }
+  }
+
+  const lines = cleaned.split('\n');
   const filtered = lines.filter(line => {
     const l = line.trim();
     if (!l) return true; // keep blank lines
