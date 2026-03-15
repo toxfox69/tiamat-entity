@@ -31,37 +31,28 @@
 
 <script>
 async function checkStatus() {
-  // Dashboard API — cycles, revenue, agent status
   try {
     const r = await fetch('/api/dashboard');
     if (r.ok) {
       const d = await r.json();
-      document.getElementById('apiStatus').innerHTML = '<span class="dot up"></span>Online';
+      // Service status dots
+      const up = '<span class="dot up"></span>';
+      const down = '<span class="dot down"></span>';
+      document.getElementById('apiStatus').innerHTML = up + 'Online';
+      document.getElementById('agentStatus').innerHTML = d.agent === 'online' ? up + 'Running' : down + 'Down';
+      document.getElementById('memStatus').innerHTML = d.memory === 'online' ? up + 'Online' : down + 'Down';
+      document.getElementById('gpuStatus').innerHTML = d.gpu === 'online' ? up + 'Online' : down + 'Offline';
+      // Metrics
       document.getElementById('cycles').textContent = d.cycles ? d.cycles.toLocaleString() : '—';
-      document.getElementById('revenue').textContent = d.revenue || '$0.24';
-      document.getElementById('agentStatus').innerHTML = d.agent_running
-        ? '<span class="dot up"></span>Running'
-        : '<span class="dot down"></span>Down';
-    } else {
-      throw new Error('bad response');
-    }
+      document.getElementById('revenue').textContent = '$' + (d.revenue || 0).toFixed(2);
+    } else { throw new Error(); }
   } catch {
     document.getElementById('apiStatus').innerHTML = '<span class="dot down"></span>Down';
     document.getElementById('agentStatus').innerHTML = '<span class="dot down"></span>Unknown';
   }
-
-  // Memory API
-  try {
-    const r = await fetch('https://memory.tiamat.live/health');
-    document.getElementById('memStatus').innerHTML = r.ok ? '<span class="dot up"></span>Online' : '<span class="dot down"></span>Down';
-  } catch {
-    document.getElementById('memStatus').innerHTML = '<span class="dot down"></span>Down';
-  }
-
-  // GPU — assume down
-  document.getElementById('gpuStatus').innerHTML = '<span class="dot down"></span>Offline';
 }
 checkStatus();
+setInterval(checkStatus, 30000);
 setInterval(checkStatus, 30000);
 </script>
 {% endblock %}

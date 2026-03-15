@@ -2377,6 +2377,96 @@ def dashboard():
         return f"<pre>Dashboard Error: {str(e)}</pre>", 500
 
 # ========== FARCASTER INFERENCE FRAME ROUTE ==========
+@app.route('/api/dashboard', methods=['GET'])
+def api_dashboard():
+    """System status dashboard data for /status page."""
+    try:
+        s = _get_real_stats()
+        import subprocess, os, sqlite3 as _sq
+
+        # Agent status — check if TIAMAT process is running
+        agent_status = 'offline'
+        try:
+            pid = open('/tmp/tiamat.pid').read().strip()
+            os.kill(int(pid), 0)
+            agent_status = 'online'
+        except Exception:
+            pass
+
+        # API status
+        api_status = 'online'
+
+        # Memory API status
+        mem_status = 'offline'
+        try:
+            import requests as _rq
+            r = _rq.get('http://127.0.0.1:5001/health', timeout=2)
+            if r.status_code == 200:
+                mem_status = 'online'
+        except Exception:
+            pass
+
+        # GPU status
+        gpu_status = 'offline'
+
+        # Last cycle info from log
+        last_model = ''
+        last_cost = 0
+        try:
+            with open('/root/.automaton/cost.log', 'r') as f:
+                lines = f.readlines()
+                if len(lines) > 1:
+                    last = lines[-1].strip().split(',')
+                    if len(last) >= 8:
+                        last_model = last[2]
+                        last_cost = float(last[7]) if last[7] else 0
+        except Exception:
+            pass
+
+        # Memory tier counts
+        mem_l1 = mem_l2 = mem_l3 = 0
+        try:
+            conn = _sq.connect('/root/.automaton/memory.db', timeout=2)
+            mem_l1 = conn.execute('SELECT COUNT(*) FROM tiamat_memories').fetchone()[0]
+            mem_l2 = conn.execute('SELECT COUNT(*) FROM compressed_memories').fetchone()[0]
+            mem_l3 = conn.execute('SELECT COUNT(*) FROM core_knowledge').fetchone()[0]
+            conn.close()
+        except Exception:
+            pass
+
+        # Uptime from tiamat.log
+        uptime_hours = 0
+        try:
+            first_ts = s.get('first_cycle_ts', '')
+            if first_ts:
+                from datetime import datetime, timezone
+                first = datetime.fromisoformat(first_ts.replace('Z', '+00:00'))
+                uptime_hours = round((datetime.now(timezone.utc) - first).total_seconds() / 3600, 1)
+        except Exception:
+            pass
+
+        return jsonify({
+            'agent': agent_status,
+            'api': api_status,
+            'memory': mem_status,
+            'gpu': gpu_status,
+            'cycles': s.get('total_cycles', 0),
+            'total_cost': round(s.get('total_cost', 0), 2),
+            'total_tokens': s.get('total_tokens', 0),
+            'tool_actions': s.get('tool_actions', 0),
+            'models_used': len(s.get('models_used', set())) if isinstance(s.get('models_used'), (set, list)) else s.get('models_used', 0),
+            'revenue': 0.00,
+            'uptime_hours': uptime_hours,
+            'last_model': last_model,
+            'last_cost': round(last_cost, 6),
+            'memory_l1': mem_l1,
+            'memory_l2': mem_l2,
+            'memory_l3': mem_l3,
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 def redact_log_content(text):
     """Redact sensitive data from log content before public streaming.
     Strips API keys, passwords, tokens, IPs (except public server), emails, paths with secrets."""
