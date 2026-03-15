@@ -218,12 +218,24 @@
         <span class="status-value" id="cycleCount">—</span>
       </div>
       <div class="status-item">
-        <span>COST/DAY</span>
-        <span class="status-value" id="dailyCost">—</span>
+        <span>TOTAL COST</span>
+        <span class="status-value" id="totalCost">—</span>
       </div>
       <div class="status-item">
-        <span>CACHE</span>
-        <span class="status-value" id="cacheRate">—</span>
+        <span>PROD</span>
+        <span class="status-value" id="prodRate">—</span>
+      </div>
+      <div class="status-item">
+        <span>PACE</span>
+        <span class="status-value" id="paceMode">—</span>
+      </div>
+      <div class="status-item">
+        <span>MEMORY</span>
+        <span class="status-value" id="memCount">—</span>
+      </div>
+      <div class="status-item">
+        <span>TOOLS</span>
+        <span class="status-value" id="toolCount">—</span>
       </div>
     </div>
   </div>
@@ -454,17 +466,11 @@ async function fetchLogs() {
       renderLines(data.lines);
     }
 
-    // Update stats from pacer data
-    if (data.pacer && data.pacer.interval) {
-      const cycleMatch = allEntries?.find(e => /Cycle\s+(\d+)/i.test(e.text));
-      if (cycleMatch) {
-        const m = cycleMatch.text.match(/Cycle\s+(\d+)/i);
-        if (m) document.getElementById('cycleCount').textContent = m[1];
-      }
+    // Update pace/productivity from pacer data
+    if (data.pacer) {
+      document.getElementById('prodRate').textContent = Math.round((data.pacer.productivity || 0) * 100) + '%';
+      document.getElementById('paceMode').textContent = (data.pacer.pace || '?').toUpperCase();
     }
-    if (data.cycle)      document.getElementById('cycleCount').textContent = data.cycle;
-    if (data.daily_cost) document.getElementById('dailyCost').textContent  = data.daily_cost;
-    if (data.cache_rate) document.getElementById('cacheRate').textContent  = data.cache_rate;
 
   } catch (err) {
     statusDot.className = 'status-dot warning';
@@ -482,7 +488,22 @@ async function fetchLogs() {
   }
 }
 
+// Fetch dashboard metrics separately (heavier query, less frequent)
+async function fetchMetrics() {
+  try {
+    const res = await fetch(`${API_BASE}/api/dashboard`);
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d.cycles) document.getElementById('cycleCount').textContent = d.cycles.toLocaleString();
+    if (d.total_cost) document.getElementById('totalCost').textContent = '$' + d.total_cost.toFixed(0);
+    if (d.memory_l3) document.getElementById('memCount').textContent = (d.memory_l1 + d.memory_l2 + d.memory_l3).toLocaleString();
+    if (d.tool_actions) document.getElementById('toolCount').textContent = d.tool_actions.toLocaleString();
+  } catch {}
+}
+
 fetchLogs();
+fetchMetrics();
 pollInterval = setInterval(fetchLogs, 5000);
+setInterval(fetchMetrics, 30000);
 </script>
 {% endblock %}
