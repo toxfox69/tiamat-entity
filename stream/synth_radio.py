@@ -27,7 +27,7 @@ log = logging.getLogger("radio")
 
 # Config
 API_BASE = os.environ.get("TIAMAT_API", "https://tiamat.live")
-SEGMENT_DURATION = 60.0  # seconds per segment
+SEGMENT_DURATION = 180.0  # seconds per segment (3 min, JRPG tracks auto-extend)
 CROSSFADE = 3.0          # crossfade between segments
 PULSE_DEVICE = os.environ.get("PULSE_SINK", "stream_sink")
 
@@ -46,17 +46,30 @@ def get_tiamat_mood():
             pace = pacer.get("pace", "idle")
             prod = pacer.get("productivity", 0)
 
-            # Map pace/productivity to mood
-            if pace == "burst":
-                return "strategic"
-            elif prod > 0.6:
-                return "building"
-            elif prod < 0.2:
-                return "resting"
-            elif pace == "active":
-                return "processing"
+            # Map pace/productivity to mood — mix synthwave and JRPG styles
+            import random
+            jrpg_moods = ["overworld", "town", "emotional", "dungeon", "battle"]
+            synth_moods = ["strategic", "building", "resting", "processing"]
+
+            # 70% JRPG, 30% synthwave
+            if random.random() < 0.7:
+                if pace == "burst":
+                    return "battle"
+                elif prod > 0.6:
+                    return "overworld"
+                elif prod < 0.2:
+                    return random.choice(["town", "emotional"])
+                else:
+                    return random.choice(["overworld", "dungeon"])
             else:
-                return "resting"
+                if pace == "burst":
+                    return "strategic"
+                elif prod > 0.6:
+                    return "building"
+                elif prod < 0.2:
+                    return "resting"
+                else:
+                    return "processing"
     except:
         pass
     return "processing"

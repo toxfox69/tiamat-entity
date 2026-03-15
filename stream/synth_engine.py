@@ -70,7 +70,60 @@ MOOD_PROFILES = {
         'lead_vol': 0.18, 'drum_vol': 0.45,
         'reverb_mix': 0.30, 'drive': 1.2,
     },
+    # ── JRPG / Orchestral moods ──
+    'overworld': {
+        'style': 'jrpg_overworld',
+        'bpm_range': (95, 115),
+        'key_root': 0,       # C
+        'scale': 'major',
+        'bass_vol': 0.35, 'pad_vol': 0.50, 'arp_vol': 0.30,
+        'lead_vol': 0.35, 'drum_vol': 0.25,
+        'reverb_mix': 0.45, 'drive': 0.9,
+    },
+    'dungeon': {
+        'style': 'jrpg_dungeon',
+        'bpm_range': (80, 100),
+        'key_root': 9,       # A
+        'scale': 'minor',
+        'bass_vol': 0.50, 'pad_vol': 0.45, 'arp_vol': 0.25,
+        'lead_vol': 0.28, 'drum_vol': 0.35,
+        'reverb_mix': 0.55, 'drive': 1.0,
+    },
+    'battle': {
+        'style': 'jrpg_battle',
+        'bpm_range': (150, 175),
+        'key_root': 4,       # E
+        'scale': 'minor',
+        'bass_vol': 0.65, 'pad_vol': 0.25, 'arp_vol': 0.30,
+        'lead_vol': 0.35, 'drum_vol': 0.60,
+        'reverb_mix': 0.20, 'drive': 1.4,
+    },
+    'town': {
+        'style': 'jrpg_town',
+        'bpm_range': (85, 105),
+        'key_root': 5,       # F
+        'scale': 'major',
+        'bass_vol': 0.30, 'pad_vol': 0.55, 'arp_vol': 0.35,
+        'lead_vol': 0.30, 'drum_vol': 0.15,
+        'reverb_mix': 0.50, 'drive': 0.85,
+    },
+    'emotional': {
+        'style': 'jrpg_emotional',
+        'bpm_range': (60, 80),
+        'key_root': 7,       # G
+        'scale': 'major',
+        'bass_vol': 0.25, 'pad_vol': 0.60, 'arp_vol': 0.28,
+        'lead_vol': 0.40, 'drum_vol': 0.08,
+        'reverb_mix': 0.60, 'drive': 0.8,
+    },
 }
+
+# ── Additional Scales (JRPG uses these heavily) ────────────────────────
+PENTATONIC_MAJOR = [0, 2, 4, 7, 9]
+PENTATONIC_MINOR = [0, 3, 5, 7, 10]
+DORIAN_SCALE = [0, 2, 3, 5, 7, 9, 10]       # Chrono Trigger loves Dorian
+LYDIAN_SCALE = [0, 2, 4, 6, 7, 9, 11]        # Dreamy, FF Crystal Theme
+MIXOLYDIAN_SCALE = [0, 2, 4, 5, 7, 9, 10]    # Celtic feel, Chrono Trigger
 
 # ── Scales & Harmony ──────────────────────────────────────────────────
 
@@ -116,6 +169,52 @@ MAJOR_PROGRESSIONS = [
     [0, 2, 3, 4],   # I  - iii- IV - V
     [0, 5, 4, 3],   # I  - vi - V  - IV
 ]
+
+# JRPG-specific 8-bar progressions (longer phrases, more emotional movement)
+JRPG_PROGRESSIONS_MAJOR = [
+    # FF Prelude style (ascending, hopeful)
+    [0, 4, 5, 3, 0, 2, 3, 4],    # I-V-vi-IV-I-iii-IV-V
+    # Chrono Trigger overworld (modal, Celtic)
+    [0, 6, 0, 3, 5, 4, 3, 0],    # I-VII-I-IV-vi-V-IV-I
+    # Town theme (warm, circular)
+    [0, 3, 5, 4, 0, 3, 4, 0],    # I-IV-vi-V-I-IV-V-I
+    # Emotional scene (descending bass)
+    [0, 5, 3, 1, 0, 5, 4, 0],    # I-vi-IV-ii-I-vi-V-I
+    # Victory fanfare style
+    [0, 0, 3, 4, 0, 3, 4, 0],    # I-I-IV-V-I-IV-V-I
+]
+JRPG_PROGRESSIONS_MINOR = [
+    # Battle theme (urgent, driving)
+    [0, 4, 5, 6, 0, 3, 4, 0],    # i-v-VI-VII-i-iv-v-i
+    # Dungeon (tense, mysterious)
+    [0, 5, 3, 2, 0, 6, 5, 4],    # i-VI-iv-III-i-VII-VI-v
+    # Boss theme (chromatic tension)
+    [0, 0, 3, 4, 5, 6, 4, 0],    # i-i-iv-v-VI-VII-v-i
+    # Sad theme (yearning)
+    [0, 2, 5, 3, 0, 6, 5, 0],    # i-III-VI-iv-i-VII-VI-i
+    # Ancient ruins
+    [0, 5, 0, 3, 5, 2, 4, 0],    # i-VI-i-iv-VI-III-v-i
+]
+
+# Extended chord qualities — 7ths for JRPG richness
+MINOR_CHORD_7TH = {
+    0: [0, 3, 7, 10],   # min7
+    1: [0, 3, 6, 10],   # dim7 (half-dim)
+    2: [0, 4, 7, 11],   # maj7
+    3: [0, 3, 7, 10],   # min7
+    4: [0, 3, 7, 10],   # min7
+    5: [0, 4, 7, 11],   # maj7
+    6: [0, 4, 7, 10],   # dom7
+}
+MAJOR_CHORD_7TH = {
+    0: [0, 4, 7, 11],   # maj7
+    1: [0, 3, 7, 10],   # min7
+    2: [0, 3, 7, 10],   # min7
+    3: [0, 4, 7, 11],   # maj7
+    4: [0, 4, 7, 10],   # dom7
+    5: [0, 3, 7, 10],   # min7
+    6: [0, 3, 6, 10],   # half-dim7
+}
 
 
 def midi_to_freq(midi_note):
@@ -168,6 +267,57 @@ def osc_saw_band(freq, n_samples, sr=SR, harmonics=8):
 
 def osc_noise(n_samples, rng):
     return rng.uniform(-1, 1, n_samples)
+
+
+def osc_bell(freq, n_samples, sr=SR):
+    """Bell/harp tone — sum of partials with inharmonic ratios (FF Prelude arp sound)."""
+    t = np.arange(n_samples) / sr
+    # Inharmonic partials like a struck bell/harp
+    partials = [
+        (1.0,   1.0),    # fundamental
+        (2.0,   0.6),    # octave
+        (3.01,  0.35),   # slightly detuned 3rd partial
+        (4.02,  0.2),    # 4th
+        (5.04,  0.12),   # 5th (bells have non-integer partials)
+        (6.98,  0.06),   # shimmer
+    ]
+    out = np.zeros(n_samples)
+    for ratio, amp in partials:
+        partial_freq = freq * ratio
+        if partial_freq < sr / 2:  # Nyquist
+            decay = np.exp(-t * (2.0 + ratio * 0.8))  # Higher partials decay faster
+            out += amp * np.sin(2 * np.pi * partial_freq * t) * decay
+    return out
+
+
+def osc_strings(freq, n_samples, sr=SR, detune_cents=8):
+    """String ensemble — multiple detuned saws for lush pad sound."""
+    detune = 2 ** (detune_cents / 1200)
+    voices = [
+        osc_saw_fast(freq, n_samples, sr),
+        osc_saw_fast(freq * detune, n_samples, sr),
+        osc_saw_fast(freq / detune, n_samples, sr),
+        osc_saw_fast(freq * 1.001, n_samples, sr),  # slight unison
+    ]
+    return sum(voices) / len(voices)
+
+
+def osc_flute(freq, n_samples, sr=SR):
+    """Flute/recorder tone — sine + breath noise + vibrato (Chrono Trigger lead sound)."""
+    t = np.arange(n_samples) / sr
+    # Vibrato (delayed onset)
+    vib_depth = 0.008  # ~14 cents
+    vib_rate = 5.5
+    vib_onset = np.clip(t / 0.3, 0, 1)  # Vibrato fades in over 0.3s
+    vibrato = 1 + vib_depth * np.sin(2 * np.pi * vib_rate * t) * vib_onset
+    # Core tone: fundamental + weak 2nd + 3rd harmonic
+    out = np.sin(2 * np.pi * freq * vibrato * t)
+    out += 0.15 * np.sin(2 * np.pi * freq * 2 * vibrato * t)
+    out += 0.05 * np.sin(2 * np.pi * freq * 3 * vibrato * t)
+    # Breath noise
+    rng = np.random.default_rng()
+    breath = rng.uniform(-0.08, 0.08, n_samples) * np.exp(-t * 1.5)
+    return out + breath
 
 
 # ── Effects ───────────────────────────────────────────────────────────
@@ -426,57 +576,88 @@ def _place(buf, sample, start, gain=1.0):
 
 # ── Song Structure ────────────────────────────────────────────────────
 
-def build_song_map(bars, rng):
+def build_song_map(bars, rng, style='synthwave'):
     """Build a section map: each bar gets an energy level and section type.
     Returns list of dicts, one per bar."""
     song = []
-    # Divide into 4-bar phrases
-    n_phrases = max(1, bars // 4)
 
-    # Energy arc: build up, peak, maybe drop, peak again
-    # e.g. for 6 phrases: intro(0.3) → verse(0.5) → build(0.7) → chorus(1.0) → drop(0.4) → chorus(1.0)
-    if n_phrases <= 2:
-        energies = [0.5] * n_phrases
-        sections = ['verse'] * n_phrases
-    elif n_phrases <= 4:
-        energies = [0.3, 0.6, 0.8, 1.0][:n_phrases]
-        sections = ['intro', 'verse', 'build', 'chorus'][:n_phrases]
+    if style.startswith('jrpg'):
+        # JRPG: longer form — intro(8) → A(8) → B(8) → A'(8) → bridge(8) → C(8) → A''(8) → outro(8)
+        phrase_len = 8  # 8-bar phrases for JRPG
+        jrpg_structure = [
+            ('intro',   0.20),
+            ('verse_a', 0.45),
+            ('verse_b', 0.60),
+            ('verse_a', 0.50),  # A reprise
+            ('bridge',  0.75),
+            ('chorus',  1.00),
+            ('verse_a', 0.55),  # A'' with variation
+            ('outro',   0.30),
+        ]
+        n_phrases = max(1, bars // phrase_len)
+        for pi in range(min(n_phrases, len(jrpg_structure))):
+            section, base_energy = jrpg_structure[pi % len(jrpg_structure)]
+            for bi in range(phrase_len):
+                bar_idx = pi * phrase_len + bi
+                if bar_idx >= bars:
+                    break
+                # Gradual energy ramps within phrases
+                if section == 'bridge':
+                    e = base_energy + 0.15 * (bi / (phrase_len - 1))
+                elif section == 'chorus':
+                    e = base_energy - 0.05 * abs(bi - phrase_len // 2) / (phrase_len // 2)
+                else:
+                    e = base_energy + 0.05 * (bi / (phrase_len - 1))
+                song.append({
+                    'energy': min(1.0, e),
+                    'section': section,
+                    'phrase': pi,
+                    'bar_in_phrase': bi,
+                    'is_fill_bar': (bi == phrase_len - 1),
+                    'phrase_len': phrase_len,
+                })
     else:
-        # Longer: intro → verse → build → chorus → drop → build → chorus
-        pattern_e = [0.25, 0.5, 0.7, 1.0, 0.35, 0.75, 1.0]
-        pattern_s = ['intro', 'verse', 'build', 'chorus', 'drop', 'build', 'chorus']
-        energies = []
-        sections = []
-        for i in range(n_phrases):
-            idx = i % len(pattern_e)
-            energies.append(pattern_e[idx])
-            sections.append(pattern_s[idx])
+        # Original synthwave: 4-bar phrases
+        phrase_len = 4
+        n_phrases = max(1, bars // phrase_len)
+        if n_phrases <= 2:
+            energies = [0.5] * n_phrases
+            sections = ['verse'] * n_phrases
+        elif n_phrases <= 4:
+            energies = [0.3, 0.6, 0.8, 1.0][:n_phrases]
+            sections = ['intro', 'verse', 'build', 'chorus'][:n_phrases]
+        else:
+            pattern_e = [0.25, 0.5, 0.7, 1.0, 0.35, 0.75, 1.0]
+            pattern_s = ['intro', 'verse', 'build', 'chorus', 'drop', 'build', 'chorus']
+            energies = []
+            sections = []
+            for i in range(n_phrases):
+                idx = i % len(pattern_e)
+                energies.append(pattern_e[idx])
+                sections.append(pattern_s[idx])
 
-    # Expand to per-bar
-    for pi in range(n_phrases):
-        base_energy = energies[pi]
-        section = sections[pi]
-        for bi in range(4):
-            bar_idx = pi * 4 + bi
-            if bar_idx >= bars:
-                break
-            # Energy ramps within build sections
-            if section == 'build':
-                e = base_energy + 0.1 * (bi / 3)
-            else:
-                e = base_energy
-            song.append({
-                'energy': min(1.0, e),
-                'section': section,
-                'phrase': pi,
-                'bar_in_phrase': bi,
-                'is_fill_bar': (bi == 3),  # Last bar of phrase gets fills
-            })
+        for pi in range(n_phrases):
+            base_energy = energies[pi]
+            section = sections[pi]
+            for bi in range(phrase_len):
+                bar_idx = pi * phrase_len + bi
+                if bar_idx >= bars:
+                    break
+                if section == 'build':
+                    e = base_energy + 0.1 * (bi / 3)
+                else:
+                    e = base_energy
+                song.append({
+                    'energy': min(1.0, e),
+                    'section': section,
+                    'phrase': pi,
+                    'bar_in_phrase': bi,
+                    'is_fill_bar': (bi == phrase_len - 1),
+                    'phrase_len': phrase_len,
+                })
 
-    # Pad if bars > n_phrases * 4
     while len(song) < bars:
         song.append(song[-1].copy())
-
     return song
 
 
@@ -864,7 +1045,13 @@ def generate_segment(mood='processing', seed=None, duration=45.0, sr=SR):
         np.ndarray of shape (samples, 2) — stereo float64 in [-1, 1]
     """
     profile = MOOD_PROFILES.get(mood, MOOD_PROFILES['processing'])
+    style = profile['style']
+    is_jrpg = style.startswith('jrpg')
     rng = np.random.default_rng(seed)
+
+    # JRPG tracks are longer by default
+    if is_jrpg and duration < 120:
+        duration = rng.integers(150, 240)  # 2.5 to 4 minutes
 
     bpm = int(rng.integers(profile['bpm_range'][0], profile['bpm_range'][1] + 1))
     root = profile['key_root']
@@ -875,12 +1062,18 @@ def generate_segment(mood='processing', seed=None, duration=45.0, sr=SR):
     bars = max(4, int(np.ceil(duration / bar_dur)))
     target_samples = int(duration * sr)
 
-    # Choose chord progression
-    progs = MINOR_PROGRESSIONS if scale == 'minor' else MAJOR_PROGRESSIONS
+    # Choose chord progression — JRPG uses 8-bar progressions
+    if is_jrpg:
+        if scale == 'minor':
+            progs = JRPG_PROGRESSIONS_MINOR
+        else:
+            progs = JRPG_PROGRESSIONS_MAJOR
+    else:
+        progs = MINOR_PROGRESSIONS if scale == 'minor' else MAJOR_PROGRESSIONS
     progression = progs[rng.integers(0, len(progs))]
 
     # Build song structure
-    song_map = build_song_map(bars, rng)
+    song_map = build_song_map(bars, rng, style=style)
 
     # ── Generate all layers ──
     sub = generate_sub_bass(root, scale, bpm, bars, progression, song_map, sr)
