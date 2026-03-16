@@ -10,6 +10,7 @@ import requests
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from datetime import datetime, timezone
+from parallax_bg import ParallaxBackground
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [VENICE-STREAM] %(message)s")
 log = logging.getLogger("vs")
@@ -164,11 +165,17 @@ else:
 if bg_img:
     from PIL import ImageEnhance
     bg_img = bg_img.filter(ImageFilter.GaussianBlur(radius=10))
-    bg_img = ImageEnhance.Brightness(bg_img).enhance(0.55)
+    bg_img = ImageEnhance.Brightness(bg_img).enhance(0.75)
     # Add dark overlay
-    overlay = Image.new("RGBA", (W, H), (6, 6, 18, 160))
+    overlay = Image.new("RGBA", (W, H), (6, 6, 18, 100))
     bg_img = Image.alpha_composite(bg_img, overlay)
 bg_mtime = Path("/tmp/dragon/venice_concept.png").stat().st_mtime if Path("/tmp/dragon/venice_concept.png").exists() else 0
+
+# Parallax background system
+parallax = ParallaxBackground(W, H)
+if Path("/tmp/dragon/venice_concept.png").exists():
+    parallax.update_scene("/tmp/dragon/venice_concept.png")
+    log.info(f"Parallax initialized: mode={parallax.mode}")
 
 # Meshy 3D render mid-ground layer
 meshy_img = None
@@ -572,10 +579,13 @@ def render_frame(data, frame_count):
                     from PIL import ImageEnhance
                     new_bg = new_bg.filter(ImageFilter.GaussianBlur(radius=10))
                     bg_img = ImageEnhance.Brightness(new_bg).enhance(0.55)
-                    bg_img = Image.alpha_composite(bg_img, Image.new("RGBA", (W, H), (6, 6, 18, 160)))
+                    bg_img = Image.alpha_composite(bg_img, Image.new("RGBA", (W, H), (6, 6, 18, 100)))
                     bg_mtime = cur_mtime
                     log.info("Background auto-refreshed (mtime changed)")
                 concept_img = load_image(str(bg_path), (220, 150))
+                # Update parallax system with new scene
+                parallax.update_scene(str(bg_path))
+                log.info(f"Parallax updated: mode={parallax.mode}")
         # Refresh meshy 3D render
         if MESHY_PATH.exists():
             cur_mtime = MESHY_PATH.stat().st_mtime
@@ -589,8 +599,10 @@ def render_frame(data, frame_count):
                     meshy_mtime = cur_mtime
                     log.info("Meshy 3D render auto-refreshed (mtime changed)")
 
-    # Background
-    if bg_img:
+    # Background — parallax animated or flat fallback
+    if parallax.mode != "none":
+        img = parallax.render(frame_count * 0.1)
+    elif bg_img:
         img = bg_img.copy()
     else:
         img = Image.new("RGBA", (W, H), DARK + (255,))
@@ -971,7 +983,7 @@ def main():
         "-thread_queue_size", "512",
         "-f", "pulse", "-i", "stream_sink.monitor",
         # Mix music + TTS: music full volume, TTS at 60%
-        "-filter_complex", "[1:a][2:a]amix=inputs=2:duration=longest:weights=1 0.6[aout]",
+        "-filter_complex", "[1:a]lowpass=f=8000,volume=0.6[m];[m][2:a]amix=inputs=2:duration=longest:weights=1 0.5[aout]",
         "-map", "0:v", "-map", "[aout]",
         # Video encoding
         "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
