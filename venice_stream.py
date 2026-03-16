@@ -91,6 +91,75 @@ DEMO_X, DEMO_Y = 610, 120
 TILE_SZ = 26  # each tile pixel size
 VIEW_COLS, VIEW_ROWS = 12, 8  # tile viewport size
 
+# === LABYRINTH SPRITE TILES ===
+import numpy as np
+
+_SPRITE_DIR = "/opt/tiamat-stream/hud/assets"
+
+def _load_tile(path, size=(TILE_SZ, TILE_SZ)):
+    """Load a single tile and resize to TILE_SZ, always RGBA."""
+    try:
+        img = Image.open(path).convert("RGBA")
+        return img.resize(size, Image.Resampling.LANCZOS)
+    except Exception:
+        return None
+
+def _crop_sheet(path, count, sprite_w=64, sprite_h=64):
+    """Crop a horizontal sprite sheet into individual tiles, resize each."""
+    tiles = []
+    try:
+        sheet = Image.open(path).convert("RGBA")
+        for i in range(count):
+            box = (i * sprite_w, 0, (i + 1) * sprite_w, sprite_h)
+            tile = sheet.crop(box).resize((TILE_SZ, TILE_SZ), Image.Resampling.LANCZOS)
+            tiles.append(tile)
+    except Exception:
+        pass
+    return tiles
+
+def tint_tile(tile_img, color):
+    """Multiply-blend a tile with a color — preserves texture, shifts hue."""
+    arr = np.array(tile_img.convert("RGBA")).astype(float)
+    r, g, b = color
+    arr[:, :, 0] = arr[:, :, 0] * (r / 255)
+    arr[:, :, 1] = arr[:, :, 1] * (g / 255)
+    arr[:, :, 2] = arr[:, :, 2] * (b / 255)
+    return Image.fromarray(arr.clip(0, 255).astype('uint8'), "RGBA")
+
+# Pre-load base sprites at module load time
+_base_wall_tile = _load_tile(f"{_SPRITE_DIR}/wall-stone.png")
+_base_floor_tile = _load_tile(f"{_SPRITE_DIR}/floor-tile.png")
+_base_door_tile = _load_tile(f"{_SPRITE_DIR}/door-iron.png")
+_tiamat_tile = _load_tile(f"{_SPRITE_DIR}/sprite-tiamat.png")
+_tiamat_tile_flip = _tiamat_tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if _tiamat_tile else None
+_monster_tiles = _crop_sheet(f"{_SPRITE_DIR}/sprite-monsters.png", 4)
+_item_tiles = _crop_sheet(f"{_SPRITE_DIR}/sprite-items.png", 4)
+
+# Cache of tinted wall/floor tiles keyed by (wall_color, floor_color)
+_tinted_cache = {}
+
+def _get_tinted_tiles(wall_color, floor_color):
+    """Return (tinted_wall, tinted_floor, tinted_door) for a biome, cached."""
+    key = (wall_color, floor_color)
+    if key not in _tinted_cache:
+        tw = tint_tile(_base_wall_tile, wall_color) if _base_wall_tile else None
+        tf = tint_tile(_base_floor_tile, floor_color) if _base_floor_tile else None
+        td = tint_tile(_base_door_tile, (120, 90, 60)) if _base_door_tile else None
+        _tinted_cache[key] = (tw, tf, td)
+    return _tinted_cache[key]
+
+def _brighten_tile(tile_img, factor):
+    """Brighten a tile by a factor (1.0 = no change, 1.3 = 30% brighter)."""
+    arr = np.array(tile_img).astype(float)
+    arr[:, :, :3] = (arr[:, :, :3] * factor).clip(0, 255)
+    return Image.fromarray(arr.astype('uint8'), "RGBA")
+
+_sprites_ok = all([_base_wall_tile, _base_floor_tile, _tiamat_tile, len(_monster_tiles) > 0, len(_item_tiles) > 0])
+if _sprites_ok:
+    log.info(f"Labyrinth sprites loaded: wall, floor, door, tiamat, {len(_monster_tiles)} monsters, {len(_item_tiles)} items")
+else:
+    log.warning("Some labyrinth sprites failed to load — falling back to rectangles")
+
 # Darken background
 if bg_img:
     from PIL import ImageEnhance
@@ -336,6 +405,12 @@ def render_labyrinth_demo(img, frame_count):
     dir_offsets = [(0, -1), (1, 0), (0, 1), (-1, 0)]
     player_dir = player.get("dir", 0)
 
+    # Get biome-tinted tiles (cached per biome)
+    tinted_wall, tinted_floor, tinted_door = _get_tinted_tiles(wall_color, floor_color)
+
+    # Black tile for out-of-bounds / fog
+    _black_tile = Image.new("RGBA", (TILE_SZ, TILE_SZ), (0, 0, 0, 255))
+
     # Render tiles
     for row in range(VIEW_ROWS):
         for col in range(VIEW_COLS):
@@ -346,83 +421,116 @@ def render_labyrinth_demo(img, frame_count):
 
             if wx < 0 or wx >= map_w or wy < 0 or wy >= map_h:
                 # Out of bounds — solid black
-                pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=(0, 0, 0))
+                if _sprites_ok:
+                    panel.paste(_black_tile, (tx, ty), _black_tile)
+                else:
+                    pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=(0, 0, 0))
                 continue
 
             tile_val = tiles[wy][wx]
 
-            if tile_val == 0:
-                # Wall
-                pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=wall_color)
-                pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], outline=wall_border)
-                # Subtle brick lines
-                mid_y = ty + TILE_SZ // 2
-                pd.line([(tx + 2, mid_y), (tx + TILE_SZ - 3, mid_y)], fill=wall_border, width=1)
-            elif tile_val in (1, 2, 3):
-                # Floor / corridor / door
-                pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=floor_color)
-                # Grid lines
-                pd.line([(tx + TILE_SZ - 1, ty), (tx + TILE_SZ - 1, ty + TILE_SZ - 1)], fill=floor_grid, width=1)
-                pd.line([(tx, ty + TILE_SZ - 1), (tx + TILE_SZ - 1, ty + TILE_SZ - 1)], fill=floor_grid, width=1)
-                if tile_val == 3:
-                    # Door — draw crosshatch
-                    pd.line([(tx + 3, ty + 3), (tx + TILE_SZ - 4, ty + TILE_SZ - 4)], fill=(120, 90, 60), width=1)
-                    pd.line([(tx + TILE_SZ - 4, ty + 3), (tx + 3, ty + TILE_SZ - 4)], fill=(120, 90, 60), width=1)
-            elif tile_val == 4:
-                # Stairs
-                pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=floor_color)
-                # White stair lines
-                for i in range(4):
-                    sy_line = ty + 4 + i * 5
-                    pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
-                pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3], outline=(200, 200, 220))
-
-            # Overlay entities on floor tiles
-            if tile_val != 0:
-                world_pos = (wx, wy)
-
-                # Items (yellow)
-                if world_pos in item_set:
-                    it = item_set[world_pos]
-                    ic = _hex_to_rgb(it.get("col", "#ffdd00"), (255, 216, 48))
-                    inset = 6
-                    pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1], fill=ic)
-                    pd.rectangle([tx + inset + 1, ty + inset + 1, tx + TILE_SZ - inset - 2, ty + TILE_SZ - inset - 2], outline=(255, 255, 200))
-
-                # Monsters (red with pulse)
-                if world_pos in monster_set:
-                    m = monster_set[world_pos]
-                    mc = _hex_to_rgb(m.get("col", "#ff4444"), (248, 56, 56))
-                    # Pulse brightness
-                    mc_pulsed = tuple(min(255, int(c * enemy_pulse)) for c in mc)
-                    mc_dark = tuple(max(0, c - 50) for c in mc)
-                    inset = 5
-                    pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1], fill=mc_pulsed)
-                    # Darker center dot
-                    cx_m, cy_m = tx + TILE_SZ // 2, ty + TILE_SZ // 2
-                    pd.rectangle([cx_m - 2, cy_m - 2, cx_m + 2, cy_m + 2], fill=mc_dark)
-
-                # Stairs overlay (if not already tile=4 but entity is here)
-                if world_pos == stairs_pos and tile_val != 4:
+            if _sprites_ok:
+                # === SPRITE-BASED RENDERING ===
+                if tile_val == 0:
+                    # Wall — tinted wall texture
+                    panel.paste(tinted_wall, (tx, ty), tinted_wall)
+                elif tile_val in (1, 2):
+                    # Floor / corridor — tinted floor texture
+                    panel.paste(tinted_floor, (tx, ty), tinted_floor)
+                elif tile_val == 3:
+                    # Door — door texture on floor
+                    panel.paste(tinted_floor, (tx, ty), tinted_floor)
+                    if tinted_door:
+                        panel.paste(tinted_door, (tx, ty), tinted_door)
+                elif tile_val == 4:
+                    # Stairs — floor with stair overlay lines
+                    panel.paste(tinted_floor, (tx, ty), tinted_floor)
                     for i in range(4):
                         sy_line = ty + 4 + i * 5
                         pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
+                    pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3], outline=(200, 200, 220))
 
-                # Player (bright cyan with directional indicator)
-                if wx == px and wy == py:
-                    # Glow background
-                    glow_col = (0, player_glow, min(255, player_glow + 20), 80)
-                    inset = 4
-                    pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1],
-                                 fill=(0, 220, 255))
-                    # Bright center
-                    pd.rectangle([tx + inset + 2, ty + inset + 2, tx + TILE_SZ - inset - 3, ty + TILE_SZ - inset - 3],
-                                 fill=(120, 240, 255))
-                    # Direction indicator — small triangle/line
-                    cx_p, cy_p = tx + TILE_SZ // 2, ty + TILE_SZ // 2
-                    dx, dy = dir_offsets[player_dir % 4]
-                    ind_x, ind_y = cx_p + dx * 8, cy_p + dy * 8
-                    pd.line([(cx_p, cy_p), (ind_x, ind_y)], fill=(255, 255, 255), width=2)
+                # Overlay entities on floor tiles
+                if tile_val != 0:
+                    world_pos = (wx, wy)
+
+                    # Items — cycle through 4 item sprites
+                    if world_pos in item_set:
+                        it = item_set[world_pos]
+                        item_idx = hash((it.get("x", 0), it.get("y", 0))) % len(_item_tiles) if _item_tiles else 0
+                        if _item_tiles:
+                            panel.paste(_item_tiles[item_idx], (tx, ty), _item_tiles[item_idx])
+
+                    # Monsters — cycle through 4 monster sprites, pulse brightness
+                    if world_pos in monster_set:
+                        m_ent = monster_set[world_pos]
+                        m_idx = hash(m_ent.get("name", str(world_pos))) % len(_monster_tiles) if _monster_tiles else 0
+                        if _monster_tiles:
+                            m_sprite = _brighten_tile(_monster_tiles[m_idx], enemy_pulse + 0.3)
+                            panel.paste(m_sprite, (tx, ty), m_sprite)
+
+                    # Stairs overlay (if not already tile=4 but entity is here)
+                    if world_pos == stairs_pos and tile_val != 4:
+                        for i in range(4):
+                            sy_line = ty + 4 + i * 5
+                            pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
+
+                    # Player — TIAMAT dragon sprite, flip based on direction
+                    if wx == px and wy == py:
+                        # Direction: W(3) = flip, rest = normal
+                        if player_dir == 3 and _tiamat_tile_flip:
+                            p_sprite = _tiamat_tile_flip
+                        else:
+                            p_sprite = _tiamat_tile
+                        # Subtle glow: brighten based on animation pulse
+                        glow_factor = 1.0 + (player_glow - 180) / 400  # ~0.85 to ~1.15
+                        p_sprite = _brighten_tile(p_sprite, glow_factor)
+                        panel.paste(p_sprite, (tx, ty), p_sprite)
+            else:
+                # === FALLBACK: RECTANGLE RENDERING (no sprites loaded) ===
+                if tile_val == 0:
+                    pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=wall_color)
+                    pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], outline=wall_border)
+                    mid_y = ty + TILE_SZ // 2
+                    pd.line([(tx + 2, mid_y), (tx + TILE_SZ - 3, mid_y)], fill=wall_border, width=1)
+                elif tile_val in (1, 2, 3):
+                    pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=floor_color)
+                    pd.line([(tx + TILE_SZ - 1, ty), (tx + TILE_SZ - 1, ty + TILE_SZ - 1)], fill=floor_grid, width=1)
+                    pd.line([(tx, ty + TILE_SZ - 1), (tx + TILE_SZ - 1, ty + TILE_SZ - 1)], fill=floor_grid, width=1)
+                    if tile_val == 3:
+                        pd.line([(tx + 3, ty + 3), (tx + TILE_SZ - 4, ty + TILE_SZ - 4)], fill=(120, 90, 60), width=1)
+                        pd.line([(tx + TILE_SZ - 4, ty + 3), (tx + 3, ty + TILE_SZ - 4)], fill=(120, 90, 60), width=1)
+                elif tile_val == 4:
+                    pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=floor_color)
+                    for i in range(4):
+                        sy_line = ty + 4 + i * 5
+                        pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
+                    pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3], outline=(200, 200, 220))
+                if tile_val != 0:
+                    world_pos = (wx, wy)
+                    if world_pos in item_set:
+                        it = item_set[world_pos]
+                        ic = _hex_to_rgb(it.get("col", "#ffdd00"), (255, 216, 48))
+                        inset = 6
+                        pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1], fill=ic)
+                    if world_pos in monster_set:
+                        m_ent = monster_set[world_pos]
+                        mc = _hex_to_rgb(m_ent.get("col", "#ff4444"), (248, 56, 56))
+                        mc_pulsed = tuple(min(255, int(c * enemy_pulse)) for c in mc)
+                        inset = 5
+                        pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1], fill=mc_pulsed)
+                    if world_pos == stairs_pos and tile_val != 4:
+                        for i in range(4):
+                            sy_line = ty + 4 + i * 5
+                            pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
+                    if wx == px and wy == py:
+                        inset = 4
+                        pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1], fill=(0, 220, 255))
+                        pd.rectangle([tx + inset + 2, ty + inset + 2, tx + TILE_SZ - inset - 3, ty + TILE_SZ - inset - 3], fill=(120, 240, 255))
+                        cx_p, cy_p = tx + TILE_SZ // 2, ty + TILE_SZ // 2
+                        dx, dy = dir_offsets[player_dir % 4]
+                        ind_x, ind_y = cx_p + dx * 8, cy_p + dy * 8
+                        pd.line([(cx_p, cy_p), (ind_x, ind_y)], fill=(255, 255, 255), width=2)
 
     # === Status line below tile viewport ===
     status_y = tile_oy + VIEW_ROWS * TILE_SZ + 3
@@ -828,13 +936,22 @@ def main():
     os.mkfifo(MUSIC_PIPE)
 
     # Launch synth_radio in --stdout mode, writing raw PCM to the named pipe.
-    # Must start BEFORE ffmpeg opens the pipe for reading (FIFO blocks on open).
-    radio_proc = subprocess.Popen(
-        ["python3", "/opt/tiamat-stream/scripts/synth_radio.py", "--stdout"],
-        stdout=open(MUSIC_PIPE, "wb"),
-        stderr=open("/tmp/synth_radio_stderr.log", "w"),
-    )
-    log.info(f"synth_radio PID: {radio_proc.pid} → {MUSIC_PIPE}")
+    # Open the pipe in a background thread to avoid FIFO deadlock
+    # (open() blocks until a reader exists — but ffmpeg IS the reader and hasn't started yet)
+    import threading
+    _radio_proc_holder = [None]
+    def _start_radio_writer():
+        with open(MUSIC_PIPE, "wb") as pipe_f:
+            _radio_proc_holder[0] = subprocess.Popen(
+                ["python3", "/opt/tiamat-stream/scripts/synth_radio.py", "--stdout"],
+                stdout=pipe_f,
+                stderr=open("/tmp/synth_radio_stderr.log", "w"),
+            )
+            _radio_proc_holder[0].wait()
+    threading.Thread(target=_start_radio_writer, daemon=True).start()
+    time.sleep(0.5)  # Let thread start before ffmpeg opens the pipe for reading
+    radio_proc = _radio_proc_holder[0]
+    log.info(f"synth_radio thread started → {MUSIC_PIPE}")
 
     # ffmpeg: 3 inputs
     #   0 = pipe:0  — raw RGB video frames from PIL
@@ -858,10 +975,11 @@ def main():
         "-map", "0:v", "-map", "[aout]",
         # Video encoding
         "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-        "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
+        "-b:v", "1500k", "-maxrate", "1500k", "-bufsize", "3000k",
         "-pix_fmt", "yuv420p", "-g", str(FPS * 2), "-keyint_min", str(FPS),
+        "-threads", "4",
         # Audio encoding
-        "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
+        "-c:a", "aac", "-b:a", "96k", "-ar", "44100",
         "-f", "flv",
         rtmp_dest,
     ], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=open("/tmp/ffmpeg_pil.log", "w"))
