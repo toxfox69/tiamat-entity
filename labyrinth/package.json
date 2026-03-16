@@ -1,0 +1,34 @@
+{
+  "name": "labyrinth-tiamats-descent",
+  "version": "0.1.0",
+  "description": "A living dungeon crawler driven by a real autonomous AI agent",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --linux --win --mac",
+    "dev": "python3 -m http.server 8080"
+  },
+  "author": "ENERGENAI LLC",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "live.tiamat.labyrinth",
+    "productName": "LABYRINTH: TIAMAT'S DESCENT",
+    "files": [
+      "**/*",
+      "!node_modules/**"
+    ],
+    "linux": {
+      "target": "AppImage"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  }
+}
