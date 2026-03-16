@@ -7,6 +7,7 @@ Generates segments continuously, crossfades between them, plays to PulseAudio.
 Runs on the stream droplet, outputs to stream_sink for Twitch capture.
 """
 
+import argparse
 import os
 import sys
 import time
@@ -24,6 +25,9 @@ import soundfile as sf
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [RADIO] %(message)s")
 log = logging.getLogger("radio")
+
+# Parsed at bottom in __main__, default False
+STDOUT_MODE = False
 
 # Config
 API_BASE = os.environ.get("TIAMAT_API", "https://tiamat.live")
@@ -75,6 +79,19 @@ def get_tiamat_mood():
     return "processing"
 
 
+def write_pcm_stdout(audio_array):
+    """Write stereo float64 numpy array as raw PCM s16le to stdout.
+
+    audio_array: np.ndarray shape (samples, 2), float64 in [-1, 1]
+    Output: raw s16le bytes (44100 Hz stereo) on sys.stdout.buffer
+    """
+    # Clip and convert float64 -> int16
+    clipped = np.clip(audio_array, -1.0, 1.0)
+    pcm = (clipped * 32767).astype(np.int16)
+    sys.stdout.buffer.write(pcm.tobytes())
+    sys.stdout.buffer.flush()
+
+
 def play_audio(filepath):
     """Play a WAV file through PulseAudio stream_sink."""
     try:
@@ -119,20 +136,23 @@ def main():
             meta = segment_metadata(current_mood, seed)
             log.info(f"Generated in {gen_time:.1f}s — {meta['bpm']} BPM, {meta['key']}, {meta['style']}")
 
-            # Save to temp file
-            tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False, dir='/tmp')
-            sf.write(tmp.name, audio, SR)
-            tmp.close()
+            if STDOUT_MODE:
+                # Write raw PCM s16le directly to stdout — no temp file, no paplay
+                log.info(f"Piping segment #{segment_count} to stdout ({len(audio)} samples)")
+                write_pcm_stdout(audio)
+            else:
+                # Legacy: save to temp WAV, play via PulseAudio
+                tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False, dir='/tmp')
+                sf.write(tmp.name, audio, SR)
+                tmp.close()
 
-            # Play
-            log.info(f"Playing segment #{segment_count} ({SEGMENT_DURATION}s)")
-            play_audio(tmp.name)
+                log.info(f"Playing segment #{segment_count} ({SEGMENT_DURATION}s)")
+                play_audio(tmp.name)
 
-            # Clean up
-            try:
-                os.unlink(tmp.name)
-            except:
-                pass
+                try:
+                    os.unlink(tmp.name)
+                except:
+                    pass
 
         except KeyboardInterrupt:
             log.info("Radio stopped by user")
@@ -143,4 +163,16 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="TIAMAT Radio")
+    parser.add_argument("--stdout", action="store_true",
+                        help="Output raw PCM s16le/44100/stereo to stdout (for pipe to ffmpeg)")
+    args = parser.parse_args()
+    STDOUT_MODE = args.stdout
+    if STDOUT_MODE:
+        # Redirect log to stderr so stdout stays clean PCM
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [RADIO] %(message)s",
+                            stream=sys.stderr)
+        log = logging.getLogger("radio")
     main()

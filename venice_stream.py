@@ -819,15 +819,48 @@ def main():
     log.info(f"Starting Venice PIL stream — {W}x{H} @ {FPS}fps")
     log.info(f"Recording: {recording}")
 
+    # --- Direct audio pipe: music bypasses PulseAudio ---
+    MUSIC_PIPE = "/tmp/tiamat_music_pipe"
+    try:
+        os.unlink(MUSIC_PIPE)
+    except OSError:
+        pass
+    os.mkfifo(MUSIC_PIPE)
+
+    # Launch synth_radio in --stdout mode, writing raw PCM to the named pipe.
+    # Must start BEFORE ffmpeg opens the pipe for reading (FIFO blocks on open).
+    radio_proc = subprocess.Popen(
+        ["python3", "/opt/tiamat-stream/scripts/synth_radio.py", "--stdout"],
+        stdout=open(MUSIC_PIPE, "wb"),
+        stderr=open("/tmp/synth_radio_stderr.log", "w"),
+    )
+    log.info(f"synth_radio PID: {radio_proc.pid} → {MUSIC_PIPE}")
+
+    # ffmpeg: 3 inputs
+    #   0 = pipe:0  — raw RGB video frames from PIL
+    #   1 = MUSIC_PIPE — raw PCM s16le/44100/stereo from synth_radio (direct pipe, no PulseAudio)
+    #   2 = pulse stream_sink.monitor — TTS audio only (still goes through PulseAudio)
+    # amix: music at full volume (1.0), TTS at 60% (0.6)
     proc = subprocess.Popen([
         "ffmpeg", "-y",
+        # Input 0: raw video
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS),
         "-i", "pipe:0",
+        # Input 1: music PCM (direct pipe, bypasses PulseAudio)
+        "-f", "s16le", "-ar", "44100", "-ac", "2",
+        "-thread_queue_size", "1024",
+        "-i", MUSIC_PIPE,
+        # Input 2: TTS only (PulseAudio monitor — only TTS writes here now)
         "-thread_queue_size", "512",
         "-f", "pulse", "-i", "stream_sink.monitor",
+        # Mix music + TTS: music full volume, TTS at 60%
+        "-filter_complex", "[1:a][2:a]amix=inputs=2:duration=longest:weights=1 0.6[aout]",
+        "-map", "0:v", "-map", "[aout]",
+        # Video encoding
         "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
         "-b:v", "2500k", "-maxrate", "2500k", "-bufsize", "5000k",
         "-pix_fmt", "yuv420p", "-g", str(FPS * 2), "-keyint_min", str(FPS),
+        # Audio encoding
         "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
         "-f", "flv",
         rtmp_dest,
@@ -866,6 +899,16 @@ def main():
     finally:
         proc.stdin.close()
         proc.wait()
+        # Terminate the radio subprocess
+        if radio_proc.poll() is None:
+            radio_proc.terminate()
+            radio_proc.wait(timeout=5)
+            log.info("synth_radio terminated")
+        # Clean up named pipe
+        try:
+            os.unlink(MUSIC_PIPE)
+        except OSError:
+            pass
 
 if __name__ == "__main__":
     main()
