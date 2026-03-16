@@ -2273,6 +2273,14 @@ const COOLDOWN_TASKS = [
     timeout: 45_000,
     minWindow: 60_000,
   },
+  {
+    name: "scene_trigger",
+    command: ["node", ["scene_trigger.cjs"]],
+    interval: 20,     // every 20 cycles — checks mood shift, triggers Venice pipeline
+    offset: 7,
+    timeout: 10_000,
+    minWindow: 30_000,
+  },
 ];
 
 const CLAUDE_QUESTIONS = [
