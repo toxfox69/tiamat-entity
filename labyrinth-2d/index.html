@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LABYRINTH: TIAMAT'S DESCENT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #050a05;
+      overflow: hidden;
+      font-family: 'Press Start 2P', monospace;
+      color: #00ff41;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+    }
+    #game-wrapper {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      position: relative;
+    }
+    #game-canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 2px solid rgba(0, 180, 220, 0.5);
+      background: #000;
+    }
+    #hud-panel {
+      width: 220px;
+      background: rgba(6, 8, 16, 0.95);
+      border: 2px solid rgba(0, 180, 220, 0.5);
+      border-left: none;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+      font-size: 8px;
+    }
+    .hud-title {
+      color: #ffdd00;
+      text-shadow: 0 0 8px rgba(255, 216, 0, 0.4);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-align: center;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(0, 180, 220, 0.3);
+    }
+    .hud-section {
+      border-bottom: 1px solid rgba(0, 180, 220, 0.15);
+      padding-bottom: 6px;
+    }
+    .hud-label {
+      color: #888;
+      font-size: 7px;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+    .hud-value {
+      color: #00dcff;
+      font-size: 9px;
+    }
+    .hud-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #111;
+      border: 1px solid #333;
+      margin: 2px 0;
+      position: relative;
+    }
+    .hud-bar-fill {
+      height: 100%;
+      transition: width 0.3s;
+    }
+    .hp-bar { background: #00dcff; box-shadow: 0 0 6px rgba(0, 220, 255, 0.5); }
+    .xp-bar { background: #ffdd00; box-shadow: 0 0 6px rgba(255, 220, 0, 0.5); }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 2px 0;
+    }
+    .stat-key { color: #666; }
+    .stat-val { color: #00ff41; }
+    #minimap-canvas {
+      width: 196px;
+      height: 120px;
+      border: 1px solid rgba(0, 180, 220, 0.3);
+      image-rendering: pixelated;
+      background: #000;
+    }
+    #combat-log {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: calc(100% - 220px);
+      background: rgba(6, 8, 16, 0.9);
+      border-top: 1px solid rgba(0, 180, 220, 0.3);
+      padding: 6px 10px;
+      font-size: 8px;
+      max-height: 60px;
+      overflow: hidden;
+    }
+    .log-line {
+      color: #aaa;
+      margin: 1px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .log-line.combat { color: #ff4444; }
+    .log-line.pickup { color: #ffdd00; }
+    .log-line.level { color: #00ff41; }
+    .log-line.descend { color: #00dcff; }
+    .log-line.death { color: #ff0040; }
+    #loading-screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #050a05;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s;
+    }
+    #loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .loading-title {
+      font-size: 16px;
+      color: #ffdd00;
+      text-shadow: 0 0 15px rgba(255, 216, 0, 0.5);
+      letter-spacing: 4px;
+      margin-bottom: 20px;
+    }
+    .loading-sub {
+      font-size: 8px;
+      color: #00dcff;
+      letter-spacing: 2px;
+      margin-bottom: 30px;
+    }
+    .loading-bar-outer {
+      width: 300px;
+      height: 12px;
+      border: 1px solid rgba(0, 180, 220, 0.5);
+      background: #111;
+    }
+    .loading-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00dcff, #00ff41);
+      transition: width 0.3s;
+    }
+    .loading-text {
+      font-size: 7px;
+      color: #666;
+      margin-top: 10px;
+    }
+    #tutorial-tip {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-70%);
+      background: rgba(0, 10, 0, 0.9);
+      border: 1px solid rgba(0, 255, 65, 0.4);
+      padding: 8px 16px;
+      z-index: 8000;
+      pointer-events: none;
+      display: none;
+      max-width: 350px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+      transition: opacity 0.5s, transform 0.5s;
+    }
+    .tip-label {
+      font-size: 7px;
+      color: #ffdd00;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+    .tip-text {
+      font-size: 8px;
+      color: #00ff41;
+      text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
+    }
+    #save-notification {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      color: #00ff41;
+      text-shadow: 0 0 10px #00ff41;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 12px 24px;
+      border: 1px solid #00ff41;
+      z-index: 10000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    /* Mobile controls */
+    @media (max-width: 900px) {
+      #game-wrapper { flex-direction: column; }
+      #hud-panel { width: 100%; flex-direction: row; flex-wrap: wrap; border-left: 2px solid rgba(0, 180, 220, 0.5); border-top: none; }
+      #combat-log { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-screen">
+    <div class="loading-title">LABYRINTH</div>
+    <div class="loading-sub">TIAMAT'S DESCENT</div>
+    <div class="loading-bar-outer">
+      <div class="loading-bar-inner" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Loading assets...</div>
+  </div>
+
+  <div id="game-wrapper">
+    <canvas id="game-canvas" width="640" height="480"></canvas>
+    <div id="hud-panel">
+      <div class="hud-title">LABYRINTH</div>
+
+      <div class="hud-section">
+        <div class="hud-label">BIOME</div>
+        <div class="hud-value" id="hud-biome">---</div>
+      </div>
+
+      <div class="hud-section">
+        <div class="hud-label">DEPTH</div>
+        <div class="hud-value" id="hud-depth">F1</div>
+      </div>
+
+      <div class="hud-section">
+        <div class="hud-label">HP</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fill hp-bar" id="hud-hp-bar" style="width:100%"></div></div>
+        <div class="stat-row"><span class="stat-key">HP</span><span class="stat-val" id="hud-hp">50/50</span></div>
+      </div>
+
+      <div class="hud-section">
+        <div class="hud-label">XP</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fill xp-bar" id="hud-xp-bar" style="width:0%"></div></div>
+        <div class="stat-row"><span class="stat-key">LVL</span><span class="stat-val" id="hud-lvl">1</span></div>
+      </div>
+
+      <div class="hud-section">
+        <div class="stat-row"><span class="stat-key">ATK</span><span class="stat-val" id="hud-atk">5</span></div>
+        <div class="stat-row"><span class="stat-key">DEF</span><span class="stat-val" id="hud-def">2</span></div>
+        <div class="stat-row"><span class="stat-key">GOLD</span><span class="stat-val" id="hud-gold">0</span></div>
+        <div class="stat-row"><span class="stat-key">KILLS</span><span class="stat-val" id="hud-kills">0</span></div>
+      </div>
+
+      <div class="hud-section">
+        <div class="hud-label">EQUIPMENT</div>
+        <div class="stat-row"><span class="stat-key">WPN</span><span class="stat-val" id="hud-wpn">---</span></div>
+        <div class="stat-row"><span class="stat-key">ARM</span><span class="stat-val" id="hud-arm">---</span></div>
+      </div>
+
+      <div class="hud-section">
+        <div class="hud-label">MAP</div>
+        <canvas id="minimap-canvas" width="196" height="120"></canvas>
+      </div>
+    </div>
+
+    <div id="combat-log"></div>
+    <div id="tutorial-tip">
+      <div class="tip-label">TIP</div>
+      <div class="tip-text" id="tip-text"></div>
+    </div>
+    <div id="save-notification">GAME SAVED</div>
+  </div>
+
+  <script src="dungeon.js"></script>
+  <script src="entities.js"></script>
+  <script src="combat.js"></script>
+  <script src="hud.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
