@@ -1,5 +1,6 @@
 // LABYRINTH 2D — Core Game Engine
-// HTML5 Canvas 2D renderer, 32x32 tiles, camera follow, fog of war, 60fps
+// HTML5 Canvas 2D, 32x32 tiles, camera follow, fog of war, 60fps
+// Full evolved content: 17 biomes, ECHO AI, floor narratives, difficulty tiers
 
 const TILE_SIZE = 32;
 const VIEWPORT_COLS = 20;
@@ -15,6 +16,11 @@ const CAM_LERP = 0.12;
 // Visibility radius for fog of war
 const VISION_RADIUS = 6;
 
+// Floor narrative display
+let narrativeDisplayTimer = 0;
+let narrativeText = '';
+let narrativeFlavor = '';
+
 // Assets
 const assets = {
   wallStone: null,
@@ -23,8 +29,8 @@ const assets = {
   spriteTiamat: null,
   spriteEcho: null,
   spriteFlame: null,
-  monsterSprites: [],  // 4 from sheet
-  itemSprites: [],     // 4 from sheet
+  monsterSprites: [],
+  itemSprites: [],
   loaded: false,
 };
 
@@ -42,7 +48,7 @@ const gameState = {
   depth: 1,
   totalKills: 0,
   turnCount: 0,
-  visited: [],      // 2D boolean array for fog of war
+  visited: [],
   paused: false,
   gameOver: false,
   sessionStats: {
@@ -57,7 +63,7 @@ const gameState = {
 // Input
 const keysDown = new Set();
 let moveThrottle = 0;
-const MOVE_RATE = 0.15; // seconds between moves
+const MOVE_RATE = 0.15;
 let lastMoveTime = 0;
 
 // Canvas
@@ -135,7 +141,6 @@ async function loadAssets() {
   updateBar(100, 'Generating dungeon...');
   assets.loaded = true;
 
-  // Short delay for visual polish
   await new Promise(r => setTimeout(r, 300));
 }
 
@@ -157,20 +162,16 @@ function tintTexture(sourceImg, color, alpha) {
   c.height = TILE_SIZE;
   const cx = c.getContext('2d');
 
-  // Draw source scaled to tile size
   cx.drawImage(sourceImg, 0, 0, TILE_SIZE, TILE_SIZE);
 
-  // Apply color tint via multiply compositing
   cx.globalCompositeOperation = 'multiply';
   const rgb = hexToRgb(color);
-  // Brighten the tint so it doesn't go too dark
   const br = Math.min(255, rgb.r + 80);
   const bg = Math.min(255, rgb.g + 80);
   const bb = Math.min(255, rgb.b + 80);
   cx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
   cx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
 
-  // Restore alpha from source
   cx.globalCompositeOperation = 'destination-in';
   cx.drawImage(sourceImg, 0, 0, TILE_SIZE, TILE_SIZE);
 
@@ -224,8 +225,28 @@ function generateNewFloor(preservePlayer) {
   gameState.player.x = dg.playerStart.x;
   gameState.player.y = dg.playerStart.y;
 
-  // Initialize ECHO
-  gameState.echo = createEcho(gameState.player.x, gameState.player.y);
+  // Initialize ECHO companion AI (spawn in different room)
+  if (!gameState.echo || !preservePlayer) {
+    const echoRoom = dg.rooms.length > 1
+      ? dg.rooms[Math.floor(1 + Math.random() * (dg.rooms.length - 1))]
+      : dg.rooms[0];
+    gameState.echo = createEcho(echoRoom.cx, echoRoom.cy);
+  } else {
+    // Reset position for existing ECHO on new floor
+    const echoRoom = dg.rooms.length > 1
+      ? dg.rooms[Math.floor(1 + Math.random() * (dg.rooms.length - 1))]
+      : dg.rooms[0];
+    gameState.echo.x = echoRoom.cx;
+    gameState.echo.y = echoRoom.cy;
+    gameState.echo.path = [];
+    gameState.echo.target = null;
+    gameState.echo.extracting = false;
+    gameState.echo.extractTimer = 0;
+    gameState.echo.behavior = 'explore';
+    if (!gameState.echo.alive) {
+      // Keep dead state — it will respawn via timer
+    }
+  }
 
   initVisited();
   revealAround(gameState.player.x, gameState.player.y);
@@ -239,7 +260,16 @@ function generateNewFloor(preservePlayer) {
   camTargetX = camX;
   camTargetY = camY;
 
-  addLogMessage(`Depth ${depth}: ${dg.biome.name}`, 'descend');
+  // Floor narrative display
+  if (dg.narrative) {
+    narrativeText = dg.narrative.name;
+    narrativeFlavor = dg.narrative.flavor;
+    narrativeDisplayTimer = 180; // ~3 seconds at 60fps
+    addLogMessage(`${dg.narrative.name} -- ${dg.narrative.flavor}`, 'descend');
+  }
+
+  // Biome + difficulty announcement
+  addLogMessage(`Depth ${depth}: ${dg.biome.name} [${dg.difficulty.label}]`, 'descend');
 }
 
 // ─── Player Movement & Actions ───
@@ -271,7 +301,6 @@ function tryMovePlayer(dx, dy) {
     gameState.turnCount++;
 
     if (p.hp <= 0) {
-      // Death
       const deathResults = handlePlayerDeath(p, gameState);
       addLogMessages(deathResults);
       gameState.depth = Math.max(1, gameState.depth - 1);
@@ -280,7 +309,39 @@ function tryMovePlayer(dx, dy) {
       gameState.sessionStats.monstersKilled += (monster.alive ? 0 : 1);
     }
 
-    // Move AI monsters after combat
+    // ECHO AI tick
+    updateEchoAI(gameState.echo, gameState);
+
+    // Move AI monsters
+    moveMonsters();
+    return;
+  }
+
+  // Check for ECHO (bump = attack ECHO if present)
+  const echo = gameState.echo;
+  if (echo && echo.alive && nx === echo.x && ny === echo.y) {
+    // Player attacks ECHO — ECHO gets a grudge
+    const dmg = calculateDamage(p.totalAtk, echo.def);
+    echo.hp -= dmg;
+    echo.grudge = true;
+    addLogMessage(`You attack ECHO for ${dmg}!`, 'combat');
+    if (echo.hp <= 0) {
+      addLogMessage('ECHO eliminated! Dropping loot...', 'pickup');
+      echoDropLoot(echo, gameState);
+      echoDie(echo, gameState);
+    } else {
+      // ECHO retaliates
+      const retDmg = Math.max(1, echo.atk - p.totalDef + Math.floor(Math.random() * 3));
+      p.hp -= retDmg;
+      addLogMessage(`ECHO retaliates for ${retDmg}!`, 'combat');
+      if (p.hp <= 0) {
+        const deathResults = handlePlayerDeath(p, gameState);
+        addLogMessages(deathResults);
+        gameState.depth = Math.max(1, gameState.depth - 1);
+        generateNewFloor(true);
+      }
+    }
+    gameState.turnCount++;
     moveMonsters();
     return;
   }
@@ -293,8 +354,8 @@ function tryMovePlayer(dx, dy) {
   // Reveal fog
   revealAround(nx, ny);
 
-  // Update ECHO
-  updateEcho(gameState.echo, p.x, p.y, dg.tiles);
+  // ECHO AI tick
+  updateEchoAI(gameState.echo, gameState);
 
   // Check for items
   const item = dg.items.find(it => !it.pickedUp && it.x === nx && it.y === ny);
@@ -316,7 +377,7 @@ function tryMovePlayer(dx, dy) {
   // Move AI monsters
   moveMonsters();
 
-  // Check tutorial triggers
+  // Tutorial triggers
   checkTutorialTriggers(gameState);
 }
 
@@ -327,20 +388,17 @@ function moveMonsters() {
   for (const m of dg.monsters) {
     if (!m.alive) continue;
 
-    // Simple AI: if within 6 tiles, move toward player
     const dist = Math.abs(m.x - p.x) + Math.abs(m.y - p.y);
-    if (dist > 8 || dist < 2) continue; // Too far or adjacent
+    if (dist > 8 || dist < 2) continue;
 
     let dx = 0, dy = 0;
     if (Math.random() < 0.6) {
-      // Move toward player
       if (Math.abs(m.x - p.x) > Math.abs(m.y - p.y)) {
         dx = m.x < p.x ? 1 : -1;
       } else {
         dy = m.y < p.y ? 1 : -1;
       }
     } else {
-      // Random move
       const r = Math.floor(Math.random() * 4);
       dx = [0, 1, 0, -1][r];
       dy = [-1, 0, 1, 0][r];
@@ -351,10 +409,11 @@ function moveMonsters() {
     if (nx < 0 || nx >= dg.width || ny < 0 || ny >= dg.height) continue;
     const t = dg.tiles[ny][nx];
     if (t === T_WALL) continue;
-    // Don't walk into other monsters
     if (dg.monsters.some(o => o !== m && o.alive && o.x === nx && o.y === ny)) continue;
-    // Don't walk onto player
     if (nx === p.x && ny === p.y) continue;
+    // Don't walk into ECHO either
+    const echo = gameState.echo;
+    if (echo && echo.alive && nx === echo.x && ny === echo.y) continue;
 
     m.x = nx;
     m.y = ny;
@@ -374,13 +433,11 @@ function renderFrame(dt) {
   camTargetX = p.x * TILE_SIZE - CANVAS_W / 2 + TILE_SIZE / 2;
   camTargetY = p.y * TILE_SIZE - CANVAS_H / 2 + TILE_SIZE / 2;
 
-  // Clamp camera
   const maxCamX = dg.width * TILE_SIZE - CANVAS_W;
   const maxCamY = dg.height * TILE_SIZE - CANVAS_H;
   camTargetX = Math.max(0, Math.min(camTargetX, maxCamX));
   camTargetY = Math.max(0, Math.min(camTargetY, maxCamY));
 
-  // Smooth camera
   camX += (camTargetX - camX) * CAM_LERP;
   camY += (camTargetY - camY) * CAM_LERP;
 
@@ -388,13 +445,11 @@ function renderFrame(dt) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Determine visible tile range
   const startCol = Math.floor(camX / TILE_SIZE);
   const startRow = Math.floor(camY / TILE_SIZE);
   const endCol = Math.min(dg.width, startCol + VIEWPORT_COLS + 2);
   const endRow = Math.min(dg.height, startRow + VIEWPORT_ROWS + 2);
 
-  // Animation values
   const enemyPulse = 0.7 + Math.sin(animFrame * 0.05) * 0.3;
   const playerGlow = Math.sin(animFrame * 0.04) * 0.15;
   const stairsPulse = 0.6 + Math.sin(animFrame * 0.08) * 0.4;
@@ -415,15 +470,13 @@ function renderFrame(dt) {
       const sx = Math.floor(wx * TILE_SIZE - camX);
       const sy = Math.floor(wy * TILE_SIZE - camY);
 
-      // Skip if off-screen
       if (sx + TILE_SIZE < 0 || sy + TILE_SIZE < 0 || sx > CANVAS_W || sy > CANVAS_H) continue;
 
       const visited = gameState.visited[wy] && gameState.visited[wy][wx];
-      if (!visited) continue; // Fog of war — don't draw
+      if (!visited) continue;
 
       const tile = dg.tiles[wy][wx];
 
-      // Distance from player for ambient darkening
       const pdx = wx - p.x;
       const pdy = wy - p.y;
       const pDist = Math.sqrt(pdx * pdx + pdy * pdy);
@@ -453,12 +506,10 @@ function renderFrame(dt) {
           ctx.globalAlpha = 1;
         }
       } else if (tile === T_DOOR) {
-        // Floor underneath
         if (tintedFloor) {
           ctx.globalAlpha = brightness;
           ctx.drawImage(tintedFloor, sx, sy, TILE_SIZE, TILE_SIZE);
         }
-        // Door overlay
         if (tintedDoor) {
           ctx.drawImage(tintedDoor, sx, sy, TILE_SIZE, TILE_SIZE);
           ctx.globalAlpha = 1;
@@ -475,12 +526,10 @@ function renderFrame(dt) {
           ctx.globalAlpha = 1;
         }
       } else if (tile === T_STAIRS) {
-        // Floor
         if (tintedFloor) {
           ctx.globalAlpha = brightness;
           ctx.drawImage(tintedFloor, sx, sy, TILE_SIZE, TILE_SIZE);
         }
-        // Stairs lines (pulsing)
         ctx.globalAlpha = brightness * stairsPulse;
         ctx.strokeStyle = '#dddcf0';
         ctx.lineWidth = 1;
@@ -521,10 +570,12 @@ function renderFrame(dt) {
           const idx = monsterSpriteIndex(monster);
           if (assets.monsterSprites[idx]) {
             ctx.globalAlpha = brightness * (enemyPulse + 0.3);
-            ctx.drawImage(assets.monsterSprites[idx], sx + 2, sy + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            const mSize = monster.boss ? TILE_SIZE + 8 : TILE_SIZE - 4;
+            const mOff = monster.boss ? -4 : 2;
+            ctx.drawImage(assets.monsterSprites[idx], sx + mOff, sy + mOff, mSize, mSize);
             ctx.globalAlpha = 1;
 
-            // HP bar above monster
+            // HP bar
             if (monster.hp < monster.maxHp) {
               const hpPct = monster.hp / monster.maxHp;
               const barW = TILE_SIZE - 4;
@@ -532,6 +583,15 @@ function renderFrame(dt) {
               ctx.fillRect(sx + 2, sy - 4, barW, 3);
               ctx.fillStyle = hpPct > 0.5 ? '#0c0' : hpPct > 0.25 ? '#cc0' : '#c00';
               ctx.fillRect(sx + 2, sy - 4, barW * hpPct, 3);
+            }
+
+            // DEF indicator (small shield icon for high-DEF monsters)
+            if ((monster.def || 0) >= 4) {
+              ctx.fillStyle = '#88ccff';
+              ctx.font = '7px "Press Start 2P"';
+              ctx.textAlign = 'right';
+              ctx.fillText('D' + monster.def, sx + TILE_SIZE - 2, sy - 6);
+              ctx.textAlign = 'left';
             }
 
             // Boss indicator
@@ -549,23 +609,40 @@ function renderFrame(dt) {
           }
         }
 
-        // ECHO
-        if (gameState.echo && gameState.echo.alive && wx === gameState.echo.x && wy === gameState.echo.y) {
+        // ECHO companion
+        const echo = gameState.echo;
+        if (echo && echo.alive && wx === echo.x && wy === echo.y) {
           if (assets.spriteEcho) {
-            ctx.globalAlpha = brightness * 0.7;
+            ctx.globalAlpha = brightness * 0.8;
             ctx.drawImage(assets.spriteEcho, sx + 4, sy + 4, TILE_SIZE - 8, TILE_SIZE - 8);
             ctx.globalAlpha = 1;
           } else {
-            ctx.fillStyle = `rgba(68, 136, 255, ${brightness * 0.6})`;
+            ctx.fillStyle = `rgba(0, 255, 255, ${brightness * 0.7})`;
             ctx.fillRect(sx + 8, sy + 8, TILE_SIZE - 16, TILE_SIZE - 16);
           }
+          // ECHO HP bar
+          if (echo.hp < echo.maxHp) {
+            const hpPct = echo.hp / echo.maxHp;
+            const barW = TILE_SIZE - 4;
+            ctx.fillStyle = '#033';
+            ctx.fillRect(sx + 2, sy - 4, barW, 3);
+            ctx.fillStyle = hpPct > 0.5 ? '#0ff' : hpPct > 0.25 ? '#0aa' : '#f44';
+            ctx.fillRect(sx + 2, sy - 4, barW * hpPct, 3);
+          }
+          // Behavior label
+          ctx.fillStyle = '#00ffff';
+          ctx.font = '6px "Press Start 2P"';
+          ctx.textAlign = 'center';
+          ctx.globalAlpha = 0.8;
+          ctx.fillText(echo.behavior.toUpperCase(), sx + TILE_SIZE / 2, sy - 6);
+          ctx.globalAlpha = 1;
+          ctx.textAlign = 'left';
         }
 
         // Player
         if (wx === p.x && wy === p.y) {
           if (assets.spriteTiamat) {
             ctx.globalAlpha = 1;
-            // Flip sprite when facing west
             ctx.save();
             if (p.dir === 3) {
               ctx.translate(sx + TILE_SIZE, sy);
@@ -576,7 +653,6 @@ function renderFrame(dt) {
             }
             ctx.restore();
 
-            // Subtle glow around player
             ctx.globalAlpha = 0.15 + playerGlow * 0.1;
             ctx.fillStyle = '#00dcff';
             ctx.fillRect(sx - 1, sy - 1, TILE_SIZE + 2, TILE_SIZE + 2);
@@ -602,8 +678,25 @@ function renderFrame(dt) {
     }
   }
 
-  // Fog overlay: darken edge of vision
-  // Already handled by brightness per-tile, no extra pass needed
+  // ─── Floor Narrative Overlay ───
+  if (narrativeDisplayTimer > 0) {
+    narrativeDisplayTimer--;
+    const alpha = Math.min(1, narrativeDisplayTimer / 30); // Fade out last 0.5s
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.85;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, CANVAS_H / 2 - 30, CANVAS_W, 60);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#ffdd00';
+    ctx.font = '12px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.fillText(narrativeText, CANVAS_W / 2, CANVAS_H / 2 - 6);
+    ctx.fillStyle = '#00dcff';
+    ctx.font = '7px "Press Start 2P"';
+    ctx.fillText(narrativeFlavor, CANVAS_W / 2, CANVAS_H / 2 + 14);
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
 }
 
 // ─── Input Handling ───
@@ -616,6 +709,15 @@ function initInput() {
       return;
     }
     if (e.ctrlKey || e.metaKey) return;
+
+    // Q key = use scroll
+    if (e.code === 'KeyQ') {
+      e.preventDefault();
+      const results = useScroll(gameState.player, gameState);
+      addLogMessages(results);
+      return;
+    }
+
     e.preventDefault();
     keysDown.add(e.code);
   });
@@ -698,7 +800,6 @@ async function init() {
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
 
-  // Pixelated rendering
   ctx.imageSmoothingEnabled = false;
 
   await loadAssets();
@@ -739,7 +840,9 @@ async function init() {
   lastTime = performance.now();
   requestAnimationFrame(gameLoop);
 
-  console.log('[LABYRINTH 2D] Initialized. Depth:', gameState.depth, 'Biome:', gameState.dungeon.biome.name);
+  console.log('[LABYRINTH 2D] Initialized. Depth:', gameState.depth,
+    'Biome:', gameState.dungeon.biome.name,
+    'Difficulty:', gameState.dungeon.difficulty.label);
 }
 
 // Boot

@@ -1,6 +1,6 @@
 // LABYRINTH 2D — Turn-based Bump Combat System
-// Walk into enemy to attack, enemy attacks back.
-// Damage = ATK - DEF + random(0-2)
+// Full DEF stat on all entities. Scroll and Elixir effects.
+// Damage = ATK + weapon_bonus - target_DEF + random(0-2), minimum 1
 
 function calculateDamage(attackerAtk, defenderDef) {
   const raw = attackerAtk - defenderDef + Math.floor(Math.random() * 3);
@@ -10,8 +10,8 @@ function calculateDamage(attackerAtk, defenderDef) {
 function playerAttackMonster(player, monster) {
   const results = [];
 
-  // Player attacks
-  const dmg = calculateDamage(player.totalAtk, 0); // Monsters have no DEF in original
+  // Player attacks — full formula with DEF
+  const dmg = calculateDamage(player.totalAtk, monster.def || 0);
   monster.hp -= dmg;
 
   if (monster.boss) {
@@ -35,7 +35,7 @@ function playerAttackMonster(player, monster) {
       results.push({ msg: `${monster.name} dropped ${bossGold} gold!`, type: 'pickup' });
     }
   } else {
-    // Monster attacks back
+    // Monster attacks back — monster ATK vs player DEF
     const mDmg = calculateDamage(monster.atk, player.totalDef);
     player.hp -= mDmg;
     results.push({ msg: `${monster.name} hits back for ${mDmg}!`, type: 'combat' });
@@ -49,10 +49,79 @@ function playerAttackMonster(player, monster) {
 }
 
 function handlePlayerDeath(player, gameState) {
-  // From labyrinth_state.py on_death()
   gameState.sessionStats.deaths++;
   player.hp = player.maxHp;
   player.gold = Math.floor(player.gold * 0.7);
-  // Depth regress handled by caller
   return [{ msg: 'Respawned. Lost 30% gold.', type: 'death' }];
+}
+
+// ─── Scroll Effects ───
+// Random effect: damage all enemies in room, reveal map, or teleport
+function useScroll(player, gameState) {
+  if (!player.scrolls || player.scrolls <= 0) {
+    return [{ msg: 'No scrolls to use!', type: 'combat' }];
+  }
+  player.scrolls--;
+  const results = [];
+
+  const roll = Math.floor(Math.random() * 3);
+  const dg = gameState.dungeon;
+
+  switch (roll) {
+    case 0: {
+      // BLAST SCROLL — damage all enemies in player's room
+      const room = dg.rooms.find(r =>
+        player.x >= r.x && player.x < r.x + r.w &&
+        player.y >= r.y && player.y < r.y + r.h
+      );
+      let hit = 0;
+      if (room) {
+        for (const m of dg.monsters) {
+          if (!m.alive) continue;
+          if (m.x >= room.x && m.x < room.x + room.w && m.y >= room.y && m.y < room.y + room.h) {
+            const scrollDmg = 10 + Math.floor(player.lvl * 2);
+            m.hp -= scrollDmg;
+            if (m.hp <= 0) {
+              m.alive = false;
+              playerGainXp(player, m.xp);
+              player.kills++;
+            }
+            hit++;
+          }
+        }
+      }
+      results.push({ msg: `BLAST SCROLL! Hit ${hit} enemies in room!`, type: 'level' });
+      break;
+    }
+    case 1: {
+      // REVEAL SCROLL — reveal entire map
+      if (gameState.visited) {
+        for (let y = 0; y < dg.height; y++) {
+          for (let x = 0; x < dg.width; x++) {
+            gameState.visited[y][x] = true;
+          }
+        }
+      }
+      results.push({ msg: 'REVEAL SCROLL! Map revealed!', type: 'level' });
+      break;
+    }
+    case 2: {
+      // TELEPORT SCROLL — teleport to random room
+      if (dg.rooms.length > 1) {
+        const targetRoom = dg.rooms[Math.floor(Math.random() * dg.rooms.length)];
+        player.x = targetRoom.cx;
+        player.y = targetRoom.cy;
+        results.push({ msg: 'TELEPORT SCROLL! Warped to another room!', type: 'level' });
+        // Reveal new area
+        if (typeof revealAround === 'function') {
+          revealAround(player.x, player.y);
+        }
+      } else {
+        results.push({ msg: 'TELEPORT SCROLL fizzled...', type: 'combat' });
+      }
+      break;
+    }
+  }
+
+  return results;
 }

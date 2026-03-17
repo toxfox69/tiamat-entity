@@ -1,15 +1,41 @@
 // LABYRINTH 2D — HUD Panel & Minimap & Combat Log
+// Shows DEF stat, floor narrative, difficulty tier, ECHO status
 
-const MAX_LOG_LINES = 4;
+const MAX_LOG_LINES = 5;
 let combatLogLines = [];
 
 function updateHUD(gameState) {
   const p = gameState.player;
-  const biome = gameState.dungeon ? gameState.dungeon.biome : null;
+  const dg = gameState.dungeon;
+  const biome = dg ? dg.biome : null;
 
   // Biome name
   const biomeEl = document.getElementById('hud-biome');
   if (biomeEl) biomeEl.textContent = biome ? biome.name : '---';
+
+  // Floor narrative
+  const narrativeEl = document.getElementById('hud-narrative');
+  if (narrativeEl && dg && dg.narrative) {
+    narrativeEl.textContent = dg.narrative.name;
+    narrativeEl.title = dg.narrative.flavor;
+  } else if (narrativeEl) {
+    narrativeEl.textContent = '';
+  }
+
+  // Difficulty tier
+  const diffEl = document.getElementById('hud-difficulty');
+  if (diffEl && dg && dg.difficulty) {
+    diffEl.textContent = dg.difficulty.label;
+    // Color code difficulty
+    switch (dg.difficultyKey) {
+      case 'generous':  diffEl.style.color = '#44ff88'; break;
+      case 'normal':    diffEl.style.color = '#ffdd00'; break;
+      case 'hostile':   diffEl.style.color = '#ff6644'; break;
+      case 'nightmare': diffEl.style.color = '#ff0040'; break;
+    }
+  } else if (diffEl) {
+    diffEl.textContent = 'NORMAL';
+  }
 
   // Depth
   const depthEl = document.getElementById('hud-depth');
@@ -39,11 +65,55 @@ function updateHUD(gameState) {
   const killsEl = document.getElementById('hud-kills');
   if (killsEl) killsEl.textContent = p.kills;
 
+  // Scrolls
+  const scrollEl = document.getElementById('hud-scrolls');
+  if (scrollEl) scrollEl.textContent = p.scrolls || 0;
+
   // Equipment
   const wpnEl = document.getElementById('hud-wpn');
   if (wpnEl) wpnEl.textContent = p.equipment.weapon ? `${p.equipment.weapon.name} +${p.equipment.weapon.atkBonus}` : '---';
   const armEl = document.getElementById('hud-arm');
   if (armEl) armEl.textContent = p.equipment.armor ? `${p.equipment.armor.name} +${p.equipment.armor.defBonus}` : '---';
+
+  // ECHO status
+  const echo = gameState.echo;
+  const echoSection = document.getElementById('echo-section');
+  if (echoSection && echo) {
+    echoSection.style.display = 'block';
+    const echoHpEl = document.getElementById('echo-hp');
+    const echoBehaviorEl = document.getElementById('echo-behavior');
+    const echoGoldEl = document.getElementById('echo-gold');
+    const echoLvlEl = document.getElementById('echo-lvl');
+    const echoHpBar = document.getElementById('echo-hp-bar');
+
+    if (echo.alive) {
+      if (echoHpEl) echoHpEl.textContent = `${echo.hp}/${echo.maxHp}`;
+      if (echoBehaviorEl) {
+        echoBehaviorEl.textContent = echo.behavior.toUpperCase();
+        // Color behavior
+        switch (echo.behavior) {
+          case 'hunt':        echoBehaviorEl.style.color = '#ff4444'; break;
+          case 'flee':        echoBehaviorEl.style.color = '#ffaa00'; break;
+          case 'pvp':         echoBehaviorEl.style.color = '#ff0040'; break;
+          case 'extract':
+          case 'extract_run': echoBehaviorEl.style.color = '#44ff88'; break;
+          case 'loot':        echoBehaviorEl.style.color = '#ffdd00'; break;
+          default:            echoBehaviorEl.style.color = '#00ffff'; break;
+        }
+      }
+      if (echoGoldEl) echoGoldEl.textContent = echo.gold;
+      if (echoLvlEl) echoLvlEl.textContent = echo.lvl;
+      if (echoHpBar) {
+        const echoPct = Math.max(0, echo.hp / echo.maxHp * 100);
+        echoHpBar.style.width = echoPct + '%';
+      }
+    } else {
+      if (echoHpEl) echoHpEl.textContent = 'DEAD';
+      if (echoBehaviorEl) { echoBehaviorEl.textContent = `RESPAWN ${echo.respawnTimer}`; echoBehaviorEl.style.color = '#666'; }
+      if (echoGoldEl) echoGoldEl.textContent = '0';
+      if (echoHpBar) echoHpBar.style.width = '0%';
+    }
+  }
 }
 
 function addLogMessage(msg, type) {
@@ -138,13 +208,14 @@ function drawMinimap(gameState) {
     ctx.fillRect(ox + dg.stairs.x * scale - 1, oy + dg.stairs.y * scale - 1, 4, 4);
   }
 
-  // Echo (blue dot)
-  if (gameState.echo && gameState.echo.alive) {
-    ctx.fillStyle = '#4488ff';
-    ctx.fillRect(ox + gameState.echo.x * scale, oy + gameState.echo.y * scale, 3, 3);
+  // ECHO (cyan dot)
+  const echo = gameState.echo;
+  if (echo && echo.alive) {
+    ctx.fillStyle = '#00ffff';
+    ctx.fillRect(ox + echo.x * scale - 1, oy + echo.y * scale - 1, 3, 3);
   }
 
-  // Player (cyan dot, always visible)
+  // Player (bright cyan dot, always visible)
   const p = gameState.player;
   ctx.fillStyle = '#00dcff';
   ctx.fillRect(ox + p.x * scale - 1, oy + p.y * scale - 1, 4, 4);
@@ -161,6 +232,8 @@ const TUTORIAL_TIPS = {
   COMBAT: { text: 'Walk into enemies to attack them', shown: false },
   PICKUP: { text: 'Walk over items to pick them up', shown: false },
   STAIRS: { text: 'Find the glowing stairs to descend deeper', shown: false },
+  SCROLL: { text: 'Press Q to use a Scroll (random powerful effect)', shown: false },
+  ECHO: { text: 'ECHO is your rival AI companion — it hunts, loots, and may turn hostile', shown: false },
   SAVE: { text: 'Press Ctrl+S to save your progress', shown: false },
 };
 
@@ -170,11 +243,9 @@ let tipTimeout = null;
 function initTutorial() {
   const stored = localStorage.getItem('lab2d_tutorial_done');
   if (stored === 'true') {
-    // Mark all shown
     for (const k in TUTORIAL_TIPS) TUTORIAL_TIPS[k].shown = true;
     return;
   }
-  // Show first tip after 1.5s
   setTimeout(() => showTip('MOVE'), 1500);
 }
 
@@ -200,7 +271,6 @@ function showTip(key) {
     }
     currentTip = null;
 
-    // Check if all done
     const allDone = Object.values(TUTORIAL_TIPS).every(t => t.shown);
     if (allDone) localStorage.setItem('lab2d_tutorial_done', 'true');
   }, 4500);
@@ -222,17 +292,24 @@ function checkTutorialTriggers(gameState) {
   if (!TUTORIAL_TIPS.STAIRS.shown && p.kills >= 1) {
     showTip('STAIRS');
   }
+  if (!TUTORIAL_TIPS.SCROLL.shown && (p.scrolls || 0) >= 1) {
+    showTip('SCROLL');
+  }
+  if (!TUTORIAL_TIPS.ECHO.shown && gameState.echo && gameState.echo.alive) {
+    const eDist = Math.abs(gameState.echo.x - p.x) + Math.abs(gameState.echo.y - p.y);
+    if (eDist <= 5) showTip('ECHO');
+  }
   if (!TUTORIAL_TIPS.SAVE.shown && gameState.depth >= 2) {
     setTimeout(() => showTip('SAVE'), 2000);
   }
 }
 
-// Save/Load system (localStorage only for web)
-const SAVE_KEY = 'labyrinth2d_save_v1';
+// Save/Load system (localStorage)
+const SAVE_KEY = 'labyrinth2d_save_v2';
 
 function saveGame(gameState) {
   const data = {
-    version: 1,
+    version: 2,
     timestamp: Date.now(),
     depth: gameState.depth,
     totalKills: gameState.totalKills,
@@ -248,13 +325,13 @@ function saveGame(gameState) {
       gold: gameState.player.gold,
       kills: gameState.player.kills,
       potions: gameState.player.potions,
+      scrolls: gameState.player.scrolls || 0,
       equipment: gameState.player.equipment,
     },
     sessionStats: gameState.sessionStats,
   };
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-    // Flash notification
     const notif = document.getElementById('save-notification');
     if (notif) {
       notif.style.opacity = '1';
@@ -268,7 +345,9 @@ function saveGame(gameState) {
 
 function loadGame() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    // Try v2 first, fall back to v1
+    let raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) raw = localStorage.getItem('labyrinth2d_save_v1');
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) {
@@ -289,6 +368,7 @@ function applySave(saveData, gameState) {
   gameState.player.gold = p.gold;
   gameState.player.kills = p.kills;
   gameState.player.potions = p.potions || 0;
+  gameState.player.scrolls = p.scrolls || 0;
   if (p.equipment) gameState.player.equipment = p.equipment;
   gameState.depth = saveData.depth || 1;
   gameState.totalKills = saveData.totalKills || 0;

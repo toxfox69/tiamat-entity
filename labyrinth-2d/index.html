@@ -120,6 +120,8 @@
     .log-line.level { color: #00ff41; }
     .log-line.descend { color: #00dcff; }
     .log-line.death { color: #ff0040; }
+    .log-line.echo { color: #00ffff; }
+    .echo-bar { background: #00ffff; box-shadow: 0 0 6px rgba(0, 255, 255, 0.5); }
     #loading-screen {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -234,11 +236,16 @@
       <div class="hud-section">
         <div class="hud-label">BIOME</div>
         <div class="hud-value" id="hud-biome">---</div>
+        <div class="hud-value" id="hud-narrative" style="font-size:6px;color:#ffaa00;margin-top:2px"></div>
       </div>
 
       <div class="hud-section">
-        <div class="hud-label">DEPTH</div>
-        <div class="hud-value" id="hud-depth">F1</div>
+        <div class="stat-row">
+          <span class="stat-key">DEPTH</span><span class="stat-val" id="hud-depth">F1</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">TIER</span><span class="stat-val" id="hud-difficulty" style="color:#ffdd00">NORMAL</span>
+        </div>
       </div>
 
       <div class="hud-section">
@@ -258,12 +265,22 @@
         <div class="stat-row"><span class="stat-key">DEF</span><span class="stat-val" id="hud-def">2</span></div>
         <div class="stat-row"><span class="stat-key">GOLD</span><span class="stat-val" id="hud-gold">0</span></div>
         <div class="stat-row"><span class="stat-key">KILLS</span><span class="stat-val" id="hud-kills">0</span></div>
+        <div class="stat-row"><span class="stat-key">SCRLS</span><span class="stat-val" id="hud-scrolls">0</span></div>
       </div>
 
       <div class="hud-section">
         <div class="hud-label">EQUIPMENT</div>
         <div class="stat-row"><span class="stat-key">WPN</span><span class="stat-val" id="hud-wpn">---</span></div>
         <div class="stat-row"><span class="stat-key">ARM</span><span class="stat-val" id="hud-arm">---</span></div>
+      </div>
+
+      <div class="hud-section" id="echo-section" style="display:none">
+        <div class="hud-label" style="color:#00ffff">ECHO</div>
+        <div class="hud-bar-bg"><div class="hud-bar-fill echo-bar" id="echo-hp-bar" style="width:100%"></div></div>
+        <div class="stat-row"><span class="stat-key">HP</span><span class="stat-val" id="echo-hp" style="color:#00ffff">40/40</span></div>
+        <div class="stat-row"><span class="stat-key">STATE</span><span class="stat-val" id="echo-behavior" style="color:#00ffff">EXPLORE</span></div>
+        <div class="stat-row"><span class="stat-key">LVL</span><span class="stat-val" id="echo-lvl" style="color:#00ffff">1</span></div>
+        <div class="stat-row"><span class="stat-key">GOLD</span><span class="stat-val" id="echo-gold" style="color:#00ffff">0</span></div>
       </div>
 
       <div class="hud-section">
