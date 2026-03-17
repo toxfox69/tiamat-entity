@@ -65,6 +65,7 @@ const keysDown = new Set();
 let moveThrottle = 0;
 const MOVE_RATE = 0.15;
 let lastMoveTime = 0;
+let lastManualInputTime = 0; // Track for autoplay idle detection
 
 // Canvas
 let canvas, ctx;
@@ -270,6 +271,11 @@ function generateNewFloor(preservePlayer) {
 
   // Biome + difficulty announcement
   addLogMessage(`Depth ${depth}: ${dg.biome.name} [${dg.difficulty.label}]`, 'descend');
+
+  // Reset autoplay floor tracking
+  if (typeof autoPlayOnNewFloor === 'function') {
+    autoPlayOnNewFloor();
+  }
 }
 
 // ─── Player Movement & Actions ───
@@ -710,6 +716,9 @@ function initInput() {
     }
     if (e.ctrlKey || e.metaKey) return;
 
+    // Track manual input time for autoplay idle detection
+    lastManualInputTime = performance.now();
+
     // Q key = use scroll
     if (e.code === 'KeyQ') {
       e.preventDefault();
@@ -835,6 +844,16 @@ async function init() {
       saveGame(gameState);
     }
   }, 60000);
+
+  // Initialize auto-play & stream mode
+  if (typeof initAutoPlay === 'function') {
+    initAutoPlay();
+  }
+
+  // Initialize TIAMAT state sync
+  if (typeof initStateSync === 'function') {
+    initStateSync();
+  }
 
   // Start game loop
   lastTime = performance.now();
