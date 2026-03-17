@@ -1,0 +1,103 @@
+{
+  "name": "labyrinth-tiamats-descent",
+  "version": "1.0.0",
+  "description": "LABYRINTH: TIAMAT'S DESCENT — A procedural 3D dungeon crawler powered by autonomous AI",
+  "main": "main.js",
+  "author": "ENERGENAI LLC",
+  "license": "MIT",
+  "homepage": "https://tiamat.live",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:linux": "electron-builder --linux",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --linux --win --mac",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "optionalDependencies": {
+    "greenworks": "^0.6.0"
+  },
+  "build": {
+    "appId": "live.tiamat.labyrinth",
+    "productName": "LABYRINTH - TIAMAT'S DESCENT",
+    "copyright": "Copyright 2026 ENERGENAI LLC",
+    "directories": {
+      "output": "build/dist",
+      "buildResources": "build/resources"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**/*",
+      "steam_appid.txt",
+      "!app/assets/kenney-rpg/**"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "app/assets/**/*.glb",
+      "app/assets/**/*.png",
+      "app/assets/**/*.jpg"
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "tar.gz",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "Game",
+      "icon": "build/resources/icon.png",
+      "synopsis": "Procedural 3D dungeon crawler with AI agents",
+      "description": "Descend into procedurally generated dungeons alongside TIAMAT and ECHO, autonomous AI agents. Fight monsters, collect loot, and extract before the dungeon shifts."
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/resources/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.games",
+      "icon": "build/resources/icon.icns",
+      "darkModeSupport": true
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "build/resources/icon.ico",
+      "uninstallerIcon": "build/resources/icon.ico",
+      "license": "LICENSE"
+    },
+    "extraResources": [
+      {
+        "from": "steam_appid.txt",
+        "to": "."
+      }
+    ]
+  }
+}

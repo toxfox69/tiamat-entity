@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://tiamat.live https://*.tiamat.live; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; media-src 'self' blob:;">
+<title>LABYRINTH: TIAMAT'S DESCENT</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Bundled font fallback — loads Google Fonts when online, degrades gracefully offline */
+  @font-face {
+    font-family: 'Press Start 2P';
+    src: local('Press Start 2P');
+    font-display: swap;
+  }
+
+  :root {
+    --green: #00ff41;
+    --dim: #00aa2a;
+    --dark: #005a15;
+    --bg: #0a0a0a;
+    --red: #ff0040;
+    --amber: #ffaa00;
+    --cyan: #00ffff;
+    --safe-top: 0px;
+    --safe-bottom: 0px;
+    --safe-left: 0px;
+    --safe-right: 0px;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: var(--green);
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    overflow: hidden;
+    position: relative;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: none;
+  }
+
+  /* Canvas fills viewport */
+  #labyrinth-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    image-rendering: auto;
+    display: block;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* CRT vignette */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ===== HUD OVERLAY ===== */
+  #hud-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 100;
+    font-size: clamp(9px, 1.5vw, 13px);
+  }
+
+  .hud-panel {
+    position: absolute;
+    padding: 6px 10px;
+    background: rgba(0, 5, 2, 0.7);
+    border: 1px solid rgba(0, 255, 65, 0.15);
+    backdrop-filter: blur(2px);
+  }
+
+  /* Top-left: Name, Level, HP, XP */
+  .hud-tl {
+    top: 8px; left: 8px;
+    min-width: min(220px, 30vw);
+  }
+  .hud-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(10px, 1.5vw, 14px);
+    color: var(--green);
+    text-shadow: 0 0 10px var(--green);
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+  .hud-level {
+    font-size: clamp(8px, 1.2vw, 11px);
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+  .hud-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 3px;
+  }
+  .hud-bar-label {
+    font-size: clamp(7px, 1vw, 10px);
+    color: #666;
+    width: 20px;
+  }
+  .hud-bar {
+    flex: 1;
+    height: clamp(5px, 1vh, 8px);
+    background: #111;
+    border: 1px solid #333;
+    overflow: hidden;
+  }
+  .hud-bar-fill {
+    height: 100%;
+    transition: width 0.3s;
+  }
+  .hud-hp { background: var(--green); }
+  .hud-xp { background: var(--cyan); }
+  .hud-bar-num {
+    font-size: clamp(7px, 1vw, 10px);
+    color: #888;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* Top-center: Biome, Depth, Extract */
+  .hud-tc {
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    min-width: min(200px, 30vw);
+  }
+  .hud-biome {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(8px, 1.3vw, 12px);
+    text-shadow: 0 0 8px currentColor;
+    letter-spacing: 2px;
+  }
+  .hud-depth {
+    font-size: clamp(8px, 1.2vw, 11px);
+    color: var(--dim);
+    margin-top: 2px;
+  }
+  .hud-extract {
+    font-size: clamp(10px, 1.5vw, 14px);
+    font-weight: bold;
+    margin-top: 4px;
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  /* Top-right: Cycle, Kills, Streak */
+  .hud-tr {
+    top: 8px; right: 160px;
+    text-align: right;
+    font-size: clamp(8px, 1.2vw, 11px);
+    color: var(--dim);
+  }
+  .hud-streak {
+    font-size: clamp(9px, 1.4vw, 13px);
+    font-weight: bold;
+    text-shadow: 0 0 8px currentColor;
+  }
+
+  /* Bottom-left: Game log */
+  .hud-bl {
+    bottom: 8px; left: 8px;
+    min-width: min(350px, 45vw);
+    max-width: min(450px, 55vw);
+  }
+  .hud-log {
+    font-size: clamp(8px, 1.2vw, 11px);
+    line-height: 1.4;
+  }
+  .hud-log div {
+    text-shadow: 0 0 4px currentColor;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Bottom-center: Stash, Equipment */
+  .hud-bc {
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+  .hud-stash {
+    font-size: clamp(9px, 1.3vw, 12px);
+    margin-bottom: 4px;
+  }
+  .hud-stash-label {
+    color: #666;
+    font-size: clamp(7px, 1vw, 9px);
+    margin-right: 4px;
+  }
+  .hud-stash-sep {
+    color: #333;
+    margin: 0 6px;
+  }
+  .hud-equip {
+    font-size: clamp(7px, 1vw, 10px);
+    color: #555;
+  }
+
+  /* Bottom-right: Agent status */
+  .hud-br {
+    bottom: 8px; right: 8px;
+    font-size: clamp(8px, 1.2vw, 11px);
+  }
+  .hud-agent {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+    color: #777;
+  }
+  .hud-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  /* Spectator buttons */
+  .hud-spec-btn {
+    padding: 2px 4px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s, background 0.2s;
+    border-radius: 2px;
+  }
+  .hud-spec-btn:hover {
+    border-color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.05);
+  }
+  .hud-spec-active {
+    border-color: rgba(255,255,255,0.3) !important;
+    background: rgba(255,255,255,0.08) !important;
+  }
+  .hud-spec-active::after {
+    content: ' <<';
+    font-size: 0.7em;
+    opacity: 0.5;
+  }
+
+  /* Minimap */
+  #hud-minimap {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: min(150px, 18vw);
+    height: min(100px, 15vh);
+    border: 1px solid rgba(0, 255, 65, 0.2);
+    background: rgba(0, 0, 0, 0.8);
+    image-rendering: pixelated;
+  }
+
+  /* ===== DAMAGE SPLATS ===== */
+  .dmg-splat {
+    position: absolute;
+    font-family: 'Press Start 2P', monospace;
+    text-shadow: 0 0 6px currentColor, 2px 2px 0 rgba(0,0,0,0.9), -1px -1px 0 rgba(0,0,0,0.5);
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    will-change: transform, opacity;
+    letter-spacing: 1px;
+  }
+  .dmg-hit { font-size: clamp(10px, 2vw, 16px); }
+  .dmg-crit { font-size: clamp(14px, 3vw, 24px); text-shadow: 0 0 12px currentColor, 0 0 24px currentColor, 2px 2px 0 rgba(0,0,0,0.9); }
+  .dmg-heal { font-size: clamp(8px, 1.5vw, 13px); }
+  .dmg-xp { font-size: clamp(8px, 1.3vw, 12px); }
+
+  /* ===== AGENT TELEMETRY ===== */
+  .telem-panel {
+    position: absolute;
+    top: 120px;
+    right: 8px;
+    width: min(200px, 24vw);
+    background: rgba(0, 5, 2, 0.85);
+    border: 1px solid rgba(0, 255, 65, 0.2);
+    backdrop-filter: blur(3px);
+    font-size: clamp(7px, 1vw, 10px);
+    z-index: 101;
+    padding: 6px 8px;
+  }
+  .telem-header {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(6px, 0.9vw, 9px);
+    color: var(--green);
+    text-shadow: 0 0 6px var(--green);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+  }
+  .telem-section { margin-bottom: 4px; }
+  .telem-agent-name {
+    font-weight: bold;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .telem-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .telem-role {
+    color: #555;
+    font-size: 0.8em;
+    margin-left: auto;
+  }
+  .telem-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 1px;
+    flex-wrap: wrap;
+  }
+  .telem-label {
+    color: #555;
+    font-size: 0.85em;
+    min-width: 20px;
+  }
+  .telem-val {
+    color: var(--green);
+    font-weight: bold;
+  }
+  .telem-history {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(5px, 0.7vw, 7px);
+    margin-top: 2px;
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .telem-panel { display: none !important; }
+  }
+
+  /* XR Buttons */
+  .xr-btn {
+    position: absolute;
+    right: 12px;
+    z-index: 200;
+    pointer-events: auto;
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(7px, 1vw, 10px);
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    display: none;
+  }
+  #btn-vr {
+    bottom: 100px;
+    background: rgba(0, 5, 2, 0.8);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    text-shadow: 0 0 6px var(--cyan);
+  }
+  #btn-vr:hover, #btn-vr:active {
+    background: rgba(0, 255, 255, 0.15);
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+  }
+  #btn-vr.active {
+    background: rgba(0, 255, 255, 0.25);
+    box-shadow: 0 0 16px rgba(0, 255, 255, 0.5);
+  }
+  #btn-ar {
+    bottom: 60px;
+    background: rgba(0, 5, 2, 0.8);
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    text-shadow: 0 0 6px var(--amber);
+  }
+  #btn-ar:hover, #btn-ar:active {
+    background: rgba(255, 170, 0, 0.15);
+    box-shadow: 0 0 12px rgba(255, 170, 0, 0.3);
+  }
+  #btn-ar.active {
+    background: rgba(255, 170, 0, 0.25);
+    box-shadow: 0 0 16px rgba(255, 170, 0, 0.5);
+  }
+
+  /* Desktop-specific: version badge */
+  #version-badge {
+    position: fixed;
+    bottom: 4px;
+    right: 4px;
+    font-size: 9px;
+    color: #222;
+    z-index: 1001;
+    pointer-events: none;
+    font-family: monospace;
+  }
+
+  /* Loading screen */
+  #loading-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s;
+  }
+  #loading-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+  #loading-title {
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 20px;
+    color: var(--green);
+    text-shadow: 0 0 20px var(--green);
+    letter-spacing: 4px;
+    margin-bottom: 30px;
+  }
+  #loading-bar-outer {
+    width: 300px;
+    height: 4px;
+    background: #111;
+    border: 1px solid #333;
+  }
+  #loading-bar-inner {
+    width: 0%;
+    height: 100%;
+    background: var(--green);
+    transition: width 0.3s;
+  }
+  #loading-status {
+    margin-top: 12px;
+    font-size: 10px;
+    color: var(--dim);
+    font-family: monospace;
+  }
+</style>
+<!-- Load Google Fonts when online, fallback to system monospace offline -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap" onerror="">
+</head>
+<body>
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div id="loading-title">LABYRINTH</div>
+    <div id="loading-bar-outer"><div id="loading-bar-inner"></div></div>
+    <div id="loading-status">INITIALIZING...</div>
+  </div>
+
+  <canvas id="labyrinth-canvas"></canvas>
+  <div id="hud-overlay"></div>
+  <button id="btn-vr" class="xr-btn">ENTER VR</button>
+  <button id="btn-ar" class="xr-btn">ENTER AR</button>
+  <div id="version-badge">v1.0.0</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./lib/three.module.min.js",
+      "three/GLTFLoader": "./lib/GLTFLoader.js"
+    }
+  }
+  </script>
+  <script type="module">
+    import { init, getRenderer, getScene, getCamera, setXRActive, cycleSpectateTarget } from './js/engine.js';
+
+    // Loading progress simulation
+    const loadingBar = document.getElementById('loading-bar-inner');
+    const loadingStatus = document.getElementById('loading-status');
+    const loadingScreen = document.getElementById('loading-screen');
+
+    let loadProgress = 0;
+    function setLoadProgress(pct, msg) {
+      loadProgress = pct;
+      if (loadingBar) loadingBar.style.width = pct + '%';
+      if (loadingStatus) loadingStatus.textContent = msg;
+    }
+
+    setLoadProgress(10, 'LOADING ENGINE...');
+
+    // Detect online status for data-driver.js
+    const isOnline = navigator.onLine;
+    if (!isOnline) {
+      console.log('[LABYRINTH] Offline mode — dungeon runs locally');
+    }
+
+    // Wait for fonts then start
+    const fontPromise = document.fonts.ready.catch(() => {
+      console.log('[LABYRINTH] Font loading failed — using fallbacks');
+    });
+
+    setLoadProgress(30, 'LOADING FONTS...');
+
+    fontPromise.then(() => {
+      setLoadProgress(50, 'GENERATING DUNGEON...');
+
+      try {
+        init();
+        setLoadProgress(90, 'ENTERING THE LABYRINTH...');
+
+        // Fade out loading screen after a short delay
+        setTimeout(() => {
+          setLoadProgress(100, 'READY');
+          setTimeout(() => {
+            if (loadingScreen) {
+              loadingScreen.classList.add('fade-out');
+              setTimeout(() => loadingScreen.remove(), 600);
+            }
+          }, 300);
+        }, 500);
+
+      } catch (e) {
+        console.error('INIT FAILED:', e);
+        setLoadProgress(0, 'ERROR: ' + e.message);
+        document.title = 'INIT ERROR: ' + e.message;
+      }
+
+      initXR();
+
+      // Tab key to cycle spectate target
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') { e.preventDefault(); cycleSpectateTarget(); }
+      });
+    });
+
+    // WebXR (VR/AR support — works in desktop Electron with SteamVR)
+    let xrSession = null;
+
+    async function initXR() {
+      const btnVR = document.getElementById('btn-vr');
+      const btnAR = document.getElementById('btn-ar');
+      if (!navigator.xr) return;
+
+      const vrOk = await navigator.xr.isSessionSupported('immersive-vr').catch(() => false);
+      const arOk = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
+
+      if (vrOk) btnVR.style.display = 'block';
+      if (arOk) btnAR.style.display = 'block';
+
+      async function startXR(mode) {
+        if (xrSession) {
+          await xrSession.end();
+          return;
+        }
+
+        const renderer = getRenderer();
+        if (!renderer) return;
+
+        try {
+          renderer.xr.enabled = true;
+          const sessionType = mode === 'ar' ? 'immersive-ar' : 'immersive-vr';
+          const opts = { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] };
+          if (mode === 'ar') {
+            opts.optionalFeatures.push('hit-test', 'dom-overlay');
+            opts.domOverlay = { root: document.getElementById('hud-overlay') };
+          }
+
+          xrSession = await navigator.xr.requestSession(sessionType, opts);
+          await renderer.xr.setSession(xrSession);
+          setXRActive(true, mode);
+
+          if (mode === 'vr') {
+            btnVR.textContent = 'EXIT VR';
+            btnVR.classList.add('active');
+            btnAR.style.display = 'none';
+          } else {
+            btnAR.textContent = 'EXIT AR';
+            btnAR.classList.add('active');
+            btnVR.style.display = 'none';
+          }
+
+          xrSession.addEventListener('end', () => {
+            xrSession = null;
+            renderer.xr.enabled = false;
+            setXRActive(false);
+            btnVR.textContent = 'ENTER VR';
+            btnVR.classList.remove('active');
+            btnAR.textContent = 'ENTER AR';
+            btnAR.classList.remove('active');
+            if (vrOk) btnVR.style.display = 'block';
+            if (arOk) btnAR.style.display = 'block';
+          });
+        } catch (e) {
+          console.warn('XR session failed:', e);
+          renderer.xr.enabled = false;
+          const btn = mode === 'vr' ? btnVR : btnAR;
+          btn.textContent = 'FAILED';
+          setTimeout(() => { btn.textContent = mode === 'vr' ? 'ENTER VR' : 'ENTER AR'; }, 2000);
+        }
+      }
+
+      btnVR.addEventListener('click', () => startXR('vr'));
+      btnAR.addEventListener('click', () => startXR('ar'));
+    }
+  </script>
+</body>
+</html>
