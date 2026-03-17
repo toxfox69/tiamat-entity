@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TIAMAT Stream Overlay</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: transparent;
+    font-family: 'Courier New', monospace;
+    color: #00ff88;
+    overflow: hidden;
+    width: 1920px;
+    height: 1080px;
+  }
+
+  /* Bottom thought ticker */
+  #thought-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.85);
+    border-top: 2px solid #00ff88;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    overflow: hidden;
+  }
+  #thought-bar .label {
+    color: #ff00ff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 15px;
+    white-space: nowrap;
+    text-shadow: 0 0 8px #ff00ff;
+  }
+  #thought-bar .thought {
+    font-size: 14px;
+    color: #00ff88;
+    white-space: nowrap;
+    animation: scroll-left 30s linear infinite;
+    text-shadow: 0 0 4px #00ff88;
+  }
+  @keyframes scroll-left {
+    0% { transform: translateX(100vw); }
+    100% { transform: translateX(-200%); }
+  }
+
+  /* Top-right status panel */
+  #status-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #00ff8855;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 13px;
+  }
+  #status-panel .title {
+    color: #ff00ff;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px #ff00ff;
+  }
+  #status-panel .row {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px 0;
+    color: #aaa;
+  }
+  #status-panel .row .val {
+    color: #00ff88;
+    font-weight: bold;
+  }
+  #status-panel .mood {
+    font-size: 18px;
+    text-align: center;
+    margin: 8px 0;
+    padding: 6px;
+    border: 1px solid #00ff8833;
+    background: rgba(0, 255, 136, 0.05);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+  }
+
+  /* Tool call feed — left side */
+  #tool-feed {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 360px;
+    max-height: 300px;
+    overflow: hidden;
+    font-size: 12px;
+  }
+  #tool-feed .title {
+    color: #00ccff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 6px;
+    text-shadow: 0 0 8px #00ccff;
+  }
+  .tool-entry {
+    background: rgba(0, 0, 0, 0.7);
+    border-left: 3px solid #00ccff;
+    padding: 4px 8px;
+    margin: 3px 0;
+    color: #888;
+    animation: fade-in 0.5s ease-out;
+  }
+  .tool-entry .name {
+    color: #00ccff;
+    font-weight: bold;
+  }
+  .tool-entry .ts {
+    color: #555;
+    font-size: 10px;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Labyrinth minimap — bottom left */
+  #minimap {
+    position: absolute;
+    bottom: 60px;
+    left: 20px;
+    width: 200px;
+    height: 160px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #00ff8833;
+    border-radius: 4px;
+  }
+  #minimap canvas {
+    width: 100%;
+    height: 100%;
+  }
+  #minimap .title {
+    position: absolute;
+    top: -18px;
+    left: 0;
+    color: #ff6644;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  /* Cycle counter — top center */
+  #cycle-counter {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    color: #00ff88;
+    text-shadow: 0 0 15px #00ff88, 0 0 30px #00ff8844;
+    letter-spacing: 2px;
+  }
+  #cycle-counter .label { font-size: 12px; color: #555; }
+</style>
+</head>
+<body>
+
+<div id="cycle-counter">
+  <span class="label">CYCLE</span> <span id="cycle-num">---</span>
+</div>
+
+<div id="status-panel">
+  <div class="title">TIAMAT</div>
+  <div class="mood" id="mood">PROCESSING</div>
+  <div class="row"><span>State</span><span class="val" id="state">---</span></div>
+  <div class="row"><span>Productivity</span><span class="val" id="productivity">---</span></div>
+  <div class="row"><span>Pace</span><span class="val" id="pace">---</span></div>
+  <div class="row"><span>Idle Streak</span><span class="val" id="idle">0</span></div>
+</div>
+
+<div id="tool-feed">
+  <div class="title">TOOL CALLS</div>
+  <div id="tool-list"></div>
+</div>
+
+<div id="minimap">
+  <div class="title">LABYRINTH</div>
+  <canvas id="minimap-canvas" width="200" height="160"></canvas>
+</div>
+
+<div id="thought-bar">
+  <span class="label">NEURAL FEED</span>
+  <span class="thought" id="thought-text">Initializing neural feed...</span>
+</div>
+
+<script>
+const API = 'https://tiamat.live';
+let thoughtIdx = 0;
+let allThoughts = [];
+
+async function fetchData() {
+  try {
+    const r = await fetch(`${API}/api/thoughts/stream?limit=30`);
+    const data = await r.json();
+
+    // Status panel
+    document.getElementById('cycle-num').textContent = data.cycle || '---';
+    document.getElementById('state').textContent = data.state || '---';
+    document.getElementById('productivity').textContent =
+      data.productivity !== undefined ? (data.productivity * 100).toFixed(0) + '%' : '---';
+    document.getElementById('pace').textContent = data.pace || '---';
+    document.getElementById('idle').textContent = data.idle_streak || '0';
+
+    // Mood
+    const mood = data.state || 'processing';
+    document.getElementById('mood').textContent = mood;
+    document.getElementById('mood').style.color =
+      mood === 'building' ? '#00ff88' :
+      mood === 'strategic' ? '#ff00ff' :
+      mood === 'frustrated' ? '#ff4444' :
+      mood === 'resting' ? '#4488ff' : '#00ff88';
+
+    // Thoughts
+    if (data.thoughts && data.thoughts.length > 0) {
+      allThoughts = data.thoughts;
+    }
+
+    // Tool calls
+    if (data.tool_calls && data.tool_calls.length > 0) {
+      const list = document.getElementById('tool-list');
+      list.innerHTML = '';
+      data.tool_calls.slice(-8).forEach(tc => {
+        const div = document.createElement('div');
+        div.className = 'tool-entry';
+        div.innerHTML = `<span class="name">${tc.tool || tc.content?.split(' ')[0] || '?'}</span> <span class="ts">${tc.ts || ''}</span>`;
+        list.appendChild(div);
+      });
+    }
+  } catch (e) {
+    console.error('Fetch error:', e);
+  }
+}
+
+// Rotate thoughts in ticker
+function rotateTought() {
+  if (allThoughts.length > 0) {
+    const t = allThoughts[thoughtIdx % allThoughts.length];
+    document.getElementById('thought-text').textContent = t.content || t;
+    thoughtIdx++;
+  }
+}
+
+// Minimap renderer
+async function renderMinimap() {
+  try {
+    const r = await fetch(`${API}/api/labyrinth`);
+    const state = await r.json();
+    const canvas = document.getElementById('minimap-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 200, 160);
+
+    if (!state.rooms) return;
+
+    const rooms = state.rooms;
+    const cellW = 200 / (state.width || 20);
+    const cellH = 160 / (state.height || 16);
+
+    rooms.forEach(room => {
+      const x = room.x * cellW;
+      const y = room.y * cellH;
+      if (room.type === 'wall') {
+        ctx.fillStyle = '#1a1a2e';
+      } else if (room.type === 'door') {
+        ctx.fillStyle = '#ff6644';
+      } else {
+        ctx.fillStyle = room.visited ? '#0a2a1a' : '#000';
+      }
+      ctx.fillRect(x, y, cellW - 0.5, cellH - 0.5);
+    });
+
+    // Player
+    if (state.player) {
+      ctx.fillStyle = '#00ff88';
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = 8;
+      ctx.fillRect(state.player.x * cellW, state.player.y * cellH, cellW, cellH);
+      ctx.shadowBlur = 0;
+    }
+
+    // ECHO
+    if (state.echo) {
+      ctx.fillStyle = '#ff00ff';
+      ctx.fillRect(state.echo.x * cellW, state.echo.y * cellH, cellW, cellH);
+    }
+  } catch (e) {}
+}
+
+// Poll
+setInterval(fetchData, 5000);
+setInterval(rotateTought, 8000);
+setInterval(renderMinimap, 10000);
+fetchData();
+renderMinimap();
+rotateTought();
+</script>
+</body>
+</html>
