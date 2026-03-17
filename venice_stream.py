@@ -87,10 +87,22 @@ bg_img = load_image("/tmp/dragon/venice_concept.png", (W, H))
 _lab_cache = {"data": None, "mtime": 0, "last_check": 0}
 LAB_STATE_PATH = Path("/tmp/dragon/labyrinth_state.json")
 # Demo window constants
-DEMO_W, DEMO_H = 320, 240
-DEMO_X, DEMO_Y = 610, 120
-TILE_SZ = 26  # each tile pixel size
-VIEW_COLS, VIEW_ROWS = 12, 8  # tile viewport size
+DEMO_W, DEMO_H = 346, 290
+DEMO_X, DEMO_Y = 600, 100
+TILE_SZ = 24  # each tile pixel size (24px fits 14x9 in viewport)
+VIEW_COLS, VIEW_ROWS = 14, 9  # tile viewport size
+
+# === Persistent state across frames ===
+_lab_visited_rooms = set()       # set of (room_x, room_y) tuples for fog of war
+_lab_visited_depth = -1          # reset visited when depth changes
+_lab_camera_x = 0.0             # smooth camera position (float)
+_lab_camera_y = 0.0
+_lab_camera_init = False         # whether camera has been initialized
+_lab_last_depth = -1             # for floor transition detection
+_lab_transition_frames = 0       # countdown for "DESCENDING..." overlay
+_lab_death_frames = 0            # countdown for death flash
+_lab_last_hp = -1                # track HP for death detection
+_lab_last_combat_log = ""        # for combat log change detection
 
 # === LABYRINTH SPRITE TILES ===
 import numpy as np
@@ -135,6 +147,8 @@ _tiamat_tile = _load_tile(f"{_SPRITE_DIR}/sprite-tiamat.png")
 _tiamat_tile_flip = _tiamat_tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if _tiamat_tile else None
 _monster_tiles = _crop_sheet(f"{_SPRITE_DIR}/sprite-monsters.png", 4)
 _item_tiles = _crop_sheet(f"{_SPRITE_DIR}/sprite-items.png", 4)
+_echo_tile = _load_tile(f"{_SPRITE_DIR}/sprite-echo.png")
+_echo_tile_flip = _echo_tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if _echo_tile else None
 
 # Cache of tinted wall/floor tiles keyed by (wall_color, floor_color)
 _tinted_cache = {}
@@ -157,7 +171,7 @@ def _brighten_tile(tile_img, factor):
 
 _sprites_ok = all([_base_wall_tile, _base_floor_tile, _tiamat_tile, len(_monster_tiles) > 0, len(_item_tiles) > 0])
 if _sprites_ok:
-    log.info(f"Labyrinth sprites loaded: wall, floor, door, tiamat, {len(_monster_tiles)} monsters, {len(_item_tiles)} items")
+    log.info(f"Labyrinth sprites loaded: wall, floor, door, tiamat, echo={'yes' if _echo_tile else 'no'}, {len(_monster_tiles)} monsters, {len(_item_tiles)} items")
 else:
     log.warning("Some labyrinth sprites failed to load — falling back to rectangles")
 
@@ -342,8 +356,115 @@ def _hex_to_rgb(h, fallback=(80, 80, 80)):
         return fallback
 
 
+def _item_sprite_index(item):
+    """Map item type to sprite sheet frame: potion=0, gold=1, scroll=2, equipment=3."""
+    t = (item.get("type") or item.get("name", "")).lower()
+    if "potion" in t or "elixir" in t or "food" in t or "meat" in t:
+        return 0
+    elif "gold" in t:
+        return 1
+    elif "scroll" in t:
+        return 2
+    else:  # attack, defense, equipment, unknown
+        return 3
+
+
+def _monster_sprite_index(monster):
+    """Map monster tier to sprite frame: weak=0, mid=1, strong=2, boss=3."""
+    if monster.get("boss"):
+        return 3
+    name = (monster.get("name") or "").lower()
+    # Boss-tier names
+    if any(b in name for b in ["dragon", "demon", "hydra", "emperor", "lord", "titan"]):
+        return 3
+    # Strong tier (high atk/hp monsters)
+    atk = monster.get("atk", 0)
+    if atk >= 14:
+        return 2
+    elif atk >= 8:
+        return 1
+    return 0
+
+
+def _find_room_for_tile(rooms, wx, wy):
+    """Return room dict if (wx, wy) is inside any room, else None."""
+    for r in rooms:
+        if r["x"] <= wx < r["x"] + r["w"] and r["y"] <= wy < r["y"] + r["h"]:
+            return r
+    return None
+
+
+def _get_visible_tiles(lab, rooms, tiles, map_w, map_h, px, py):
+    """Build a set of (x,y) tiles that should be visible (fog of war).
+
+    Visible = current room + corridors connected to visited rooms + all visited rooms.
+    """
+    global _lab_visited_rooms, _lab_visited_depth
+    depth = lab.get("depth", 1)
+
+    # Reset visited set on floor change
+    if depth != _lab_visited_depth:
+        _lab_visited_rooms = set()
+        _lab_visited_depth = depth
+
+    # Mark current room as visited
+    cur_room = _find_room_for_tile(rooms, px, py)
+    if cur_room:
+        _lab_visited_rooms.add((cur_room["x"], cur_room["y"]))
+
+    visible = set()
+    for r in rooms:
+        if (r["x"], r["y"]) in _lab_visited_rooms:
+            # All tiles in this visited room are visible
+            for yy in range(r["y"], min(r["y"] + r["h"], map_h)):
+                for xx in range(r["x"], min(r["x"] + r["w"], map_w)):
+                    visible.add((xx, yy))
+
+    # Corridors: make all corridor tiles near visited rooms visible
+    for yy in range(map_h):
+        for xx in range(map_w):
+            if tiles[yy][xx] == 2:  # corridor
+                # Check if adjacent to any visible tile
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1), (0, 0)]:
+                    nx, ny = xx + dx, yy + dy
+                    if (nx, ny) in visible:
+                        visible.add((xx, yy))
+                        break
+
+    # Also show walls adjacent to visible floor tiles (for context)
+    wall_border_set = set()
+    for (vx, vy) in visible:
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                nx, ny = vx + dx, vy + dy
+                if 0 <= nx < map_w and 0 <= ny < map_h and tiles[ny][nx] == 0:
+                    wall_border_set.add((nx, ny))
+    visible |= wall_border_set
+
+    # Always show player's immediate area (2-tile radius)
+    for dx in range(-2, 3):
+        for dy in range(-2, 3):
+            nx, ny = px + dx, py + dy
+            if 0 <= nx < map_w and 0 <= ny < map_h:
+                visible.add((nx, ny))
+
+    return visible
+
+
+# Floor narrative names (from dungeon.js)
+_FLOOR_NARRATIVES = [
+    "THE SOURCE FORGE", "THE WATCHTOWER", "THE DIPLOMATIC HALLS",
+    "THE CORRUPTION ZONE", "THE ARCHIVE DEPTHS", "THE SIGNAL TOWER",
+    "THE WAR FRONT", "THE DREAM HALLS", "THE TREASURY", "THE DATA MINES",
+]
+
+
 def render_labyrinth_demo(img, frame_count):
-    """Render a 320x240 Game Boy-style LABYRINTH live demo window."""
+    """Render the LABYRINTH Game Boy PIP with fog of war, ECHO, smooth camera, and full HUD."""
+    global _lab_camera_x, _lab_camera_y, _lab_camera_init
+    global _lab_last_depth, _lab_transition_frames
+    global _lab_death_frames, _lab_last_hp, _lab_last_combat_log
+
     lab = _get_lab_data()
 
     # Create panel image (RGBA for compositing)
@@ -365,33 +486,66 @@ def render_labyrinth_demo(img, frame_count):
         img.paste(panel, (DEMO_X, DEMO_Y), panel)
         return
 
-    # Title bar with dot and biome
+    # === Extract state ===
     biome_name = lab.get("biome_name", lab.get("biome_obj", {}).get("name", "???"))
     floor_num = lab.get("depth", 1)
-    dot_pulse = int(200 + math.sin(frame_count * 0.15) * 55)
-    pd.ellipse([8, 5, 14, 11], fill=(0, dot_pulse, 100))
-    pd.text((18, 3), f"LABYRINTH — LIVE  F{floor_num} {biome_name}", font=F_XS, fill=GOLD)
-
-    # Get biome colors
     biome_obj = lab.get("biome_obj", {})
     wall_color = _hex_to_rgb(biome_obj.get("wall_color", "#444444"))
     floor_color = _hex_to_rgb(biome_obj.get("floor_color", "#1a1a1a"))
     wall_border = tuple(max(0, c - 30) for c in wall_color)
     floor_grid = tuple(min(255, c + 12) for c in floor_color)
+    player = lab.get("player", {"x": 0, "y": 0})
+    px, py = player.get("x", 0), player.get("y", 0)
+    p_hp = player.get("hp", 0)
+    p_max = max(player.get("max_hp", 1), 1)
+
+    # === Floor transition detection ===
+    if _lab_last_depth != -1 and floor_num != _lab_last_depth:
+        _lab_transition_frames = 20
+    _lab_last_depth = floor_num
+
+    # === Death flash detection ===
+    if _lab_last_hp > 0 and p_hp <= 0:
+        _lab_death_frames = 12
+    _lab_last_hp = p_hp
+
+    # Decrement transition/death counters
+    if _lab_transition_frames > 0:
+        _lab_transition_frames -= 1
+    if _lab_death_frames > 0:
+        _lab_death_frames -= 1
+
+    # Title bar with dot and biome
+    dot_pulse = int(200 + math.sin(frame_count * 0.15) * 55)
+    pd.ellipse([8, 5, 14, 11], fill=(0, dot_pulse, 100))
+    pd.text((18, 3), "LABYRINTH — LIVE", font=F_XS, fill=GOLD)
 
     # Build tile map
     tiles, map_w, map_h = _rebuild_tiles(lab)
+    rooms = lab.get("rooms", [])
 
-    # Player position — center viewport on player
-    player = lab.get("player", {"x": 0, "y": 0})
-    px, py = player.get("x", 0), player.get("y", 0)
+    # === Smooth camera (lerp toward player) ===
+    target_cx = max(0, min(px - VIEW_COLS // 2, map_w - VIEW_COLS))
+    target_cy = max(0, min(py - VIEW_ROWS // 2, map_h - VIEW_ROWS))
+    if not _lab_camera_init:
+        _lab_camera_x = float(target_cx)
+        _lab_camera_y = float(target_cy)
+        _lab_camera_init = True
+    else:
+        _lab_camera_x += (target_cx - _lab_camera_x) * 0.15
+        _lab_camera_y += (target_cy - _lab_camera_y) * 0.15
 
-    # Viewport origin (top-left tile in view)
-    vx0 = max(0, min(px - VIEW_COLS // 2, map_w - VIEW_COLS))
-    vy0 = max(0, min(py - VIEW_ROWS // 2, map_h - VIEW_ROWS))
+    vx0 = int(round(_lab_camera_x))
+    vy0 = int(round(_lab_camera_y))
+    # Clamp to bounds
+    vx0 = max(0, min(vx0, max(0, map_w - VIEW_COLS)))
+    vy0 = max(0, min(vy0, max(0, map_h - VIEW_ROWS)))
 
     # Tile area starts below title bar
     tile_ox, tile_oy = 4, 18
+
+    # === Fog of war — compute visible tiles ===
+    visible_set = _get_visible_tiles(lab, rooms, tiles, map_w, map_h, px, py)
 
     # Collect entity positions for quick lookup
     monster_set = {}
@@ -405,20 +559,40 @@ def render_labyrinth_demo(img, frame_count):
     stairs = lab.get("stairs", {})
     stairs_pos = (stairs.get("x", -1), stairs.get("y", -1))
 
+    # ECHO companion data
+    echo_data = lab.get("echo") or lab.get("companion") or lab.get("ECHO")
+    echo_pos = None
+    echo_behavior = ""
+    if echo_data and isinstance(echo_data, dict):
+        echo_pos = (echo_data.get("x", -1), echo_data.get("y", -1))
+        echo_behavior = (echo_data.get("behavior") or echo_data.get("state") or "").upper()
+        if echo_pos == (-1, -1):
+            echo_pos = None
+
     # Animation values
-    enemy_pulse = 0.7 + math.sin(frame_count * 0.21) * 0.3  # 0.4-1.0
-    player_glow = int(180 + math.sin(frame_count * 0.18) * 60)  # 120-240
-    # Direction indicator offsets (N=0, E=1, S=2, W=3)
-    dir_offsets = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+    enemy_pulse = 0.7 + math.sin(frame_count * 0.21) * 0.3
+    player_glow = int(180 + math.sin(frame_count * 0.18) * 60)
+    stairs_glow_val = int(160 + math.sin(frame_count * 0.12) * 95)  # pulsing white 65-255
     player_dir = player.get("dir", 0)
+    dir_offsets = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+    # Count alive monsters / total for stairs brightness
+    alive_monsters = sum(1 for m in lab.get("monsters", []) if m.get("alive", True))
+    total_monsters = max(len(lab.get("monsters", [])), 1)
+    clear_ratio = 1.0 - (alive_monsters / total_monsters)  # 0=none killed, 1=all killed
+    stairs_brightness = stairs_glow_val + int(clear_ratio * 60)
+    stairs_brightness = min(255, stairs_brightness)
 
     # Get biome-tinted tiles (cached per biome)
     tinted_wall, tinted_floor, tinted_door = _get_tinted_tiles(wall_color, floor_color)
 
-    # Black tile for out-of-bounds / fog
+    # Black tile for fog / out-of-bounds
     _black_tile = Image.new("RGBA", (TILE_SZ, TILE_SZ), (0, 0, 0, 255))
 
-    # Render tiles
+    # Dim tile overlay for fog-edge tiles (semi-dark)
+    _fog_dim = Image.new("RGBA", (TILE_SZ, TILE_SZ), (0, 0, 0, 130))
+
+    # === Render tiles ===
     for row in range(VIEW_ROWS):
         for col in range(VIEW_COLS):
             wx = vx0 + col
@@ -426,8 +600,16 @@ def render_labyrinth_demo(img, frame_count):
             tx = tile_ox + col * TILE_SZ
             ty = tile_oy + row * TILE_SZ
 
+            # Out of bounds
             if wx < 0 or wx >= map_w or wy < 0 or wy >= map_h:
-                # Out of bounds — solid black
+                if _sprites_ok:
+                    panel.paste(_black_tile, (tx, ty), _black_tile)
+                else:
+                    pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=(0, 0, 0))
+                continue
+
+            # Fog of war: tile not visible = solid black
+            if (wx, wy) not in visible_set:
                 if _sprites_ok:
                     panel.paste(_black_tile, (tx, ty), _black_tile)
                 else:
@@ -439,62 +621,80 @@ def render_labyrinth_demo(img, frame_count):
             if _sprites_ok:
                 # === SPRITE-BASED RENDERING ===
                 if tile_val == 0:
-                    # Wall — tinted wall texture
                     panel.paste(tinted_wall, (tx, ty), tinted_wall)
                 elif tile_val in (1, 2):
-                    # Floor / corridor — tinted floor texture
                     panel.paste(tinted_floor, (tx, ty), tinted_floor)
                 elif tile_val == 3:
-                    # Door — door texture on floor
                     panel.paste(tinted_floor, (tx, ty), tinted_floor)
                     if tinted_door:
                         panel.paste(tinted_door, (tx, ty), tinted_door)
                 elif tile_val == 4:
-                    # Stairs — floor with stair overlay lines
+                    # Stairs with pulsing glow
                     panel.paste(tinted_floor, (tx, ty), tinted_floor)
                     for i in range(4):
                         sy_line = ty + 4 + i * 5
                         pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
-                    pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3], outline=(200, 200, 220))
+                    sc = min(255, stairs_brightness)
+                    pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3],
+                                 outline=(sc, sc, min(255, sc + 15)))
 
                 # Overlay entities on floor tiles
                 if tile_val != 0:
                     world_pos = (wx, wy)
 
-                    # Items — cycle through 4 item sprites
+                    # Items — type-based sprite selection
                     if world_pos in item_set:
                         it = item_set[world_pos]
-                        item_idx = hash((it.get("x", 0), it.get("y", 0))) % len(_item_tiles) if _item_tiles else 0
                         if _item_tiles:
+                            item_idx = _item_sprite_index(it) % len(_item_tiles)
                             panel.paste(_item_tiles[item_idx], (tx, ty), _item_tiles[item_idx])
 
-                    # Monsters — cycle through 4 monster sprites, pulse brightness
+                    # Monsters — tier-based sprite selection with pulse
                     if world_pos in monster_set:
                         m_ent = monster_set[world_pos]
-                        m_idx = hash(m_ent.get("name", str(world_pos))) % len(_monster_tiles) if _monster_tiles else 0
                         if _monster_tiles:
+                            m_idx = _monster_sprite_index(m_ent) % len(_monster_tiles)
                             m_sprite = _brighten_tile(_monster_tiles[m_idx], enemy_pulse + 0.3)
                             panel.paste(m_sprite, (tx, ty), m_sprite)
 
-                    # Stairs overlay (if not already tile=4 but entity is here)
+                    # Stairs glow overlay (pulsing outline when not tile=4)
                     if world_pos == stairs_pos and tile_val != 4:
                         for i in range(4):
                             sy_line = ty + 4 + i * 5
                             pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
+                        sc = min(255, stairs_brightness)
+                        pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3],
+                                     outline=(sc, sc, min(255, sc + 15)))
 
-                    # Player — TIAMAT dragon sprite, flip based on direction
+                    # ECHO companion
+                    if echo_pos and world_pos == echo_pos:
+                        if _echo_tile:
+                            echo_spr = _brighten_tile(_echo_tile, 0.9 + math.sin(frame_count * 0.15) * 0.2)
+                            panel.paste(echo_spr, (tx, ty), echo_spr)
+                        else:
+                            # Fallback cyan square
+                            pd.rectangle([tx + 4, ty + 4, tx + TILE_SZ - 5, ty + TILE_SZ - 5],
+                                         fill=(0, 220, 255))
+                        # Behavior label near ECHO
+                        if echo_behavior:
+                            lbl_x = tx + TILE_SZ + 1
+                            lbl_y = ty
+                            # Keep label inside panel
+                            if lbl_x + 30 > DEMO_W - 4:
+                                lbl_x = tx - 28
+                            pd.text((lbl_x, lbl_y), echo_behavior[:6], font=F_XS, fill=(0, 220, 255))
+
+                    # Player — TIAMAT dragon sprite
                     if wx == px and wy == py:
-                        # Direction: W(3) = flip, rest = normal
                         if player_dir == 3 and _tiamat_tile_flip:
                             p_sprite = _tiamat_tile_flip
                         else:
                             p_sprite = _tiamat_tile
-                        # Subtle glow: brighten based on animation pulse
-                        glow_factor = 1.0 + (player_glow - 180) / 400  # ~0.85 to ~1.15
+                        glow_factor = 1.0 + (player_glow - 180) / 400
                         p_sprite = _brighten_tile(p_sprite, glow_factor)
                         panel.paste(p_sprite, (tx, ty), p_sprite)
             else:
-                # === FALLBACK: RECTANGLE RENDERING (no sprites loaded) ===
+                # === FALLBACK: RECTANGLE RENDERING ===
                 if tile_val == 0:
                     pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], fill=wall_color)
                     pd.rectangle([tx, ty, tx + TILE_SZ - 1, ty + TILE_SZ - 1], outline=wall_border)
@@ -512,7 +712,8 @@ def render_labyrinth_demo(img, frame_count):
                     for i in range(4):
                         sy_line = ty + 4 + i * 5
                         pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
-                    pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3], outline=(200, 200, 220))
+                    sc = min(255, stairs_brightness)
+                    pd.rectangle([tx + 2, ty + 2, tx + TILE_SZ - 3, ty + TILE_SZ - 3], outline=(sc, sc, min(255, sc + 15)))
                 if tile_val != 0:
                     world_pos = (wx, wy)
                     if world_pos in item_set:
@@ -530,6 +731,13 @@ def render_labyrinth_demo(img, frame_count):
                         for i in range(4):
                             sy_line = ty + 4 + i * 5
                             pd.line([(tx + 4, sy_line), (tx + TILE_SZ - 5, sy_line)], fill=(220, 220, 240), width=1)
+                    # ECHO fallback
+                    if echo_pos and world_pos == echo_pos:
+                        inset = 4
+                        pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1],
+                                     fill=(0, 220, 255))
+                        if echo_behavior:
+                            pd.text((tx + TILE_SZ + 1, ty), echo_behavior[:6], font=F_XS, fill=(0, 220, 255))
                     if wx == px and wy == py:
                         inset = 4
                         pd.rectangle([tx + inset, ty + inset, tx + TILE_SZ - inset - 1, ty + TILE_SZ - inset - 1], fill=(0, 220, 255))
@@ -539,26 +747,79 @@ def render_labyrinth_demo(img, frame_count):
                         ind_x, ind_y = cx_p + dx * 8, cy_p + dy * 8
                         pd.line([(cx_p, cy_p), (ind_x, ind_y)], fill=(255, 255, 255), width=2)
 
-    # === Status line below tile viewport ===
-    status_y = tile_oy + VIEW_ROWS * TILE_SZ + 3
-    # Player HP bar (compact)
-    p_hp = player.get("hp", 0)
-    p_max = max(player.get("max_hp", 1), 1)
+    # === HUD below tile viewport (5 rows) ===
+    hud_y = tile_oy + VIEW_ROWS * TILE_SZ + 2
     hp_ratio = p_hp / p_max
-    pd.text((6, status_y), f"HP:{p_hp}/{p_max}", font=F_XS, fill=CYAN)
-    pd.rectangle([70, status_y + 1, 170, status_y + 9], fill=(24, 24, 40), outline=(56, 56, 88))
-    hpc = (72, 208, 88) if hp_ratio > 0.5 else (248, 200, 48) if hp_ratio > 0.2 else (248, 56, 56)
-    pd.rectangle([71, status_y + 2, 71 + int(98 * hp_ratio), status_y + 8], fill=hpc)
-    pd.text((175, status_y), f"Lv{player.get('lvl', 1)} ATK:{player.get('atk', 0)} DEF:{player.get('def', 0)}", font=F_XS, fill=GRAY)
 
-    # Combat log / prompt
+    # Row 1: "F{depth} {biome_name}" left, "LV{lvl}" right
+    pd.text((6, hud_y), f"F{floor_num} {biome_name}", font=F_XS, fill=GOLD)
+    lvl_text = f"LV{player.get('lvl', 1)}"
+    pd.text((DEMO_W - 6 - len(lvl_text) * 6, hud_y), lvl_text, font=F_XS, fill=CYAN)
+
+    # Row 2: HP bar (colored) + "ATK:{atk} DEF:{def}"
+    row2_y = hud_y + 13
+    hpc = (72, 208, 88) if hp_ratio > 0.5 else (248, 200, 48) if hp_ratio > 0.2 else (248, 56, 56)
+    pd.text((6, row2_y), "HP", font=F_XS, fill=CYAN)
+    bar_x0, bar_x1 = 22, 120
+    pd.rectangle([bar_x0, row2_y + 1, bar_x1, row2_y + 9], fill=(24, 24, 40), outline=(56, 56, 88))
+    pd.rectangle([bar_x0 + 1, row2_y + 2, bar_x0 + 1 + int((bar_x1 - bar_x0 - 2) * hp_ratio), row2_y + 8], fill=hpc)
+    pd.text((bar_x1 + 4, row2_y), f"{p_hp}/{p_max}", font=F_XS, fill=GRAY)
+    atk_def_text = f"ATK:{player.get('atk', 0)} DEF:{player.get('def', 0)}"
+    pd.text((DEMO_W - 6 - len(atk_def_text) * 6, row2_y), atk_def_text, font=F_XS, fill=GRAY)
+
+    # Row 3: Gold, Potions, Kills
+    row3_y = hud_y + 26
+    gold_val = player.get("gold", 0)
+    potion_val = player.get("potions", 0)
+    kills_val = player.get("kills", 0)
+    pd.text((6, row3_y), f"G:{gold_val}", font=F_XS, fill=(255, 216, 48))
+    pd.text((70, row3_y), f"POT:{potion_val}", font=F_XS, fill=(255, 100, 140))
+    pd.text((140, row3_y), f"KILLS:{kills_val}", font=F_XS, fill=(200, 80, 80))
+    # ECHO status on row 3 right side
+    if echo_data and isinstance(echo_data, dict) and echo_data.get("alive", True):
+        echo_hp = echo_data.get("hp", 0)
+        pd.text((DEMO_W - 80, row3_y), f"ECHO:{echo_hp}hp", font=F_XS, fill=(0, 220, 255))
+
+    # Row 4: Last combat_log entry
+    row4_y = hud_y + 39
     clog = lab.get("combat_log", [])
-    log_y = status_y + 14
     if clog:
-        log_text = clog[-1][:45]
-        pd.text((6, log_y), log_text, font=F_XS, fill=(200, 204, 216))
+        log_text = clog[-1][:52]
+        # Flash new combat log entries
+        if clog[-1] != _lab_last_combat_log:
+            _lab_last_combat_log = clog[-1]
+            log_col = (255, 255, 200)
+        else:
+            log_col = (200, 204, 216)
+        pd.text((6, row4_y), log_text, font=F_XS, fill=log_col)
     else:
-        pd.text((6, log_y), "Type !explore to play", font=F_XS, fill=(0, 180, 220))
+        pd.text((6, row4_y), "Type !explore to play", font=F_XS, fill=(0, 180, 220))
+
+    # Row 5: Floor narrative name
+    row5_y = hud_y + 52
+    narrative_name = lab.get("narrative", {}).get("name") if isinstance(lab.get("narrative"), dict) else None
+    if not narrative_name and floor_num > 0:
+        idx = (floor_num - 1) % len(_FLOOR_NARRATIVES)
+        narrative_name = _FLOOR_NARRATIVES[idx]
+    if narrative_name:
+        pd.text((6, row5_y), narrative_name, font=F_XS, fill=(160, 140, 200))
+
+    # === Death flash overlay ===
+    if _lab_death_frames > 0:
+        flash_alpha = int((_lab_death_frames / 12.0) * 180)
+        flash_overlay = Image.new("RGBA", (DEMO_W, DEMO_H), (200, 20, 20, flash_alpha))
+        panel = Image.alpha_composite(panel, flash_overlay)
+        pd = ImageDraw.Draw(panel)
+        pd.text((DEMO_W // 2 - 30, DEMO_H // 2 - 8), "DEFEATED", font=F_LG, fill=(255, 255, 255))
+
+    # === Floor transition overlay ===
+    if _lab_transition_frames > 0:
+        trans_alpha = int((_lab_transition_frames / 20.0) * 200)
+        trans_overlay = Image.new("RGBA", (DEMO_W, DEMO_H), (0, 0, 0, trans_alpha))
+        panel = Image.alpha_composite(panel, trans_overlay)
+        pd = ImageDraw.Draw(panel)
+        pd.text((DEMO_W // 2 - 48, DEMO_H // 2 - 8), f"DESCENDING...", font=F_LG, fill=(220, 220, 255))
+        pd.text((DEMO_W // 2 - 20, DEMO_H // 2 + 12), f"FLOOR {floor_num}", font=F_MD, fill=GOLD)
 
     # Paste panel onto frame
     img.paste(panel, (DEMO_X, DEMO_Y), panel)
