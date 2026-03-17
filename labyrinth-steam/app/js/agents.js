@@ -703,34 +703,54 @@ const monsterSprites = new Map();
 
 export function createMonsterSprites(monsters, scene) {
   // Clear old
-  for (const [, sprite] of monsterSprites) scene.remove(sprite);
+  for (const [, data] of monsterSprites) {
+    scene.remove(data.sprite || data);
+    if (data.glow) scene.remove(data.glow);
+  }
   monsterSprites.clear();
 
   for (const m of monsters) {
     if (!m.alive) continue;
-    const size = m.boss ? 1.2 : 0.65;
+    const size = m.boss ? 1.5 : 0.65;
     const sprite = createBillboard(m.col, size, m.ch);
     sprite.position.set(m.x, size / 2, m.y);
     sprite.visible = false; // Only show in FOV
     scene.add(sprite);
-    monsterSprites.set(m, sprite);
+
+    let glowLight = null;
+    if (m.boss) {
+      // Boss glow — point light in boss color
+      glowLight = new THREE.PointLight(new THREE.Color(m.col), 2.0, 6, 1.5);
+      glowLight.position.set(m.x, 0.8, m.y);
+      glowLight.visible = false;
+      scene.add(glowLight);
+    }
+
+    monsterSprites.set(m, { sprite, glow: glowLight });
   }
 }
 
 export function updateMonsterSprites(monsters, visible, scene) {
   for (const m of monsters) {
-    const sprite = monsterSprites.get(m);
-    if (!sprite) continue;
+    const data = monsterSprites.get(m);
+    if (!data) continue;
+    const sprite = data.sprite || data;
+    const glow = data.glow || null;
 
     if (!m.alive || m.hp <= 0) {
       scene.remove(sprite);
+      if (glow) scene.remove(glow);
       monsterSprites.delete(m);
       continue;
     }
 
     sprite.position.set(m.x, sprite.scale.y / 2, m.y);
-    // Show only if in FOV
-    sprite.visible = visible[m.y]?.[m.x] > 0;
+    const isVisible = visible[m.y]?.[m.x] > 0;
+    sprite.visible = isVisible;
+    if (glow) {
+      glow.position.set(m.x, 0.8, m.y);
+      glow.visible = isVisible;
+    }
 
     // HP-based tint (flash red when damaged)
     const hpRatio = m.hp / m.maxHp;
@@ -799,7 +819,10 @@ export function clearAllAgents(scene) {
   }
   for (const s of specters) scene.remove(s.sprite);
   specters.length = 0;
-  for (const [, sprite] of monsterSprites) scene.remove(sprite);
+  for (const [, data] of monsterSprites) {
+    scene.remove(data.sprite || data);
+    if (data.glow) scene.remove(data.glow);
+  }
   monsterSprites.clear();
   for (const [, sprite] of itemSprites) scene.remove(sprite);
   itemSprites.clear();

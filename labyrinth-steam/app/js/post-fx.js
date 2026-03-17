@@ -81,15 +81,15 @@ void main() {
   vig = smoothstep(0.0, 1.0, vig);
   color *= vig;
 
-  // Chromatic aberration (subtle)
-  float aberr = 0.002;
+  // Chromatic aberration (nearly disabled)
+  float aberr = 0.001;
   float rShift = texture2D(tScene, vUv + vec2(aberr, 0.0)).r;
   float bShift = texture2D(tScene, vUv - vec2(aberr, 0.0)).b;
-  color.r = mix(color.r, rShift, 0.3);
-  color.b = mix(color.b, bShift, 0.3);
+  color.r = mix(color.r, rShift, 0.0);
+  color.b = mix(color.b, bShift, 0.0);
 
-  // Film grain
-  float grain = (fract(sin(dot(vUv + time * 0.013, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.025;
+  // Film grain (subtle)
+  float grain = (fract(sin(dot(vUv + time * 0.013, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.015;
   color += grain;
 
   gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
@@ -136,10 +136,10 @@ export class PostFX {
     this.quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.quadScene.add(this.quad);
 
-    // Bright extract — low threshold to catch torches, trim, emissive surfaces
+    // Bright extract — higher threshold so only bright lights bloom
     this.brightMat = makeMat(BRIGHT_EXTRACT_FS, {
       tDiffuse: { value: null },
-      threshold: { value: 0.45 },
+      threshold: { value: 0.65 },
     });
 
     // Blur passes
@@ -158,7 +158,7 @@ export class PostFX {
     this.compositeMat = makeMat(COMPOSITE_FS, {
       tScene: { value: null },
       tBloom: { value: null },
-      bloomStrength: { value: 0.35 },
+      bloomStrength: { value: 0.12 },
       exposure: { value: 1.0 },
       contrast: { value: 1.12 },
       saturation: { value: 1.15 },

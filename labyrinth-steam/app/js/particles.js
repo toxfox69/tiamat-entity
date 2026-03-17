@@ -3,9 +3,9 @@ import * as THREE from 'three';
 
 const MAX_PARTICLES = 200;
 const MAX_WALL_SPLATS = 120;
-const MAX_FOG_PARTICLES = 150;
-const MAX_DUST_MOTES = 80;
-const MAX_GROUND_MIST = 100;
+const MAX_FOG_PARTICLES = 40;
+const MAX_DUST_MOTES = 30;
+const MAX_GROUND_MIST = 20;
 
 // Shared splat texture
 let splatTexture = null;
@@ -98,7 +98,7 @@ export function createFogParticles(level, biomeColor, scene) {
     color: color,
     size: 1.2,
     transparent: true,
-    opacity: 0.22,
+    opacity: 0.07,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     sizeAttenuation: true,
@@ -139,7 +139,7 @@ function createGroundMist(level, biomeColor, scene) {
   for (let i = 0; i < MAX_GROUND_MIST; i++) {
     const room = rooms[Math.floor(Math.random() * rooms.length)];
     groundMistPositions[i * 3] = room.x + Math.random() * room.w;
-    groundMistPositions[i * 3 + 1] = Math.random() * 0.35; // stays near floor
+    groundMistPositions[i * 3 + 1] = Math.random() * 0.25; // stays near floor
     groundMistPositions[i * 3 + 2] = room.y + Math.random() * room.h;
     groundMistVelocities[i * 3] = (Math.random() - 0.5) * 0.008;
     groundMistVelocities[i * 3 + 1] = Math.random() * 0.002;
@@ -151,9 +151,9 @@ function createGroundMist(level, biomeColor, scene) {
 
   const mat = new THREE.PointsMaterial({
     color: mistColor,
-    size: 2.5,
+    size: 0.8,
     transparent: true,
-    opacity: 0.15,
+    opacity: 0.05,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     sizeAttenuation: true,
@@ -171,7 +171,7 @@ function updateGroundMist(dt) {
     pos.array[i * 3 + 1] += groundMistVelocities[i * 3 + 1] * dt;
     pos.array[i * 3 + 2] += groundMistVelocities[i * 3 + 2] * dt;
     // Keep near floor
-    if (pos.array[i * 3 + 1] > 0.4) {
+    if (pos.array[i * 3 + 1] > 0.25) {
       pos.array[i * 3 + 1] = 0.05;
       groundMistVelocities[i * 3] = (Math.random() - 0.5) * 0.008;
       groundMistVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.008;

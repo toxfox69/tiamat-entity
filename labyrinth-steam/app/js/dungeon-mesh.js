@@ -71,7 +71,7 @@ function makeMats(biome) {
   // Smooth Phong material with subtle specular + biome emissive glow
   const wireGlow = wire.clone().multiplyScalar(0.18);
   function phong(color, opts = {}) {
-    return new THREE.MeshPhongMaterial({
+    const matOpts = {
       color,
       map: opts.map || null,
       side: opts.side || THREE.FrontSide,
@@ -79,7 +79,10 @@ function makeMats(biome) {
       specular: new THREE.Color(0x1a1a1a),
       emissive: opts.emissive || new THREE.Color(0x000000),
       emissiveIntensity: opts.emissiveIntensity ?? 0,
-    });
+    };
+    if (opts.transparent !== undefined) matOpts.transparent = opts.transparent;
+    if (opts.opacity !== undefined) matOpts.opacity = opts.opacity;
+    return new THREE.MeshPhongMaterial(matOpts);
   }
 
   const wallMap = texturesLoaded ? textures.wall : null;
@@ -92,8 +95,8 @@ function makeMats(biome) {
     wall: phong(wall, { map: wallMap, emissive: wireGlow, emissiveIntensity: 0.25 }),
     wallDark: phong(wallD, { map: wallMap, emissive: wireGlow, emissiveIntensity: 0.18 }),
     wallLight: phong(wallL, { map: wallMap, emissive: wireGlow, emissiveIntensity: 0.3 }),
-    floor: phong(floor, { map: floorMap, side: THREE.DoubleSide, emissive: wireGlow, emissiveIntensity: 0.12 }),
-    floorAlt: phong(floorAlt, { map: floorMap, side: THREE.DoubleSide, emissive: wireGlow, emissiveIntensity: 0.1 }),
+    floor: phong(floor, { map: floorMap, side: THREE.DoubleSide, emissive: wireGlow, emissiveIntensity: 0.12, transparent: false, opacity: 1.0 }),
+    floorAlt: phong(floorAlt, { map: floorMap, side: THREE.DoubleSide, emissive: wireGlow, emissiveIntensity: 0.1, transparent: false, opacity: 1.0 }),
     ceiling: phong(ceil, { map: ceilMap, side: THREE.DoubleSide }),
     trim: new THREE.MeshPhongMaterial({ color: 0x000000, emissive: wire.clone().multiplyScalar(0.3), emissiveIntensity: 1.0, transparent: true, opacity: 0.5, fog: true }),
     doorFrame: phong(wallL, { map: doorMap, shininess: 20, emissive: wireGlow, emissiveIntensity: 0.15 }),
@@ -135,6 +138,14 @@ const geoCache = {};
 function getGeo(key, factory) {
   if (!geoCache[key]) geoCache[key] = factory();
   return geoCache[key];
+}
+
+// ─── Biome Sky/Ceiling Colors (darkened floor color for scene.background) ───
+export function getBiomeBackgroundColor(mood) {
+  ensureBiomeMats();
+  const mats = biomeMats[mood] || biomeMats.processing;
+  if (!mats || !mats.biome) return new THREE.Color(0x050505);
+  return new THREE.Color(mats.biome.floor).multiplyScalar(0.5);
 }
 
 // ─── Main Build ───

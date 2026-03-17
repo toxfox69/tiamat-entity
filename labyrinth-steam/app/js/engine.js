@@ -1,7 +1,7 @@
 // LABYRINTH 3D — Three.js Scene, Renderer, Camera, Lighting, Game Loop
 import * as THREE from 'three';
 import { DungeonGen, BIOMES, T_WALL, T_STAIRS } from './dungeon-gen.js';
-import { buildDungeonMesh, getBiomeMaterials, lerpBiomeMaterials, updateTorchFlames, loadDungeonTextures } from './dungeon-mesh.js';
+import { buildDungeonMesh, getBiomeMaterials, getBiomeBackgroundColor, lerpBiomeMaterials, updateTorchFlames, loadDungeonTextures } from './dungeon-mesh.js';
 import {
   loadSplatTexture, createFogParticles,
   updateFogParticles, updateEventParticles, updateExtractRing,
@@ -404,6 +404,9 @@ function generateNewFloor() {
   const fogDensity = 0.04 + Game.depth * 0.003;
   scene.fog = new THREE.FogExp2(new THREE.Color(biome.floor).multiplyScalar(1.3).getHex(), fogDensity);
 
+  // Set scene.background to biome-tinted ceiling color (darkened floor)
+  scene.background = getBiomeBackgroundColor(mood);
+
   // Update sky dome color (ShaderMaterial — use uniforms)
   if (skyDome && skyDome.material.uniforms) {
     skyDome.material.uniforms.bottomColor.value.set(biome.floor);
@@ -413,7 +416,10 @@ function generateNewFloor() {
   const warmTorch = new THREE.Color(0xffcc66);
   playerLight.color.copy(warmTorch).lerp(new THREE.Color(biome.wire), 0.25);
   playerLight2.color.copy(new THREE.Color(0x996644)).lerp(new THREE.Color(biome.accent || biome.wire), 0.2);
-  hemiLight.color.set(new THREE.Color(biome.wire).multiplyScalar(0.2));
+  // Biome-specific ambient light color
+  const biomeAmbient = new THREE.Color(biome.wire).multiplyScalar(0.15);
+  ambientLight.color.set(0x888888).lerp(biomeAmbient, 0.4);
+  hemiLight.color.set(new THREE.Color(biome.wire).multiplyScalar(0.25));
   hemiLight.groundColor.set(biome.floor);
 
   // Camera snap
@@ -528,12 +534,12 @@ export function init() {
   camera.position.set(20, 0.55, 12);
 
   // ─── Lighting ───
-  // Ambient — visible base so dungeon geometry is always readable
-  ambientLight = new THREE.AmbientLight(0x888888, 1.5);
+  // Ambient — visible base so dungeon geometry is always readable (boosted 50%)
+  ambientLight = new THREE.AmbientLight(0x888888, 2.25);
   scene.add(ambientLight);
 
-  // Hemisphere light — warm sky/ground bounce for depth
-  hemiLight = new THREE.HemisphereLight(0x998877, 0x443322, 1.2);
+  // Hemisphere light — warm sky/ground bounce for depth (boosted 50%)
+  hemiLight = new THREE.HemisphereLight(0x998877, 0x443322, 1.8);
   scene.add(hemiLight);
 
   // Player torch — primary (warm, moderate range, not blown out)

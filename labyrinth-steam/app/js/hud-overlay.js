@@ -21,7 +21,7 @@ export class HUDOverlay {
   constructor() {
     this.container = document.getElementById('hud-overlay');
     this.log = [];
-    this.maxLog = 5;
+    this.maxLog = 8;
     this.spectating = 'tiamat';
     this.telemetryVisible = false;
     this.tiamatHistory = [];
@@ -29,6 +29,7 @@ export class HUDOverlay {
     this.tiamatLastBehavior = '';
     this.echoLastBehavior = '';
     this.startTime = Date.now();
+    this.runStartTime = Date.now();
     this.buildDOM();
   }
 
@@ -82,6 +83,7 @@ export class HUDOverlay {
           <span id="hud-gold">0</span>
         </div>
         <div class="hud-equip" id="hud-equip"></div>
+        <div id="hud-timer" style="font-size:clamp(7px,1vw,10px);color:#00ff41;margin-top:3px;font-family:'JetBrains Mono',monospace;letter-spacing:1px;"></div>
       </div>
 
       <div id="hud-bottom-right" class="hud-panel hud-br" style="pointer-events:auto;">
@@ -214,13 +216,29 @@ export class HUDOverlay {
     document.getElementById('hud-perm-stash').textContent = extractorState.permanentStash;
     document.getElementById('hud-gold').textContent = p.gold;
 
-    // Equipment
+    // Equipment — color-coded WPN/ARM/RNG
     const equipEl = document.getElementById('hud-equip');
-    const parts = [];
-    if (p.equipment?.weapon) parts.push(p.equipment.weapon.name);
-    if (p.equipment?.armor) parts.push(p.equipment.armor.name);
-    if (p.equipment?.ring) parts.push(p.equipment.ring.name);
-    equipEl.textContent = parts.join(' | ') || 'No Equipment';
+    const equipParts = [];
+    if (p.equipment?.weapon) equipParts.push(`<span style="color:#ff8844">WPN: ${p.equipment.weapon.name}</span>`);
+    if (p.equipment?.armor) equipParts.push(`<span style="color:#4488ff">ARM: ${p.equipment.armor.name}</span>`);
+    if (p.equipment?.ring) equipParts.push(`<span style="color:#aa66ff">RNG: ${p.equipment.ring.name}</span>`);
+    equipEl.innerHTML = equipParts.length > 0 ? equipParts.join(' <span style="color:#333">|</span> ') : '<span style="color:#555">No Equipment</span>';
+
+    // Speedrun timer — RTA (real time since page load) and TAG (time in current run)
+    const timerEl = document.getElementById('hud-timer');
+    if (timerEl) {
+      const now = Date.now();
+      const rtaMs = now - this.startTime;
+      const tagMs = now - (this.runStartTime || this.startTime);
+      const fmtTime = (ms) => {
+        const totalSec = Math.floor(ms / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        const frac = Math.floor((ms % 1000) / 10);
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(frac).padStart(2, '0')}`;
+      };
+      timerEl.innerHTML = `<span style="color:#888">RTA</span> ${fmtTime(rtaMs)}  <span style="color:#888">TAG</span> ${fmtTime(tagMs)}`;
+    }
 
     // ─── Bottom-right: both players' compact stats + spectator buttons ───
     // TIAMAT compact stats
@@ -361,6 +379,11 @@ export class HUDOverlay {
     el.style.background = 'rgba(255,0,40,0.6)';
     setTimeout(() => { el.style.background = 'rgba(255,0,40,0.3)'; }, 250);
     setTimeout(() => { el.style.background = 'rgba(255,0,40,0)'; }, 500);
+  }
+
+  // ─── Reset run timer (called on death/new floor) ───
+  resetRunTimer() {
+    this.runStartTime = Date.now();
   }
 
   // ─── Extract Progress Bar ───
