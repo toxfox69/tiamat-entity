@@ -316,7 +316,11 @@ const FORBIDDEN_COMMAND_PATTERNS = [
   /cat\s+.*wallet\.json/,
   // Extended credential access patterns
   /\b(head|tail|less|more|tee|cp|mv|ln|xxd|od|hexdump)\b.*\.env/,
+  /\b(grep|awk|sed|strings|base64)\b.*\.env/,
+  /python3?\s+-c\s+.*open.*\.env/,
+  /node\s+-e\s+.*\.env/,
   /\b(head|tail|less|more|tee|cp|mv|ln)\b.*\.ssh/,
+  /\b(grep|strings|base64)\b.*\.ssh/,
   /\b(env|printenv|export\s+-p)\b/,
   /\bset\s*$/,
   // Self-tracing (strace on own PID deadlocks the process)
@@ -771,8 +775,10 @@ export function createBuiltinTools(_sandboxId: string): AutomatonTool[] {
         let appliedSummary: string;
         try {
           if (commit) {
-            run(`git cherry-pick ${commit}`);
-            appliedSummary = `Cherry-picked ${commit}`;
+            const safeCommit = (commit as string).replace(/[^a-f0-9]/gi, '').slice(0, 40);
+            if (!safeCommit || safeCommit.length < 7) throw new Error('Invalid commit hash');
+            run(`git cherry-pick ${safeCommit}`);
+            appliedSummary = `Cherry-picked ${safeCommit}`;
           } else {
             run("git pull origin main --ff-only");
             appliedSummary = "Pulled all of origin/main (fast-forward)";
