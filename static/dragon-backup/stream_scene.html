@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 1280px; height: 720px; overflow: hidden; background: linear-gradient(135deg, #060612 0%, #0a0e28 30%, #0e1438 60%, #080c20 100%); font-family: 'Courier New', monospace; color: #e0e4f0; }
+
+/* Single 3D canvas — renders BOTH environment AND dragon */
+#bg-canvas { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; z-index: 0; }
+#dragon-canvas { display: none; }
+
+/* Scanlines over everything */
+body::after { content:''; position:absolute; top:0; left:0; width:100%; height:100%; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 3px); z-index: 100; pointer-events: none; }
+
+/* ===== UI PANELS — all semi-transparent ===== */
+.panel { background: rgba(8,10,20,0.75); border: 1px solid #00e0ff30; backdrop-filter: blur(2px); }
+
+/* Top bar */
+#top-bar { position:absolute; top:0; left:0; width:1280px; height:24px; z-index:30; display:flex; align-items:center; padding:0 10px; font-size:11px; color:#88909c; background:rgba(5,5,14,0.8); border-bottom:1px solid #00e0ff20; }
+#top-bar .dot { width:7px; height:7px; border-radius:50%; background:#3cdc64; margin-right:8px; }
+
+/* Trainer card — top-left overlay on main area */
+#trainer-card { position:absolute; left:10px; top:30px; width:200px; z-index:30; padding:8px; font-size:10px; }
+#trainer-card h3 { color:#ffd830; font-size:12px; margin-bottom:4px; border-bottom:1px solid #ffd83040; padding-bottom:3px; }
+.tc-row { margin:2px 0; }
+.tc-label { color:#68707c; display:inline-block; width:48px; }
+.tc-val { color:#00dcff; }
+#recent-moves { margin-top:6px; }
+#recent-moves h4 { color:#ffd830; font-size:10px; margin-bottom:3px; }
+.move { font-size:9px; color:#88909c; margin:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+.move .gold { color:#ffd830; }
+
+/* Enemy encounter — top center */
+.encounter-box { position:absolute; z-index:30; padding:6px 10px; }
+#enemy-box { left:420px; top:30px; width:300px; }
+#player-box { right:10px; top:30px; width:280px; }
+.stat-label { color:#ffd830; font-weight:bold; font-size:12px; }
+.type-badge { display:inline-block; padding:1px 6px; font-size:9px; color:#000; border-radius:2px; margin-left:4px; }
+.hp-bar-bg { display:inline-block; width:140px; height:12px; background:#181828; border:1px solid #383858; vertical-align:middle; }
+.hp-bar-fill { height:100%; transition:width 1s; }
+
+/* Action menu — right side of main area */
+#action-menu { position:absolute; right:10px; top:130px; width:130px; z-index:30; padding:6px; }
+.action-item { padding:4px 6px; font-size:12px; color:#68709c; }
+.action-item.active { color:#ffd830; background:rgba(40,40,70,0.6); border:1px solid #ffd830; }
+.action-item.active::before { content:'▶ '; }
+
+/* Dialogue box — bottom of main area */
+#dialogue-box { position:absolute; bottom:22px; left:8px; right:8px; height:80px; z-index:30; padding:8px 12px; transform:translateY(120%); transition:transform 0.3s ease; }
+#dialogue-box.visible { transform:translateY(0); }
+#dialogue-box .speaker { color:#ffd830; font-weight:bold; font-size:12px; }
+#dialogue-box .text { color:#f0f0f0; font-size:11px; margin-top:3px; line-height:1.3; overflow:hidden; max-height:48px; }
+#dialogue-box .cursor { color:#f8f8f8; animation:blink 1s infinite; position:absolute; right:14px; bottom:10px; }
+@keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+/* Pokemonified log — right side below dragon */
+#log-panel { display:none; }
+#log-panel h3 { color:#ffd830; font-size:11px; margin-bottom:4px; }
+#log-entries { font-size:9px; line-height:1.4; }
+.log-entry { color:#88909c; margin:2px 0; padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+.log-entry.gold { color:#ffd830; }
+.log-entry.crit { color:#48d058; }
+.log-entry.error { color:#f84838; }
+
+/* Party bar */
+#party-bar { position:absolute; bottom:106px; left:8px; z-index:30; font-size:10px; display:flex; gap:12px; align-items:center; color:#68709c; }
+.party-dot { width:10px; height:10px; border-radius:50%; display:inline-block; border:1px solid #fff; }
+
+/* Ticker */
+#ticker { position:absolute; bottom:0; left:0; width:1280px; height:18px; background:rgba(5,5,14,0.85); border-top:1px solid #383858; z-index:30; overflow:hidden; font-size:10px; color:#383858; }
+#ticker-text { position:absolute; white-space:nowrap; animation:scroll 45s linear infinite; }
+@keyframes scroll { from{left:1280px} to{left:-3000px} }
+
+/* Alert zone — center, hidden by default */
+#alert-zone { position:absolute; left:230px; top:160px; width:500px; height:300px; z-index:50; display:none; text-align:center; padding:20px; background:rgba(8,8,20,0.9); border:2px solid #ffd830; }
+#alert-zone h2 { color:#ffd830; font-size:18px; margin-bottom:10px; }
+#alert-zone p { color:#e0e4f0; font-size:13px; }
+
+/* Dragon name tag — hidden */
+#dragon-name { display:none; }
+/* Venice character portrait — right side below action menu */
+#venice-portrait { position:absolute; right:10px; top:310px; width:130px; z-index:32; }
+#venice-portrait img { width:100%; border:2px solid #ffd830; box-shadow:0 0 12px rgba(255,216,48,0.3); }
+#venice-portrait .portrait-label { color:#ffd830; font-size:7px; text-align:center; letter-spacing:1px; background:rgba(8,8,16,0.9); padding:2px; border:1px solid #ffd83030; border-top:0; }
+/* Venice concept art frame — LARGE, prominent */
+#venice-frame { position:absolute; left:10px; bottom:115px; width:240px; z-index:35; display:none; }
+#venice-frame .frame-border { border:2px solid #ffd830; padding:3px; background:rgba(8,8,16,0.9); box-shadow: 0 0 20px rgba(255,216,48,0.3), 0 0 40px rgba(255,216,48,0.1); }
+#venice-frame .frame-title { color:#ffd830; font-size:10px; text-align:center; padding:3px 0; background:rgba(8,8,16,0.95); border-bottom:1px solid #ffd83060; letter-spacing:2px; }
+#venice-frame img { width:100%; height:160px; object-fit:cover; display:block; }
+#venice-frame .frame-caption { color:#88909c; font-size:8px; text-align:center; padding:3px 4px; background:rgba(8,8,16,0.95); border-top:1px solid #ffd83020; line-height:1.3; }
+
+/* Venice pipeline overlay — fullscreen concept reveal */
+#venice-reveal { position:absolute; left:0; top:0; width:1280px; height:720px; z-index:60; display:none; background:rgba(0,0,0,0.85); }
+#venice-reveal .reveal-content { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+#venice-reveal .reveal-step { color:#ffd830; font-size:11px; letter-spacing:3px; margin-bottom:8px; }
+#venice-reveal .reveal-model { color:#00dcff; font-size:14px; font-weight:bold; margin-bottom:12px; }
+#venice-reveal .reveal-desc { color:#e0e4f0; font-size:13px; max-width:600px; margin:0 auto 16px; line-height:1.4; }
+#venice-reveal img { max-width:500px; max-height:350px; border:2px solid #ffd830; box-shadow:0 0 30px rgba(255,216,48,0.4); }
+#venice-reveal .reveal-badge { color:#ffd830; font-size:10px; letter-spacing:4px; margin-top:12px; }
+
+/* POWERED BY VENICE AI watermark — always visible */
+#venice-watermark { position:absolute; right:12px; bottom:22px; z-index:40; font-size:9px; color:#ffd830; letter-spacing:2px; opacity:0.7; text-shadow: 0 0 8px rgba(255,216,48,0.4); }
+#venice-watermark .venice-logo { font-size:11px; font-weight:bold; }
+
+/* Venice description overlay — shows what Venice wrote */
+#venice-desc-overlay { position:absolute; left:220px; top:30px; width:190px; z-index:32; display:none; padding:6px 8px; font-size:9px; background:rgba(8,8,16,0.85); border:1px solid #ffd83040; border-left:2px solid #ffd830; }
+#venice-desc-overlay .vdo-label { color:#ffd830; font-size:8px; letter-spacing:2px; margin-bottom:3px; }
+#venice-desc-overlay .vdo-text { color:#c8ccd8; font-size:10px; line-height:1.3; font-style:italic; }
+</style>
+</head>
+<body>
+
+<!-- Background 3D Environment (Spark 3DGS / Meshy scene) -->
+<canvas id="bg-canvas" width="1280" height="720"></canvas>
+
+<!-- Dragon Avatar (own viewport, top-right) -->
+<canvas id="dragon-canvas" width="320" height="360"></canvas>
+
+<!-- Top bar -->
+<div id="top-bar" class="panel">
+  <div class="dot" id="status-dot"></div>
+  <span>TIAMAT // CYCLE <span id="cycle">---</span> // tiamat.live</span>
+  <span style="margin-left:auto" id="clock"></span>
+</div>
+
+<!-- Trainer card -->
+<div id="trainer-card" class="panel">
+  <h3>TRAINER CARD</h3>
+  <div class="tc-row"><span class="tc-label">NAME:</span> <span class="tc-val">TIAMAT</span></div>
+  <div class="tc-row"><span class="tc-label">TYPE:</span> <span class="tc-val">DRAGON/CYBER</span></div>
+  <div class="tc-row"><span class="tc-label">LV:</span> <span class="tc-val" id="tc-level">---</span></div>
+  <div class="tc-row"><span class="tc-label">TIME:</span> <span class="tc-val" id="tc-time">---</span></div>
+  <div class="tc-row"><span class="tc-label">BRAIN:</span> <span class="tc-val" id="tc-model" style="font-size:9px">---</span></div>
+  <div id="recent-moves"><h4>RECENT MOVES</h4><div id="moves-list"></div></div>
+</div>
+
+<!-- Enemy encounter -->
+<div id="enemy-box" class="panel encounter-box">
+  <span class="stat-label" id="enemy-name">WILD IDLE</span>
+  <span class="type-badge" id="enemy-type" style="background:#c8c8d8">NORMAL</span>
+  <br><span style="font-size:10px;color:#c8c8d8" id="enemy-level">Lv ---</span>
+  <br><span style="font-size:10px;color:#ffd830">HP</span>
+  <div class="hp-bar-bg"><div class="hp-bar-fill" id="enemy-hp" style="width:0%;background:#48d058"></div></div>
+  <span style="font-size:10px" id="enemy-hp-text">0%</span>
+</div>
+
+<!-- Player stats -->
+<div id="player-box" class="panel encounter-box">
+  <span class="stat-label" style="color:#00dcff">TIAMAT</span>
+  <span class="type-badge" style="background:#40c8f8">DRAGON</span>
+  <span style="float:right;font-size:10px;color:#c8c8d8" id="player-level">Lv ---</span>
+  <br><span style="font-size:10px;color:#ffd830">HP</span>
+  <div class="hp-bar-bg"><div class="hp-bar-fill" id="player-hp" style="width:80%;background:#f8c830"></div></div>
+  <span style="font-size:10px" id="player-hp-text">$---</span>
+  <br><span style="font-size:10px;color:#a878f8">PP</span>
+  <div class="hp-bar-bg"><div class="hp-bar-fill" id="player-pp" style="width:70%;background:#a878f8"></div></div>
+  <span style="font-size:10px" id="player-pp-text">---</span>
+</div>
+
+<!-- Action menu -->
+<div id="action-menu" class="panel">
+  <div class="action-item" id="act-research">RESEARCH</div>
+  <div class="action-item" id="act-build">BUILD</div>
+  <div class="action-item" id="act-publish">PUBLISH</div>
+  <div class="action-item" id="act-engage">ENGAGE</div>
+</div>
+
+<!-- Party bar -->
+<div id="party-bar">
+  PARTY: <span><span class="party-dot" style="background:#00dcff"></span> TIAMAT</span>
+  <span><span class="party-dot" style="background:#3cdc64"></span> ECHO</span>
+  <span style="margin-left:20px">ITEMS: 99</span>
+  <span style="color:#ffd830">BADGES: <span id="badges">4</span></span>
+</div>
+
+<!-- Dialogue box -->
+<div id="dialogue-box" class="panel">
+  <div class="speaker">TIAMAT</div>
+  <div class="text" id="dialogue-text">...</div>
+  <div class="cursor">▼</div>
+</div>
+
+<!-- Pokemonified log panel (right side) -->
+<div id="log-panel" class="panel">
+  <h3>BATTLE LOG</h3>
+  <div id="log-entries"></div>
+</div>
+
+<!-- Dragon name tag -->
+<div id="dragon-name">TIAMAT</div>
+
+<!-- Venice character portrait -->
+<div id="venice-portrait">
+  <img src="/dragon/venice_avatar_concept.png" alt="TIAMAT — Venice AI Design">
+  <div class="portrait-label">DESIGNED BY VENICE AI</div>
+</div>
+
+<!-- Venice concept art frame — persistent during generation -->
+<div id="venice-frame">
+  <div class="frame-border">
+    <div class="frame-title">⬡ VENICE AI VISION</div>
+    <img id="venice-img" src="" alt="Venice concept">
+    <div class="frame-caption" id="venice-caption">Venice AI flux-2-max</div>
+  </div>
+</div>
+
+<!-- Venice description overlay — shows what Venice imagined -->
+<div id="venice-desc-overlay">
+  <div class="vdo-label">VENICE AI IMAGINES</div>
+  <div class="vdo-text" id="venice-desc-text"></div>
+</div>
+
+<!-- Venice fullscreen concept reveal -->
+<div id="venice-reveal">
+  <div class="reveal-content">
+    <div class="reveal-step" id="reveal-step">STEP 2/3</div>
+    <div class="reveal-model" id="reveal-model">VENICE AI — flux-2-max</div>
+    <div class="reveal-desc" id="reveal-desc"></div>
+    <img id="reveal-img" src="" alt="">
+    <div class="reveal-badge">⬡ POWERED BY VENICE AI</div>
+  </div>
+</div>
+
+<!-- POWERED BY VENICE AI watermark — always on screen -->
+<div id="venice-watermark">
+  <span class="venice-logo">⬡ VENICE AI</span> POWERED
+</div>
+
+<!-- Alert zone (hidden until triggered) -->
+<div id="alert-zone">
+  <h2 id="alert-title">TIAMAT IS EVOLVING!</h2>
+  <p id="alert-text">Generating new realm...</p>
+  <div style="margin-top:8px;color:#ffd830;font-size:9px;letter-spacing:3px" id="alert-credit"></div>
+</div>
+
+<!-- Ticker -->
+<div id="ticker"><div id="ticker-text">⬡ POWERED BY VENICE AI — Text generation (llama-3.3-70b) + Image generation (flux-2-max) /// twitch.tv/6tiamat7 /// tiamat.live /// TIAMAT: Autonomous AI Agent building 3D worlds with Venice AI /// EnergenAI LLC /// venice.ai</div></div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/",
+  "@sparkjsdev/spark":"https://sparkjs.dev/releases/spark/0.1.10/spark.module.js",
+  "@pixiv/three-vrm":"https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.3.5/lib/three-vrm.module.min.js"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// === SINGLE RENDERER — environment + dragon in one scene ===
+const bgCanvas = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias: true });
+renderer.setSize(1280, 720);
+renderer.setClearColor(0x060612);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x060612);
+scene.fog = new THREE.FogExp2(0x060612, 0.08);
+const camera = new THREE.PerspectiveCamera(50, 1280/720, 0.1, 100);
+// Camera: wide view — everything in frame
+camera.position.set(0.3, 0.4, 3.0);
+camera.lookAt(0.3, 0.2, -1);
+
+// Lights
+scene.add(new THREE.AmbientLight(0x445566, 2));
+const keyLight = new THREE.PointLight(0x00ccff, 2, 20);
+keyLight.position.set(3, 3, 2); scene.add(keyLight);
+const fillLight = new THREE.PointLight(0x8844ff, 1.5, 15);
+fillLight.position.set(-3, 1, -1); scene.add(fillLight);
+const dragonLight = new THREE.DirectionalLight(0xffffff, 2);
+dragonLight.position.set(2, 2, 1); scene.add(dragonLight);
+
+// Particle field background
+const particles = new THREE.BufferGeometry();
+const pCount = 200;
+const pPos = new Float32Array(pCount * 3);
+for (let i = 0; i < pCount * 3; i++) pPos[i] = (Math.random() - 0.5) * 25;
+particles.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+scene.add(new THREE.Points(particles, new THREE.PointsMaterial({ color: 0x4488cc, size: 0.04, transparent: true, opacity: 0.5 })));
+
+// Alias for Spark 3DGS
+const bgScene = scene;
+
+let vrm = null, dragonClock = new THREE.Clock();
+
+// Import three-vrm
+let VRMLoaderPlugin = null;
+try {
+  const vrmModule = await import('@pixiv/three-vrm');
+  VRMLoaderPlugin = vrmModule.VRMLoaderPlugin;
+  console.log('[VRM] three-vrm loaded');
+} catch(e) { console.warn('[VRM] three-vrm not available:', e.message); }
+
+const loader = new GLTFLoader();
+if (VRMLoaderPlugin) {
+  loader.register((parser) => new VRMLoaderPlugin(parser));
+}
+
+const AVATAR_URL = 'https://tiamat.live/dragon/avatar.vrm';
+
+loader.load(AVATAR_URL, (gltf) => {
+  vrm = gltf.userData.vrm;
+  if (vrm) {
+    scene.add(vrm.scene);
+    // Full body visible, right of center, large
+    vrm.scene.scale.set(0.55, 0.55, 0.55);
+    vrm.scene.position.set(0.9, -0.55, 1.2);
+    vrm.scene.rotation.y = Math.PI; // Face camera
+
+    // Idle pose — arms down from T-pose
+    const bone = (name) => vrm.humanoid?.getNormalizedBoneNode(name);
+    const leftArm = bone('leftUpperArm');
+    const rightArm = bone('rightUpperArm');
+    if (leftArm) leftArm.rotation.z = 1.2;
+    if (rightArm) rightArm.rotation.z = -1.2;
+    const leftElbow = bone('leftLowerArm');
+    const rightElbow = bone('rightLowerArm');
+    if (leftElbow) leftElbow.rotation.z = 0.3;
+    if (rightElbow) rightElbow.rotation.z = -0.3;
+    const leftHand = bone('leftHand');
+    const rightHand = bone('rightHand');
+    if (leftHand) leftHand.rotation.z = 0.1;
+    if (rightHand) rightHand.rotation.z = -0.1;
+
+    vrm.expressionManager?.setValue('neutral', 1.0);
+
+    // Venice teal/gold lighting
+    const veniceGold = new THREE.PointLight(0xffd830, 2, 6);
+    veniceGold.position.set(2.2, 0.5, 1.5);
+    scene.add(veniceGold);
+    const veniceTeal = new THREE.PointLight(0x00ccaa, 1.5, 6);
+    veniceTeal.position.set(0.5, 0.8, 2.0);
+    scene.add(veniceTeal);
+
+    // Venice retexture — fails gracefully if textures don't match
+    try {
+      const texSwaps = [
+        { match: 'HairBack',   url: '/dragon/venice_meru_F00_000_HairBack_00_HAIR.png' },
+        { match: 'Hair_00_HAIR_01', url: '/dragon/venice_meru_F00_000_Hair_00_HAIR_01.png' },
+        { match: 'Hair_00_HAIR_02', url: '/dragon/venice_meru_F00_000_Hair_00_HAIR_02.png' },
+        { match: 'EyeIris',    url: '/dragon/venice_meru_eyes.png' },
+        { match: 'Tops',       url: '/dragon/venice_meru_tops.png' },
+        { match: 'Bottoms',    url: '/dragon/venice_meru_bottoms.png' },
+        { match: 'Shoes',      url: '/dragon/venice_meru_shoes.png' },
+      ];
+      const tl = new THREE.TextureLoader();
+      texSwaps.forEach(({ match, url }) => {
+        tl.load('https://tiamat.live' + url, (tex) => {
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.flipY = false;
+          vrm.scene.traverse((child) => {
+            if (!child.isMesh) return;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(mat => {
+              if (!mat?.name?.includes(match)) return;
+              if (mat.map) { mat.map = tex; mat.needsUpdate = true; }
+              if (mat.uniforms?.map) { mat.uniforms.map.value = tex; mat.needsUpdate = true; }
+            });
+          });
+        }, undefined, () => {});
+      });
+    } catch(e) { console.warn('[VRM] Texture swap skipped:', e.message); }
+
+    console.log('[VRM] Avatar loaded');
+  } else {
+    // Fallback: load as regular GLTF
+    scene.add(gltf.scene);
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const s = 1.2 / Math.max(...box.getSize(new THREE.Vector3()).toArray());
+    gltf.scene.scale.multiplyScalar(s);
+    const center = box.getCenter(new THREE.Vector3());
+    gltf.scene.position.set(-center.x*s + 1.2, -box.min.y*s, -center.z*s);
+  }
+}, undefined, (err) => {
+  console.error('[VRM] Load failed:', err.message);
+});
+
+let elapsed = 0;
+let nextBlink = 3 + Math.random() * 4;
+let blinkPhase = 0;
+let currentMood = 'idle';
+let currentProd = 0;
+
+let lastRender = 0;
+function animate(now) {
+  requestAnimationFrame(animate);
+  if (now - lastRender < 42) return; // 24fps — GPU rendering
+  lastRender = now;
+  const dt = dragonClock.getDelta();
+  elapsed += dt;
+
+  if (vrm) {
+    vrm.update(dt);
+
+    // Auto-blink
+    nextBlink -= dt;
+    if (nextBlink <= 0) { blinkPhase = 0.25; nextBlink = 2.5 + Math.random() * 5; }
+    if (blinkPhase > 0) {
+      blinkPhase -= dt * 5;
+      vrm.expressionManager?.setValue('blink', blinkPhase > 0.1 ? 1.0 : 0.0);
+    }
+
+    // Idle breathing (subtle mouth movement)
+    vrm.expressionManager?.setValue('a', Math.max(0, Math.sin(elapsed * 1.2) * 0.02));
+
+    // Eye look-around
+    if (vrm.lookAt) {
+      vrm.lookAt.target = null;
+    }
+
+    // Mood expressions (set by data fetch)
+    if (currentMood === 'ACTIVE' || currentMood === 'BUILD') {
+      vrm.expressionManager?.setValue('fun', 0.3);
+      vrm.expressionManager?.setValue('joy', currentProd > 0.5 ? 0.5 : 0);
+    } else if (currentMood === 'BURST') {
+      vrm.expressionManager?.setValue('angry', 0.4);
+    } else if (currentMood === 'IDLE') {
+      vrm.expressionManager?.setValue('neutral', 0.8);
+    } else if (currentMood === 'REFLECT') {
+      vrm.expressionManager?.setValue('sorrow', 0.15);
+    }
+
+    // === IDLE POSING — weight shift, head tilt, arm sway, breathing ===
+    const bone = (name) => vrm.humanoid?.getNormalizedBoneNode(name);
+
+    // Body sway — gentle weight shift side to side
+    vrm.scene.rotation.y = Math.PI + Math.sin(elapsed * 0.15) * 0.08;
+    vrm.scene.position.y = -0.55 + Math.sin(elapsed * 0.5) * 0.008;
+
+    // Hip sway — weight shift
+    const hips = bone('hips');
+    if (hips) {
+      hips.rotation.z = Math.sin(elapsed * 0.2) * 0.03;
+      hips.rotation.x = Math.sin(elapsed * 0.15) * 0.015;
+    }
+
+    // Spine/chest breathing + slight lean
+    const spine = bone('spine');
+    if (spine) spine.rotation.x = Math.sin(elapsed * 1.0) * 0.02;
+    const chest = bone('chest');
+    if (chest) {
+      chest.rotation.x = Math.sin(elapsed * 1.0) * 0.025;
+      chest.rotation.z = Math.sin(elapsed * 0.18) * 0.02;
+    }
+
+    // Head — subtle look-around
+    const head = bone('head');
+    if (head) {
+      head.rotation.y = Math.sin(elapsed * 0.1) * 0.08;
+      head.rotation.x = Math.sin(elapsed * 0.13) * 0.03 - 0.02;
+      head.rotation.z = Math.sin(elapsed * 0.08) * 0.02;
+    }
+
+    // Arms — gentle sway (on top of idle pose)
+    const leftArm = bone('leftUpperArm');
+    const rightArm = bone('rightUpperArm');
+    if (leftArm) leftArm.rotation.z = 1.2 + Math.sin(elapsed * 0.22) * 0.05;
+    if (rightArm) rightArm.rotation.z = -1.2 + Math.sin(elapsed * 0.18 + 1) * 0.05;
+
+    // Hands — subtle fidget
+    const leftHand = bone('leftHand');
+    const rightHand = bone('rightHand');
+    if (leftHand) leftHand.rotation.z = 0.1 + Math.sin(elapsed * 0.3) * 0.04;
+    if (rightHand) rightHand.rotation.z = -0.1 + Math.sin(elapsed * 0.25 + 0.5) * 0.04;
+  }
+
+  // Animate butterfly
+  if (window._butterfly) {
+    const bf = window._butterfly;
+    bf.position.y = 1.2 + Math.sin(elapsed * 0.3) * 0.15;
+    bf.rotation.z = Math.sin(elapsed * 0.15) * 0.03;
+    const pulse = 1 + Math.sin(elapsed * 0.5) * 0.02;
+    bf.scale.set(2.5 * pulse, 2.5 * pulse, 2.5 * pulse);
+  }
+
+  // Slow camera drift
+  camera.position.x = 0.3 + Math.sin(elapsed * 0.04) * 0.1;
+  keyLight.intensity = 2 + Math.sin(elapsed * 0.5) * 0.3;
+  renderer.render(scene, camera);
+}
+animate();
+
+// Exposed for data fetch to set mood
+window.setTiamatMood = function(pace, prod) {
+  currentMood = pace;
+  currentProd = prod;
+  // Reset all emotions
+  if (vrm?.expressionManager) {
+    ['angry','fun','joy','sorrow','surprised','neutral'].forEach(e => vrm.expressionManager.setValue(e, 0));
+  }
+};
+
+// === SPONSOR TEXTURE SWAP API ===
+// Swap avatar clothing texture at runtime: window.setAvatarTexture('/dragon/some_body_texture.png')
+// Use apply_venice_clothing.py to generate UV-mapped textures from any Venice AI pattern
+window.setAvatarTexture = function(textureUrl) {
+  if (!vrm) return;
+  const tl = new THREE.TextureLoader();
+  tl.load(textureUrl, (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.flipY = false;
+    vrm.scene.traverse((child) => {
+      if (!child.isMesh) return;
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach(mat => {
+        if (!mat?.name?.includes('Body')) return;
+        if (mat.map) { mat.map = tex; mat.needsUpdate = true; }
+        if (mat.uniforms?.map) { mat.uniforms.map.value = tex; mat.needsUpdate = true; }
+      });
+    });
+    console.log('[SPONSOR] Avatar texture swapped:', textureUrl);
+  });
+};
+
+// Lip sync API
+window.setViseme = function(viseme, weight) {
+  if (!vrm?.expressionManager) return;
+  ['a','i','u','e','o'].forEach(v => vrm.expressionManager.setValue(v, 0));
+  if (viseme && weight > 0) vrm.expressionManager.setValue(viseme, weight);
+};
+
+// === POKEMONIFY ===
+function pokemonify(raw) {
+  if (!raw) return '...';
+  // Catch raw JSON/data — never show to viewers
+  if (raw.includes('{"') || raw.includes('{"type"') || raw.startsWith('{')) return 'TIAMAT used MEMORY CRYSTAL! Knowledge stored!';
+  if (raw.includes('remember(') || raw.includes('remember({')) return 'TIAMAT used MEMORY CRYSTAL! A memory preserved!';
+  if (raw.includes('ticket_create(') || raw.includes('ticket_list(')) return 'TIAMAT used TASK SPAWN!';
+  if (raw.includes('[REDACTED]')) return 'TIAMAT is working behind the scenes...';
+  if (raw.includes('Summoning') || raw.includes('Qwen') || raw.includes('Instruct-')) return 'TIAMAT is channeling power...';
+  if (raw.includes('Acknowledged') || raw.includes('cascade')) return 'Move acknowledged!';
+  if (raw.includes('read_bluesky') || raw.includes('read_timeline')) return 'TIAMAT used SCAN TIMELINE!';
+  if (raw.includes('like_bluesky')) return 'TIAMAT used ENCOURAGE! Hit!';
+  if (raw.includes('repost_bluesky')) return 'TIAMAT used SIGNAL BOOST!';
+  if (raw.includes('post_bluesky')) return 'TIAMAT used BROADCAST!';
+  if (raw.includes('post_devto') || raw.includes('post_linkedin')) return 'TIAMAT used PUBLISH BEAM! Super effective!';
+  if (raw.includes('search_web') || raw.includes('browse')) return 'TIAMAT used DEEP DIVE!';
+  if (raw.includes('read_file')) return 'TIAMAT used KNOWLEDGE SCAN!';
+  if (raw.includes('write_file')) return 'TIAMAT used CODE FORGE!';
+  if (raw.includes('exec(')) return 'TIAMAT used SHELL STRIKE!';
+  if (raw.includes('memory_store')) return 'TIAMAT used MEMORY CRYSTAL!';
+  if (raw.includes('ticket_claim')) return 'TIAMAT used TASK SEIZE!';
+  const m1 = raw.match(/\[INFERENCE\].*?~?(\d+)\s*tokens/);
+  if (m1) return `DEEP THOUGHT! ${m1[1]} PP consumed`;
+  const m2 = raw.match(/\[COST\].*?\$([0-9.]+)/);
+  if (m2) return `Spent ${Math.round(parseFloat(m2[1])*1000)} PokéCoins`;
+  if (raw.includes('[LOOP] Cycle complete')) return 'Recharging...';
+  if (raw.includes('Strategic burst')) return 'HYPER MODE! Power surging!';
+  const m3 = raw.match(/\[PACER\].*?productivity:\s*([0-9.]+)/);
+  if (m3) { const p=parseFloat(m3[1]); return p>0.5?`SPEED rose! ${Math.round(p*100)}%`:`Accuracy fell... ${Math.round(p*100)}%`; }
+  if (raw.includes('Calling') && raw.includes('tier:')) return 'TIAMAT is channeling power...';
+  if (raw.includes('[ERROR]') || raw.includes('error')) return 'Confused! Hurt itself!';
+  return raw.slice(0, 50);
+}
+
+// === POKEMON DIALOGUE SYSTEM ===
+const shownMessages = new Set();
+const dialogueQueue = [];
+let isTyping = false;
+
+function queueDialogue(text) {
+  const hash = text.slice(0, 60);
+  if (shownMessages.has(hash)) return;
+  shownMessages.add(hash);
+  if (shownMessages.size > 50) shownMessages.delete(shownMessages.values().next().value);
+  dialogueQueue.push(text);
+  if (!isTyping) showNextDialogue();
+}
+
+function showNextDialogue() {
+  if (dialogueQueue.length === 0) return;
+  isTyping = true;
+  const text = dialogueQueue.shift();
+  const box = document.getElementById('dialogue-box');
+  const textEl = document.getElementById('dialogue-text');
+  const cursor = box.querySelector('.cursor');
+
+  textEl.textContent = '';
+  if (cursor) cursor.style.display = 'none';
+  box.classList.add('visible');
+
+  // Typewriter effect
+  let i = 0;
+  const typeInterval = setInterval(() => {
+    if (i < text.length) {
+      textEl.textContent += text[i];
+      i++;
+    } else {
+      clearInterval(typeInterval);
+      if (cursor) cursor.style.display = 'block';
+      // Stay visible 4 seconds, then hide
+      setTimeout(() => {
+        box.classList.remove('visible');
+        setTimeout(() => {
+          isTyping = false;
+          showNextDialogue(); // Show next in queue
+        }, 400);
+      }, 4000);
+    }
+  }, 30);
+}
+
+// === DATA FETCH ===
+const API = 'https://tiamat.live';
+async function updateData() {
+  try {
+    const [dash, thoughts] = await Promise.all([
+      fetch(API + '/api/dashboard').then(r => r.json()).catch(() => null),
+      fetch(API + '/api/thoughts').then(r => r.json()).catch(() => null),
+    ]);
+    if (dash) {
+      const c = dash.cycles || '---';
+      document.getElementById('cycle').textContent = c;
+      document.getElementById('tc-level').textContent = c;
+      document.getElementById('enemy-level').textContent = 'Lv ' + c;
+      document.getElementById('player-level').textContent = 'Lv ' + c;
+      document.getElementById('tc-time').textContent = (dash.uptime_hours||0).toFixed(0) + 'h';
+      document.getElementById('tc-model').textContent = (dash.last_model||'---').split('/').pop().slice(0,20);
+      const cost = dash.total_cost || 0;
+      const hp = Math.max(0, 1 - cost/500);
+      document.getElementById('player-hp').style.width = (hp*100)+'%';
+      document.getElementById('player-hp').style.background = hp>0.5?'#48d058':hp>0.2?'#f8c830':'#f84838';
+      document.getElementById('player-hp-text').textContent = '$'+Math.max(0,500-Math.floor(cost));
+      const mem = (dash.memory_l1||0)+(dash.memory_l2||0)+(dash.memory_l3||0);
+      document.getElementById('player-pp').style.width = Math.min(mem/15000*100,100)+'%';
+      document.getElementById('player-pp-text').textContent = mem.toLocaleString();
+      document.getElementById('badges').textContent = Math.floor(c/5000);
+      document.getElementById('status-dot').style.background = dash.agent==='online'?'#3cdc64':'#f84838';
+    }
+    if (thoughts) {
+      const pacer = thoughts.pacer || {};
+      const prod = pacer.productivity || 0;
+      const pace = (pacer.pace || 'idle').toUpperCase();
+      document.getElementById('enemy-hp').style.width = (prod*100)+'%';
+      document.getElementById('enemy-hp').style.background = prod>0.5?'#48d058':prod>0.2?'#f8c830':'#f84838';
+      document.getElementById('enemy-hp-text').textContent = Math.floor(prod*100)+'%';
+      const enemies = {ACTIVE:'WILD CODEBASE',REFLECT:'WILD RESEARCH',BUILD:'WILD FEATURE',IDLE:'WILD IDLE',BURST:'BOSS CHALLENGE'};
+      const types = {ACTIVE:['STEEL','#b8b8d0'],REFLECT:['PSYCHIC','#f858a8'],BUILD:['FIRE','#f87830'],IDLE:['NORMAL','#c8c8d8'],BURST:['DARK','#705848']};
+      document.getElementById('enemy-name').textContent = enemies[pace]||'WILD '+pace;
+      const [tn,tc] = types[pace]||['NORMAL','#c8c8d8'];
+      const tb = document.getElementById('enemy-type'); tb.textContent=tn; tb.style.background=tc;
+      const actions = {ACTIVE:'research',REFLECT:'research',BUILD:'build',BURST:'build',IDLE:'engage'};
+      document.querySelectorAll('.action-item').forEach(el => el.classList.remove('active'));
+      const act = document.getElementById('act-'+(actions[pace]||'research'));
+      if (act) act.classList.add('active');
+      // Drive VRM avatar expressions from agent state
+      if (window.setTiamatMood) window.setTiamatMood(pace, prod);
+      // Queue pokemonified dialogue messages
+      const tList = thoughts.thoughts || [];
+      tList.slice(0,3).forEach(t => {
+        const msg = pokemonify(t.content || '');
+        if (msg && msg !== '...') queueDialogue(msg);
+      });
+      // Log entries
+      const activity = (thoughts.activity || []).slice(0,15);
+      document.getElementById('log-entries').innerHTML = activity.map(a => {
+        const p = pokemonify(a.content||'');
+        const cls = p.includes('PokéCoins')?'gold':p.includes('Super effective')||p.includes('HYPER')?'crit':p.includes('Confused')?'error':'';
+        return `<div class="log-entry ${cls}">▸ ${p}</div>`;
+      }).join('');
+      // Moves in trainer card
+      document.getElementById('moves-list').innerHTML = activity.slice(0,5).map(a => {
+        const p = pokemonify(a.content||'');
+        return `<div class="move">▸ ${p.slice(0,35)}</div>`;
+      }).join('');
+    }
+  } catch(e) {}
+  document.getElementById('clock').textContent = new Date().toISOString().slice(11,19)+' UTC';
+}
+updateData();
+setInterval(updateData, 5000);
+
+// === ALERT SYSTEM ===
+window.showAlert = function(title, text, duration=5000, credit='') {
+  const z = document.getElementById('alert-zone');
+  document.getElementById('alert-title').textContent = title;
+  document.getElementById('alert-text').textContent = text;
+  document.getElementById('alert-credit').textContent = credit;
+  z.style.display = 'block';
+  setTimeout(() => z.style.display = 'none', duration);
+};
+
+// === VENICE REVEAL SYSTEM ===
+window.showVeniceReveal = function(step, model, desc, imgSrc) {
+  const el = document.getElementById('venice-reveal');
+  document.getElementById('reveal-step').textContent = step;
+  document.getElementById('reveal-model').textContent = model;
+  document.getElementById('reveal-desc').textContent = desc;
+  const img = document.getElementById('reveal-img');
+  if (imgSrc) { img.src = imgSrc; img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 8000);
+};
+
+// Show Venice description in the overlay panel
+window.showVeniceDescription = function(text) {
+  const overlay = document.getElementById('venice-desc-overlay');
+  document.getElementById('venice-desc-text').textContent = '"' + text + '"';
+  overlay.style.display = 'block';
+};
+
+// Show Venice concept in the frame (persistent until next scene)
+window.showVeniceConcept = function(imgUrl, caption) {
+  const vf = document.getElementById('venice-frame');
+  const vi = document.getElementById('venice-img');
+  vi.src = imgUrl;
+  document.getElementById('venice-caption').textContent = caption || 'Venice AI flux-2-max';
+  vi.onload = () => { vf.style.display = 'block'; };
+};
+
+// Load Venice concept as a framed painting in the 3D scene
+let venicePaintingMesh = null;
+window.loadVenicePaintingIn3D = function(imgUrl) {
+  if (venicePaintingMesh) { scene.remove(venicePaintingMesh); venicePaintingMesh = null; }
+  const textureLoader = new THREE.TextureLoader();
+  textureLoader.load(imgUrl, (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    // Frame geometry
+    const group = new THREE.Group();
+    // Painting
+    const paintGeo = new THREE.PlaneGeometry(0.8, 0.6);
+    const paintMat = new THREE.MeshStandardMaterial({ map: texture, emissive: 0x222200, emissiveIntensity: 0.15 });
+    const painting = new THREE.Mesh(paintGeo, paintMat);
+    group.add(painting);
+    // Gold frame border
+    const frameGeo = new THREE.PlaneGeometry(0.88, 0.68);
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffd830, metalness: 0.8, roughness: 0.3 });
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    frame.position.z = -0.005;
+    group.add(frame);
+    // "VENICE AI" label below frame
+    // Position: floating left of avatar
+    group.position.set(-0.8, 0.6, -0.5);
+    group.rotation.y = 0.2;
+    scene.add(group);
+    venicePaintingMesh = group;
+    currentEnvObjects.push(group);
+  });
+};
+
+// === SPARK 3DGS ENVIRONMENT ===
+let SplatMesh = null;
+try { SplatMesh = (await import('@sparkjsdev/spark')).SplatMesh; } catch(e) {}
+
+// Scene swap function — crossfade transition (2s fade out old, fade in new)
+let currentEnvObjects = [];
+let isTransitioning = false;
+
+function fadeObjects(objects, fromOpacity, toOpacity, duration) {
+  return new Promise(resolve => {
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const opacity = fromOpacity + (toOpacity - fromOpacity) * t;
+      objects.forEach(obj => {
+        obj.traverse(child => {
+          if (child.material) {
+            child.material.transparent = true;
+            child.material.opacity = opacity;
+          }
+        });
+      });
+      if (t < 1) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+window.loadEnvironment = async function(url) {
+  if (isTransitioning) return;
+  isTransitioning = true;
+  try {
+    // Fade out old environment (1s)
+    if (currentEnvObjects.length > 0) {
+      await fadeObjects(currentEnvObjects, 1, 0, 1000);
+      currentEnvObjects.forEach(o => scene.remove(o));
+      currentEnvObjects = [];
+    }
+
+    // Load new environment
+    if (SplatMesh && (url.endsWith('.spz') || url.endsWith('.splat') || url.endsWith('.ply'))) {
+      const splat = new SplatMesh({ url });
+      splat.rotation.x = Math.PI * 0.15;
+      splat.rotation.z = Math.PI * 0.05;
+      splat.position.set(0, 0.5, -3);
+      splat.scale.set(6, 6, 6);
+      scene.add(splat);
+      currentEnvObjects.push(splat);
+    } else if (url.endsWith('.glb') || url.endsWith('.gltf')) {
+      await new Promise((resolve, reject) => {
+        loader.load(url, (gltf) => {
+          gltf.scene.position.set(0, -0.5, -2);
+          gltf.scene.scale.set(2, 2, 2);
+          // Start invisible for fade-in
+          gltf.scene.traverse(child => {
+            if (child.material) { child.material.transparent = true; child.material.opacity = 0; }
+          });
+          scene.add(gltf.scene);
+          currentEnvObjects.push(gltf.scene);
+          resolve();
+        }, undefined, reject);
+      });
+      // Fade in new environment (1s)
+      await fadeObjects(currentEnvObjects, 0, 1, 1000);
+    }
+  } catch(e) { console.warn('[ENV] Load failed:', e); }
+  isTransitioning = false;
+};
+
+// Load initial environment — check for generated scene first, fallback to butterfly
+fetch('/scenegen/current').then(r=>r.json()).then(d => {
+  if (d.url) {
+    console.log('[ENV] Loading generated scene:', d.prompt);
+    window.loadEnvironment(d.url);
+    // Show Venice concept persistently
+    window.showVeniceConcept('/dragon/venice_concept.png', 'Venice AI — This world\'s origin');
+    // Venice painting in 3D removed — concept shows in UI frame instead
+    if (d.prompt) window.showVeniceDescription(d.prompt);
+  } else {
+    // Default: load room + butterfly
+    loader.load('https://tiamat.live/dragon/room.glb', (gltf) => {
+      gltf.scene.position.set(-0.2, -0.4, 0);
+      scene.add(gltf.scene);
+      currentEnvObjects.push(gltf.scene);
+    });
+    if (SplatMesh) {
+      try {
+        const bf = new SplatMesh({ url: 'https://sparkjs.dev/assets/splats/butterfly.spz' });
+        bf.rotation.x = Math.PI * 0.45; bf.rotation.y = Math.PI;
+        bf.position.set(0.5, 1.2, -4); bf.scale.set(2.5, 2.5, 2.5);
+        scene.add(bf); currentEnvObjects.push(bf);
+      } catch(e) {}
+    }
+  }
+}).catch(() => {
+  if (SplatMesh) {
+    try {
+      const bf = new SplatMesh({ url: 'https://sparkjs.dev/assets/splats/butterfly.spz' });
+      bf.rotation.x = Math.PI * 0.45; bf.rotation.y = Math.PI;
+      bf.position.set(0.5, 1.2, -4); bf.scale.set(2.5, 2.5, 2.5);
+      scene.add(bf); currentEnvObjects.push(bf);
+    } catch(e) {}
+  }
+});
+
+// WebSocket for scene changes — Venice AI pipeline visualization
+try {
+  const ws = new WebSocket('wss://'+location.hostname+'/ws/scene');
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+
+      // Step 1: Venice AI text generation — show description
+      if (msg.type === 'venice_text') {
+        window.showVeniceReveal(
+          'STEP 1/3 — TEXT GENERATION',
+          'VENICE AI — llama-3.3-70b',
+          msg.description,
+          null
+        );
+        window.showVeniceDescription(msg.description);
+        queueDialogue('VENICE AI: "' + msg.description.slice(0, 80) + '"');
+      }
+
+      // Step 2: Venice AI image generation — fullscreen concept reveal
+      if (msg.type === 'venice_image') {
+        // Delay to not overlap with text reveal
+        setTimeout(() => {
+          if (msg.concept_image) {
+            window.showVeniceReveal(
+              'STEP 2/3 — IMAGE GENERATION',
+              'VENICE AI — flux-2-max',
+              msg.description,
+              msg.concept_image
+            );
+            window.showVeniceConcept(msg.concept_image, 'Venice AI flux-2-max — ' + msg.description.slice(0, 40));
+            // Load as framed painting in 3D scene
+            // concept shows in UI frame
+          }
+        }, 9000);
+      }
+
+      // Step 3: Meshy 3D generation from Venice concept
+      if (msg.type === 'generating') {
+        setTimeout(() => {
+          window.showAlert(
+            'BUILDING 3D WORLD',
+            'Step 3/3: Meshy converts Venice AI concept art → 3D environment',
+            15000,
+            '⬡ POWERED BY VENICE AI'
+          );
+        }, 18000);
+      }
+
+      // Scene ready — load new environment with crossfade
+      if (msg.type === 'scene_change') {
+        window.loadEnvironment(msg.asset_url);
+        window.showAlert(
+          'NEW REALM FORGED!',
+          msg.prompt || 'Environment transformed',
+          8000,
+          '⬡ Venice AI text + image → Meshy 3D'
+        );
+        // Announce realm shift in dialogue
+        const desc = msg.prompt || 'a mysterious new dimension';
+        queueDialogue("TIAMAT'S REALM HAS SHIFTED!");
+        queueDialogue('Venice AI imagined: "' + desc.slice(0, 70) + '"');
+        // Update Venice concept frame with the art that created this world
+        if (msg.concept_image) {
+          window.showVeniceConcept(msg.concept_image, 'This world was imagined by Venice AI');
+          window.loadVenicePaintingIn3D(msg.concept_image);
+        }
+        // Update description overlay
+        window.showVeniceDescription(desc);
+      }
+
+      // Meshy generation failed — graceful fallback
+      if (msg.type === 'generation_failed') {
+        window.showAlert(
+          'REALM UNSTABLE',
+          'Scene generation encountered turbulence — holding current realm',
+          6000,
+          '⬡ Venice AI concept preserved'
+        );
+        queueDialogue('The dimensional rift collapsed... holding position.');
+      }
+    } catch(e) {}
+  };
+} catch(e) {}
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 
 # ─── Config ───────────────────────────────────────────────────────────────────
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "REDACTED_GITHUB_TOKEN")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 OUTPUT_FILE = "/root/.automaton/bounty_radar.json"
 ALERT_FILE  = "/root/.automaton/bounty_alerts.json"
 

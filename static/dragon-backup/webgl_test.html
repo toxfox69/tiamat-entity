@@ -1,0 +1,12 @@
+<html><body style="margin:0;background:red">
+<canvas id="c" width="1280" height="720" style="width:1280px;height:720px"></canvas>
+<script>
+const gl = document.getElementById('c').getContext('webgl');
+if (gl) {
+  gl.clearColor(0, 1, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  document.title = 'WEBGL_OK';
+} else {
+  document.title = 'WEBGL_FAIL';
+}
+</script></body></html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TIAMAT VTuber</title>
+<style>
+  * { margin: 0; padding: 0; }
+  body { background: transparent; overflow: hidden; }
+  #status {
+    position: absolute; top: 10px; left: 10px;
+    color: #00ff88; font-family: monospace; font-size: 14px;
+    text-shadow: 0 0 5px #00ff88; z-index: 100;
+    background: rgba(0,0,0,0.7); padding: 8px; border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div id="status">LOADING...</div>
+<script src="/static/vtuber-bundle.js?v=1773782098"></script>
+<script>
+(function() {
+  var S = document.getElementById('status');
+  function log(msg) { S.textContent = msg; console.log(msg); }
+
+  if (!window.THREE) { log('THREE NOT LOADED'); return; }
+  log('three.js r' + THREE.REVISION);
+
+  var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  document.body.appendChild(renderer.domElement);
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 1.2, 3.5);
+  camera.lookAt(0, 1.0, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+  var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  dirLight.position.set(1, 2, 3);
+  scene.add(dirLight);
+  var accentLight = new THREE.PointLight(0x00ff88, 0.8, 10);
+  accentLight.position.set(-1, 1.5, 1);
+  scene.add(accentLight);
+
+  var model = null, bones = {}, morphTargets = [];
+  var clock = new THREE.Clock(), mood = 'processing';
+  var blinkState = 0, blinkPhase = 'open', blinkTimer = 0, blinkHold = 0;
+  var nextBlink = 3 + Math.random() * 4;
+
+  log('Loading model (plain GLTF)...');
+
+  // Load as plain GLTF — NO VRM plugin, NO MToon, just standard materials
+  var loader = new GLTFLoader();
+  loader.load('/static/mmorpg_mage.vrm', function(gltf) {
+    model = gltf.scene;
+    scene.add(model);
+    model.rotation.y = Math.PI;
+
+    // Force all materials to basic visible materials
+    model.traverse(function(node) {
+      if (node.isBone) {
+        var n = node.name.toLowerCase();
+        if (n.includes('head') && !n.includes('hair') && !bones.head) bones.head = node;
+        else if (n.includes('neck') && !bones.neck) bones.neck = node;
+        else if (n.includes('spine') && !bones.spine) bones.spine = node;
+        else if ((n.includes('chest') || n.includes('upper_body')) && !bones.chest) bones.chest = node;
+        else if ((n.includes('hips') || n.includes('center')) && !bones.hips) bones.hips = node;
+      }
+      if (node.isMesh) {
+        // Keep original material as-is — just make it visible
+        if (node.material) {
+          node.material.side = THREE.DoubleSide;
+          if (node.material.opacity === 0) node.material.opacity = 1;
+          node.material.visible = true;
+        }
+        if (node.morphTargetDictionary) {
+          morphTargets.push({ mesh: node, dict: node.morphTargetDictionary });
+        }
+      }
+    });
+
+    log('LIVE | bones: ' + Object.keys(bones).join(',') + ' | morphs: ' + morphTargets.length);
+    morphTargets.forEach(function(mt) { console.log('Morphs:', Object.keys(mt.dict)); });
+    setTimeout(function() { S.style.display = 'none'; }, 3000);
+
+  }, function(p) {
+    if (p.total > 0) log('Loading: ' + Math.round(p.loaded / p.total * 100) + '%');
+    else log('Loading: ' + Math.round(p.loaded / 1024 / 1024) + 'MB');
+  }, function(err) {
+    log('LOAD ERROR: ' + (err.message || err));
+  });
+
+  var moodColors = { building: 0x00ff88, strategic: 0xff00ff, frustrated: 0xff4444, resting: 0x4488ff, processing: 0x00ff88 };
+  function fetchMood() {
+    fetch('https://tiamat.live/api/thoughts/stream?limit=5')
+      .then(function(r) { return r.json(); })
+      .then(function(d) { mood = d.state || 'processing'; })
+      .catch(function() {});
+  }
+  setInterval(fetchMood, 10000);
+  fetchMood();
+
+  function setMorph(name, value) {
+    morphTargets.forEach(function(mt) {
+      var idx = mt.dict[name];
+      if (idx !== undefined) mt.mesh.morphTargetInfluences[idx] = value;
+    });
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    var dt = clock.getDelta();
+    var t = clock.elapsedTime;
+    if (!model) { renderer.render(scene, camera); return; }
+
+    accentLight.color.lerp(new THREE.Color(moodColors[mood] || 0x00ff88), 0.02);
+
+    if (bones.head) {
+      bones.head.rotation.x = Math.sin(t * 0.23) * 0.06 + Math.sin(t * 0.61) * 0.03;
+      bones.head.rotation.y = Math.sin(t * 0.17 + 0.5) * 0.05 + Math.sin(t * 0.43) * 0.025;
+      bones.head.rotation.z = Math.sin(t * 0.19 + 1.0) * 0.03;
+    }
+    if (bones.neck) { bones.neck.rotation.x = Math.sin(t * 0.23) * 0.02; bones.neck.rotation.y = Math.sin(t * 0.17 + 0.5) * 0.015; }
+    if (bones.spine) bones.spine.rotation.x = Math.sin(t * 0.7) * 0.008;
+    if (bones.chest) bones.chest.rotation.x = Math.sin(t * 0.7) * 0.005;
+    if (bones.hips) bones.hips.rotation.y = Math.sin(t * 0.15) * 0.005;
+
+    blinkTimer += dt;
+    if (blinkPhase === 'open' && blinkTimer >= nextBlink) { blinkPhase = 'closing'; blinkTimer = 0; }
+    if (blinkPhase === 'closing') { blinkState = Math.min(1, blinkState + dt * 12); if (blinkState >= 1) { blinkPhase = 'closed'; blinkHold = 0.05; } }
+    if (blinkPhase === 'closed') { blinkHold -= dt; if (blinkHold <= 0) blinkPhase = 'opening'; }
+    if (blinkPhase === 'opening') { blinkState = Math.max(0, blinkState - dt * 8); if (blinkState <= 0) { blinkState = 0; blinkPhase = 'open'; blinkTimer = 0; nextBlink = 3 + Math.random() * 4; if (Math.random() < 0.15) nextBlink = 0.2; } }
+
+    ['Blink', 'blink', 'Blink_L', 'Blink_R', 'blinkLeft', 'blinkRight', 'Fcl_EYE_Close_L', 'Fcl_EYE_Close_R'].forEach(function(n) { setMorph(n, blinkState); });
+    var mouth = Math.max(0, Math.sin(t * 0.7) * 0.02);
+    ['A', 'a', 'aa', 'Fcl_MTH_A'].forEach(function(n) { setMorph(n, mouth); });
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+</script>
+</body>
+</html>
