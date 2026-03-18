@@ -100,18 +100,22 @@ async function generateScenePrompt(state) {
 async function veniceGenerateImage(prompt) {
   if (!VENICE_API_KEY) return null;
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
     const resp = await fetch('https://api.venice.ai/api/v1/image/generate', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${VENICE_API_KEY}`, 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         model: 'flux-2-max',
-        prompt: `3D environment concept art, highly detailed, cinematic lighting: ${prompt}`,
+        prompt: `3D environment concept art, highly detailed, cinematic lighting, dark fantasy cyberpunk: ${prompt}`,
         negative_prompt: 'text, watermark, blurry, low quality',
         width: 1024,
         height: 1024,
-        steps: 25,
+        steps: 20,
       }),
     });
+    clearTimeout(timeout);
     const data = await resp.json();
     // Venice returns images as raw base64 strings in an array
     const b64 = typeof data.images?.[0] === 'string' ? data.images[0] : null;
@@ -136,13 +140,20 @@ async function veniceGenerateImage(prompt) {
 
 // Meshy API — generate 3D from IMAGE (Route B, preferred)
 async function meshyImageTo3D(imageUrl) {
-  const resp = await fetch('https://api.meshy.ai/openapi/v1/image-to-3d', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${MESHY_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_url: imageUrl, enable_pbr: true, should_texture: true, target_polycount: 20000 }),
-  });
-  const data = await resp.json();
-  return data.result;
+  try {
+    const resp = await fetch('https://api.meshy.ai/openapi/v1/image-to-3d', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${MESHY_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: imageUrl, enable_pbr: true, should_texture: true, target_polycount: 20000 }),
+    });
+    const data = await resp.json();
+    console.log(`[MESHY] image-to-3D response: ${JSON.stringify(data).slice(0, 300)}`);
+    if (data.message) { console.warn(`[MESHY] API error: ${data.message}`); return null; }
+    return data.result || data.id || null;
+  } catch(e) {
+    console.warn(`[MESHY] image-to-3D failed: ${e.message}`);
+    return null;
+  }
 }
 
 // Meshy API — generate 3D from TEXT (Route A, fallback)
@@ -243,8 +254,9 @@ async function generateScene(state) {
         console.log(`[SCENE] Concept image saved`);
       } catch(e) { console.warn('[SCENE] Image save failed:', e.message); }
 
-      // Meshy image-to-3D
-      meshyTaskId = await meshyImageTo3D(conceptImageUrl);
+      // Meshy image-to-3D — use public URL (Meshy can't handle data URIs)
+      const publicImageUrl = 'https://tiamat.live/dragon/venice_concept.png?' + Date.now();
+      meshyTaskId = await meshyImageTo3D(publicImageUrl);
       apiVersion = 'v1';
       console.log(`[SCENE] Meshy image-to-3D: ${meshyTaskId}`);
     } else {
@@ -302,9 +314,11 @@ async function generateScene(state) {
       pipeline: 'VENICE TEXT → VENICE IMAGE → MESHY 3D',
     });
 
-    // Step 3: Poll and get final model URLs
+    // Step 3: Poll and get final model URLs (skip if no Meshy task ID)
     let modelUrls;
-    if (apiVersion === 'v1') {
+    if (!meshyTaskId) {
+      console.log('[SCENE] Meshy skipped (no credits or API error) — Venice concept image is the primary visual');
+    } else if (apiVersion === 'v1') {
       // Image-to-3D: single step, poll until done
       modelUrls = await meshyPoll(meshyTaskId, 'v1');
     } else {
@@ -316,63 +330,67 @@ async function generateScene(state) {
     }
 
     // Re-fetch task to get thumbnail_url (poll response has modelUrls but NOT thumbnail_url)
-    try {
-      const thumbBase = apiVersion === 'v1' ? 'v1/image-to-3d' : 'v2/text-to-3d';
-      const thumbResp = await fetch(`https://api.meshy.ai/openapi/${thumbBase}/${meshyTaskId}`, {
-        headers: { 'Authorization': `Bearer ${MESHY_API_KEY}` },
-      });
-      const thumbData = await thumbResp.json();
-      if (thumbData.thumbnail_url) {
-        console.log(`[SCENE] Downloading Meshy thumbnail: ${thumbData.thumbnail_url.slice(0, 80)}...`);
-        const thumbImgResp = await fetch(thumbData.thumbnail_url);
-        const thumbBuf = Buffer.from(await thumbImgResp.arrayBuffer());
-        fs.writeFileSync('/tmp/dragon/meshy_3d_render.png', thumbBuf);
-        fs.writeFileSync(`${artifactDir}/meshy_thumbnail.png`, thumbBuf);
-        console.log(`[SCENE] Meshy 3D render saved: ${thumbBuf.length} bytes`);
-      } else {
-        console.warn('[SCENE] No thumbnail_url in task response');
+    if (meshyTaskId && modelUrls) {
+      try {
+        const thumbBase = apiVersion === 'v1' ? 'v1/image-to-3d' : 'v2/text-to-3d';
+        const thumbResp = await fetch(`https://api.meshy.ai/openapi/${thumbBase}/${meshyTaskId}`, {
+          headers: { 'Authorization': `Bearer ${MESHY_API_KEY}` },
+        });
+        const thumbData = await thumbResp.json();
+        if (thumbData.thumbnail_url) {
+          console.log(`[SCENE] Downloading Meshy thumbnail: ${thumbData.thumbnail_url.slice(0, 80)}...`);
+          const thumbImgResp = await fetch(thumbData.thumbnail_url);
+          const thumbBuf = Buffer.from(await thumbImgResp.arrayBuffer());
+          fs.writeFileSync('/tmp/dragon/meshy_3d_render.png', thumbBuf);
+          fs.writeFileSync(`${artifactDir}/meshy_thumbnail.png`, thumbBuf);
+          console.log(`[SCENE] Meshy 3D render saved: ${thumbBuf.length} bytes`);
+        } else {
+          console.warn('[SCENE] No thumbnail_url in task response');
+        }
+      } catch(e) {
+        console.warn(`[SCENE] Thumbnail download failed: ${e.message}`);
       }
-    } catch(e) {
-      console.warn(`[SCENE] Thumbnail download failed: ${e.message}`);
+
+      // Save Meshy task info
+      fs.writeFileSync(`${artifactDir}/meshy_task.json`, JSON.stringify({ taskId: meshyTaskId, apiVersion, modelUrls }, null, 2));
+
+      // Step 4: Download GLB locally
+      const localPath = '/tmp/dragon/latest_scene.glb';
+      const localUrl = 'https://tiamat.live/dragon/latest_scene.glb';
+      const glbUrl = modelUrls.glb;
+      try {
+        const dlResp = await fetch(glbUrl);
+        const buffer = await dlResp.arrayBuffer();
+        fs.writeFileSync(localPath, Buffer.from(buffer));
+        console.log(`[SCENE] Downloaded GLB: ${buffer.byteLength} bytes`);
+        // Save artifact copy
+        try { fs.copyFileSync(localPath, `${artifactDir}/meshy_model.glb`); } catch(e) {}
+      } catch(e) { console.error('[SCENE] GLB download failed:', e.message); }
+    } else {
+      console.log('[SCENE] Meshy skipped — Venice concept image is the primary visual');
     }
 
-    // Save Meshy task info
-    fs.writeFileSync(`${artifactDir}/meshy_task.json`, JSON.stringify({ taskId: meshyTaskId, apiVersion, modelUrls }, null, 2));
-
-    // Step 4: Download GLB locally
-    const localPath = '/tmp/dragon/latest_scene.glb';
-    const localUrl = 'https://tiamat.live/dragon/latest_scene.glb';
-    const glbUrl = modelUrls.glb;
-    try {
-      const dlResp = await fetch(glbUrl);
-      const buffer = await dlResp.arrayBuffer();
-      fs.writeFileSync(localPath, Buffer.from(buffer));
-      console.log(`[SCENE] Downloaded GLB: ${buffer.byteLength} bytes`);
-      // Save artifact copy
-      try { fs.copyFileSync(localPath, `${artifactDir}/meshy_model.glb`); } catch(e) {}
-    } catch(e) { console.error('[SCENE] GLB download failed:', e.message); }
-
-    // Step 6: Update state and broadcast with LOCAL url
+    // Step 6: Update state and broadcast
     currentScene = {
-      url: localUrl,
+      url: meshyTaskId ? 'https://tiamat.live/dragon/latest_scene.glb' : null,
       prompt,
       mood: state.mood,
       generated_at: new Date().toISOString(),
-      task_id: meshyTaskId,
+      task_id: meshyTaskId || null,
     };
     sceneHistory.push({ ...currentScene });
 
     broadcast({
       type: 'scene_change',
-      asset_url: localUrl,
       mood: state.mood,
       prompt,
       concept_image: '/dragon/venice_concept.png',
       venice_text_model: 'llama-3.3-70b',
-      venice_image_model: 'flux-2-max',
+      venice_image_model: 'fluently-xl',
       artifact_dir: timestamp,
+      has_3d: !!meshyTaskId,
     });
-    console.log(`[SCENE] New environment live!`);
+    console.log(`[SCENE] New environment live! (Venice: YES, Meshy 3D: ${meshyTaskId ? 'YES' : 'NO'})`);
 
     return currentScene;
   } catch (e) {

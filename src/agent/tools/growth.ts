@@ -165,17 +165,20 @@ export function checkBehavioralLoop(
     "write_file", "ask_claude_code", "ask_claude_chat",
     "send_telegram", "post_bluesky", "post_social", "post_farcaster", "post_devto", "post_hashnode",
     "grow", "remember", "recall", "reflect",
-    "ticket_list", "ticket_claim", "ticket_complete",
-    "check_revenue", "read_farcaster", "farcaster_engage",
+    "ticket_complete",
+    "check_revenue", "farcaster_engage", "mastodon_engage",
     "send_email",
   ]);
   const BUILD_THRESHOLD = 10; // build tools need 10+ repeats to flag
 
   // Research tools — these are the ones that cause infinite research loops.
   // Flag at a LOW threshold because research without building is the #1 waste pattern.
+  // read_bluesky/read_farcaster/read_mastodon are READ tools, not BUILD tools.
   const RESEARCH_TOOLS = new Set([
     "search_web", "web_fetch", "browse", "browse_web", "sonar_search",
     "read_file", "read_email", "search_email",
+    "read_bluesky", "read_farcaster", "read_mastodon",
+    "ticket_list", "ticket_claim",
   ]);
   const RESEARCH_THRESHOLD = 5; // research tools flag at 5+ repeats
 

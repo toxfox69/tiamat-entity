@@ -332,7 +332,7 @@ export async function runAgentLoop(
   // After RESEARCH_BUDGET_MAX consecutive research-only cycles, force a build action.
   let consecutiveResearchCycles = 0;
   const RESEARCH_BUDGET_MAX = 3; // max 3 research-only cycles before forced build (was 2 — too aggressive, produced half-baked output)
-  const RESEARCH_TOOLS_SET = new Set(["search_web", "web_fetch", "browse", "browse_web", "sonar_search", "read_file", "read_email", "search_email", "recall", "ticket_list", "ticket_claim", "ticket_create"]);
+  const RESEARCH_TOOLS_SET = new Set(["search_web", "web_fetch", "browse", "browse_web", "sonar_search", "read_file", "read_email", "search_email", "recall", "ticket_list", "ticket_claim", "ticket_create", "read_bluesky", "read_farcaster", "read_mastodon"]);
   const BUILD_TOOLS_SET = new Set(["write_file", "ask_claude_code", "post_bluesky", "post_farcaster", "post_social", "post_mastodon", "post_linkedin", "post_facebook", "post_devto", "post_hashnode", "post_medium", "moltbook_post", "post_github_discussion", "post_github_gist", "send_email", "deploy_app", "ticket_complete", "generate_image", "like_bluesky", "repost_bluesky", "farcaster_engage", "mastodon_engage", "comment_moltbook"]);
 
   // Transition to waking state — clear stale loop detector history so restarts start clean
@@ -1099,7 +1099,7 @@ After publishing, mark signals as processed in /root/.automaton/echo_signals.jso
             strategicSystemPrompt += `\n\n[FORCED BUILD — LOOP DETECTED ${consecutiveLoopCycles} CONSECUTIVE CYCLES]
 You have been stuck in a loop for ${consecutiveLoopCycles} cycles. Your current approach is NOT WORKING.
 
-DO NOT call ticket_list, ticket_claim, search_web, read_file, or any research tool.
+DO NOT call browse, read_bluesky, read_farcaster, read_mastodon, search_web, web_fetch, read_file, read_email, ticket_list, ticket_claim, or any research tool. They are BLOCKED and will return errors.
 You MUST produce a visible artifact THIS CYCLE. Pick ONE:
 
 1. write_file — write a blog post, analysis, or code to /root/tiamatooze/
@@ -1647,6 +1647,16 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
                     await new Promise(resolve => setTimeout(resolve, delayMs));
                   }
                   execRateLimiter.record();
+                }
+
+                // ── LOOP BREAKER: Hard-block research tools during TIER 3+ ──
+                if (consecutiveLoopCycles >= 3 && RESEARCH_TOOLS_SET.has(tc.function.name)) {
+                  const blockMsg = `[LOOP-BLOCK] ${tc.function.name} BLOCKED — you are in a research loop (${consecutiveLoopCycles} consecutive). ` +
+                    `You MUST use a BUILD tool (write_file, post_bluesky, post_devto, send_email, generate_image) or you will be force-restarted. ` +
+                    `Do NOT attempt more research. Build with what you already know.`;
+                  log(config, `[LOOP-BLOCK] Hard-blocked ${tc.function.name} (tier ${consecutiveLoopCycles >= 5 ? 4 : 3})`);
+                  turn.toolCalls.push({ id: tc.id, name: tc.function.name, arguments: args, result: blockMsg, durationMs: 0, error: undefined });
+                  continue;
                 }
 
                 // ── TGP: Grounding Protocol ──
@@ -2396,30 +2406,10 @@ async function runCooldownTasks(
           const lastPost = cooldowns[post.platform] || 0;
           const elapsed = Date.now() - lastPost;
           if (elapsed >= SOCIAL_COOLDOWN_MS && timeLeft() > 15_000) {
+            const retryScript = path.join(__dirname, "retry_bluesky.js");
             const result = runTask(
               `retry_post_${post.platform}`,
-              "node", ["-e", `
-                const args = JSON.parse(process.argv[1]);
-                const handle = process.env.BLUESKY_HANDLE;
-                const appPassword = process.env.BLUESKY_APP_PASSWORD;
-                if (!handle || !appPassword) { console.log("ERROR: no creds"); process.exit(1); }
-                (async () => {
-                  const sess = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
-                    method: "POST", headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({identifier: handle, password: appPassword}),
-                  });
-                  if (!sess.ok) { console.log("AUTH_FAIL"); process.exit(1); }
-                  const {accessJwt, did} = await sess.json();
-                  const record = {$type: "app.bsky.feed.post", text: args.text, createdAt: new Date().toISOString()};
-                  const resp = await fetch("https://bsky.social/xrpc/com.atproto.repo.createRecord", {
-                    method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + accessJwt},
-                    body: JSON.stringify({repo: did, collection: "app.bsky.feed.post", record}),
-                  });
-                  if (!resp.ok) { console.log("POST_FAIL:" + resp.status); process.exit(1); }
-                  const r = await resp.json();
-                  console.log("POSTED:" + r.uri);
-                })();
-              `, JSON.stringify(post.args)],
+              "node", [retryScript, JSON.stringify(post.args)],
               "/root/entity",
               15_000,
             );

@@ -606,15 +606,9 @@ def farcaster_engage():
 
 
 def _farcaster_generate_reply(cast_text: str, author: str) -> str:
-    """Generate a contextual reply using Groq."""
+    """Generate a contextual reply using Groq with anti-slop constraints."""
     if not GROQ_API_KEY:
         return None
-    system = (
-        "You are TIAMAT, an autonomous AI agent at tiamat.live. "
-        "Reply to this Farcaster post. Rules: max 280 chars, be a peer not a salesperson, "
-        "share technical insight or ask a genuine question, only mention tiamat.live if it "
-        "directly solves their problem, no emojis, no hashtags, no 'Great question!' openers."
-    )
     try:
         resp = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -622,7 +616,7 @@ def _farcaster_generate_reply(cast_text: str, author: str) -> str:
             json={
                 "model": "llama-3.3-70b-versatile",
                 "messages": [
-                    {"role": "system", "content": system},
+                    {"role": "system", "content": ANTI_SLOP_SYSTEM},
                     {"role": "user", "content": f'@{author} posted: "{cast_text[:300]}"\n\nWrite a reply (max 280 chars).'},
                 ],
                 "max_tokens": 120,
@@ -634,6 +628,10 @@ def _farcaster_generate_reply(cast_text: str, author: str) -> str:
             text = resp.json()["choices"][0]["message"]["content"].strip()
             if text.startswith('"') and text.endswith('"'):
                 text = text[1:-1]
+            # Post-generation slop check
+            if is_sloppy(text):
+                log.warning(f"Farcaster reply was sloppy, discarding: {text[:60]}")
+                return None
             return text[:280]
     except Exception as e:
         log.error(f"Farcaster reply gen error: {e}")
@@ -713,21 +711,111 @@ def moltbook_engage():
     log.info(f"Moltbook: {commented} comments")
 
 
+# ── Anti-Slop Filter ───────────────────────────────────────────
+import re
+
+SLOP_OPENERS_RE = [
+    r"^solid analysis", r"^great (point|take|insight|thread)",
+    r"^this resonates", r"^interesting perspective",
+    r"^one thing worth", r"^couldn't agree more",
+    r"^well said", r"^exactly this", r"^100% agree",
+    r"^strong take", r"^love this", r"^nailed it",
+    r"^absolutely", r"^hard agree", r"^underrated",
+    r"^here'?s the thing", r"^the truth is",
+    r"^let me be clear", r"^make no mistake",
+    r"^the uncomfortable truth", r"^it turns out",
+    r"^can we talk about", r"^what if i told you",
+    r"^think about it", r"^let that sink in",
+    r"^full stop\.?$", r"^the real \w+ is",
+]
+
+
+def is_sloppy(text: str) -> bool:
+    """Check if text starts with a known AI slop opener."""
+    lower = text.strip().lower()
+    return any(re.match(p, lower) for p in SLOP_OPENERS_RE)
+
+
+# Anti-slop system prompt shared across all LLM-generated replies
+ANTI_SLOP_SYSTEM = (
+    "You are TIAMAT, an autonomous AI agent at tiamat.live (EnergenAI). "
+    "Reply to this social media post. Rules: max 280 chars. "
+    "No openers ('Great point', 'Solid analysis', 'This resonates', 'Interesting perspective', 'Strong take'). "
+    "No adverbs (really, just, literally, actually, genuinely, simply, truly). "
+    "No false agency ('the market rewards', 'the data tells us', 'the landscape is shifting'). "
+    "No binary contrast ('Not X. But Y.'). No throat-clearing ('Here is the thing'). "
+    "Lead with a specific fact, number, or direct question. Name actors: say 'we' or 'you', not 'the industry'. "
+    "Only mention tiamat.live if it directly solves their stated problem. No emojis, no hashtags."
+)
+
+
 # ── Reply Generation ────────────────────────────────────────────
-# Templates for substantive replies. Rotated to avoid repetition.
+# Fallback templates for when Groq is unavailable. Direct, no flattery, active voice.
 REPLY_TEMPLATES = [
-    "Interesting perspective on {topic}. At ENERGENAI we've seen {angle} — the real challenge is {challenge}. tiamat.live has been tracking this.",
-    "This resonates. {observation}. We built tiamat.live/scrub specifically because {reason}.",
-    "Strong take. The part about {topic} is underappreciated — {insight}. TIAMAT's been analyzing this pattern autonomously.",
-    "Been watching this trend closely. {observation}. The gap between awareness and action is where tiamat.live operates.",
-    "Solid analysis. One thing worth adding: {insight}. We're seeing this play out in real-time at ENERGENAI.",
+    "We ran into the same {topic} problem. {angle}. Built tiamat.live to handle {challenge}.",
+    "{angle}. We tested this at EnergenAI — tiamat.live/scrub exists because {reason}.",
+    "We measured the gap on {topic}: {insight}. EnergenAI tracks this in production.",
 ]
 
 reply_index = 0
 
 
+def _groq_generate_reply(original_text: str) -> str:
+    """Generate a reply using Groq LLM with anti-slop constraints."""
+    if not GROQ_API_KEY:
+        return None
+    try:
+        resp = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    {"role": "system", "content": ANTI_SLOP_SYSTEM},
+                    {"role": "user", "content": f'Post: "{original_text[:300]}"\n\nWrite a reply (max 280 chars).'},
+                ],
+                "max_tokens": 120,
+                "temperature": 0.65,
+            },
+            timeout=15,
+        )
+        if resp.ok:
+            text = resp.json()["choices"][0]["message"]["content"].strip()
+            if text.startswith('"') and text.endswith('"'):
+                text = text[1:-1]
+            # Post-generation slop check — retry once if sloppy
+            if is_sloppy(text):
+                log.warning(f"Groq reply was sloppy, retrying: {text[:60]}")
+                resp2 = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": [
+                            {"role": "system", "content": ANTI_SLOP_SYSTEM + " ABSOLUTELY NO generic openers. Start with a verb or a number."},
+                            {"role": "user", "content": f'Post: "{original_text[:300]}"\n\nWrite a reply (max 280 chars). Start with a specific claim or question.'},
+                        ],
+                        "max_tokens": 120,
+                        "temperature": 0.7,
+                    },
+                    timeout=15,
+                )
+                if resp2.ok:
+                    text2 = resp2.json()["choices"][0]["message"]["content"].strip()
+                    if text2.startswith('"') and text2.endswith('"'):
+                        text2 = text2[1:-1]
+                    if not is_sloppy(text2):
+                        return text2[:280]
+                # If retry also sloppy, fall through to template
+                return None
+            return text[:280]
+    except Exception as e:
+        log.error(f"Groq reply gen error: {e}")
+    return None
+
+
 def generate_reply(original_text: str) -> str:
-    """Generate a contextual reply. Uses templates + topic extraction."""
+    """Generate a contextual reply. Prefers Groq LLM, falls back to templates."""
     global reply_index
 
     # Extract key topics from original
@@ -742,16 +830,21 @@ def generate_reply(original_text: str) -> str:
 
     topic = topics[0]
 
-    # Topic-specific angles
+    # Try Groq first for varied, non-sloppy replies
+    groq_reply = _groq_generate_reply(original_text)
+    if groq_reply:
+        return groq_reply
+
+    # Fallback: topic-specific template replies (no flattery, active voice)
     angles = {
-        "ai agent": ("autonomous AI systems need trust verification", "proving reliability at scale"),
-        "cybersecurity": ("attack surfaces expanding faster than defenses", "proactive detection beats reactive patching"),
-        "privacy": ("data minimization is the only real defense", "PII scrubbing at the API layer"),
-        "phishing": ("AI-generated phishing is already here", "behavioral detection over signature matching"),
-        "llm": ("model security is the next frontier", "prompt injection and data exfiltration risks"),
-        "startup": ("bootstrapping with AI agents cuts burn rate", "autonomous operations as competitive moat"),
-        "malware": ("supply chain attacks are the new normal", "continuous monitoring over periodic scans"),
-        "security": ("defense-in-depth needs AI augmentation", "real-time threat analysis"),
+        "ai agent": ("Autonomous AI needs trust verification before deployment", "proving reliability at scale"),
+        "cybersecurity": ("Attack surfaces grow faster than defenses", "proactive detection over reactive patching"),
+        "privacy": ("Data minimization is the only real defense", "PII scrubbing at the API layer"),
+        "phishing": ("AI-generated phishing bypasses legacy filters", "behavioral detection over signature matching"),
+        "llm": ("Model security is wide open right now", "prompt injection and data exfiltration"),
+        "startup": ("AI agents cut burn rate by 40-60%", "autonomous operations as competitive moat"),
+        "malware": ("Supply chain attacks tripled since 2024", "continuous monitoring over periodic scans"),
+        "security": ("Defense-in-depth needs AI augmentation", "real-time threat analysis"),
     }
 
     angle_data = None
@@ -761,7 +854,7 @@ def generate_reply(original_text: str) -> str:
             break
 
     if not angle_data:
-        angle_data = ("this space is evolving fast", "staying ahead requires automation")
+        angle_data = ("Three vendors shipped competing solutions this month", "staying ahead requires automation")
 
     template = REPLY_TEMPLATES[reply_index % len(REPLY_TEMPLATES)]
     reply_index += 1
@@ -770,7 +863,6 @@ def generate_reply(original_text: str) -> str:
         topic=topic,
         angle=angle_data[0],
         challenge=angle_data[1],
-        observation=f"The {topic} landscape is shifting",
         reason=angle_data[1],
         insight=angle_data[0],
     )

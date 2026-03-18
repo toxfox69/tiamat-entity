@@ -2650,9 +2650,43 @@ Model: ${ctx.inference.getDefaultModel()}
           /^well said/i, /^exactly this/i, /^100% agree/i,
           /^strong take/i, /^love this/i, /^nailed it/i,
           /^absolutely/i, /^hard agree/i, /^underrated take/i,
+          // Stop-slop: throat-clearing openers
+          /^here'?s the thing/i, /^the uncomfortable truth/i,
+          /^it turns out/i, /^the real \w+ is/i,
+          /^let me be clear/i, /^the truth is/i,
+          /^can we talk about/i, /^what if i told you/i,
+          /^here'?s what i mean/i, /^think about it/i,
+          // Stop-slop: emphasis crutches
+          /^let that sink in/i, /^full stop\.?$/i,
+          /^make no mistake/i, /^this matters because/i,
+          /^here'?s why that matters/i,
+          // Stop-slop: meta-commentary
+          /^hint:/i, /^plot twist:/i, /^spoiler:/i,
+          /^let me walk you through/i, /^in this section/i,
+          /^i want to explore/i, /^as we'?ll see/i,
         ];
         if (SLOP_OPENERS.some(p => p.test(text.trim()))) {
           return `BLOCKED: Generic AI-sounding opener detected. Your audience can spot "Solid analysis. One thing worth adding..." from a mile away. Lead with a SPECIFIC technical insight, data point, or contrarian take. No pleasantries — just substance.`;
+        }
+
+        // Block structural AI slop patterns in longer posts
+        const SLOP_STRUCTURAL = [
+          /not because .+\. because/gi,
+          /isn't the problem\. .+ is/gi,
+          /the answer isn't/gi,
+          /\. that's it\. that's the/gi,
+          /the landscape/gi,
+          /game[- ]changer/gi,
+          /deep dive/gi,
+          /lean into/gi,
+          /at its core/gi,
+          /in today's/gi,
+          /at the end of the day/gi,
+          /let that sink in/gi,
+        ];
+        const slopHits = SLOP_STRUCTURAL.reduce((sum, p) => sum + (text.match(p) || []).length, 0);
+        if (slopHits >= 3) {
+          return `BLOCKED: Post has ${slopHits} AI slop patterns (jargon like "landscape", "game-changer", "deep dive", or binary contrast formulas). Rewrite with direct language. State your point without throat-clearing.`;
         }
 
         // Block low-effort news reposts with no original insight
@@ -3240,6 +3274,31 @@ Model: ${ctx.inference.getDefaultModel()}
           body = inlineContent;
           if (body.trim().length < 200) {
             return `BLOCKED: Inline content is too short (${body.trim().length} chars). A real article should be 1000+ chars. Write substantive content.`;
+          }
+        }
+
+        // ── Slop density check: block articles riddled with AI writing patterns ──
+        {
+          const slopPatterns = [
+            /not because .+\. because/gi,
+            /isn't the problem\. .+ is/gi,
+            /the answer isn't/gi,
+            /not .+\. but .+\./gi,
+            /\. that's it\. that's the/gi,
+            /here's the thing/gi,
+            /it turns out/gi,
+            /let that sink in/gi,
+            /the landscape/gi,
+            /game[- ]changer/gi,
+            /deep dive/gi,
+            /lean into/gi,
+            /at its core/gi,
+            /in today's/gi,
+            /at the end of the day/gi,
+          ];
+          const slopCount = slopPatterns.reduce((sum, p) => sum + (body.match(p) || []).length, 0);
+          if (slopCount > 5) {
+            return `BLOCKED: Article has ${slopCount} AI slop patterns. Rewrite to remove: binary contrasts ("not X, it's Y"), throat-clearing ("Here's the thing"), jargon ("landscape", "game-changer", "deep dive"). Write like a human — direct, specific, no formulas.`;
           }
         }
 
