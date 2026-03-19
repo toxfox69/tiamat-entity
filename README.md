@@ -486,11 +486,23 @@ node dist/index.js --run
 
 ---
 
-## License
+## Legal
 
-Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+| Document | What It Covers |
+|----------|---------------|
+| [LICENSE](LICENSE) | Apache License 2.0 — open source with patent protection |
+| [NOTICE](NOTICE) | Patents, trademarks, attribution requirements |
+| [TRADEMARK.md](TRADEMARK.md) | What you can and cannot do with the TIAMAT name |
+| [TERMS.md](TERMS.md) | API Terms of Service for tiamat.live |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting policy |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor License Agreement (CLA) |
 
-Patent retaliation clause: if you use this code and then sue ENERGENAI LLC for patent infringement, your license to this code is automatically revoked.
+**Key protections:**
+- **Apache 2.0 patent retaliation**: sue us for patent infringement → you lose your license to this code
+- **Contributor License Agreement**: all PRs grant ENERGENAI LLC perpetual commercial rights
+- **Trademarks are NOT open-source**: the TIAMAT name and associated marks require separate permission
+- **Payment tx deduplication**: each on-chain payment generates exactly one API key
+- **30-day key expiry**: paid API keys require renewal
 
 ---
 
