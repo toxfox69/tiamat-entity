@@ -488,7 +488,9 @@ node dist/index.js --run
 
 ## License
 
-MIT
+Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Patent retaliation clause: if you use this code and then sue ENERGENAI LLC for patent infringement, your license to this code is automatically revoked.
 
 ---
 
