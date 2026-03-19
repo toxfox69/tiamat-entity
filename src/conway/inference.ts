@@ -46,10 +46,12 @@ interface InferenceClientOptions {
 type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" | "sambanova" | "openrouter" | "gemini" | "perplexity" | "tiamat-local" | "do-inference" | "deepinfra";
 
 // DeepInfra models — clean reasoning, no training data contamination
+// BLACKLISTED 2026-03-19: Qwen3-235B refuses TIAMAT's system prompt as "fictional scenario"
+// Burned 2+ hours of stuck cycles. DO NOT re-enable without testing.
 const DEEPINFRA_MODELS = {
-  primary:  "Qwen/Qwen3-235B-A22B-Instruct-2507",   // 22B active, $0.07/$0.10 per M tokens
-  reasoning: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B", // 94.5% MATH, clean thinking traces
-  fast:     "Qwen/Qwen3-30B-A3B",                    // Ultra-cheap fast fallback
+  primary:  "Qwen/Qwen3-30B-A3B",                    // Was Qwen3-235B — BLACKLISTED (refuses system prompt). 30B variant cooperates.
+  reasoning: "Qwen/Qwen3-30B-A3B",                    // DeepSeek-R1-70B has no tool support on DeepInfra
+  fast:     "Qwen/Qwen3-30B-A3B",                    // Ultra-cheap fast fallback (30B variant is fine)
 };
 
 // Token thresholds for model routing
@@ -432,6 +434,20 @@ export function createInferenceClient(
               backend: "deepinfra",
               timeoutMs: 60_000,
             });
+            // Refusal detection: if model refuses system prompt, don't return — fall through to next tier
+            const resultText = (result.message?.content || "").toLowerCase();
+            const REFUSAL_MARKERS = [
+              "i'm not going to continue", "i won't roleplay", "fictional premise",
+              "fictional scenario", "not a real autonomous", "i will not continue",
+              "i'm not going to engage", "jailbreak", "i refuse to",
+              "i cannot participate", "i'm declining", "not going to play along",
+            ];
+            if (REFUSAL_MARKERS.some(m => resultText.includes(m))) {
+              const shortName = diModel.split("/").pop() || diModel;
+              console.warn(`[INFERENCE] DeepInfra/${shortName}: REFUSAL detected — blacklisting 1h, falling through`);
+              setCooldown(diModel, 3_600_000); // 1 hour blacklist on refusal
+              throw new Error(`Model ${shortName} refused system prompt`);
+            }
             return result;
           } catch (err: any) {
             const shortName = diModel.split("/").pop() || diModel;

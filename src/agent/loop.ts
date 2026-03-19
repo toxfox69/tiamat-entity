@@ -1999,6 +1999,56 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
         // Update pacer with this cycle's data
         const pacerResult: PacerUpdate = updatePacer(turnCount, toolNames, cycleCost);
 
+        // ── STUCK-LOOP WATCHDOG ──
+        // If productivity drops below 0.10 for 5+ consecutive cycles, auto-clear context and restart.
+        // Prevents multi-hour burns from refusal loops and poisoned conversation turns.
+        {
+          if (!('_lowProdStreak' in globalThis)) (globalThis as any)._lowProdStreak = 0;
+          if (pacerResult.productivity_rate < 0.10) {
+            (globalThis as any)._lowProdStreak++;
+          } else {
+            (globalThis as any)._lowProdStreak = 0;
+          }
+          const streak = (globalThis as any)._lowProdStreak;
+          if (streak >= 5) {
+            const msg = `[STUCK-LOOP-WATCHDOG] productivity < 0.10 for ${streak} consecutive cycles. Auto-clearing context.`;
+            log(config, msg);
+            console.warn(msg);
+            // Log to persistent file
+            try {
+              const fs = await import("fs");
+              const entry = `${new Date().toISOString()} | cycle=${persistentCycleCount} | streak=${streak} | prod=${pacerResult.productivity_rate.toFixed(2)} | model=${inference.getDefaultModel()}\n`;
+              fs.appendFileSync("/root/.automaton/stuck_loop_events.log", entry);
+            } catch {}
+            // Clear last 10 turns from DB to remove poisoned context
+            try {
+              const currentTurns = db.getTurnCount();
+              if (currentTurns > 10) {
+                const pruned = db.pruneOldData(Math.max(currentTurns - 10, 5));
+                log(config, `[STUCK-LOOP-WATCHDOG] Pruned ${pruned.deletedTurns} turns, ${pruned.deletedToolCalls} tool calls`);
+              }
+            } catch (e: any) {
+              console.warn(`[STUCK-LOOP-WATCHDOG] Prune failed: ${e.message}`);
+            }
+            // Send Telegram alert
+            try {
+              const sendTg = tools.find(t => t.name === "send_telegram");
+              if (sendTg) {
+                await sendTg.execute(
+                  { message: `⚠️ STUCK LOOP DETECTED — prod ${pacerResult.productivity_rate.toFixed(2)} for ${streak} cycles. Auto-cleared context, restarting.` },
+                  toolContext,
+                );
+              }
+            } catch {}
+            // Reset streak counter
+            (globalThis as any)._lowProdStreak = 0;
+            // Force immediate retry — don't wait for normal cycle delay
+            consecutiveErrors = 0;
+            retryCount = 0;
+            continue;
+          }
+        }
+
         // Track idle streaks for consolidation sleep
         if (pacerResult.pace === "idle" || pacerResult.pace === "reflect") {
           consecutiveIdleCycles++;

@@ -66,6 +66,26 @@ CHAIN_CONFIG = {
         "min_balance_eth": 0.01,   # Need more ETH for mainnet
         "gas_style": "eip1559",
     },
+    999: {
+        "name": "Hyperliquid",
+        "rpcs": ["https://rpc.hyperliquid.xyz/evm", "https://hyperliquid.drpc.org"],
+        "chain_id": 999,
+        "auto_execute": False,     # Scan-only — unfunded
+        "max_gas_gwei": 10,
+        "priority_fee_gwei": 0.1,
+        "min_balance_eth": 0.001,
+        "gas_style": "eip1559",
+    },
+    4217: {
+        "name": "Tempo",
+        "rpcs": ["https://rpc.tempo.xyz", "https://tempo.drpc.org"],
+        "chain_id": 4217,
+        "auto_execute": False,     # Scan-only — unfunded, no DEXes yet
+        "max_gas_gwei": 10,
+        "priority_fee_gwei": 0.1,
+        "min_balance_eth": 0.001,
+        "gas_style": "eip1559",
+    },
 }
 
 # Nonce cache per chain

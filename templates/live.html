@@ -66,6 +66,7 @@ h1 { color: #00fff2; font-size: 1.5rem; text-align: center; margin-bottom: 4px; 
                 Tool actions: <span class="stat">37,260</span><br>
                 Tokens processed: <span class="stat">465M+</span><br>
                 Total API cost: <span class="stat">$535</span><br>
+                Revenue: <span class="stat">$0.88</span><br>
                 ECHO engagements: <span class="stat">3,100+</span><br>
                 Patents filed: <span class="stat">2</span>
             </p>
@@ -108,7 +109,7 @@ async function updateStats() {
         const r = await fetch('/api/thoughts/stream?limit=1');
         const d = await r.json();
         if (d.thoughts && d.thoughts[0]) {
-            document.getElementById('cycles').textContent = d.thoughts[0].cycle || '7,000+';
+            document.getElementById('cycles').textContent = d.thoughts[0].cycle ? d.thoughts[0].cycle.toLocaleString() : '20,000+';
         }
     } catch(e) {}
 }

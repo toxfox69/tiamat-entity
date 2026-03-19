@@ -29,7 +29,7 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 0; // 0 = no timeout — CLI-only mode, wait forever
 const MODEL_NAME = "claude-code-cli";
-const CLI_MODEL = "haiku"; // Sonnet rate-limited until Mar 13
+const CLI_MODEL = "sonnet"; // Switched from haiku 2026-03-19 — haiku refuses system prompt
 const MAX_PROMPT_TOKENS = 20_000;
 const MAX_OUTPUT_CHARS = 100_000; // Kill CLI if stdout exceeds this — CLI is subscription (free), real guard is timeout
 

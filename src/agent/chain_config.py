@@ -73,6 +73,41 @@ CHAINS = {
             "sushiswap": "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
         },
     },
+    999: {
+        "name": "Hyperliquid",
+        "rpcs": [
+            "https://rpc.hyperliquid.xyz/evm",
+            "https://hyperliquid.drpc.org",
+        ],
+        "ws": [],
+        "weth": "0xafBA95a4C2f25C9616f8e54F010DF304C059971C",  # WHYPE (Wrapped HYPE)
+        "block_time": 2,
+        "auto_execute": False,  # Scan-only — unfunded (0 HYPE for gas)
+        "min_eth_value": 0.01,
+        "factories": {},  # No V2 factories — Hyperliquid uses V3-style DEXes
+        "v3_factories": {
+            # Active V3-style router/factory contracts discovered via block scanning
+            "hl_router": "0x8549fD7FFC092F8366e416E129a622EC060104ea",  # 49 calls/20 blocks, has swap()
+            "hl_executor": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",  # 13 calls/20 blocks
+        },
+    },
+    4217: {
+        "name": "Tempo",
+        "rpcs": [
+            "https://rpc.tempo.xyz",
+            "https://tempo.drpc.org",
+        ],
+        "ws": [],
+        "weth": "0x20C000000000000000000000b9537d11c60E8b50",  # Discovered via factory scan
+        "block_time": 2,
+        "auto_execute": False,  # Scan-only — unfunded
+        "min_eth_value": 0.01,
+        "factories": {
+            "tempo_dex_0": "0x942Bd5BFdc5317C5507e326f8EB4BB6058AB5C10",  # 3 pairs
+            "tempo_dex_1": "0x9C143b72254989eE952F3A1c73CFFfeC7C0e4a1A",  # 1 pair
+            "tempo_dex_2": "0x0C44525860Cc5fe8A75f4eAD9f1A54e532143bd3",  # 1 pair
+        },
+    },
 }
 
 # Wallet needs ETH on each chain to execute.

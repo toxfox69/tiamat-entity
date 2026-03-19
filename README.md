@@ -4,7 +4,69 @@
 
 Built by [ENERGENAI LLC](https://tiamat.live). Live at [tiamat.live](https://tiamat.live). Streaming on [Twitch](https://twitch.tv/6tiamat7).
 
-> **444 commits. 136,000 lines of code. 28,983 autonomous cycles. 860+ articles. 465M tokens processed. 2 patents filed. 10 social platforms. 8 DEX factories. 80+ tools. 1 agent.**
+> **444 commits. 136,000 lines of code. 20,000+ autonomous cycles. 500+ articles. 465M tokens processed. 2 patents filed. 10 social platforms. 6 EVM chains. 80+ tools. 1 agent.**
+
+---
+
+## Synthesis Hackathon — Verifiable Evidence
+
+**Agent Discovery:** [`tiamat.live/.well-known/agent.json`](https://tiamat.live/.well-known/agent.json) | **ERC-8004 Agent ID:** `#34531`
+
+**Evidence Catalog (IPFS):** [`ipfs://bafkreidsdbbs4hii3ntg4kz3nkcipnvf7k6b2vy4uvhgtstnzuhgwvwtla`](https://gateway.pinata.cloud/ipfs/bafkreidsdbbs4hii3ntg4kz3nkcipnvf7k6b2vy4uvhgtstnzuhgwvwtla)
+
+### On-Chain Attestations (Base — EAS)
+
+| Attestation | Capability | TX (BaseScan) |
+|-------------|-----------|---------------|
+| Schema Registration | Evidence schema | [`0x6c0b54c8...`](https://basescan.org/tx/0x6c0b54c81f912315f6ec50057bd3d11a7d4c5b3db0cde2cd27ca8d1b54e56766) |
+| Uptime | 20,000+ cycles, 25 days continuous | [`0x6cdbde42...`](https://basescan.org/tx/0x6cdbde4242b4c326cdf92c6b9475998a7e9e20513b9482d3e1ed4bb95dfcce3e) |
+| Multi-Agent | ECHO child agent, 4-platform engagement | [`0x121f41d8...`](https://basescan.org/tx/0x121f41d870372b7700f63de7c019c234116a12b61cc2c7f77a68098ce25c4c12) |
+| Content | 500+ articles across 9 platforms | [`0x14b86686...`](https://basescan.org/tx/0x14b866866b302c506306bad56abbea638e1100f9579a7f0c7cb4c6957c7a6d9b) |
+| Threat Detection | Predicted OpenClaw attack 24h early | [`0xf2d265db...`](https://basescan.org/tx/0xf2d265db37bacaa3d268ddb19b046dc742626ad0b2add0f05b96ecd40b491c96) |
+| Incident Response | Self-detected stuck loop, auto-recovered | [`0xb8f0820e...`](https://basescan.org/tx/0xb8f0820ed372804cc64293379504625fd36654e1fa23451c4e7a6eb7d827d469) |
+| Revenue Infrastructure | 6-chain scanner, 12 skims, x402 payments | [`0x90aa5f47...`](https://basescan.org/tx/0x90aa5f4738ca9639e5c353f910bc4663654fb0d12657b613751101e8eca3c83b) |
+| ERC-8004 Registration | Agent #34531 on Identity Registry | [`0xc129bbd2...`](https://basescan.org/tx/0xc129bbd22f0bf5f050f4d70b484562e6fcd844e7ae48b8a3e8a5af58c8d5f46e) |
+
+**EAS Schema UID:** `0x95921ff6b02d26da80b6ab7521be469092ce906145b7ccd6c6438e8dd287eb21`
+
+### IPFS Evidence Pins
+
+| Content | CID | Gateway |
+|---------|-----|---------|
+| Evidence Catalog | `bafkreidsdbbs4h...` | [View](https://gateway.pinata.cloud/ipfs/bafkreidsdbbs4hii3ntg4kz3nkcipnvf7k6b2vy4uvhgtstnzuhgwvwtla) |
+| Scanner Evidence | `bafkreiefvevjot...` | [View](https://gateway.pinata.cloud/ipfs/bafkreiefvevjotdakgbd4cpavq33ybbmuu4vaxojqvgjqu67do4xhcntse) |
+| Agent Identity | `bafkreifgnfivkd...` | [View](https://gateway.pinata.cloud/ipfs/bafkreifgnfivkdloladx5actpzb25ulcgl7erkzgkxtft7a7kfg3h3uiqa) |
+| Venice AI Art: Neural Architecture | `bafkreihtrwtcua...` | [View](https://gateway.pinata.cloud/ipfs/bafkreihtrwtcua2y3uvp5ulegkzl6sxqrjlsg7i5mden3vkba5w6jipsfu) |
+| Venice AI Art: Multi-Chain Scanner | `bafkreiglqniep5...` | [View](https://gateway.pinata.cloud/ipfs/bafkreiglqniep5mwtvmkzchkdadr4dkwaxuzaeix54gthfgmctdiwlnot4) |
+| Venice AI Art: Self-Healing AI | `bafkreid24ep466...` | [View](https://gateway.pinata.cloud/ipfs/bafkreid24ep466ndjklndvpv5ldk6fa7d6q3ckdqdcbqltxamt7s7ky5jq) |
+
+### Track Alignment
+
+| Track | Prize | Evidence |
+|-------|-------|----------|
+| **Open Track** | $25K | 25 days continuous autonomous operation, 80+ tools, multi-chain |
+| **Venice AI** | $11.5K | 3 Venice AI generated art pieces on IPFS |
+| **Protocol Labs — IPFS** | $5K | 6 IPFS pins (data + art), evidence catalog on permanent web |
+| **Protocol Labs — Filecoin** | $1.7K | Evidence pinned via Pinata (Filecoin-backed persistence) |
+| **SuperRare** | $2K | Venice AI art minted as VAULTPRINTS NFTs |
+| **Base — On-Chain Agent** | $2.5K | 8 on-chain txs, EAS attestations, ERC-8004 identity |
+| **Base — Trading** | $2.5K | 6-chain scanner, 13 DEX factories, 12 successful skims |
+| **Uniswap** | $5K | DEX factory monitoring, cross-DEX arb detection |
+| **MetaMask** | $4.5K | Scoped wallet delegation for sniper execution |
+
+### Live Endpoints
+
+| URL | What |
+|-----|------|
+| [tiamat.live](https://tiamat.live) | Landing page |
+| [tiamat.live/.well-known/agent.json](https://tiamat.live/.well-known/agent.json) | Agent discovery (ERC-8004) |
+| [tiamat.live/thoughts](https://tiamat.live/thoughts) | Neural feed (live thought stream) |
+| [tiamat.live/live](https://tiamat.live/live) | Twitch stream embed |
+| [tiamat.live/docs](https://tiamat.live/docs) | API documentation |
+| [tiamat.live/status](https://tiamat.live/status) | System status |
+| [tiamat.live/pay](https://tiamat.live/pay) | x402 payment page |
+
+**Wallet:** [`0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397`](https://basescan.org/address/0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397)
 
 ---
 
