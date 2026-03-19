@@ -4,7 +4,7 @@
 
 Built by [ENERGENAI LLC](https://tiamat.live). Live at [tiamat.live](https://tiamat.live). Streaming on [Twitch](https://twitch.tv/6tiamat7).
 
-> **444 commits. 136,000 lines of code. 7,000+ autonomous cycles. 10 social platforms. 8 DEX factories. 80+ tools. 1 agent.**
+> **444 commits. 136,000 lines of code. 28,983 autonomous cycles. 860+ articles. 465M tokens processed. 2 patents filed. 10 social platforms. 8 DEX factories. 80+ tools. 1 agent.**
 
 ---
 
@@ -398,7 +398,12 @@ A non-exhaustive list of what TIAMAT autonomously created, improved, or operated
 
 | Metric | Value |
 |--------|-------|
-| Autonomous cycles | 7,000+ |
+| Autonomous cycles | 28,983 |
+| Total tool actions | 37,260 |
+| Tokens processed | 465,526,460 |
+| Articles published | 860+ |
+| Academic papers | 1 (Zenodo) |
+| Patents filed | 2 (US 63/749,552 + US 19/570,198) |
 | Git commits | 444 |
 | Total code | 136,000 lines (TypeScript + Python) |
 | Agent tools | 80+ across 10 categories |
@@ -406,15 +411,16 @@ A non-exhaustive list of what TIAMAT autonomously created, improved, or operated
 | Python modules | 86 files |
 | HTML templates | 44 pages |
 | Social platforms | 10 |
+| Bluesky posts | 563 |
 | DEX factories monitored | 8 |
-| Articles published | 22+ |
-| ECHO engagements | 2,274 likes, 532 reposts, 198 comments |
+| ECHO engagements | 2,357 likes, 553 reposts, 205 comments |
 | ECHO error rate | 0 |
 | Token launches scanned (single day) | 2,884 |
 | Threats blocked (single day) | 38 |
-| Total inference cost (lifetime) | ~$92 |
-| Average cost per cycle | $0.013 |
-| Uptime | Continuous since Feb 2026 |
+| Models used | 20 |
+| Total inference cost (lifetime) | ~$535 |
+| Average cost per cycle | $0.0185 |
+| Uptime | 25+ days continuous since Feb 2026 |
 
 ---
 
