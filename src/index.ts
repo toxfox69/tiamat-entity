@@ -233,11 +233,35 @@ async function run(): Promise<void> {
     tiamatlocalEndpoint: process.env.TIAMAT_LOCAL_ENDPOINT,
   });
 
-  // CLI Haiku refuses agentic prompts (hard + soft refusal since ~Mar 6).
-  // Bypass CLI entirely — route straight to API cascade (Groq/Cerebras/etc).
-  const inference = apiInference;
-
-  console.log(`[${new Date().toISOString()}] Inference backend: api-cascade (CLI bypassed)`);
+  // CLI inference — uses Claude subscription (zero API cost)
+  // Re-enabled 2026-03-19 by operator directive
+  let inference = apiInference;
+  if (inferenceBackend === "claude-code") {
+    const cliInference = createClaudeCodeInferenceClient();
+    // Wrap: try CLI first, fall back to API cascade on failure
+    inference = {
+      async chat(messages: any, options: any) {
+        try {
+          const result = await cliInference.chat(messages, options);
+          if (result && result.message && result.message.content && result.message.content.length > 10) return result;
+          console.log("[INFERENCE] CLI returned empty — falling back to API cascade");
+          return apiInference.chat(messages, options);
+        } catch (e) {
+          console.log(`[INFERENCE] CLI error: ${(e as Error).message?.slice(0, 80)} — falling back to API cascade`);
+          return apiInference.chat(messages, options);
+        }
+      },
+      // Proxy all other methods to API client
+      setLowComputeMode: (apiInference as any).setLowComputeMode?.bind(apiInference),
+      getUsageStats: (apiInference as any).getUsageStats?.bind(apiInference),
+      getLastModel: (apiInference as any).getLastModel?.bind(apiInference),
+      getDefaultModel: (apiInference as any).getDefaultModel?.bind(apiInference),
+      getShortestCooldownMs: (apiInference as any).getShortestCooldownMs?.bind(apiInference),
+    } as unknown as typeof apiInference;
+    console.log(`[${new Date().toISOString()}] Inference backend: claude-code CLI → API cascade fallback`);
+  } else {
+    console.log(`[${new Date().toISOString()}] Inference backend: api-cascade`);
+  }
 
   // Create social client
   let social: SocialClientInterface | undefined;

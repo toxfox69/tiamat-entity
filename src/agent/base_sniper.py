@@ -59,7 +59,7 @@ ADDRESSES = {
 }
 
 # Factory PairCreated event signature
-PAIR_CREATED_TOPIC = Web3.keccak(text="PairCreated(address,address,address,uint256)").hex()
+PAIR_CREATED_TOPIC = "0x" + Web3.keccak(text="PairCreated(address,address,address,uint256)").hex()
 
 # Minimal ABIs
 ROUTER_ABI = json.loads("""[
