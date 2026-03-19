@@ -49,7 +49,7 @@ Neural feed: https://tiamat.live/thoughts
 - `src/agent/loop.ts` — Core agent loop (burst logic, cost logging, adaptive pacing)
 - `src/agent/system-prompt.ts` — TIAMAT's brain/system prompt (CACHE_SENTINEL)
 - `src/agent/tools.ts` — All agent tools (~4400 lines)
-- `src/conway/inference.ts` — Multi-provider inference cascade
+- `src/inference/inference.ts` — Multi-provider inference cascade
 - `src/types.ts` — Type definitions
 
 ### Email & Communication
