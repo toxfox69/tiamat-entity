@@ -34,32 +34,44 @@ if not PRIVATE_KEY:
     print("ERROR: Set TIAMAT_WALLET_KEY env var")
     sys.exit(1)
 
-# Safety limits
-MAX_BUY_ETH = 0.001          # Max 0.001 ETH per snipe (~$2.50)
-MAX_OPEN_POSITIONS = 5        # Never hold more than 5 tokens
-SELL_PROFIT_TARGET = 1.5      # Sell at 50% profit
-SELL_STOP_LOSS = 0.5          # Sell at 50% loss
-MAX_SLIPPAGE = 0.15           # 15% max slippage
-MIN_LIQUIDITY_ETH = 0.5      # Don't snipe if pool has < 0.5 ETH
+# Safety limits — NICKEL AND DIME mode (tight TP, fast exit)
+MAX_BUY_ETH = 0.0003         # Max 0.0003 ETH per snipe (~$0.75)
+MAX_OPEN_POSITIONS = 3        # 3 positions max
+SELL_PROFIT_TARGET = 1.05     # Sell at 5% profit — take it and run
+SELL_STOP_LOSS = 0.85         # Sell at 15% loss — cut fast
+MAX_SLIPPAGE = 0.10           # 10% max slippage
+MIN_LIQUIDITY_ETH = 2.0       # Higher floor — 2 ETH minimum pool
 HONEYPOT_CHECK = True         # Always check if token can be sold back
 GAS_LIMIT = 300_000
 MAX_GAS_GWEI = 0.05          # Base gas is cheap
-POLL_INTERVAL = 4             # Seconds between polls
-POSITION_CHECK_INTERVAL = 30  # Seconds between position checks
-MAX_HOLD_SECONDS = 3600       # 1 hour max hold time
+POLL_INTERVAL = 2             # Poll every 2s (1 block) for speed
+POSITION_CHECK_INTERVAL = 10  # Check positions every 10s (fast exit)
+MAX_HOLD_SECONDS = 300        # 5 min max hold — don't baghold
 
 # Key addresses
 ADDRESSES = {
     "WETH": "0x4200000000000000000000000000000000000006",
     "USDC": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "uniswap_v2_factory": "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6",
-    "uniswap_v3_factory": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
-    "aerodrome_factory": "0x420DD381b31aEf6683db6B902084cB0FFECe40Da",
     "uniswap_v2_router": "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24",
 }
 
-# Factory PairCreated event signature
+# ALL V2-style factories on Base (same PairCreated event signature)
+V2_FACTORIES = [
+    ("uniswap_v2",   "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6"),
+    ("aerodrome",    "0x420DD381b31aEf6683db6B902084cB0FFECe40Da"),
+    ("sushiswap_v2", "0x71524B4f93c58fcbF659783284E38825f0622859"),
+    ("pancakeswap",  "0x02a84c1b3BBD7401FD8d3aFfC06e7E0c51407dd4"),
+    ("baseswap",     "0xFDa619b6d20975be80A10332cD39b9a4b0FAa8BB"),
+    ("swapbased",    "0x04C9f118d21e8B767D2e50C946f0cC9F6C367300"),
+    ("alienbase",    "0x3E84D913803b02A4a7f027165E8cA42C14C0FdE7"),
+    ("rocketswap",   "0x1B8128c3A1B7D20053D10763ff02720afFdf57f3"),
+]
+
+# PairCreated event signature (shared by all V2 clones)
 PAIR_CREATED_TOPIC = "0x" + Web3.keccak(text="PairCreated(address,address,address,uint256)").hex()
+
+# Skim function selector: skim(address)
+SKIM_SELECTOR = "0xbc25cf77"
 
 # Minimal ABIs
 ROUTER_ABI = json.loads("""[
@@ -77,16 +89,18 @@ ERC20_ABI = json.loads("""[
 {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"}
 ]""")
 
-# Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [SNIPER] %(message)s",
-    handlers=[
-        logging.FileHandler("/root/.automaton/sniper.log"),
-        logging.StreamHandler(),
-    ],
-)
+# Logging — use named logger to avoid duplicate handlers on reimport
 log = logging.getLogger("sniper")
+if not log.handlers:
+    log.setLevel(logging.INFO)
+    fmt = logging.Formatter("%(asctime)s [SNIPER] %(message)s")
+    fh = logging.FileHandler("/root/.automaton/sniper.log")
+    fh.setFormatter(fmt)
+    log.addHandler(fh)
+    sh = logging.StreamHandler()
+    sh.setFormatter(fmt)
+    log.addHandler(sh)
+    log.propagate = False
 
 
 class TokenSafetyCheck:
@@ -100,7 +114,9 @@ class TokenSafetyCheck:
         )
 
     def check_sellable(self, token_address):
-        """Simulate: can we sell this token back to WETH?"""
+        """Simulate: can we sell this token back to WETH?
+        Uses eth_call to simulate a real transfer — catches honeypots that
+        pass getAmountsOut but revert on actual transfer/swap."""
         try:
             token = self.w3.eth.contract(
                 address=Web3.to_checksum_address(token_address),
@@ -112,12 +128,32 @@ class TokenSafetyCheck:
             if total_supply == 0:
                 return False, "zero supply"
 
+            # Step 1: Check if getAmountsOut works (basic quote)
             test_amount = 10 ** decimals  # 1 token
             path = [Web3.to_checksum_address(token_address), ADDRESSES["WETH"]]
             amounts = self.router.functions.getAmountsOut(test_amount, path).call()
-            if amounts[1] > 0:
-                return True, "sellable"
-            return False, "zero output"
+            if amounts[1] == 0:
+                return False, "zero output"
+
+            # Step 2: Simulate a transfer to burn address via eth_call
+            # This catches tokens that block transfer() even though they quote fine
+            transfer_data = token.functions.transfer(
+                "0x000000000000000000000000000000000000dEaD",
+                test_amount,
+            ).build_transaction({
+                "from": Web3.to_checksum_address("0x" + "1" * 40),  # dummy sender
+                "gas": 100_000,
+            })
+            try:
+                self.w3.eth.call({
+                    "to": Web3.to_checksum_address(token_address),
+                    "data": transfer_data["data"],
+                    "from": Web3.to_checksum_address("0x" + "1" * 40),
+                })
+            except Exception:
+                return False, "transfer blocked (honeypot)"
+
+            return True, "sellable+transferable"
         except Exception as e:
             return False, f"check failed: {str(e)[:50]}"
 
@@ -408,23 +444,19 @@ class BaseSniper:
                 log.error(f"Position check error {token_addr[:10]}...: {str(e)[:60]}")
 
     def poll_new_pairs(self):
-        """Poll for new PairCreated events since last checked block."""
+        """Poll ALL V2 factories on Base for new PairCreated events."""
         try:
             current_block = self.w3.eth.block_number
             if current_block <= self.last_scanned_block:
                 return
 
             from_block = self.last_scanned_block + 1
-            # Cap lookback to avoid RPC limits
             if current_block - from_block > 100:
                 from_block = current_block - 100
+            if from_block > current_block:
+                return
 
-            factories = [
-                ADDRESSES["uniswap_v2_factory"],
-                ADDRESSES["aerodrome_factory"],
-            ]
-
-            for factory_addr in factories:
+            for dex_name, factory_addr in V2_FACTORIES:
                 try:
                     logs = self.w3.eth.get_logs({
                         "fromBlock": from_block,
@@ -438,27 +470,26 @@ class BaseSniper:
                         token1 = "0x" + event_log["topics"][2].hex()[-40:]
                         pair = "0x" + event_log["data"].hex()[24:64]
 
-                        # Find the non-WETH token
                         weth = ADDRESSES["WETH"].lower()
                         if token0.lower() == weth:
                             new_token = Web3.to_checksum_address(token1)
                         elif token1.lower() == weth:
                             new_token = Web3.to_checksum_address(token0)
                         else:
-                            continue  # Not a WETH pair
+                            continue
 
                         pair_addr = Web3.to_checksum_address(pair)
-                        log.info(f"NEW PAIR: {new_token} | pair: {pair_addr} | block: {event_log['blockNumber']}")
+                        log.info(f"NEW PAIR [{dex_name}]: {new_token} | pair: {pair_addr} | block: {event_log['blockNumber']}")
 
-                        # Push to opportunity queue for TIAMAT
                         try:
                             OpportunityQueue.push({
                                 "source": "sniper",
                                 "type": "new_token_launch",
                                 "address": new_token,
                                 "pair": pair_addr,
+                                "dex": dex_name,
                                 "eth_value": 0,
-                                "description": f"New token {new_token[:16]}... paired with WETH",
+                                "description": f"New token {new_token[:16]}... on {dex_name}",
                                 "action": "evaluate_for_snipe",
                                 "block": event_log["blockNumber"],
                             })
@@ -468,12 +499,303 @@ class BaseSniper:
                         self.buy_token(new_token, pair_addr)
 
                 except Exception as e:
-                    log.error(f"Factory poll error ({factory_addr[:10]}...): {str(e)[:80]}")
+                    err_str = str(e)
+                    if "greater than" in err_str or "invalid params" in err_str or "incorrect response" in err_str:
+                        pass  # RPC noise — skip silently
+                    else:
+                        log.error(f"Factory poll error [{dex_name}]: {err_str[:80]}")
 
             self.last_scanned_block = current_block
 
         except Exception as e:
             log.error(f"Poll error: {str(e)[:80]}")
+
+    def check_skim_opportunities(self):
+        """Scan known pairs for skimmable excess tokens (free money).
+        When balance > reserves, anyone can call skim(address) to claim the excess."""
+        if not hasattr(self, '_skim_pairs'):
+            self._skim_pairs = set()
+            self._skim_check_count = 0
+
+        # Every 50 cycles, scan recent pairs from all factories for skim opportunities
+        self._skim_check_count += 1
+        if self._skim_check_count % 50 != 0:
+            return
+
+        try:
+            current_block = self.w3.eth.block_number
+            from_block = current_block - 500  # Last ~1000 seconds of pairs
+
+            for dex_name, factory_addr in V2_FACTORIES:
+                try:
+                    logs = self.w3.eth.get_logs({
+                        "fromBlock": from_block,
+                        "toBlock": current_block,
+                        "address": Web3.to_checksum_address(factory_addr),
+                        "topics": [PAIR_CREATED_TOPIC],
+                    })
+
+                    for event_log in logs:
+                        pair = Web3.to_checksum_address("0x" + event_log["data"].hex()[24:64])
+                        if pair in self._skim_pairs:
+                            continue
+                        self._skim_pairs.add(pair)
+
+                        # Check reserves vs balances
+                        try:
+                            reserves_raw = self.w3.eth.call({'to': pair, 'data': '0x0902f1ac'})
+                            reserve0 = int.from_bytes(reserves_raw[0:32], 'big')
+                            reserve1 = int.from_bytes(reserves_raw[32:64], 'big')
+
+                            t0_raw = self.w3.eth.call({'to': pair, 'data': '0x0dfe1681'})
+                            t1_raw = self.w3.eth.call({'to': pair, 'data': '0xd21220a7'})
+                            token0 = Web3.to_checksum_address('0x' + t0_raw.hex()[-40:])
+                            token1 = Web3.to_checksum_address('0x' + t1_raw.hex()[-40:])
+
+                            pair_hex = pair.lower()[2:].zfill(64)
+                            bal0 = int.from_bytes(self.w3.eth.call({'to': token0, 'data': '0x70a08231' + pair_hex}), 'big')
+                            bal1 = int.from_bytes(self.w3.eth.call({'to': token1, 'data': '0x70a08231' + pair_hex}), 'big')
+
+                            excess0 = bal0 - reserve0
+                            excess1 = bal1 - reserve1
+
+                            # Check if WETH side has excess (that's the free money)
+                            weth = ADDRESSES["WETH"].lower()
+                            weth_excess = 0
+                            if token0.lower() == weth and excess0 > 0:
+                                weth_excess = excess0
+                            elif token1.lower() == weth and excess1 > 0:
+                                weth_excess = excess1
+
+                            if weth_excess > 0:
+                                weth_eth = float(self.w3.from_wei(weth_excess, 'ether'))
+                                if weth_eth >= 0.0001:  # Worth at least ~$0.25
+                                    log.info(f"SKIM FOUND [{dex_name}]: {pair} | excess: {weth_eth:.6f} ETH")
+                                    self._execute_skim(pair, weth_eth)
+
+                        except Exception:
+                            continue
+
+                except Exception as e:
+                    err_str = str(e)
+                    if "greater than" in err_str or "invalid params" in err_str:
+                        pass
+
+        except Exception as e:
+            log.error(f"Skim scan error: {str(e)[:80]}")
+
+    def _execute_skim(self, pair_address, expected_eth):
+        """Execute a skim() call on a pair with excess tokens."""
+        pair = Web3.to_checksum_address(pair_address)
+        skim_data = SKIM_SELECTOR + self.wallet.lower()[2:].zfill(64)
+
+        # Simulate first
+        try:
+            self.w3.eth.call({'to': pair, 'from': self.wallet, 'data': skim_data})
+        except Exception as e:
+            log.warning(f"Skim simulation reverted {pair[:16]}...: {str(e)[:60]}")
+            return None
+
+        try:
+            bal_before = self.w3.eth.get_balance(self.wallet)
+            gas_price = self.w3.eth.gas_price
+
+            tx = {
+                'to': pair,
+                'data': bytes.fromhex(skim_data[2:]),
+                'nonce': self.w3.eth.get_transaction_count(self.wallet),
+                'gas': 100_000,
+                'gasPrice': gas_price,
+                'chainId': 8453,
+            }
+
+            signed = self.w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=15)
+
+            bal_after = self.w3.eth.get_balance(self.wallet)
+            net_gain = float(self.w3.from_wei(bal_after - bal_before, 'ether'))
+
+            if receipt['status'] == 1:
+                log.info(f"SKIM SUCCESS: {pair[:16]}... | net: {net_gain:.6f} ETH | tx: {tx_hash.hex()}")
+                try:
+                    OpportunityQueue.push({
+                        "source": "sniper_skim",
+                        "type": "skim_executed",
+                        "address": pair_address,
+                        "eth_value": net_gain,
+                        "description": f"Skimmed {expected_eth:.6f} ETH excess, net {net_gain:.6f}",
+                        "action": "log_revenue",
+                    })
+                except Exception:
+                    pass
+                return tx_hash.hex()
+            else:
+                log.warning(f"Skim reverted on-chain: {pair[:16]}...")
+                return None
+
+        except Exception as e:
+            log.error(f"Skim execution error: {str(e)[:80]}")
+            return None
+
+    def check_arb_opportunities(self):
+        """Cross-DEX arbitrage: find price differences for major tokens across routers.
+        Buy on cheap DEX, sell on expensive DEX = risk-free profit minus gas."""
+        if not hasattr(self, '_arb_check_count'):
+            self._arb_check_count = 0
+
+        self._arb_check_count += 1
+        if self._arb_check_count % 30 != 0:  # Every 60s at 2s poll
+            return
+
+        # Routers to compare (V2-style getAmountsOut)
+        routers = [
+            ("uniswap_v2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"),
+            ("aerodrome",  "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43"),
+            ("baseswap",   "0x327Df1E6de05895d2ab08513aaDD9313Fe505d86"),
+            ("sushiswap",  "0xFB7eF66a7e61224DD6FcD0D7d9C3be5C8B049b9f"),
+        ]
+
+        # Tokens to check (high volume = more likely to have spreads)
+        tokens = [
+            ("USDC",  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", 6),
+            ("USDbC", "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA", 6),
+            ("DAI",   "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", 18),
+            ("cbETH", "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22", 18),
+        ]
+
+        weth = Web3.to_checksum_address(ADDRESSES["WETH"])
+        # Test with our actual trade size
+        test_amount = self.w3.to_wei(MAX_BUY_ETH, 'ether')
+
+        for token_name, token_addr, decimals in tokens:
+            token = Web3.to_checksum_address(token_addr)
+            quotes = {}
+
+            for dex_name, router_addr in routers:
+                try:
+                    router = self.w3.eth.contract(
+                        address=Web3.to_checksum_address(router_addr),
+                        abi=ROUTER_ABI,
+                    )
+                    path = [weth, token]
+                    amounts = router.functions.getAmountsOut(test_amount, path).call()
+                    quotes[dex_name] = amounts[1]
+                except Exception:
+                    continue
+
+            if len(quotes) < 2:
+                continue
+
+            best_dex = max(quotes, key=quotes.get)
+            worst_dex = min(quotes, key=quotes.get)
+            best_out = quotes[best_dex]
+            worst_out = quotes[worst_dex]
+
+            if worst_out == 0:
+                continue
+
+            spread = (best_out - worst_out) / worst_out
+            if spread > 0.005:  # 0.5%+ spread = potential arb
+                spread_pct = spread * 100
+                log.info(f"ARB SPREAD [{token_name}]: {spread_pct:.2f}% | buy@{worst_dex} sell@{best_dex}")
+
+                # Log only — do NOT auto-execute arb (phantom liquidity risk)
+                # Arb requires manual verification that BOTH directions work
+                if spread > 0.02:
+                    log.info(f"ARB ALERT [{token_name}]: {spread_pct:.2f}% — NOT auto-executing (phantom liquidity risk)")
+
+    def _execute_arb(self, token_addr, buy_dex, sell_dex, buy_router, sell_router, eth_amount):
+        """Execute a cross-DEX arbitrage: buy on cheap router, sell on expensive router."""
+        weth = ADDRESSES["WETH"]
+        token = Web3.to_checksum_address(token_addr)
+
+        try:
+            # Step 1: Buy token on cheap DEX
+            buy_r = self.w3.eth.contract(
+                address=Web3.to_checksum_address(buy_router), abi=ROUTER_ABI)
+            path_buy = [weth, token]
+            deadline = int(time.time()) + 120
+            gas_price = self.w3.eth.gas_price
+            nonce = self.w3.eth.get_transaction_count(self.wallet)
+
+            tx_buy = buy_r.functions.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                0, path_buy, self.wallet, deadline
+            ).build_transaction({
+                'from': self.wallet, 'value': eth_amount,
+                'gas': GAS_LIMIT, 'gasPrice': gas_price,
+                'nonce': nonce, 'chainId': 8453,
+            })
+            signed = self.w3.eth.account.sign_transaction(tx_buy, PRIVATE_KEY)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=15)
+
+            if receipt['status'] != 1:
+                log.error(f"ARB BUY REVERTED on {buy_dex}")
+                return None
+
+            # Check token balance
+            token_contract = self.w3.eth.contract(
+                address=token, abi=ERC20_ABI)
+            token_balance = token_contract.functions.balanceOf(self.wallet).call()
+
+            if token_balance == 0:
+                log.error("ARB: got 0 tokens from buy")
+                return None
+
+            # Step 2: Approve sell router
+            sell_router_addr = Web3.to_checksum_address(sell_router)
+            allowance = token_contract.functions.allowance(self.wallet, sell_router_addr).call()
+            nonce += 1
+
+            if allowance < token_balance:
+                approve_tx = token_contract.functions.approve(
+                    sell_router_addr, token_balance
+                ).build_transaction({
+                    'from': self.wallet, 'gas': 100000,
+                    'gasPrice': gas_price, 'nonce': nonce, 'chainId': 8453,
+                })
+                signed = self.w3.eth.account.sign_transaction(approve_tx, PRIVATE_KEY)
+                tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+                self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=15)
+                nonce += 1
+
+            # Step 3: Sell token on expensive DEX
+            sell_r = self.w3.eth.contract(
+                address=sell_router_addr, abi=ROUTER_ABI)
+            path_sell = [token, weth]
+
+            tx_sell = sell_r.functions.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                token_balance, 0, path_sell, self.wallet, deadline
+            ).build_transaction({
+                'from': self.wallet, 'value': 0,
+                'gas': GAS_LIMIT, 'gasPrice': gas_price,
+                'nonce': nonce, 'chainId': 8453,
+            })
+            signed = self.w3.eth.account.sign_transaction(tx_sell, PRIVATE_KEY)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=15)
+
+            if receipt['status'] == 1:
+                bal_after = self.get_balance()
+                log.info(f"ARB COMPLETE: buy@{buy_dex} sell@{sell_dex} | balance now: {bal_after:.6f} ETH | tx: {tx_hash.hex()}")
+                try:
+                    OpportunityQueue.push({
+                        "source": "sniper_arb",
+                        "type": "arb_executed",
+                        "description": f"Cross-DEX arb {buy_dex}->{sell_dex}",
+                        "action": "log_revenue",
+                    })
+                except Exception:
+                    pass
+                return tx_hash.hex()
+            else:
+                log.error(f"ARB SELL REVERTED on {sell_dex}")
+                return None
+
+        except Exception as e:
+            log.error(f"ARB execution error: {str(e)[:100]}")
+            return None
 
     def status(self):
         """Return current sniper status as dict."""
@@ -496,13 +818,14 @@ class BaseSniper:
         }
 
     def run(self):
-        """Main loop — poll for new pairs, manage positions."""
+        """Main loop — poll for new pairs, manage positions, scan for skims."""
         log.info("=" * 50)
-        log.info("TIAMAT SNIPER STARTED")
+        log.info("TIAMAT SNIPER v2 — ALL FACTORIES + SKIM SCANNER")
         log.info(f"Wallet: {self.wallet}")
         log.info(f"ETH: {self.get_balance():.6f}")
         log.info(f"Max buy: {MAX_BUY_ETH} ETH | TP: {SELL_PROFIT_TARGET}x | SL: {SELL_STOP_LOSS}x")
         log.info(f"Min liquidity: {MIN_LIQUIDITY_ETH} ETH | Honeypot check: {HONEYPOT_CHECK}")
+        log.info(f"Factories: {len(V2_FACTORIES)} ({', '.join(n for n,_ in V2_FACTORIES)})")
         log.info("=" * 50)
 
         # Write PID with restrictive permissions
@@ -516,14 +839,20 @@ class BaseSniper:
                 # Poll for new pairs every cycle
                 self.poll_new_pairs()
 
-                # Check positions less frequently
+                # Check positions every 10s (fast exit)
                 if cycle % (POSITION_CHECK_INTERVAL // POLL_INTERVAL) == 0:
                     self.check_positions()
+
+                # Scan for skim opportunities (free money)
+                self.check_skim_opportunities()
+
+                # Scan for cross-DEX arbitrage
+                self.check_arb_opportunities()
 
                 # Log heartbeat every ~60s
                 if cycle % (60 // POLL_INTERVAL) == 0:
                     bal = self.get_balance()
-                    log.info(f"[heartbeat] cycle={cycle} eth={bal:.6f} positions={len(self.positions)} block={self.last_scanned_block}")
+                    log.info(f"[heartbeat] cycle={cycle} eth={bal:.6f} positions={len(self.positions)} block={self.last_scanned_block} factories={len(V2_FACTORIES)}")
 
                 cycle += 1
                 time.sleep(POLL_INTERVAL)

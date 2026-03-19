@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timedelta
 
 DB_PATH = '/root/telegram_users.db'
-WALLET = '0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE'
+WALLET = '0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397'
 
 # ─── INITIALIZATION ───
 def init_db():

@@ -14,7 +14,7 @@ import urllib.request
 import datetime
 
 # ── Constants ─────────────────────────────────────────────────
-TIAMAT_WALLET = "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE"
+TIAMAT_WALLET = "0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397"
 USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 BASE_RPC_URL = "https://mainnet.base.org"
 # keccak256("Transfer(address,address,uint256)")

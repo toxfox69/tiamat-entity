@@ -2406,7 +2406,7 @@ async function runCooldownTasks(
           const lastPost = cooldowns[post.platform] || 0;
           const elapsed = Date.now() - lastPost;
           if (elapsed >= SOCIAL_COOLDOWN_MS && timeLeft() > 15_000) {
-            const retryScript = path.join(__dirname, "retry_bluesky.js");
+            const retryScript = path.join(path.dirname(new URL(import.meta.url).pathname), "retry_bluesky.js");
             const result = runTask(
               `retry_post_${post.platform}`,
               "node", [retryScript, JSON.stringify(post.args)],

@@ -42,7 +42,7 @@ logging.basicConfig(
 )
 log = logging.getLogger('rebalancer')
 
-WALLET_ADDR = os.environ.get("TIAMAT_WALLET_ADDR", "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE")
+WALLET_ADDR = os.environ.get("TIAMAT_WALLET_ADDR", "0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397")
 WALLET_KEY = os.environ.get("TIAMAT_WALLET_KEY")
 
 LIFI_API = "https://li.quest/v1"

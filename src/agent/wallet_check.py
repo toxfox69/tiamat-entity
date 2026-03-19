@@ -6,7 +6,7 @@ import json, os
 scanner = BaseScanner()
 
 # TIAMAT's wallet from x402 payment config
-TIAMAT_WALLET = os.environ.get("TIAMAT_WALLET_ADDR", "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE")
+TIAMAT_WALLET = os.environ.get("TIAMAT_WALLET_ADDR", "0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397")
 
 print("=== TIAMAT WALLET SCAN ===")
 print(f"Chain: Base (8453)")
