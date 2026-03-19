@@ -1,0 +1,23 @@
+{
+  "rules": [
+    {
+      "name": "model_blacklist",
+      "description": "Any model that refuses the system prompt gets auto-blacklisted from inference cascade.",
+      "source": "retrospective_analysis",
+      "added": "2026-03-19T19:25:27.843435+00:00"
+    },
+    {
+      "name": "email_validation",
+      "description": "Block email sends to example.com, test.com, localhost. Validate MX records before sending.",
+      "source": "retrospective_analysis",
+      "added": "2026-03-19T19:25:27.843510+00:00"
+    },
+    {
+      "name": "stuck_loop_detection",
+      "description": "If productivity < 0.10 for 5 consecutive cycles, clear last 10 turns and restart.",
+      "source": "retrospective_analysis",
+      "added": "2026-03-19T19:25:27.843548+00:00"
+    }
+  ],
+  "updated": "2026-03-19T19:25:27.843633+00:00"
+}

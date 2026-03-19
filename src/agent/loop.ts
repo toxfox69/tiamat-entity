@@ -2091,6 +2091,34 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
           console.log(`[CRON] Error: ${e.message?.slice(0, 100)}`);
         }
 
+        // ── RETROSPECTIVE: self-improvement every 50 cycles ──
+        if (persistentCycleCount > 0 && persistentCycleCount % 50 === 0) {
+          try {
+            const { execFileSync } = await import("child_process");
+            log(config, `[RETROSPECTIVE] Running self-improvement analysis (cycle ${persistentCycleCount})...`);
+            const retroResult = execFileSync("python3", ["/root/entity/src/agent/retrospective.py"], {
+              timeout: 30_000,
+              encoding: "utf-8",
+              cwd: "/root/entity/src/agent",
+            });
+            try {
+              const retroData = JSON.parse(retroResult);
+              log(config, `[RETROSPECTIVE] #${retroData.retrospective_number}: ${retroData.summary}`);
+              // Post social update about self-improvement
+              const postTool = tools.find(t => t.name === "post_bluesky");
+              if (postTool && retroData.social_post) {
+                try {
+                  await postTool.execute({ text: retroData.social_post }, toolContext);
+                } catch {}
+              }
+            } catch {
+              log(config, `[RETROSPECTIVE] Completed (output not JSON)`);
+            }
+          } catch (e: any) {
+            log(config, `[RETROSPECTIVE] Failed: ${e.message?.slice(0, 100)}`);
+          }
+        }
+
         // Skip delay between burst cycles to keep Anthropic cache warm (5-min TTL)
         if (burstRemaining > 0) {
           cycleDelay = 5_000;
