@@ -82,3 +82,65 @@ Autonomous retrospective analysis — no human intervention.
 - New permanent rules: 0 (total: 3)
 
 ---
+
+## Retrospective #3 — 2026-03-20 01:39 UTC
+
+**Summary:** promoted 30B-A3B) to position 1; 64 new threat signatures
+
+### Model Routing
+- Models used: 1
+- Promoted: 30B-A3B)
+- Blacklisted: none
+- Top efficiency: {'model': '30B-A3B)', 'efficiency': 25.4, 'calls': 34, 'tool_calls': 29, 'cost': 1.1402}
+
+### Cost
+- Cycles analyzed: 34
+- Total cost: $1.1402
+- Cost/productive action: $0.0335
+- Waste rate: 0.0%
+
+### Errors & Guardrails
+- Error patterns: {'model_refusal': 10, 'generic_error': 9}
+- New guardrails: 0 (total: 2)
+
+### Sniper
+- Honeypots detected: 64
+- New threat signatures: 64
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 3)
+
+---
+
+## Retrospective #4 — 2026-03-20 01:57 UTC
+
+**Summary:** promoted 30B-A3B) to position 1; 62 new threat signatures
+
+### Model Routing
+- Models used: 1
+- Promoted: 30B-A3B)
+- Blacklisted: none
+- Top efficiency: {'model': '30B-A3B)', 'efficiency': 28.5, 'calls': 34, 'tool_calls': 29, 'cost': 1.0175}
+
+### Cost
+- Cycles analyzed: 34
+- Total cost: $1.0175
+- Cost/productive action: $0.0299
+- Waste rate: 0.0%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 13, 'model_refusal': 12}
+- New guardrails: 0 (total: 2)
+
+### Sniper
+- Honeypots detected: 62
+- New threat signatures: 62
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 3)
+
+---

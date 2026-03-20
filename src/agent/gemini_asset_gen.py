@@ -31,8 +31,8 @@ OUTPUT_DIR = '/tmp/dragon'
 BIOME_FILE = f'{OUTPUT_DIR}/gemini_biome.json'
 SPRITE_DIR = f'{OUTPUT_DIR}/sprites'
 
-# Rate limit: don't generate more than once per 2 minutes
-MIN_INTERVAL = 120
+# Rate limit: free tier = 20 requests/day, so generate every 30 minutes
+MIN_INTERVAL = 1800
 _last_gen = 0
 
 
