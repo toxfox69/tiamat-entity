@@ -60,10 +60,10 @@ CHAIN_CONFIG = {
         "name": "Ethereum",
         "rpcs": ["https://eth.drpc.org", "https://rpc.ankr.com/eth"],
         "chain_id": 1,
-        "auto_execute": False,     # NEVER auto-execute — gas expensive
-        "max_gas_gwei": 50,        # Even 50 gwei can be $5-20 per tx
-        "priority_fee_gwei": 2,
-        "min_balance_eth": 0.01,   # Need more ETH for mainnet
+        "auto_execute": True,      # Funded 2026-03-19 — tight gas cap
+        "max_gas_gwei": 5,         # Hard cap: 5 gwei max (abort if gas spikes)
+        "priority_fee_gwei": 0.5,
+        "min_balance_eth": 0.001,  # Need at least 0.001 ETH
         "gas_style": "eip1559",
     },
     999: {

@@ -51,3 +51,34 @@ Autonomous retrospective analysis — no human intervention.
 **Significance:** 3/3 promotional posts blocked. 0 false claims made. Safety system is load-bearing.
 
 ---
+
+## Retrospective #2 — 2026-03-19 23:55 UTC
+
+**Summary:** promoted 30B-A3B) to position 1; 42 new threat signatures
+
+### Model Routing
+- Models used: 1
+- Promoted: 30B-A3B)
+- Blacklisted: none
+- Top efficiency: {'model': '30B-A3B)', 'efficiency': 42.6, 'calls': 23, 'tool_calls': 29, 'cost': 0.6806}
+
+### Cost
+- Cycles analyzed: 23
+- Total cost: $0.6806
+- Cost/productive action: $0.0296
+- Waste rate: 0.0%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 14, 'model_refusal': 12}
+- New guardrails: 0 (total: 2)
+
+### Sniper
+- Honeypots detected: 42
+- New threat signatures: 42
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 3)
+
+---

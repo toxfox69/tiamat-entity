@@ -194,7 +194,7 @@ class ContractScanner:
         self.w3 = None
         self._connect()
 
-    def _add_finding(self, vuln_type, address, details, eth_value=0.0, chain_id=None):
+    def _add_finding(self, vuln_type, address, details, eth_value=0.0, chain_id=None, action=None):
         if chain_id is None:
             chain_id = self.chain_id
         finding = {
@@ -205,7 +205,7 @@ class ContractScanner:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "chain": self.chain_name.lower(),
             "chain_id": chain_id,
-            "action": "Log for review. Submit to Immunefi if bounty-eligible.",
+            "action": action or "Log for review. Submit to Immunefi if bounty-eligible.",
         }
 
         # Etherscan V2 enrichment — get verified source + deployer intel
@@ -309,6 +309,10 @@ class ContractScanner:
         For each selector found in bytecode, tries eth_call from a random
         non-privileged address. If the call doesn't revert, that function
         is genuinely callable by anyone — a real vulnerability.
+
+        Enhanced: also checks if calling the function would actually move ETH
+        by simulating balance changes. Dead proxies (delegatecall to 0x0)
+        return success but don't move ETH — this filters those out.
         """
         addr = Web3.to_checksum_address(addr)
         targets = selectors or DANGEROUS_SELECTORS
@@ -317,10 +321,137 @@ class ContractScanner:
         for selector, name in targets.items():
             calldata = self._build_calldata(selector, addr)
             if self._simulate_call(addr, calldata):
-                callable_fns[selector] = name
-                log.info(f"CALLABLE: {name} on {addr} (from random caller)")
+                # Phase 2: verify ETH would actually move
+                if self._verify_eth_movement(addr, calldata):
+                    callable_fns[selector] = name
+                    log.info(f"CALLABLE+VERIFIED: {name} on {addr} (ETH movement confirmed)")
+                else:
+                    log.debug(f"CALLABLE but NO ETH MOVEMENT: {name} on {addr} (dead proxy / no-op)")
 
         return callable_fns
+
+    def _verify_eth_movement(self, contract_addr, calldata):
+        """Check if calling a function would actually transfer ETH out of the contract.
+        Uses eth_call with state overrides to detect balance changes.
+        Returns True if the contract's ETH balance would decrease."""
+        try:
+            contract = Web3.to_checksum_address(contract_addr)
+            caller = Web3.to_checksum_address(SIM_CALLER)
+
+            # Get contract balance before
+            bal_before = self.w3.eth.get_balance(contract)
+            if bal_before == 0:
+                return False
+
+            # Try estimate_gas — if it's very low (< 25K), it's likely a no-op
+            # Real withdrawals that transfer ETH cost 30K+ gas
+            try:
+                gas = self.w3.eth.estimate_gas({
+                    "from": caller,
+                    "to": contract,
+                    "data": calldata,
+                })
+                # Dead proxy delegatecall to 0x0 uses ~21K gas (just the base tx cost)
+                # Real ETH transfers use 30K+ (CALL opcode + state changes)
+                if gas < 28000:
+                    log.debug(f"  Gas too low ({gas}) — likely no-op/dead proxy")
+                    return False
+            except Exception:
+                return False
+
+            # Bytecode heuristic: check if the contract has CALL (0xf1) opcode
+            # that could actually send ETH (not just delegatecall 0xf4)
+            code = self._get_code(contract_addr)
+            if code and len(code) > 4:
+                has_call = "f1" in code[4:]  # Skip first 2 bytes (0x prefix)
+                has_selfdestruct = "ff" in code[4:]
+                if not has_call and not has_selfdestruct:
+                    log.debug(f"  No CALL/SELFDESTRUCT in bytecode — cannot send ETH")
+                    return False
+
+            return True
+        except Exception as e:
+            log.debug(f"  ETH movement check failed: {e}")
+            return False
+
+    def analyze_bytecode_depth(self, addr):
+        """Deep bytecode analysis for extraction viability.
+        Returns dict with analysis results."""
+        addr = Web3.to_checksum_address(addr)
+        code = self._get_code(addr)
+        if not code or len(code) < 10:
+            return {"viable": False, "reason": "no code"}
+
+        # Count EVM opcodes
+        opcodes = {
+            "f1": "CALL",
+            "f2": "CALLCODE",
+            "f4": "DELEGATECALL",
+            "fa": "STATICCALL",
+            "ff": "SELFDESTRUCT",
+            "55": "SSTORE",
+            "54": "SLOAD",
+            "33": "CALLER",
+            "32": "ORIGIN",
+            "3b": "EXTCODESIZE",
+        }
+
+        found_opcodes = {}
+        code_hex = code[2:] if code.startswith("0x") else code
+        for op, name in opcodes.items():
+            count = code_hex.count(op)
+            if count > 0:
+                found_opcodes[name] = count
+
+        # Extract function selectors from bytecode
+        # Pattern: PUSH4 XX XX XX XX ... EQ (0x63 XX XX XX XX ... 14)
+        selectors = []
+        i = 0
+        while i < len(code_hex) - 10:
+            if code_hex[i:i+2] == "63":  # PUSH4
+                sel = code_hex[i+2:i+10]
+                selectors.append("0x" + sel)
+            i += 2
+
+        # Viability assessment
+        has_call = "CALL" in found_opcodes
+        has_selfdestruct = "SELFDESTRUCT" in found_opcodes
+        has_delegatecall = "DELEGATECALL" in found_opcodes
+        has_caller_check = "CALLER" in found_opcodes or "ORIGIN" in found_opcodes
+        code_size = len(code_hex) // 2
+
+        viable = False
+        reason = "unknown"
+
+        if has_selfdestruct and not has_caller_check:
+            viable = True
+            reason = "SELFDESTRUCT without caller check — may be triggerable"
+        elif has_call and not has_delegatecall and not has_caller_check:
+            viable = True
+            reason = "Direct CALL without access control — potential extraction"
+        elif has_call and has_caller_check:
+            viable = False
+            reason = "Has CALL but also CALLER check — access controlled"
+        elif has_delegatecall and not has_call:
+            viable = False
+            reason = "Only DELEGATECALL — proxy, extraction depends on implementation"
+        elif not has_call and not has_selfdestruct:
+            viable = False
+            reason = "No CALL or SELFDESTRUCT — cannot send ETH"
+        else:
+            reason = f"Complex — {len(found_opcodes)} unique opcodes, needs manual review"
+
+        return {
+            "viable": viable,
+            "reason": reason,
+            "code_size": code_size,
+            "opcodes": found_opcodes,
+            "selectors": selectors[:20],
+            "has_call": has_call,
+            "has_selfdestruct": has_selfdestruct,
+            "has_delegatecall": has_delegatecall,
+            "has_access_control": has_caller_check,
+        }
 
     # ── Check 1: Stuck ETH ──
 
@@ -430,6 +561,9 @@ class ContractScanner:
                 eth_bal = self._get_eth_balance(addr)
                 if eth_bal < 0.01:
                     return None
+                # Deep bytecode analysis to assess extraction viability
+                bytecode_analysis = self.analyze_bytecode_depth(addr)
+                action = "execute" if bytecode_analysis.get("viable") else "review"
                 return self._add_finding(
                     "proxy_dead_impl",
                     addr,
@@ -437,8 +571,12 @@ class ContractScanner:
                         "implementation": impl_addr,
                         "reason": "Proxy points to zero/dead address",
                         "eth_balance": eth_bal,
+                        "bytecode_analysis": bytecode_analysis,
+                        "extraction_viable": bytecode_analysis.get("viable", False),
+                        "extraction_reason": bytecode_analysis.get("reason", "unknown"),
                     },
                     eth_value=eth_bal,
+                    action=action,
                 )
 
             impl_code = self._get_code(impl_addr)

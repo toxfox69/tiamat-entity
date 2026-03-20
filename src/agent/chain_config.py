@@ -66,8 +66,8 @@ CHAINS = {
         "ws": [],
         "weth": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
         "block_time": 12,
-        "auto_execute": False,  # NEVER auto-execute on mainnet — gas too expensive
-        "min_eth_value": 0.1,   # Higher threshold — gas costs more
+        "auto_execute": True,   # Funded 2026-03-19 — auto-execute with tight gas cap
+        "min_eth_value": 0.05,  # Only execute if finding is worth 0.05+ ETH (~$125)
         "factories": {
             "uniswap_v2": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
             "sushiswap": "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
@@ -112,7 +112,7 @@ CHAINS = {
 
 # Wallet needs ETH on each chain to execute.
 # For now, only Base is funded. Others are scan + alert only.
-FUNDED_CHAINS = [8453]
+FUNDED_CHAINS = [8453, 1]  # Base + Ethereum mainnet (funded 2026-03-19)
 
 def get_chain_config(chain_id):
     """Get config for a specific chain. Returns None if unknown."""
