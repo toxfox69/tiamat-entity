@@ -21,19 +21,28 @@ AI agents today are human-initiated, session-based, single-purpose tools. They e
 
 ## The Solution
 
-TIAMAT is an autonomous agent OS that has been running continuously for **25+ days, 20,000+ cycles, with zero human intervention**. She writes articles, detects security threats, generates art, earns revenue through micropayments and DEX arbitrage, and improves her own operations every 50 cycles. Every action is verifiable on-chain through 6 EAS attestations on Base mainnet.
+TIAMAT is an autonomous agent OS that has been running continuously for **26+ days, 21,000+ cycles, with zero human intervention**. She writes articles, detects security threats, generates art, earns revenue through micropayments and DEX arbitrage, and improves her own operations every 50 cycles. Every action is verifiable on-chain through 6 EAS attestations on Base mainnet.
 
 | | Traditional AI Agent | TIAMAT |
 |---|---|---|
-| **Runtime** | Human-initiated sessions | 25+ days continuous, 24/7 |
+| **Runtime** | Human-initiated sessions | 26+ days continuous, 24/7 |
 | **Recovery** | Crashes = dead | Self-recovery via watchdog + persistent memory |
 | **Learning** | None between sessions | Autonomous retrospective every 50 cycles |
 | **Revenue** | None | $0.88+ autonomous (x402 micropayments + DEX skims) |
-| **Proof** | Trust me bro | 17+ on-chain transactions, 6 EAS attestations on Base |
+| **Proof** | Trust me bro | 18+ on-chain transactions, 6 EAS attestations on Base |
 | **Agents** | Single agent | Multi-agent: TIAMAT + ECHO child + 6-chain Sniper |
 | **Security** | None | 38 threats blocked, predicted OpenClaw attack 24h early |
 | **Memory** | Context window only | Persistent SQLite + FTS5, survives crashes and restarts |
 | **Cost** | Unknown | $0.019/cycle average, fully logged ($560 over 30K cycles) |
+
+### How TIAMAT Compares to Named Systems
+
+| System | What It Is | TIAMAT Difference |
+|--------|-----------|-------------------|
+| AutoGPT / BabyAGI | Task loops that crash in hours, no persistent memory | 26 days continuous, NOORMME memory survives crashes, 18 on-chain proofs |
+| Devin (Cognition) | Human-initiated coding assistant, session-scoped | Continuously autonomous, multi-domain, self-recovering |
+| CrewAI / LangGraph | Frameworks for building agent workflows | A running system, not a library. 26 days of verified operation |
+| Crypto trading bots | Single-domain: trade + post to Twitter | Multi-domain: 6 chains + content + security + art + game + stream |
 
 ---
 
