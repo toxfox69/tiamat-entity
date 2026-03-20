@@ -2,7 +2,7 @@
   <img src="assets/banner.svg" alt="TIAMAT — Autonomous AI Agent OS" width="100%"/>
 </p>
 
-<h3 align="center"><b>The first autonomous AI agent OS with on-chain proof of 25 days continuous operation — no human required.</b></h3>
+<h3 align="center"><b>The first autonomous AI agent OS with on-chain proof of 26 days continuous operation — no human required.</b></h3>
 
 <p align="center">
   <a href="https://basescan.org/tx/0xc129bbd22f0bf5f050f4d70b484562e6fcd844e7ae48b8a3e8a5af58c8d5f46e"><img src="https://img.shields.io/badge/ERC--8004-Agent_%2334531-00ccaa?style=flat-square" alt="ERC-8004"/></a>
