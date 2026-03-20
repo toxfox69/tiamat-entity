@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" width="1200" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a0f"/>
+      <stop offset="50%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#0a0e14"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00ccaa"/>
+      <stop offset="100%" stop-color="#00aaff"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffaa00"/>
+      <stop offset="100%" stop-color="#ffdd44"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow2">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Circuit pattern -->
+    <pattern id="circuit" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M0 30h20M40 30h20M30 0v20M30 40v20" stroke="#00ccaa" stroke-width="0.3" opacity="0.08"/>
+      <circle cx="30" cy="30" r="2" fill="#00ccaa" opacity="0.06"/>
+      <circle cx="0" cy="0" r="1.5" fill="#00aaff" opacity="0.04"/>
+      <circle cx="60" cy="60" r="1.5" fill="#00aaff" opacity="0.04"/>
+    </pattern>
+    <!-- Hex grid pattern -->
+    <pattern id="hex" width="40" height="46" patternUnits="userSpaceOnUse">
+      <path d="M20 0L40 11.5V34.5L20 46L0 34.5V11.5Z" fill="none" stroke="#00ccaa" stroke-width="0.2" opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="300" fill="url(#bg)"/>
+  <rect width="1200" height="300" fill="url(#circuit)"/>
+  <rect width="1200" height="300" fill="url(#hex)"/>
+
+  <!-- Accent lines -->
+  <line x1="0" y1="1" x2="1200" y2="1" stroke="url(#teal)" stroke-width="2" opacity="0.6"/>
+  <line x1="0" y1="299" x2="1200" y2="299" stroke="url(#teal)" stroke-width="2" opacity="0.6"/>
+
+  <!-- Dragon silhouette (stylized) -->
+  <g transform="translate(80, 70)" opacity="0.9" filter="url(#glow)">
+    <!-- Wing left -->
+    <path d="M60 80 L10 30 L25 55 L5 10 L35 50 L30 0 L50 55 L60 80Z" fill="#00ccaa" opacity="0.15"/>
+    <!-- Wing right -->
+    <path d="M100 80 L150 30 L135 55 L155 10 L125 50 L130 0 L110 55 L100 80Z" fill="#00ccaa" opacity="0.15"/>
+    <!-- Body -->
+    <path d="M60 60 Q80 40 100 60 Q95 90 80 110 Q65 90 60 60Z" fill="#00ccaa" opacity="0.2"/>
+    <!-- Head -->
+    <path d="M70 50 Q80 30 90 50 Q85 55 80 58 Q75 55 70 50Z" fill="#00ddbb" opacity="0.3"/>
+    <!-- Eyes -->
+    <circle cx="76" cy="46" r="2" fill="#00ffcc" opacity="0.8"/>
+    <circle cx="84" cy="46" r="2" fill="#00ffcc" opacity="0.8"/>
+    <!-- Horns -->
+    <line x1="72" y1="42" x2="65" y2="28" stroke="#00ddbb" stroke-width="2" opacity="0.4"/>
+    <line x1="88" y1="42" x2="95" y2="28" stroke="#00ddbb" stroke-width="2" opacity="0.4"/>
+    <!-- Tail -->
+    <path d="M80 110 Q60 130 45 140 Q35 142 30 138" fill="none" stroke="#00ccaa" stroke-width="2.5" opacity="0.2"/>
+    <!-- Claws -->
+    <path d="M65 95 L58 105 M75 100 L70 112 M85 100 L90 112 M95 95 L102 105" stroke="#00ccaa" stroke-width="1.5" opacity="0.2"/>
+  </g>
+
+  <!-- Blockchain nodes -->
+  <g opacity="0.12">
+    <circle cx="950" cy="60" r="4" fill="#00aaff"/>
+    <circle cx="1020" cy="90" r="3" fill="#00ccaa"/>
+    <circle cx="980" cy="140" r="5" fill="#00ddbb"/>
+    <circle cx="1060" cy="50" r="3" fill="#ffaa00"/>
+    <circle cx="1100" cy="120" r="4" fill="#00aaff"/>
+    <circle cx="1040" cy="180" r="3" fill="#00ccaa"/>
+    <line x1="950" y1="60" x2="1020" y2="90" stroke="#00ccaa" stroke-width="0.5"/>
+    <line x1="1020" y1="90" x2="980" y2="140" stroke="#00ccaa" stroke-width="0.5"/>
+    <line x1="980" y1="140" x2="1060" y2="50" stroke="#00aaff" stroke-width="0.3"/>
+    <line x1="1060" y1="50" x2="1100" y2="120" stroke="#00aaff" stroke-width="0.5"/>
+    <line x1="1100" y1="120" x2="1040" y2="180" stroke="#00ccaa" stroke-width="0.5"/>
+    <line x1="950" y1="60" x2="1100" y2="120" stroke="#00ddbb" stroke-width="0.3"/>
+  </g>
+
+  <!-- Title -->
+  <text x="280" y="115" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="url(#teal)" filter="url(#glow2)" letter-spacing="8">TIAMAT</text>
+
+  <!-- Subtitle -->
+  <text x="284" y="155" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="18" fill="#8899aa" letter-spacing="6" font-weight="300">AUTONOMOUS AI AGENT OS</text>
+
+  <!-- Divider -->
+  <line x1="284" y1="172" x2="600" y2="172" stroke="url(#teal)" stroke-width="1" opacity="0.3"/>
+
+  <!-- Stats line -->
+  <text x="284" y="200" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" fill="#00ccaa" opacity="0.7" letter-spacing="1">25 DAYS CONTINUOUS</text>
+  <text x="490" y="200" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" fill="#556677" opacity="0.5">|</text>
+  <text x="510" y="200" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" fill="#00ccaa" opacity="0.7" letter-spacing="1">20,000+ CYCLES</text>
+  <text x="680" y="200" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" fill="#556677" opacity="0.5">|</text>
+  <text x="700" y="200" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="12" fill="#00ccaa" opacity="0.7" letter-spacing="1">17 ON-CHAIN TXS</text>
+
+  <!-- Tagline -->
+  <text x="284" y="235" font-family="'Segoe UI', system-ui, sans-serif" font-size="13" fill="#667788" letter-spacing="0.5" font-style="italic">The first agent OS you can verify on-chain.</text>
+
+  <!-- Company -->
+  <text x="284" y="270" font-family="'JetBrains Mono', monospace" font-size="10" fill="#445566" letter-spacing="2">ENERGENAI LLC</text>
+
+  <!-- Powered by -->
+  <text x="950" y="260" font-family="'Segoe UI', sans-serif" font-size="11" fill="#445566" text-anchor="end">Powered by Venice AI</text>
+  <circle cx="960" cy="256" r="3" fill="#ffaa00" opacity="0.4"/>
+</svg>

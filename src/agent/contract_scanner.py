@@ -494,6 +494,28 @@ class ContractScanner:
 
     # ── Check 2: Skimmable Pair ──
 
+    def _is_honeypot_token(self, token_addr, pair_addr):
+        """Check if a token has gas-burning transfer() — honeypot indicator.
+        Returns True if transfer gas estimate > 50K (normal ERC20 is ~25-35K)."""
+        try:
+            # Simulate transfer of 1 wei from pair to a dummy address
+            transfer_sel = "0xa9059cbb"
+            dummy = "0x" + "0" * 24 + "dEaD" + "0" * 36
+            amount = "0" * 63 + "1"
+            calldata = transfer_sel + dummy[2:] + amount
+            gas = self.w3.eth.estimate_gas({
+                "from": Web3.to_checksum_address(pair_addr),
+                "to": Web3.to_checksum_address(token_addr),
+                "data": calldata,
+            })
+            if gas > 50_000:
+                log.info(f"[{self.chain_name}] HONEYPOT: {token_addr} transfer costs {gas} gas (>50K)")
+                return True
+            return False
+        except Exception:
+            # If estimate_gas reverts, token may be paused/locked — also skip
+            return True
+
     def check_skimmable_pair(self, pair_addr):
         """Uniswap V2 pair where token balance > reserves (excess from accidental sends)."""
         pair_addr = Web3.to_checksum_address(pair_addr)
@@ -526,23 +548,49 @@ class ContractScanner:
                 eth_value = float(Web3.from_wei(excess1, "ether"))
 
             # Only report if excess is meaningful
-            if excess0 > 1000 or excess1 > 1000 or eth_value > 0.0001:
-                return self._add_finding(
-                    "skimmable_pair",
-                    pair_addr,
-                    {
-                        "token0": token0,
-                        "token1": token1,
-                        "reserve0": str(reserve0),
-                        "reserve1": str(reserve1),
-                        "balance0": str(bal0),
-                        "balance1": str(bal1),
-                        "excess0": str(excess0),
-                        "excess1": str(excess1),
-                        "note": "skim() can claim excess tokens sent directly to pair",
-                    },
-                    eth_value=eth_value,
-                )
+            if not (excess0 > 1000 or excess1 > 1000 or eth_value > 0.0001):
+                return None
+
+            # Honeypot filter: check if either token has gas-burning transfer()
+            # This prevents our skim bot from wasting gas on bait pairs
+            if excess0 > 0 and self._is_honeypot_token(token0, pair_addr):
+                log.info(f"[{self.chain_name}] SKIP skimmable {pair_addr}: token0 is honeypot")
+                return None
+            if excess1 > 0 and self._is_honeypot_token(token1, pair_addr):
+                log.info(f"[{self.chain_name}] SKIP skimmable {pair_addr}: token1 is honeypot")
+                return None
+
+            # Pre-flight: estimate gas for the actual skim() call
+            try:
+                skim_gas = self.w3.eth.estimate_gas({
+                    "from": "0x" + "1" * 40,  # dummy caller
+                    "to": pair_addr,
+                    "data": "0xbc25cf77" + "0" * 24 + "1" * 40,  # skim(dummy)
+                })
+                if skim_gas > 100_000:
+                    log.info(f"[{self.chain_name}] SKIP skimmable {pair_addr}: skim() costs {skim_gas} gas (>100K)")
+                    return None
+            except Exception:
+                # skim() reverts — no excess or token blocks it
+                log.info(f"[{self.chain_name}] SKIP skimmable {pair_addr}: skim() reverts on estimate")
+                return None
+
+            return self._add_finding(
+                "skimmable_pair",
+                pair_addr,
+                {
+                    "token0": token0,
+                    "token1": token1,
+                    "reserve0": str(reserve0),
+                    "reserve1": str(reserve1),
+                    "balance0": str(bal0),
+                    "balance1": str(bal1),
+                    "excess0": str(excess0),
+                    "excess1": str(excess1),
+                    "note": "skim() can claim excess tokens sent directly to pair",
+                },
+                eth_value=eth_value,
+            )
         except Exception as e:
             log.debug(f"Pair check failed {pair_addr}: {e}")
         return None
@@ -557,11 +605,29 @@ class ContractScanner:
             impl_addr = "0x" + impl_raw[-20:].hex()
 
             # Check if it's a zero address or if impl has no code
-            if impl_addr.lower() in {d.lower() for d in DEAD_ADDRESSES}:
-                eth_bal = self._get_eth_balance(addr)
-                if eth_bal < 0.01:
-                    return None
-                # Deep bytecode analysis to assess extraction viability
+            is_dead_impl = impl_addr.lower() in {d.lower() for d in DEAD_ADDRESSES}
+            is_empty_impl = False
+            if not is_dead_impl:
+                impl_code = self._get_code(impl_addr)
+                is_empty_impl = not impl_code or impl_code == "0x"
+
+            if not is_dead_impl and not is_empty_impl:
+                return None
+
+            eth_bal = self._get_eth_balance(addr)
+            min_bal = 0.01 if is_dead_impl else 0.001
+            if eth_bal < min_bal:
+                return None
+
+            # Filter: skip owner-gated contracts — ETH is locked behind
+            # a private key we don't control, not actually extractable
+            owner = self._get_owner(addr)
+            if owner and owner.lower() not in {d.lower() for d in DEAD_ADDRESSES}:
+                log.info(f"[{self.chain_name}] SKIP proxy_dead_impl {addr}: "
+                         f"owner-gated ({owner}), {eth_bal:.4f} ETH not extractable")
+                return None
+
+            if is_dead_impl:
                 bytecode_analysis = self.analyze_bytecode_depth(addr)
                 action = "execute" if bytecode_analysis.get("viable") else "review"
                 return self._add_finding(
@@ -578,22 +644,17 @@ class ContractScanner:
                     eth_value=eth_bal,
                     action=action,
                 )
-
-            impl_code = self._get_code(impl_addr)
-            if not impl_code or impl_code == "0x":
-                eth_bal = self._get_eth_balance(addr)
-                # Only report if contract actually holds ETH (skip fresh deploys)
-                if eth_bal > 0.001:
-                    return self._add_finding(
-                        "proxy_dead_impl",
-                        addr,
-                        {
-                            "implementation": impl_addr,
-                            "reason": "Implementation has no code (selfdestructed?)",
-                            "eth_balance": eth_bal,
-                        },
-                        eth_value=eth_bal,
-                    )
+            else:
+                return self._add_finding(
+                    "proxy_dead_impl",
+                    addr,
+                    {
+                        "implementation": impl_addr,
+                        "reason": "Implementation has no code (selfdestructed?)",
+                        "eth_balance": eth_bal,
+                    },
+                    eth_value=eth_bal,
+                )
         except Exception as e:
             log.debug(f"Proxy check failed {addr}: {e}")
         return None

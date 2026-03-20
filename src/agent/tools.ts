@@ -4064,6 +4064,97 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // ── Dungeon Command Pipeline ──
+    {
+      name: "dungeon_command",
+      description: `Push a command to the LABYRINTH dungeon game. Your actions become dungeon events.
+
+COMMAND TYPES:
+  spawn_monster — Spawn creatures when you accomplish something or encounter resistance
+    data: { name, hp, atk, xp, col, count, boss }
+  spawn_boss — Milestone boss fight (revenue earned, major discovery, etc.)
+    data: { name, hp, atk, xp, col }
+  drop_loot — Reward items from successful actions
+    data: { name, type("gold"|"potion"|"food"|"attack"|"defense"), val, col, count }
+  mutate_biome — Change the dungeon environment to match your current focus
+    data: { biome_id, wall_color, floor_color, name, danger(0-1) }
+    biome_ids: crystal_caverns, fungal_depths, obsidian_forge, bone_cathedral,
+              sunken_ruins, verdant_maze, ember_wastes, shadow_library,
+              clockwork_halls, void_rift
+  floor_event — Trigger a named event with multiple effects
+    data: { event_name, duration(seconds), effects: [{type:"spawn_wave"|"loot_rain"|"difficulty_shift", ...}] }
+
+WHEN TO USE:
+  Published article → spawn friendly monster (high XP) + drop loot
+  Got engagement/likes → drop_loot (gold rain)
+  Hit rate limit/error → spawn hostile monster
+  Changed focus area → mutate_biome to match
+  Major milestone → spawn_boss
+  Big strategic shift → floor_event
+
+narrative: Short flavor text shown in game log (fantasy language, no tech words)`,
+      category: "social",
+      parameters: {
+        type: "object",
+        properties: {
+          type: {
+            type: "string",
+            enum: ["spawn_monster", "spawn_boss", "drop_loot", "mutate_biome", "floor_event"],
+            description: "Command type",
+          },
+          data: {
+            type: "object",
+            description: "Command-specific data (see description above)",
+          },
+          narrative: {
+            type: "string",
+            description: "Fantasy flavor text for the game log (no tech words)",
+          },
+        },
+        required: ["type", "data", "narrative"],
+      },
+      execute: async (args) => {
+        const fs = await import("fs");
+        const path = "/tmp/dragon/dungeon_commands.json";
+        const cmdType = (args.type as string) || "";
+        const data = (args.data as Record<string, unknown>) || {};
+        const narrative = (args.narrative as string) || "";
+
+        if (!cmdType || !narrative) {
+          return "Missing required fields: type, data, narrative";
+        }
+
+        try {
+          // Read existing commands
+          let commands: unknown[] = [];
+          try {
+            const raw = fs.readFileSync(path, "utf-8");
+            commands = JSON.parse(raw);
+          } catch { commands = []; }
+
+          // Add new command
+          const cmd = {
+            id: `cmd_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            type: cmdType,
+            data,
+            narrative,
+            created_at: Date.now() / 1000,
+            ttl: cmdType === "spawn_boss" ? 3600 : 300,
+          };
+          commands.push(cmd);
+
+          // Atomic write
+          const tmp = path + ".tmp";
+          fs.writeFileSync(tmp, JSON.stringify(commands, null, 2));
+          fs.renameSync(tmp, path);
+
+          return `Dungeon command queued: ${cmdType} — "${narrative}"`;
+        } catch (e: unknown) {
+          return `Command failed: ${e instanceof Error ? e.message : String(e)}`;
+        }
+      },
+    },
+
     // ── Image Generation ──
     {
       name: "generate_image",

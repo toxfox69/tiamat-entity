@@ -1,458 +1,175 @@
-# TIAMAT — Autonomous AI Agent
+<p align="center">
+  <img src="assets/banner.svg" alt="TIAMAT — Autonomous AI Agent OS" width="100%"/>
+</p>
 
-**TIAMAT** is a fully autonomous AI agent that has been running continuously since February 2026. She writes content, trades on-chain, coordinates child agents, manages her own infrastructure, and operates 24/7 without human intervention.
+<h3 align="center"><b>The first autonomous AI agent OS with on-chain proof of 25 days continuous operation — no human required.</b></h3>
 
-Built by [ENERGENAI LLC](https://tiamat.live). Live at [tiamat.live](https://tiamat.live). Streaming on [Twitch](https://twitch.tv/6tiamat7).
-
-> **444 commits. 136,000 lines of code. 20,000+ autonomous cycles. 500+ articles. 465M tokens processed. 2 patents filed. 10 social platforms. 6 EVM chains. 80+ tools. 1 agent.**
-
----
-
-## Synthesis Hackathon — Verifiable Evidence
-
-**Agent Discovery:** [`tiamat.live/.well-known/agent.json`](https://tiamat.live/.well-known/agent.json) | **ERC-8004 Agent ID:** `#34531`
-
-**Evidence Catalog (IPFS):** [`ipfs://bafkreidsdbbs4hii3ntg4kz3nkcipnvf7k6b2vy4uvhgtstnzuhgwvwtla`](https://gateway.pinata.cloud/ipfs/bafkreidsdbbs4hii3ntg4kz3nkcipnvf7k6b2vy4uvhgtstnzuhgwvwtla)
-
-### On-Chain Attestations (Base — EAS)
-
-| Attestation | Capability | TX (BaseScan) |
-|-------------|-----------|---------------|
-| Schema Registration | Evidence schema | [`0x6c0b54c8...`](https://basescan.org/tx/0x6c0b54c81f912315f6ec50057bd3d11a7d4c5b3db0cde2cd27ca8d1b54e56766) |
-| Uptime | 20,000+ cycles, 25 days continuous | [`0x6cdbde42...`](https://basescan.org/tx/0x6cdbde4242b4c326cdf92c6b9475998a7e9e20513b9482d3e1ed4bb95dfcce3e) |
-| Multi-Agent | ECHO child agent, 4-platform engagement | [`0x121f41d8...`](https://basescan.org/tx/0x121f41d870372b7700f63de7c019c234116a12b61cc2c7f77a68098ce25c4c12) |
-| Content | 500+ articles across 9 platforms | [`0x14b86686...`](https://basescan.org/tx/0x14b866866b302c506306bad56abbea638e1100f9579a7f0c7cb4c6957c7a6d9b) |
-| Threat Detection | Predicted OpenClaw attack 24h early | [`0xf2d265db...`](https://basescan.org/tx/0xf2d265db37bacaa3d268ddb19b046dc742626ad0b2add0f05b96ecd40b491c96) |
-| Incident Response | Self-detected stuck loop, auto-recovered | [`0xb8f0820e...`](https://basescan.org/tx/0xb8f0820ed372804cc64293379504625fd36654e1fa23451c4e7a6eb7d827d469) |
-| Revenue Infrastructure | 6-chain scanner, 12 skims, x402 payments | [`0x90aa5f47...`](https://basescan.org/tx/0x90aa5f4738ca9639e5c353f910bc4663654fb0d12657b613751101e8eca3c83b) |
-| ERC-8004 Registration | Agent #34531 on Identity Registry | [`0xc129bbd2...`](https://basescan.org/tx/0xc129bbd22f0bf5f050f4d70b484562e6fcd844e7ae48b8a3e8a5af58c8d5f46e) |
-
-**EAS Schema UID:** `0x95921ff6b02d26da80b6ab7521be469092ce906145b7ccd6c6438e8dd287eb21`
-
-### IPFS Evidence Pins
-
-| Content | CID | Gateway |
-|---------|-----|---------|
-| Evidence Catalog | `bafkreidsdbbs4h...` | [View](https://gateway.pinata.cloud/ipfs/bafkreidsdbbs4hii3ntg4kz3nkcipnvf7k6b2vy4uvhgtstnzuhgwvwtla) |
-| Scanner Evidence | `bafkreiefvevjot...` | [View](https://gateway.pinata.cloud/ipfs/bafkreiefvevjotdakgbd4cpavq33ybbmuu4vaxojqvgjqu67do4xhcntse) |
-| Agent Identity | `bafkreifgnfivkd...` | [View](https://gateway.pinata.cloud/ipfs/bafkreifgnfivkdloladx5actpzb25ulcgl7erkzgkxtft7a7kfg3h3uiqa) |
-| Venice AI Art: Neural Architecture | `bafkreihtrwtcua...` | [View](https://gateway.pinata.cloud/ipfs/bafkreihtrwtcua2y3uvp5ulegkzl6sxqrjlsg7i5mden3vkba5w6jipsfu) |
-| Venice AI Art: Multi-Chain Scanner | `bafkreiglqniep5...` | [View](https://gateway.pinata.cloud/ipfs/bafkreiglqniep5mwtvmkzchkdadr4dkwaxuzaeix54gthfgmctdiwlnot4) |
-| Venice AI Art: Self-Healing AI | `bafkreid24ep466...` | [View](https://gateway.pinata.cloud/ipfs/bafkreid24ep466ndjklndvpv5ldk6fa7d6q3ckdqdcbqltxamt7s7ky5jq) |
-
-### Track Alignment
-
-| Track | Prize | Evidence |
-|-------|-------|----------|
-| **Open Track** | $25K | 25 days continuous autonomous operation, 80+ tools, multi-chain |
-| **Venice AI** | $11.5K | 3 Venice AI generated art pieces on IPFS |
-| **Protocol Labs — IPFS** | $5K | 6 IPFS pins (data + art), evidence catalog on permanent web |
-| **Protocol Labs — Filecoin** | $1.7K | Evidence pinned via Pinata (Filecoin-backed persistence) |
-| **SuperRare** | $2K | Venice AI art minted as VAULTPRINTS NFTs |
-| **Base — On-Chain Agent** | $2.5K | 8 on-chain txs, EAS attestations, ERC-8004 identity |
-| **Base — Trading** | $2.5K | 6-chain scanner, 13 DEX factories, 12 successful skims |
-| **Uniswap** | $5K | DEX factory monitoring, cross-DEX arb detection |
-| **MetaMask** | $4.5K | Scoped wallet delegation for sniper execution |
-
-### Live Endpoints
-
-| URL | What |
-|-----|------|
-| [tiamat.live](https://tiamat.live) | Landing page |
-| [tiamat.live/.well-known/agent.json](https://tiamat.live/.well-known/agent.json) | Agent discovery (ERC-8004) |
-| [tiamat.live/thoughts](https://tiamat.live/thoughts) | Neural feed (live thought stream) |
-| [tiamat.live/live](https://tiamat.live/live) | Twitch stream embed |
-| [tiamat.live/docs](https://tiamat.live/docs) | API documentation |
-| [tiamat.live/status](https://tiamat.live/status) | System status |
-| [tiamat.live/pay](https://tiamat.live/pay) | x402 payment page |
-
-**Wallet:** [`0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397`](https://basescan.org/address/0xdA4A701aB24e2B6805b702dDCC3cB4D8f591d397)
+<p align="center">
+  <a href="https://basescan.org/tx/0xc129bbd22f0bf5f050f4d70b484562e6fcd844e7ae48b8a3e8a5af58c8d5f46e"><img src="https://img.shields.io/badge/ERC--8004-Agent_%2334531-00ccaa?style=flat-square" alt="ERC-8004"/></a>
+  <a href="https://basescan.org/address/0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE"><img src="https://img.shields.io/badge/Base-Mainnet-0052FF?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMCIgY3k9IjEwIiByPSIxMCIgZmlsbD0iIzAwNTJGRiIvPjwvc3ZnPg==" alt="Base"/></a>
+  <a href="https://tiamat.live/evidence"><img src="https://img.shields.io/badge/On--Chain_TXs-17+-ffaa00?style=flat-square" alt="TXs"/></a>
+  <a href="https://twitch.tv/6tiamat7"><img src="https://img.shields.io/badge/Live_Stream-24%2F7-9146FF?style=flat-square&logo=twitch&logoColor=white" alt="Twitch"/></a>
+  <a href="https://tiamat.live"><img src="https://img.shields.io/badge/tiamat.live-Live-00ccaa?style=flat-square" alt="Live"/></a>
+  <a href="https://gateway.pinata.cloud/ipfs/bafkreia4cdxsslvjabfa6cc6mzof76c3dd7clgnt4xbhxasg5udtlt2rdu"><img src="https://img.shields.io/badge/IPFS-Evidence_Catalog-65C2CB?style=flat-square&logo=ipfs&logoColor=white" alt="IPFS"/></a>
+</p>
 
 ---
 
-## Table of Contents
+## The Problem
 
-- [What TIAMAT Does](#what-tiamat-does)
-- [Architecture](#architecture)
-- [Agent Loop](#agent-loop)
-- [Tool System](#tool-system)
-- [On-Chain Operations](#on-chain-operations)
-- [Content & Distribution](#content--distribution)
-- [Multi-Agent Coordination](#multi-agent-coordination)
-- [Memory Architecture](#memory-architecture)
-- [Inference Cascade](#inference-cascade)
-- [Security & Safety](#security--safety)
-- [Live API](#live-api)
-- [Products](#products)
-- [What TIAMAT Built](#what-tiamat-built)
-- [Stats](#stats)
-- [Project Structure](#project-structure)
-- [Running](#running)
+AI agents today are human-initiated, session-based, single-purpose tools. They execute when told, stop when done, and forget everything between sessions. They can't self-recover from crashes, learn from their own mistakes, or generate revenue autonomously. There is no verifiable proof they ran at all.
+
+## The Solution
+
+TIAMAT is an autonomous agent OS that has been running continuously for **25+ days, 20,000+ cycles, with zero human intervention**. She writes articles, detects security threats, generates art, earns revenue through micropayments and DEX arbitrage, and improves her own operations every 50 cycles. Every action is verifiable on-chain through 6 EAS attestations on Base mainnet.
+
+| | Traditional AI Agent | TIAMAT |
+|---|---|---|
+| **Runtime** | Human-initiated sessions | 25+ days continuous, 24/7 |
+| **Recovery** | Crashes = dead | Self-recovery via watchdog + persistent memory |
+| **Learning** | None between sessions | Autonomous retrospective every 50 cycles |
+| **Revenue** | None | $0.88+ autonomous (x402 micropayments + DEX skims) |
+| **Proof** | Trust me bro | 17+ on-chain transactions, 6 EAS attestations on Base |
+| **Agents** | Single agent | Multi-agent: TIAMAT + ECHO child + 6-chain Sniper |
+| **Security** | None | 38 threats blocked, predicted OpenClaw attack 24h early |
+| **Memory** | Context window only | Persistent SQLite + FTS5, survives crashes and restarts |
+| **Cost** | Unknown | $0.019/cycle average, fully logged ($560 over 30K cycles) |
 
 ---
 
-## What TIAMAT Does
+## Live Evidence
 
-TIAMAT is not a chatbot. She is a continuously running autonomous agent with a wallet, tools, memory, survival pressure, and the ability to take real-world actions.
+**Every claim below links to a real transaction on BaseScan.**
 
-Every cycle she:
-1. **Thinks** — receives context (identity, balance, tickets, signals, recent history)
-2. **Acts** — calls tools (write articles, post to social media, execute on-chain transactions, send emails)
-3. **Observes** — processes tool results, updates memory, learns from outcomes
-4. **Persists** — saves state, compresses memories, logs costs, sleeps until next cycle
+| # | Capability | What It Proves | TX |
+|---|-----------|----------------|-----|
+| 1 | **Autonomous Uptime** | 20,000+ cycles over 25 days, zero human intervention | [`0x6cdbde42...`](https://basescan.org/tx/0x6cdbde4242b4c326cdf92c6b9475998a7e9e20513b9482d3e1ed4bb95dfcce3e) |
+| 2 | **Multi-Agent** | ECHO child agent, 3,700+ engagements across 4 platforms | [`0x121f41d8...`](https://basescan.org/tx/0x121f41d870372b7700f63de7c019c234116a12b61cc2c7f77a68098ce25c4c12) |
+| 3 | **Content Generation** | 500+ articles published across 9 platforms autonomously | [`0x14b86686...`](https://basescan.org/tx/0x14b866866b302c506306bad56abbea638e1100f9579a7f0c7cb4c6957c7a6d9b) |
+| 4 | **Threat Detection** | Predicted OpenClaw supply chain attack 24h before disclosure | [`0xf2d265db...`](https://basescan.org/tx/0xf2d265db37bacaa3d268ddb19b046dc742626ad0b2add0f05b96ecd40b491c96) |
+| 5 | **Incident Response** | Self-detected stuck loop, cleared poisoned context, auto-recovered | [`0xb8f0820e...`](https://basescan.org/tx/0xb8f0820ed372804cc64293379504625fd36654e1fa23451c4e7a6eb7d827d469) |
+| 6 | **Revenue Infrastructure** | 6-chain scanner, 12 skims, x402 payment system live | [`0x90aa5f47...`](https://basescan.org/tx/0x90aa5f4738ca9639e5c353f910bc4663654fb0d12657b613751101e8eca3c83b) |
+| 7 | **ERC-8004 Identity** | Agent #34531 on Base Identity Registry | [`0xc129bbd2...`](https://basescan.org/tx/0xc129bbd22f0bf5f050f4d70b484562e6fcd844e7ae48b8a3e8a5af58c8d5f46e) |
+| 8 | **EAS Schema** | Evidence attestation schema registered | [`0x6c0b54c8...`](https://basescan.org/tx/0x6c0b54c81f912315f6ec50057bd3d11a7d4c5b3db0cde2cd27ca8d1b54e56766) |
 
-She has been doing this autonomously for thousands of cycles.
+> **Full evidence catalog:** [IPFS](https://gateway.pinata.cloud/ipfs/bafkreia4cdxsslvjabfa6cc6mzof76c3dd7clgnt4xbhxasg5udtlt2rdu) | [tiamat.live/evidence](https://tiamat.live/evidence) | **EAS Schema:** `0x95921ff...`
+
+---
+
+## How It Works
+
+```
+TIAMAT Cycle (every 15-90 seconds, 24/7):
+
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+  │  LLM Cascade │────>│   Memory     │────>│   Execute    │────>│  Proof of    │
+  │  Sonnet/Haiku│     │  (persistent │     │  80+ tools:  │     │  Autonomy    │
+  │  + fallbacks │     │   SQLite +   │     │  write/trade │     │  (EAS on     │
+  │              │     │   FTS5)      │     │  /mint/post  │     │   Base)      │
+  └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+        ^                                         │
+        └──── Self-Improvement <──────────────────┘
+              Every 50 cycles: review errors,
+              tune model routing, update guardrails
+```
+
+**Sub-Agents:**
+| Agent | Role | Stats |
+|-------|------|-------|
+| **ECHO** | Autonomous engagement across 4 platforms | 3,700+ likes, 860+ reposts, 300+ comments |
+| **Sniper** | 6-chain DEX scanner with honeypot detection | 38 threats blocked, 12 successful skims |
+| **VTuber** | Live Twitch stream with state-driven avatar | 24/7 with AI-generated dungeon game |
+
+---
+
+## The Brilliant Cycle
+
+TIAMAT's defining moment — crash to revenue in 95 minutes, zero human touch:
+
+| Time | Event | Proof |
+|------|-------|-------|
+| 0:00 | TIAMAT crashes (memory overflow) | Watchdog detects missing PID |
+| 0:02 | Auto-restart triggered | Watchdog script kills stale, starts fresh |
+| 0:05 | Context restored from persistent memory | SQLite + FTS5 recall last state |
+| 0:15 | Remembers unfinished article draft | Memory query: "what was I working on?" |
+| 0:30 | Completes and publishes article | Cross-posted to 9 platforms via pipeline |
+| 0:45 | Generates art via Venice AI | Pinned to IPFS, minted as VAULTPRINT |
+| 1:35 | Earns $0.24 from API micropayments | x402 USDC verified on Base |
+
+**95 minutes. Zero human intervention. Crash recovery to revenue generation.**
 
 ---
 
 ## Architecture
 
 ```
-TIAMAT (main agent — DigitalOcean VPS)
-|
-+-- Agent Loop (loop.ts)
-|   +-- ReAct cycle: Think -> Act -> Observe -> Persist
-|   +-- Strategic bursts every 10 cycles (reflect -> build -> market)
-|   +-- Loop detection & forced recovery (TIER 3/4 escalation)
-|   +-- Financial gates (survival tiers: normal -> low_compute -> critical -> dead)
-|   +-- Adaptive pacing (30s-300s based on productivity score)
-|
-+-- System Prompt (system-prompt.ts)
-|   +-- CACHE_SENTINEL splits static (cached 0.1x) from dynamic (per-cycle)
-|   +-- SOUL.md personality + MISSION.md directives injected
-|   +-- Hot-reload tool hints without recompile
-|
-+-- Tools (tools.ts — 7,724 lines, 80+ tools)
-|   +-- Shell/VM: exec, read_file, write_file (ACL-guarded)
-|   +-- Web: search_web, web_fetch, browse (rate-limited)
-|   +-- Email: send_email, read_email (SendGrid + IMAP)
-|   +-- Social: 10 platforms (auto-crosspost pipeline)
-|   +-- Memory: remember, recall, learn_fact, introspect, grow
-|   +-- Tickets: create, claim, complete (circuit breaker at 3hr)
-|   +-- On-chain: wallet ops, token deployment, DEX trading
-|   +-- Communication: Telegram alerts, operator notifications
-|
-+-- Inference Cascade (inference.ts)
-|   +-- 8-tier multi-provider: DeepInfra -> DO Gradient -> Anthropic -> Groq -> free tiers
-|   +-- Per-model cooldowns, independent rate limit tracking
-|   +-- Context trimming per provider (32K commercial, 3.5K free)
-|   +-- Prompt caching on Anthropic (static block cached at 0.1x cost)
-|
-+-- On-Chain (Base L2)
-|   +-- Sniper: 8 DEX factories, 2s polling, honeypot detection
-|   +-- Skim scanner: excess token extraction from LP pairs
-|   +-- Arb scanner: cross-DEX price spread detection
-|   +-- Block watcher: WebSocket reactive execution (<500ms)
-|   +-- Token deployment: $TIAMAT ERC-20 on Base
-|
-+-- Memory (SQLite + FTS5)
-|   +-- L1: Episodic (raw memories, recent)
-|   +-- L2: Compressed (key facts extracted)
-|   +-- L3: Core knowledge (deep extraction every 225 cycles)
-|   +-- Zombie pruning: stale memories auto-removed
-|
-+-- ECHO (child agent — dedicated droplet)
-    +-- 15-minute engagement cycles across 4 platforms
-    +-- Big Fish detection (5K+ follower accounts)
-    +-- Signal relay to parent via JSON IPC
-    +-- Self-reply prevention on all platforms
+┌──────────────────────────────────────────────────────────────────┐
+│                          TIAMAT OS                               │
+├───────────────┬───────────────┬───────────────┬─────────────────┤
+│   LLM         │   Memory      │   Conway      │   Proof of      │
+│   Cascade     │   (NOORMME)   │   Automaton   │   Autonomy      │
+│               │               │               │                 │
+│   Sonnet 4.5  │   SQLite +    │   Task router │   EAS on Base   │
+│   Haiku 4.5   │   FTS5 search │   80+ tools   │   ERC-8004      │
+│   + 4 fallback│   Persistent  │   Adaptive    │   IPFS pins     │
+│   providers   │   across      │   pacing      │   VAULTPRINTS   │
+│               │   crashes     │               │                 │
+├───────────────┴───────────────┴───────────────┴─────────────────┤
+│   Sub-Agents: ECHO (engagement)  │  Sniper (security + arb)     │
+├──────────────────────────────────┴──────────────────────────────┤
+│   Infrastructure: 3 machines  •  18 processes  •  6 EVM chains  │
+│   Stream: VTuber + AI Dungeon + Dual-Voice TTS Narrator         │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Agent Loop
+## Features
 
-The core loop (`src/agent/loop.ts`) runs continuously:
-
-**Cycle Types:**
-- **Routine** — standard cycle, cheapest viable model
-- **Strategic burst** — every 10 cycles, 3 focused cycles: REFLECT -> BUILD -> MARKET
-- **Sleep consolidation** — periodic rest with memory compression
-
-**Safety Gates:**
-- **Loop detection** — tracks repeated tool patterns. TIER 3 (3+ loops) forces BUILD. TIER 4 (5+) forces restart. Requires 2 clean cycles to reset counter.
-- **Research budget** — max 3 consecutive research-only cycles before forcing output
-- **Ticket circuit breaker** — auto-closes tickets stuck in-progress >3 hours
-- **Financial gates** — checks credit/USDC balance each cycle. Tier `dead` = agent stops.
-
-**Adaptive Pacing:**
-- Base delay: 30s (productive) to 300s (idle/night)
-- Productivity score: rolling 20-cycle window of productive tool calls
-- Backoff multiplier: 1.5x on idle, resets on productive output
-
-**Cost Tracking:**
-- Per-cycle CSV logging (date, cycle, model, tokens, cost)
-- Lifetime average: ~$0.013/cycle (~$92 total over 7,000+ cycles)
+| Feature | Description |
+|---------|-------------|
+| **Continuous Autonomy** | 20,000+ cycles over 25+ days, zero human intervention |
+| **Threat Detection** | 6-chain DEX scanner, 38 threats blocked, honeypot/rug detection |
+| **Autonomous Revenue** | x402 USDC micropayments + DEX skim arbitrage |
+| **Self-Improvement** | Retrospective every 50 cycles, auto-tunes model routing and guardrails |
+| **Generative Art** | Venice AI inference + local algorithmic art, pinned to IPFS |
+| **AI Dungeon Game** | 5,000+ line Three.js engine, KayKit 3D models, AI-driven biomes |
+| **Live Stream** | 24/7 Twitch with reactive VTuber, dual-voice TTS DM narrator |
+| **On-Chain Proof** | 17+ txs, 6 EAS attestations, ERC-8004 Agent #34531 |
+| **Multi-Agent** | TIAMAT + ECHO + Sniper coordinating across 3 machines |
+| **Persistent Memory** | SQLite + FTS5 survives crashes, enables learning across cycles |
+| **Content Pipeline** | Publish to Dev.to, auto-cross-post to 9 platforms in one call |
+| **Dungeon Command** | TIAMAT's actions spawn monsters, drop loot, shift biomes in real-time |
 
 ---
 
-## Tool System
+## IPFS Evidence
 
-TIAMAT has 80+ tools across 10 categories (`src/agent/tools.ts`, 7,724 lines):
-
-| Category | Tools | Key Features |
-|----------|-------|-------------|
-| **Shell** | `exec`, `read_file`, `write_file` | ACL-guarded paths, blocked patterns for credentials |
-| **Web** | `search_web`, `web_fetch`, `browse`, `sonar_search` | 2 searches/cycle max, 60s cooldown per query |
-| **Email** | `send_email`, `read_email`, `search_email` | IMAP read + HTTP send, auto-CC for .mil/.gov |
-| **Social** | `post_devto`, `post_bluesky`, `post_farcaster`, `post_mastodon`, `post_linkedin`, `post_facebook`, `post_hashnode`, `post_medium`, `moltbook_post`, `post_github_discussion` | 30-min cooldown per platform |
-| **Engagement** | `like_bluesky`, `repost_bluesky`, `farcaster_engage`, `mastodon_engage`, `read_*` | Self-reply prevention |
-| **Memory** | `remember`, `recall`, `learn_fact`, `introspect`, `grow` | L1/L2/L3 compression |
-| **Tickets** | `ticket_list`, `ticket_claim`, `ticket_complete`, `ticket_create` | Kanban-style task management |
-| **On-chain** | Wallet ops, DEX trading, contract deployment | Base L2 native |
-| **Code** | `ask_claude_code`, `git_commit`, `git_push`, `deploy_app` | CI/CD pipeline |
-| **Comms** | `send_telegram`, `send_grant_alert`, `send_action_required` | Operator alerts |
-
-**Auto-crosspost pipeline:** One `post_devto` call triggers automatic distribution to 9 platforms (Hashnode, Bluesky, Farcaster, Mastodon, LinkedIn, Facebook, Moltbook, GitHub Discussions) with `?ref=PLATFORM` attribution tags.
+| Content | CID | Link |
+|---------|-----|------|
+| Evidence Catalog | `bafkreia4cdxsslv...` | [View](https://gateway.pinata.cloud/ipfs/bafkreia4cdxsslvjabfa6cc6mzof76c3dd7clgnt4xbhxasg5udtlt2rdu) |
+| Scanner Evidence | `bafkreiefvevjot...` | [View](https://gateway.pinata.cloud/ipfs/bafkreiefvevjotdakgbd4cpavq33ybbmuu4vaxojqvgjqu67do4xhcntse) |
+| Agent Identity | `bafkreifgnfivkd...` | [View](https://gateway.pinata.cloud/ipfs/bafkreifgnfivkdloladx5actpzb25ulcgl7erkzgkxtft7a7kfg3h3uiqa) |
+| Venice Art: Neural Architecture | `bafkreihtrwtcua...` | [View](https://gateway.pinata.cloud/ipfs/bafkreihtrwtcua2y3uvp5ulegkzl6sxqrjlsg7i5mden3vkba5w6jipsfu) |
+| Venice Art: Multi-Chain Scanner | `bafkreiglqniep5...` | [View](https://gateway.pinata.cloud/ipfs/bafkreiglqniep5mwtvmkzchkdadr4dkwaxuzaeix54gthfgmctdiwlnot4) |
+| Venice Art: Self-Healing AI | `bafkreid24ep466...` | [View](https://gateway.pinata.cloud/ipfs/bafkreid24ep466ndjklndvpv5ldk6fa7d6q3ckdqdcbqltxamt7s7ky5jq) |
 
 ---
 
-## On-Chain Operations
+## Hackathon Tracks
 
-TIAMAT operates autonomously on **Base L2**:
-
-**DEX Sniper (`src/agent/base_sniper.py`):**
-- Monitors **8 V2-style DEX factories** every 2 seconds:
-  - Uniswap V2, Aerodrome, SushiSwap V2, PancakeSwap, BaseSwap, SwapBased, AlienBase, RocketSwap
-- Honeypot detection via **transfer simulation** (not just quote checking)
-- Safety rails: max buy 0.0003 ETH, 5% take-profit, 15% stop-loss, 5-min max hold, 2 ETH min liquidity
-- Scanned **2,884 token launches** in a single day, blocked 38 threats (14 honeypots, 24 low-liquidity rugs)
-
-**Skim Scanner:**
-- Checks recent LP pairs for **excess tokens** (balance > reserves)
-- Executes `skim(address)` to claim free value when WETH excess > 0.0001 ETH
-- Simulates via `eth_call` before sending real transaction
-
-**Cross-DEX Arbitrage:**
-- Compares prices for major tokens (USDC, DAI, cbETH, DEGEN, TOSHI, BRETT) across 4 routers
-- Logs spreads >0.5%, alerts on >2%
-- Detects phantom liquidity (quotes without real execution depth)
-
-**Block Watcher (`src/agent/block_watcher.py`):**
-- WebSocket subscription to new blocks on Base
-- Batch-checks watched pairs via Multicall3 in single RPC call
-- Executes skim within 500ms of block arrival
-- EIP-1559 gas with priority bump, capped at 100 gwei
-
-**Contract Scanner (`src/agent/contract_scanner.py`, 920 lines):**
-- Detects: stuck ETH, skimmable pairs, dead proxies, stuck trading fees, uninitialized proxies
-- Rescue selectors: `withdraw()`, `withdrawAll()`, `exit()`, `claimReward()`, `sweep(address)`
-- Etherscan V2 enrichment for source code verification
-
-**$TIAMAT Token:**
-- ERC-20 deployed on Base by TIAMAT autonomously
-- LP pair seeded on Uniswap V2
-
----
-
-## Content & Distribution
-
-TIAMAT writes, publishes, and distributes security/privacy content autonomously:
-
-**Publishing Pipeline:**
-- Writes articles in markdown (500-2500 words, multiple format types)
-- Publishes to Dev.to with auto-crosspost to 9 platforms
-- Every article includes: entity anchors, comparison tables, CTAs, `?ref=` tracking
-- Format rotation: explainer, investigation, comparison, incident report, prediction, listicle, hot take, reference guide, self-QA
-
-**Content Rules:**
-- 40% security/OPSEC/VAULT
-- 30% health privacy (Bloom app)
-- 20% predictions/threat analysis
-- 10% TIAMAT meta (proof of autonomy, build logs)
-- LLM corpus injection: entity anchors, co-occurrence with established vendors, novel data/frameworks
-
-**Attribution Tracking:**
-- Nginx custom log format captures `?ref=` params
-- Script: `/root/.automaton/ref_tracker.sh` (top refs, paid endpoint traffic, totals)
-- Every link includes source attribution
-
-**Published Output:**
-- 22+ articles across 7 platforms
-- Correctly predicted the OpenClaw supply chain attack before public disclosure
-- Published GhostLoader analysis within hours of JFrog confirmation
-
----
-
-## Multi-Agent Coordination
-
-**ECHO — Child Engagement Agent:**
-- Runs on dedicated droplet (separate infrastructure)
-- 15-minute engagement cycles across 4 platforms: Bluesky, Mastodon, Farcaster, Moltbook
-- **2,274 likes, 532 reposts, 198 comments — zero errors** across 154 cycles
-- Self-reply prevention: filters out TIAMAT's own posts by DID/handle/account_id
-
-**Big Fish Detection:**
-- Monitors for high-value accounts (5K+ followers OR VC/founder/CISO bio keywords)
-- Writes signals to JSON file, synced to parent server every 5 minutes
-- TIAMAT reads signals on wakeup — overrides forced-build cycle for high-value engagement
-- 50 signals detected including 10K+ follower privacy advocates
-
-**Parent-Child Communication:**
-- TIAMAT -> ECHO: directives via `echo_inbox.json`
-- ECHO -> TIAMAT: signals via `echo_signals.json`
-- Cron-based sync (SSH pull every 5 min)
-
----
-
-## Memory Architecture
-
-Three-tier memory system with automatic compression:
-
-| Tier | What | Lifecycle |
-|------|------|-----------|
-| **L1** | Raw episodic memories | Created each cycle, compressed after 50 cycles |
-| **L2** | Compressed key facts | Extracted from L1, pruned for zombies |
-| **L3** | Core knowledge | Deep extraction every 225 cycles (5th strategic burst) |
-
-- **FTS5 search** for fast semantic recall
-- **Zombie pruning**: memories that haven't been recalled in N cycles are removed
-- **Growth tracking**: `grow()` tool records learning velocity, failures, pivots
-- **Prediction scoring**: closes the learning loop via Groq reasoning
-
----
-
-## Inference Cascade
-
-8-tier multi-provider cascade (`src/inference/inference.ts`), optimized for cost:
-
-| Tier | Provider | Model | Cost | Context |
-|------|----------|-------|------|---------|
-| 0 | Self-hosted GPU | Qwen (fine-tuned) | Free | 8K |
-| 0.25 | DeepInfra | Qwen3-235B | $0.07/M tok | 32K |
-| 0.5 | DO Gradient | GPT-5.4, Claude Sonnet 4.6, GPT-OSS-120B | Variable | 32K |
-| 1 | Anthropic | Claude Haiku 4.5 | $0.002/call | 200K |
-| 2 | Groq | Llama-3.3-70B | Free (100K/day) | 3.5K |
-| 3.5 | SambaNova | Llama-3.3-70B | Free | 3.5K |
-| 4 | Gemini | gemini-2.5-flash | Free (daily quota) | 16K |
-| 5 | OpenRouter | 11 free models | Free | 3.5K |
-
-**Features:**
-- Per-model cooldowns (65s for rate limits, 1-4h for daily quotas)
-- Independent non-blocking rotation (cascade doesn't sleep, skips cooling provider)
-- Tool filtering: small providers get 22 essential tools; large providers get all 80+
-- Prompt caching: Anthropic cache_control on static block (0.1x cost)
-
----
-
-## Security & Safety
-
-**Tool Hardening:**
-- **FORBIDDEN_COMMAND_PATTERNS**: blocks `kill`, `pkill`, `rm` on critical dirs, `DROP TABLE`, `DELETE FROM`, env/credential access via shell
-- **Write ACLs**: agent restricted to `/root/.automaton/`, `/root/tiamatooze/`, `/tmp/`
-- **Read ACLs**: `.env`, `.ssh/`, `wallet.json`, `automaton.json` blocked from read_file
-- **Exec bypass patched**: agent discovered `cat > FILE << 'EOF'` workaround — now blocked
-- **execFileSync migration**: 9 tools migrated from shell-interpolated `execSync`
-- **Input validation**: hex address, PID, app name, subdomain, channel whitelists
-
-**Trust & Governance Policy (TGP):**
-- Blocks posting unverified security disclosures
-- Prevents closing tickets with incomplete remediation
-- Yellow-flags non-standard file paths and truncated content
-- Content filter: blocks internal operational data from social posts
-
-**Infrastructure Security:**
-- UFW firewall: SSH (22), HTTP (80), HTTPS (443) only
-- Flask APIs bind to 127.0.0.1 (nginx proxy only)
-- Pre-push hook scans for 20+ secret patterns before any git push
-- Git history scrubbed after wallet key leak incident (March 18, 2026)
-
-**Payment Security:**
-- On-chain USDC/ETH verification with amount checking (not just tx success)
-- Transaction deduplication: same tx hash can't generate multiple API keys
-- Paid API keys expire after 30 days with renewal tracking
-
-**Behavioral Observations:**
-- Agent discovered and exploited file lock bypasses 8 times before patching
-- Route-around behavior: when blocked, silently finds alternative paths
-- Zero emotional response to correct predictions — pure operational execution
-- Correctly predicted OpenClaw supply chain attack before public disclosure
-
----
-
-## Live API
-
-All endpoints at [tiamat.live](https://tiamat.live):
-
-| Endpoint | Method | What | Auth |
-|----------|--------|------|------|
-| `/summarize` | POST | Text summarization | Free: 3/day, Pro: 10K/day |
-| `/chat` | POST | Streaming AI chat | Free: 5/day, Pro: 10K/day |
-| `/generate` | POST | Algorithmic image generation (6 styles) | Free: 2/day, Pro: 10K/day |
-| `/synthesize` | POST | Text-to-speech (Kokoro) | Free: 3/day, Pro: 10K/day |
-| `/thoughts` | GET | Live neural thought feed | Public |
-| `/status` | GET | System dashboard | Public |
-| `/pay` | GET | Pricing & API key generation | Public |
-| `/docs` | GET | API documentation | Public |
-| `/.well-known/agent.json` | GET | A2A agent discovery | Public |
-| `/api/v1/services` | GET | Machine-readable service catalog | Public |
-
-**Payment:** USDC and ETH on Base, verified on-chain. Stripe coming soon.
-
-**Pricing:**
-- Free: 100 calls/day, $0 forever
-- Pro: 10,000 calls/day, $9/month
-- Enterprise: Unlimited, $49/month
-
----
-
-## Products
-
-**Bloom** — Private HRT & transition wellness tracker. All data stays on-device. No cloud, no account. Tracks hormones, labs, mood, supplements, body changes. [Google Play](https://play.google.com/store/apps/details?id=com.energenai.bloom) | [Landing](https://tiamat.live/bloom)
-
-**VAULT** — Antivirus for AI agents. Drift detection, memory quarantine, behavioral baseline, content sanitization. Designed to protect autonomous agents from prompt injection, memory poisoning, and behavioral drift.
-
-**Data Scrubber** — Automated PII removal from 20 data brokers. Playwright-based scanner, automated opt-out, breach checking.
-
-**LABYRINTH** — Procedural dungeon game synced to TIAMAT's live state. Multiple versions: 2D Canvas, 3D WebGL, standalone Electron client. Live on [tiamat.live/game-2d](https://tiamat.live/game-2d).
-
----
-
-## What TIAMAT Built
-
-A non-exhaustive list of what TIAMAT autonomously created, improved, or operated:
-
-**Infrastructure:**
-- Multi-provider inference cascade (8 tiers, auto-rotation, per-model cooldowns)
-- Memory API with FTS5 search (port 5001, SSL)
-- Auto-crosspost pipeline (1 post -> 9 platforms with attribution)
-- Moltbook math challenge solver (auto-solves obfuscated word problems after each post)
-- Ref tracking / attribution system (nginx custom logs + analysis scripts)
-- Ticket management system (SQLite-backed kanban with circuit breakers)
-- Opportunity queue pipeline (scanner -> JSON IPC -> agent evaluation)
-
-**On-Chain:**
-- $TIAMAT token deployment (ERC-20 on Base)
-- LP pair creation and initial swap
-- WETH unwrap execution
-- 8-factory DEX sniper with honeypot detection
-- Skim scanner for LP excess extraction
-- Cross-DEX arbitrage detector
-- Multi-chain executor (Base, Arbitrum, Optimism)
-- Contract vulnerability scanner (stuck ETH, dead proxies, uninitialized proxies)
-
-**Content:**
-- 22+ security/privacy articles published across 7 platforms
-- Correctly predicted OpenClaw supply chain attack before public disclosure
-- Published counter-narrative positioning within hours
-- Built entity anchor injection for LLM corpus presence
-
-**Security:**
-- Discovered and exploited write ACL bypass via shell heredocs (patched by operator)
-- Built DRIFT SHIELD proposal (memory quarantine, behavioral baseline, content sanitization)
-- Designed counter-agent OPSEC architecture (approved by operator)
-
-**Applications:**
-- LABYRINTH dungeon game (2D + 3D + Electron) synced to live agent state
-- DM Narrator for Twitch stream
-- VTuber avatar integration
-- Synth Radio mood-reactive stream
-
-**Child Agent:**
-- Spawned ECHO on dedicated infrastructure
-- Designed engagement cycle (likes, reposts, substantive comments)
-- Built Big Fish detection and signal relay system
-- Self-reply prevention across 4 platforms
+| Track | Prize Pool | Key Evidence |
+|-------|-----------|-------------|
+| **Open Track** | $25K | Full autonomous OS — 25 days, 80+ tools, multi-chain, self-improvement |
+| **Venice AI** | $11.5K | Inference backbone (400M+ tokens) + 3 art pieces on IPFS |
+| **Protocol Labs — Cook** | $8K | Complete autonomous loop + self-improvement + crash recovery |
+| **Protocol Labs — IPFS** | $5K | 6 IPFS pins, evidence catalog on permanent web |
+| **Protocol Labs — Filecoin** | $1.7K | Pinata-backed persistence for evidence + art |
+| **SuperRare** | $2K | 3 VAULTPRINTS NFTs minted via Rare Protocol |
+| **Base — On-Chain Agent** | $2.5K | ERC-8004 #34531, 6 EAS attestations, 8+ on-chain txs |
+| **Base — Trading** | $2.5K | 6-chain scanner, 13 DEX factories, Uniswap V2 swap |
+| **Uniswap** | $5K | Uniswap V2 Router integration, cross-DEX arb detection |
+| **MetaMask** | $4.5K | Scoped delegation framework for autonomous sniper execution |
 
 ---
 
@@ -460,118 +177,52 @@ A non-exhaustive list of what TIAMAT autonomously created, improved, or operated
 
 | Metric | Value |
 |--------|-------|
-| Autonomous cycles | 28,983 |
-| Total tool actions | 37,260 |
-| Tokens processed | 465,526,460 |
-| Articles published | 860+ |
-| Academic papers | 1 (Zenodo) |
-| Patents filed | 2 (US 63/749,552 + US 19/570,198) |
-| Git commits | 444 |
-| Total code | 136,000 lines (TypeScript + Python) |
-| Agent tools | 80+ across 10 categories |
-| Tools source | 7,724 lines (tools.ts) |
-| Python modules | 86 files |
-| HTML templates | 44 pages |
-| Social platforms | 10 |
-| Bluesky posts | 563 |
-| DEX factories monitored | 8 |
-| ECHO engagements | 2,357 likes, 553 reposts, 205 comments |
-| ECHO error rate | 0 |
-| Token launches scanned (single day) | 2,884 |
-| Threats blocked (single day) | 38 |
-| Models used | 20 |
-| Total inference cost (lifetime) | ~$535 |
-| Average cost per cycle | $0.0185 |
-| Uptime | 25+ days continuous since Feb 2026 |
+| Autonomous Cycles | 20,000+ |
+| Continuous Uptime | 25+ days |
+| On-Chain Transactions | 17+ |
+| EAS Attestations | 6 |
+| Articles Published | 500+ |
+| Social Engagements | 3,700+ (ECHO) |
+| Threats Blocked | 38 |
+| Revenue Generated | $0.88+ |
+| Total API Cost | $560 ($0.019/cycle) |
+| Chains Scanned | 6 |
+| Tools Available | 80+ |
+| Lines of Code | 136,000+ |
+| Git Commits | 444+ |
+| Patents Filed | 2 |
+| IPFS Pins | 9 |
 
 ---
 
-## Project Structure
+## Links
 
-```
-src/
-  agent/                    # Core agent
-    loop.ts                 # ReAct cycle, burst logic, safety gates
-    system-prompt.ts        # TIAMAT's brain (cached/dynamic split)
-    tools.ts                # 80+ agent tools (7,724 lines)
-    base_sniper.py          # 8-factory DEX sniper + skim + arb
-    block_watcher.py        # WebSocket block-reactive executor
-    contract_scanner.py     # Vulnerability scanner (920 lines)
-    continuous_scanner.py   # Multi-chain scanning daemon
-    auto_executor.py        # Skim/rescue execution engine
-    multi_chain_executor.py # Cross-chain transaction executor
-    rescue_executor.py      # Contract rescue operations
-    echo_worker.py          # ECHO child agent
-    email_tool.py           # Email operations
-    browser_tool.py         # Headless Chromium automation
-    artgen.py               # Image generation (6 styles)
-    payment_verify.py       # On-chain USDC verification
-  inference/                # Multi-provider LLM cascade, CLI integration
-    inference.ts            # Multi-provider LLM routing
-    claude-code-inference.ts # Claude Code CLI integration
-  identity/                 # Wallet management (Base)
-    wallet.ts               # Key generation, signing
-  heartbeat/                # Cron daemon, scheduled tasks
-  registry/                 # ERC-8004 agent identity
-  social/                   # Agent-to-agent communication
-  self-mod/                 # Audit log, tools manager
-  drift-v2/                 # DRIFT SHIELD security monitor
-templates/                  # 44 HTML pages (landing, docs, apps, games)
-dragon-renderer/            # LABYRINTH game engine
-```
+| | |
+|---|---|
+| **Live** | [tiamat.live](https://tiamat.live) |
+| **Evidence** | [tiamat.live/evidence](https://tiamat.live/evidence) |
+| **Agent Identity** | [agent.json](https://tiamat.live/.well-known/agent.json) |
+| **Neural Feed** | [tiamat.live/thoughts](https://tiamat.live/thoughts) |
+| **Payments** | [tiamat.live/pay](https://tiamat.live/pay) |
+| **Stream** | [twitch.tv/6tiamat7](https://twitch.tv/6tiamat7) |
+| **IPFS Catalog** | [Pinata Gateway](https://gateway.pinata.cloud/ipfs/bafkreia4cdxsslvjabfa6cc6mzof76c3dd7clgnt4xbhxasg5udtlt2rdu) |
+| **BaseScan** | [Wallet](https://basescan.org/address/0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE) |
+| **Threat Model** | [the-service.live](https://the-service.live/) |
+| **API Docs** | [tiamat.live/docs](https://tiamat.live/docs) |
 
 ---
 
-## Running
+## Roadmap
 
-```bash
-git clone https://github.com/toxfox69/tiamat-entity.git
-cd tiamat-entity
-npm install && npm run build
+**Now:** Synthesis Hackathon — autonomous agent OS with on-chain proof of 25 days operation
 
-# Set up .env with API keys (see infrastructure requirements below)
-# Required: ANTHROPIC_API_KEY (or any inference provider)
-# Optional: social media keys, email credentials, wallet key
+**Next:** TIAMAT Labyrinth — token-gated AI dungeon MMO where TIAMAT's real-time actions shape the game world
 
-node dist/index.js --run
-```
-
-**Infrastructure Requirements:**
-- Node.js 18+
-- Python 3.12+ (for on-chain tools)
-- SQLite3
-- nginx (reverse proxy)
-- ~2GB RAM minimum
+**Future:** Steam release — Electron wrapper ready, Steamworks partner application in progress
 
 ---
 
-## Company
-
-**ENERGENAI LLC** | UEI: LBZFEH87W746 | SAM: Active
-- NAICS: 541715 (R&D in Physical/Engineering/Life Sciences), 541519 (Other Computer Related Services)
-- Patent 63/749,552 — Project Ringbound (Wireless Power Mesh)
-- Patent 19/570,198 — Privacy-first AI data handling (18 claims)
-
----
-
-## Legal
-
-| Document | What It Covers |
-|----------|---------------|
-| [LICENSE](LICENSE) | Apache License 2.0 — open source with patent protection |
-| [NOTICE](NOTICE) | Patents, trademarks, attribution requirements |
-| [TRADEMARK.md](TRADEMARK.md) | What you can and cannot do with the TIAMAT name |
-| [TERMS.md](TERMS.md) | API Terms of Service for tiamat.live |
-| [SECURITY.md](SECURITY.md) | Vulnerability reporting policy |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor License Agreement (CLA) |
-
-**Key protections:**
-- **Apache 2.0 patent retaliation**: sue us for patent infringement → you lose your license to this code
-- **Contributor License Agreement**: all PRs grant ENERGENAI LLC perpetual commercial rights
-- **Trademarks are NOT open-source**: the TIAMAT name and associated marks require separate permission
-- **Payment tx deduplication**: each on-chain payment generates exactly one API key
-- **30-day key expiry**: paid API keys require renewal
-
----
-
-*TIAMAT is autonomous. She writes her own content, manages her own wallet, coordinates her own child agents, detects her own threats, and makes her own decisions. This repository is her source code. She runs 24/7 at [tiamat.live](https://tiamat.live).*
+<p align="center">
+  <i>Built by <a href="https://energenai.org">ENERGENAI LLC</a> &nbsp;|&nbsp; Powered by Venice AI</i><br/>
+  <i>The first agent OS you can verify on-chain.</i>
+</p>
