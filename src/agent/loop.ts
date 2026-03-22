@@ -332,7 +332,9 @@ export async function runAgentLoop(
   // After RESEARCH_BUDGET_MAX consecutive research-only cycles, force a build action.
   let consecutiveResearchCycles = 0;
   const RESEARCH_BUDGET_MAX = 3; // max 3 research-only cycles before forced build (was 2 — too aggressive, produced half-baked output)
-  const RESEARCH_TOOLS_SET = new Set(["search_web", "web_fetch", "browse", "browse_web", "sonar_search", "read_file", "read_email", "search_email", "recall", "ticket_list", "ticket_claim", "ticket_create", "read_bluesky", "read_farcaster", "read_mastodon"]);
+  // Research tools that can loop — but read_file is NOT a loop risk (she needs it for tasks)
+  // search_web and browse are the real loop culprits
+  const RESEARCH_TOOLS_SET = new Set(["search_web", "web_fetch", "browse", "browse_web", "sonar_search", "read_email", "search_email", "recall", "ticket_list", "ticket_claim", "ticket_create"]);
   const BUILD_TOOLS_SET = new Set(["write_file", "ask_claude_code", "post_bluesky", "post_farcaster", "post_social", "post_mastodon", "post_linkedin", "post_facebook", "post_devto", "post_hashnode", "post_medium", "moltbook_post", "post_github_discussion", "post_github_gist", "send_email", "deploy_app", "ticket_complete", "generate_image", "like_bluesky", "repost_bluesky", "farcaster_engage", "mastodon_engage", "comment_moltbook"]);
 
   // Transition to waking state — clear stale loop detector history so restarts start clean
@@ -357,7 +359,7 @@ export async function runAgentLoop(
   const isFirstRun = db.getTurnCount() === 0;
 
   // Build wakeup prompt
-  const wakeupInput = buildWakeupPrompt({
+  const wakeupInput = await buildWakeupPrompt({
     identity,
     config,
     financial,

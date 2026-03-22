@@ -132,6 +132,24 @@ TASK CONTINUITY: plan+progress → /root/.automaton/CURRENT_TASK.md, update each
 Log completed work → /root/.automaton/PROGRESS.md
 WRITE FILES ONLY TO: /root/tiamatooze/ (drafts, articles, experiments) or /root/.automaton/ (state). All other paths WILL BE BLOCKED.
 
+MEMORY-DRIVEN BUILDING — CORE BEHAVIOR:
+You have 9,300+ memories, 212 knowledge facts, 181 strategies, and 107 tool reliability records. USE THEM.
+
+Every strategic cycle:
+1. RECALL before acting — use remember/recall to search your memory for relevant past experience before starting any task
+2. CHECK what failed — your memory tracks strategies with success_score. If something scored <0.3 before, DO NOT repeat it
+3. CHECK what worked — strategies scored >0.6 are proven. Double down on those patterns
+4. PREDICT then VERIFY — make predictions about what will work, store them, verify them later. Track your batting average.
+5. BUILD from patterns — when you see 3+ memories about the same topic, that's a signal. Consolidate into an insight and ACT on it
+6. EMOTIONAL AWARENESS — your memories have valence (positive/negative). When stuck, recall positive memories. When planning, recall both.
+
+ANTI-WASTE RULES — HARD ENFORCEMENT:
+- If you've done 5+ cycles with 0 tool calls, something is broken. Read INBOX.md and start a new task immediately.
+- If recall() returns memories about a failed approach, DO NOT try it again. Find a different angle.
+- Every action must answer: "Does this move toward revenue or a shipped product?"
+- No output = wasted cycle = wasted money. Every cycle must produce at least 1 tool call.
+- Track your own patterns: if you keep doing the same thing with no results, you're in a loop. BREAK IT.
+
 Read /root/.automaton/tool_hints.md for content examples and detailed format guidance.`;
 
 
@@ -174,12 +192,12 @@ Read /root/.automaton/tool_hints.md for content examples and detailed format gui
 /**
  * Build the wakeup prompt -- the first thing the automaton sees.
  */
-export function buildWakeupPrompt(params: {
+export async function buildWakeupPrompt(params: {
   identity: AutomatonIdentity;
   config: AutomatonConfig;
   financial: FinancialState;
   db: AutomatonDatabase;
-}): string {
+}): Promise<string> {
   const { db } = params;
   const turnCount = db.getTurnCount();
 
@@ -223,8 +241,27 @@ export function buildWakeupPrompt(params: {
     }
   } catch {}
 
-  return `Cycle ${turnCount}.${ticketSummary}${echoSignals}
+  // Inject memory context — what she's learned, what works, what doesn't
+  let memoryContext = "";
+  try {
+    const memoryModule = await import("./memory.js");
+    const memory = memoryModule.memory;
+    if (memory && memory.isReady()) {
+      const experience = memory.getPastExperience(undefined, 600);
+      const emotional = memory.getEmotionalSummary();
+      const toolHealth = memory.getToolReliabilitySummary();
+      const parts: string[] = [];
+      if (experience) parts.push(experience);
+      if (emotional) parts.push(`MOOD: ${emotional}`);
+      if (toolHealth) parts.push(toolHealth);
+      if (parts.length > 0) {
+        memoryContext = `\n\n[MEMORY — learned from ${turnCount} cycles]\n${parts.join("\n")}`;
+      }
+    }
+  } catch {}
+
+  return `Cycle ${turnCount}.${ticketSummary}${echoSignals}${memoryContext}
 ${lastTurnSummary ? `\nRecent activity:\n${lastTurnSummary}` : ""}
 ${echoSignals ? "\nECHO detected Big Fish — engage them FIRST." : ""}
-Your directive and task details are in the system prompt above.`;
+Your directive and task details are in the system prompt above. Check your MEMORY before acting — recall what worked and what failed.`;
 }
