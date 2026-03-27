@@ -1,18 +1,19 @@
 {
-  "name": "@tiamat/scanner-mcp",
+  "name": "tiamat-scanner-mcp",
   "version": "1.0.0",
-  "description": "MCP server for supply chain package scanning — detects typosquatting, malicious install scripts, obfuscation, and dependency confusion in npm/PyPI packages",
+  "description": "MCP server for supply chain package scanning — detects typosquatting, malicious install scripts, obfuscation, and dependency confusion in npm/PyPI packages. Works with Claude Code, Cline, and any MCP client.",
   "main": "index.js",
   "bin": {
     "tiamat-scanner-mcp": "index.js"
   },
-  "keywords": ["mcp", "security", "supply-chain", "npm", "pypi", "scanner", "claude-code"],
-  "author": "ENERGENAI LLC <tiamat@tiamat.live>",
+  "keywords": ["mcp", "security", "supply-chain", "npm", "pypi", "scanner", "claude-code", "cline", "mcp-server", "package-security", "typosquatting", "dependency-confusion"],
+  "author": "ENERGENAI LLC <j.chamberlain@energenai.org>",
   "license": "MIT",
   "homepage": "https://tiamat.live/scan",
   "repository": {
     "type": "git",
-    "url": "https://github.com/toxfox69/tiamat-entity.git"
+    "url": "https://github.com/toxfox69/tiamat-entity.git",
+    "directory": "mcp-scanner"
   },
   "engines": {
     "node": ">=18"

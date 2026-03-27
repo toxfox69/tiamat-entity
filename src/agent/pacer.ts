@@ -193,10 +193,10 @@ interface PaceTierConfig {
 }
 
 const PACE_TIERS: Record<PaceTier, PaceTierConfig> = {
-  sprint:  { interval: 15,   claudeCodeBudget: 2 },    // CC every 2nd cycle
-  active:  { interval: 30,   claudeCodeBudget: 3 },    // CC every 3rd cycle
-  idle:    { interval: 60,   claudeCodeBudget: 5 },    // CC every 5th cycle
-  reflect: { interval: 90,   claudeCodeBudget: 8 },    // CC every 8th cycle
+  sprint:  { interval: 10,   claudeCodeBudget: 2 },    // CC every 2nd cycle
+  active:  { interval: 20,   claudeCodeBudget: 3 },    // CC every 3rd cycle
+  idle:    { interval: 40,   claudeCodeBudget: 5 },    // CC every 5th cycle
+  reflect: { interval: 60,   claudeCodeBudget: 8 },    // CC every 8th cycle
 };
 
 function rateToPace(rate: number): PaceTier {

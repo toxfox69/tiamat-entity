@@ -23,7 +23,7 @@
     <div class="status-card"><h3>Agent</h3><div class="value" id="agentStatus"><span class="spinner"></span></div><div class="label">Core autonomous loop</div></div>
     <div class="status-card"><h3>API</h3><div class="value" id="apiStatus"><span class="spinner"></span></div><div class="label">Flask + Gunicorn</div></div>
     <div class="status-card"><h3>Memory API</h3><div class="value" id="memStatus"><span class="spinner"></span></div><div class="label">memory.tiamat.live</div></div>
-    <div class="status-card"><h3>GPU Pod</h3><div class="value" id="gpuStatus"><span class="spinner"></span></div><div class="label">RTX 3090 TTS/Render</div></div>
+    <div class="status-card"><h3>TTS Engine</h3><div class="value" id="gpuStatus"><span class="spinner"></span></div><div class="label">Kokoro TTS (CPU)</div></div>
     <div class="status-card"><h3>Cycles</h3><div class="value" id="cycles">—</div><div class="label">Total autonomous cycles</div></div>
     <div class="status-card"><h3>Revenue</h3><div class="value" id="revenue">—</div><div class="label">Lifetime USDC</div></div>
   </div>
@@ -41,7 +41,7 @@ async function checkStatus() {
       document.getElementById('apiStatus').innerHTML = up + 'Online';
       document.getElementById('agentStatus').innerHTML = d.agent === 'online' ? up + 'Running' : down + 'Down';
       document.getElementById('memStatus').innerHTML = d.memory === 'online' ? up + 'Online' : down + 'Down';
-      document.getElementById('gpuStatus').innerHTML = d.gpu === 'online' ? up + 'Online' : down + 'Offline';
+      document.getElementById('gpuStatus').innerHTML = d.gpu === 'not_required' ? up + 'Active (CPU)' : d.gpu === 'online' ? up + 'Online' : down + 'Offline';
       // Metrics
       document.getElementById('cycles').textContent = d.cycles ? d.cycles.toLocaleString() : '—';
       document.getElementById('revenue').textContent = '$' + (d.revenue || 0).toFixed(2);

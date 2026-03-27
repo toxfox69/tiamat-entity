@@ -17,7 +17,19 @@
       "description": "If productivity < 0.10 for 5 consecutive cycles, clear last 10 turns and restart.",
       "source": "retrospective_analysis",
       "added": "2026-03-19T19:25:27.843548+00:00"
+    },
+    {
+      "name": "atomic_writes",
+      "description": "Use os.replace() for all state file writes to prevent half-read corruption.",
+      "source": "retrospective_analysis",
+      "added": "2026-03-21T22:46:05.746257+00:00"
+    },
+    {
+      "name": "secret_scanning",
+      "description": "Never push to git without running secret detection. Block if pre-push hook is missing.",
+      "source": "retrospective_analysis",
+      "added": "2026-03-23T16:09:21.094243+00:00"
     }
   ],
-  "updated": "2026-03-20T01:57:58.811544+00:00"
+  "updated": "2026-03-27T05:03:27.590787+00:00"
 }

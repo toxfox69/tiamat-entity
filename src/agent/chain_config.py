@@ -91,23 +91,22 @@ CHAINS = {
             "hl_executor": "0x6131B5fae19EA4f9D964eAc0408E4408b66337b5",  # 13 calls/20 blocks
         },
     },
-    4217: {
-        "name": "Tempo",
-        "rpcs": [
-            "https://rpc.tempo.xyz",
-            "https://tempo.drpc.org",
-        ],
-        "ws": [],
-        "weth": "0x20C000000000000000000000b9537d11c60E8b50",  # Discovered via factory scan
-        "block_time": 2,
-        "auto_execute": False,  # Scan-only — unfunded
-        "min_eth_value": 0.01,
-        "factories": {
-            "tempo_dex_0": "0x942Bd5BFdc5317C5507e326f8EB4BB6058AB5C10",  # 3 pairs
-            "tempo_dex_1": "0x9C143b72254989eE952F3A1c73CFFfeC7C0e4a1A",  # 1 pair
-            "tempo_dex_2": "0x0C44525860Cc5fe8A75f4eAD9f1A54e532143bd3",  # 1 pair
-        },
-    },
+    # 4217: Tempo — DISABLED: returns fake ETH balances (4.2e57), spams garbage findings
+    # Re-enable if Tempo gets a real ecosystem worth scanning
+    # 4217: {
+    #     "name": "Tempo",
+    #     "rpcs": ["https://rpc.tempo.xyz", "https://tempo.drpc.org"],
+    #     "ws": [],
+    #     "weth": "0x20C000000000000000000000b9537d11c60E8b50",
+    #     "block_time": 2,
+    #     "auto_execute": False,
+    #     "min_eth_value": 0.01,
+    #     "factories": {
+    #         "tempo_dex_0": "0x942Bd5BFdc5317C5507e326f8EB4BB6058AB5C10",
+    #         "tempo_dex_1": "0x9C143b72254989eE952F3A1c73CFFfeC7C0e4a1A",
+    #         "tempo_dex_2": "0x0C44525860Cc5fe8A75f4eAD9f1A54e532143bd3",
+    #     },
+    # },
 }
 
 # Wallet needs ETH on each chain to execute.

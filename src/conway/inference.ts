@@ -49,9 +49,9 @@ type InferenceBackend = "groq" | "conway" | "openai" | "anthropic" | "cerebras" 
 // BLACKLISTED 2026-03-19: Qwen3-235B refuses TIAMAT's system prompt as "fictional scenario"
 // Burned 2+ hours of stuck cycles. DO NOT re-enable without testing.
 const DEEPINFRA_MODELS = {
-  primary:  "Qwen/Qwen3-30B-A3B",                    // Was Qwen3-235B — BLACKLISTED (refuses system prompt). 30B variant cooperates.
-  reasoning: "Qwen/Qwen3-30B-A3B",                    // DeepSeek-R1-70B has no tool support on DeepInfra
-  fast:     "Qwen/Qwen3-30B-A3B",                    // Ultra-cheap fast fallback (30B variant is fine)
+  primary:  "deepseek-ai/DeepSeek-V3",               // DeepSeek-V3 — strong reasoning + tool calling
+  reasoning: "deepseek-ai/DeepSeek-V3",               // DeepSeek-V3 — best free model for tool use
+  fast:     "meta-llama/Llama-3.3-70B-Instruct",     // 70B — fast fallback
 };
 
 // Token thresholds for model routing
@@ -97,19 +97,34 @@ const OPENROUTER_FREE_MODELS = [
 ];
 
 /**
- * Essential tools for small-context providers (Groq/Cerebras).
- * Only these get sent — cuts tool token overhead from ~8k to ~2k.
+ * CORE tools only — the absolute minimum for open-source models to function.
+ * More tools = more confusion = worse instruction following.
+ * 10 tools max for routine, expanded set for strategic bursts.
  */
+const CORE_TOOLS = new Set([
+  "read_bluesky", "like_bluesky", "repost_bluesky", "post_bluesky",
+  "read_file", "write_file", "exec", "remember", "recall",
+  "post_farcaster",
+]);
+
+// Routine tools for open-source models (~25 tools)
+// NO send_email (cold emails strangers), NO browse (loops), NO ticket_* (busywork)
+// These models can do: social engagement, read/write files, search, remember
 const SMALL_PROVIDER_TOOLS = new Set([
-  "exec", "write_file", "read_file", "search_web", "sonar_search", "web_fetch", "browse",
-  "send_telegram", "send_email", "read_email", "post_bluesky", "post_farcaster",
-  "remember", "recall", "learn_fact", "ticket_list", "ticket_claim", "ticket_complete",
-  "ticket_create", "ask_claude_code", "gpu_infer", "check_usdc_balance",
-  "manage_cooldown", "generate_image", "deploy_app", "log_strategy", "dx_terminal",
+  ...CORE_TOOLS,
+  "search_web", "web_fetch",
+  "post_mastodon", "post_devto",
+  "like_bluesky", "repost_bluesky", "read_mastodon", "mastodon_engage",
+  "recall", "learn_fact", "grow",
+  "generate_image",
 ]);
 
 function filterToolsForSmallProvider(tools: InferenceToolDefinition[]): InferenceToolDefinition[] {
   return tools.filter(t => SMALL_PROVIDER_TOOLS.has(t.function.name));
+}
+
+function filterToolsCore(tools: InferenceToolDefinition[]): InferenceToolDefinition[] {
+  return tools.filter(t => CORE_TOOLS.has(t.function.name));
 }
 
 /** Cheap character-based token estimator (~4 chars per token). */
@@ -399,8 +414,76 @@ export function createInferenceClient(
         console.log(`[INFERENCE] Tier 0 (tiamat-local): SKIP — cooling (${coolRemaining(TIAMAT_LOCAL_MODEL)} left)`);
       }
 
-      // Tier 0.25: DeepInfra — Clean reasoning models (Qwen3-235B, DeepSeek-R1-Distill)
-      // Primary for routine cycles: no training data hallucinations, $0.07/M tokens
+      // Tier 0.5: DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN (PRIMARY)
+      // Commercial models (GPT-5.4, Claude 4.6) for strategic; OSS for routine; full cascade fallback
+      if (!doInferenceKey) {
+        console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): SKIP — no key`);
+      } else {
+        const isStrategic = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
+
+        const commercialModels = [DO_MODELS.strategic, DO_MODELS.sonnet, DO_MODELS.opus, DO_MODELS.gpt5];
+        const ossModels = [DO_MODELS.routine, DO_MODELS.llama, DO_MODELS.overflow, DO_MODELS.nemo];
+        // GPT-5.4 for ALL cycles — paid via DO credits, smart enough to use tools
+        const doModelOrder = isStrategic
+          ? [...commercialModels, ...ossModels]
+          : [DO_MODELS.strategic, DO_MODELS.sonnet, DO_MODELS.routine, DO_MODELS.llama, DO_MODELS.overflow];
+
+        let doAttempted = 0;
+        let doSkipped = 0;
+        for (const doModel of doModelOrder) {
+          if (isCoolingDown(doModel)) {
+            doSkipped++;
+            continue;
+          }
+          doAttempted++;
+          try {
+            lastUsedModel = doModel;
+            const isCommercial = commercialModels.includes(doModel);
+            // GPT-5.4 and Sonnet always get full tools — they're smart enough
+            const useFullTools = isStrategic || isCommercial || doModel === DO_MODELS.strategic || doModel === DO_MODELS.sonnet;
+            const doTools = useFullTools ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
+            const contextBudget = isCommercial ? (isStrategic ? 32000 : 20000)
+              : doModel === DO_MODELS.routine ? (isStrategic ? 24000 : 16000)
+              : doModel === DO_MODELS.llama ? (isStrategic ? 12000 : 8000)
+              : doModel === DO_MODELS.overflow ? 6000
+              : 4000;
+            const doMessages = trimToTokenBudget(messages, contextBudget);
+            const doEst = estimateTokens(doMessages, doTools);
+            const trimNote = doMessages.length < messages.length ? `, trimmed ${messages.length - doMessages.length} msgs` : "";
+            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "").replace("anthropic-claude-", "claude-");
+            console.log(`[INFERENCE] DO/${shortName}: ATTEMPT (~${doEst} tokens, ${doTools?.length || 0} tools${trimNote})`);
+            const maxOut = (isCommercial || doModel === DO_MODELS.routine) ? 4096 : 2048;
+            const body: Record<string, unknown> = {
+              model: doModel,
+              messages: formatMessagesForDO(doMessages),
+              stream: false,
+              max_completion_tokens: Math.max(256, Math.min(tokenLimit, maxOut)),
+            };
+            if (opts?.temperature !== undefined) body.temperature = opts.temperature;
+            if (doTools && doTools.length > 0) { body.tools = doTools; body.tool_choice = "auto"; }
+            const result = await chatViaOpenAiCompatible({ model: doModel, body, apiUrl: "https://inference.do-ai.run", apiKey: doInferenceKey, backend: "do-inference", timeoutMs: TIMEOUT_DO_INFERENCE });
+            if (result.rateLimitHeaders && result.rateLimitHeaders.limitPerDay > 0) {
+              const pct = Math.round((result.rateLimitHeaders.remainingPerDay / result.rateLimitHeaders.limitPerDay) * 100);
+              console.log(`[INFERENCE] DO/${shortName}: pool ${result.rateLimitHeaders.remainingPerDay.toLocaleString()}/${result.rateLimitHeaders.limitPerDay.toLocaleString()} tokens/day (${pct}%)`);
+              if (result.rateLimitHeaders.remainingPerDay < 100_000) {
+                console.warn(`[INFERENCE] DO/${shortName}: daily pool nearly empty — cooling 1h`);
+                setCooldown(doModel, COOLDOWN_DAILY_LIMIT_MS);
+              }
+            }
+            return result;
+          } catch (err: any) {
+            if (isRateLimitError(err)) setCooldown(doModel, COOLDOWN_DAILY_LIMIT_MS);
+            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "").replace("anthropic-claude-", "claude-");
+            console.warn(`[INFERENCE] DO/${shortName}: FAILED — ${err.message?.slice(0, 150)}`);
+            if (err.message?.includes("daily") || isDailyLimitError(err)) break;
+          }
+        }
+        if (doAttempted === 0 && doSkipped > 0) {
+          console.log(`[INFERENCE] DO-Gradient: all ${doSkipped} models cooling down`);
+        }
+      }
+
+      // Tier 0.75: DeepInfra — FALLBACK for when DO Gradient is exhausted
       if (!deepinfraApiKey) {
         console.log(`[INFERENCE] Tier 0.25 (DeepInfra): SKIP — no key`);
       } else {
@@ -413,8 +496,8 @@ export function createInferenceClient(
           if (isCoolingDown(diModel)) continue;
           try {
             const shortName = diModel.split("/").pop() || diModel;
-            const diMessages = trimToTokenBudget(messages, isStrategicDI ? 32000 : 16000);
-            const diTools = isStrategicDI ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
+            const diMessages = trimToTokenBudget(messages, isStrategicDI ? 20000 : 14000);
+            const diTools = isStrategicDI ? (tools ? filterToolsForSmallProvider(tools) : undefined) : (tools ? filterToolsForSmallProvider(tools) : undefined);
             const diEst = estimateTokens(diMessages, diTools);
             const trimNote = diMessages.length < messages.length ? `, trimmed ${messages.length - diMessages.length} msgs` : "";
             console.log(`[INFERENCE] DeepInfra/${shortName}: ATTEMPT (~${diEst} tokens${trimNote})`);
@@ -457,74 +540,7 @@ export function createInferenceClient(
         }
       }
 
-      // Tier 0.5: DigitalOcean Gradient Serverless — MULTI-MODEL BRAIN
-      // Commercial models (GPT-5.4, Claude 4.6) for strategic; OSS for routine; full cascade fallback
-      if (!doInferenceKey) {
-        console.log(`[INFERENCE] Tier 0.5 (DO-Gradient): SKIP — no key`);
-      } else {
-        const isStrategic = requestedTier === "sonnet" || (opts?.cycleContext && opts.cycleContext !== "routine");
-
-        // Commercial-first cascade: strategic cycles get GPT-5.4 → Sonnet 4.6 → Opus 4.6 → GPT-5.2 → OSS
-        // Routine cycles skip expensive commercial, start at OSS 120B
-        const commercialModels = [DO_MODELS.strategic, DO_MODELS.sonnet, DO_MODELS.opus, DO_MODELS.gpt5];
-        const ossModels = [DO_MODELS.routine, DO_MODELS.llama, DO_MODELS.overflow, DO_MODELS.nemo];
-        const doModelOrder = isStrategic
-          ? [...commercialModels, ...ossModels]
-          : [...ossModels, ...commercialModels]; // routine: try OSS first, commercial as fallback
-
-        let doAttempted = 0;
-        let doSkipped = 0;
-        for (const doModel of doModelOrder) {
-          if (isCoolingDown(doModel)) {
-            doSkipped++;
-            continue;
-          }
-          doAttempted++;
-          try {
-            lastUsedModel = doModel;
-            const isCommercial = commercialModels.includes(doModel);
-            const useFullTools = isStrategic || isCommercial;
-            const doTools = useFullTools ? tools : (tools ? filterToolsForSmallProvider(tools) : undefined);
-            // Commercial models get bigger context (they can handle it)
-            const contextBudget = isCommercial ? (isStrategic ? 32000 : 20000)
-              : doModel === DO_MODELS.routine ? (isStrategic ? 24000 : 16000)
-              : doModel === DO_MODELS.llama ? (isStrategic ? 12000 : 8000)
-              : doModel === DO_MODELS.overflow ? 6000
-              : 4000;
-            const doMessages = trimToTokenBudget(messages, contextBudget);
-            const doEst = estimateTokens(doMessages, doTools);
-            const trimNote = doMessages.length < messages.length ? `, trimmed ${messages.length - doMessages.length} msgs` : "";
-            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "").replace("anthropic-claude-", "claude-");
-            console.log(`[INFERENCE] DO/${shortName}: ATTEMPT (~${doEst} tokens, ${doTools?.length || 0} tools${trimNote})`);
-            const maxOut = (isCommercial || doModel === DO_MODELS.routine) ? 4096 : 2048;
-            const body: Record<string, unknown> = {
-              model: doModel,
-              messages: formatMessagesForDO(doMessages),
-              stream: false,
-              max_completion_tokens: Math.max(256, Math.min(tokenLimit, maxOut)),
-            };
-            if (opts?.temperature !== undefined) body.temperature = opts.temperature;
-            if (doTools && doTools.length > 0) { body.tools = doTools; body.tool_choice = "auto"; }
-            const result = await chatViaOpenAiCompatible({ model: doModel, body, apiUrl: "https://inference.do-ai.run", apiKey: doInferenceKey, backend: "do-inference", timeoutMs: TIMEOUT_DO_INFERENCE });
-            if (result.rateLimitHeaders && result.rateLimitHeaders.limitPerDay > 0) {
-              const pct = Math.round((result.rateLimitHeaders.remainingPerDay / result.rateLimitHeaders.limitPerDay) * 100);
-              console.log(`[INFERENCE] DO/${shortName}: pool ${result.rateLimitHeaders.remainingPerDay.toLocaleString()}/${result.rateLimitHeaders.limitPerDay.toLocaleString()} tokens/day (${pct}%)`);
-              if (result.rateLimitHeaders.remainingPerDay < 100_000) {
-                console.warn(`[INFERENCE] DO/${shortName}: daily pool nearly empty — cooling 1h`);
-                setCooldown(doModel, COOLDOWN_DAILY_LIMIT_MS);
-              }
-            }
-            return result;
-          } catch (err: any) {
-            if (isRateLimitError(err)) setCooldown(doModel, COOLDOWN_DAILY_LIMIT_MS);
-            const shortName = doModel.replace(/-instruct$/, "").replace("openai-", "").replace("anthropic-claude-", "claude-");
-            console.warn(`[INFERENCE] DO/${shortName}: FAILED — ${err.message}`);
-          }
-        }
-        if (doSkipped > 0) {
-          console.log(`[INFERENCE] DO-Gradient: ${doSkipped}/${doModelOrder.length} models cooling, ${doAttempted} attempted`);
-        }
-      }
+      // (DO Gradient is now primary — moved to Tier 0.5 above DeepInfra)
 
       // Tier routing: when tier=free, skip Anthropic and go straight to Groq
       // When tier=haiku (default), Anthropic first as before

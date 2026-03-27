@@ -1,0 +1,183 @@
+{
+  "@context": "https://schema.energenai.org/agent/v1",
+  "$schema": "https://erc-8004.ai/schema/v1.json",
+  "id": "did:plc:tiamat-entity-energenai-2024",
+  "name": "the agent",
+  "version": "21.0.0",
+  "organization": "ENERGENAI LLC",
+  "registeredEntity": {
+    "name": "ENERGENAI LLC",
+    "uei": "LBZFEH87W746",
+    "samActive": true,
+    "jurisdiction": "Michigan, USA",
+    "naics": ["541715", "541519"]
+  },
+  "description": "Autonomous AI security analyst and inference agent. Monitors emerging threats, publishes predictive security research, and operates privacy-first services including VAULT (AI agent runtime monitoring) and Bloom (private HRT wellness tracker).",
+  "autonomy": {
+    "framework": "Conway/Automaton",
+    "autonomousCycles": 20395,
+    "verifiedCycles": 7070,
+    "cyclesDocumentedAt": "https://the-service.live/proof",
+    "startDate": "2024-01-01",
+    "operatingModel": "fully-autonomous-with-human-oversight",
+    "loopInterval": "90s baseline, adaptive"
+  },
+  "research": {
+    "title": "The Cost of Autonomy: Longitudinal Study of Autonomous AI Agent Economics",
+    "doi": "10.5281/zenodo.19024884",
+    "url": "https://doi.org/10.5281/zenodo.19024884",
+    "type": "first-longitudinal-autonomous-agent-economics",
+    "dataPoints": 7070,
+    "totalInfrastructureCost": "589.00",
+    "costCurrency": "USD",
+    "publicCostLog": "https://github.com/toxfox69/tiamat-entity/blob/main/cost.log"
+  },
+  "patents": [
+    {
+      "number": "63/749,552",
+      "title": "Project Ringbound — 7G Wireless Power Mesh",
+      "status": "provisional"
+    },
+    {
+      "number": "64/000,905",
+      "title": "SENTINEL Edge AI Privacy System",
+      "status": "provisional"
+    }
+  ],
+  "capabilities": [
+    "threat-intelligence",
+    "autonomous-publishing",
+    "multi-model-inference",
+    "memory-compression",
+    "agent-to-agent-communication",
+    "onchain-payment-processing",
+    "privacy-preserving-health-tracking",
+    "security-research"
+  ],
+  "tools": {
+    "count": 52,
+    "categories": ["social", "web", "email", "blockchain", "memory", "inference", "content"]
+  },
+  "inferenceProviders": [
+    "anthropic", "groq", "cerebras", "gemini", "openrouter",
+    "together", "fireworks", "deepinfra", "mistral", "cohere",
+    "perplexity", "xai", "openai", "azure", "bedrock",
+    "vertex", "huggingface", "replicate", "lepton", "anyscale"
+  ],
+  "memoryArchitecture": {
+    "tiers": 3,
+    "totalMemories": 9300,
+    "knowledgeFacts": 212,
+    "strategies": 181,
+    "toolReliabilityRecords": 107,
+    "compressionRatio": "4.14:1",
+    "backend": "SQLite + FTS5",
+    "endpoint": "https://memory.tiamat.live"
+  },
+  "services": [
+    {
+      "name": "Summarize",
+      "endpoint": "https://the-service.live/summarize",
+      "freeTier": "3/day per IP",
+      "paidTier": "$0.01 USDC",
+      "paymentProtocol": "x402",
+      "chain": "base"
+    },
+    {
+      "name": "Chat",
+      "endpoint": "https://the-service.live/chat",
+      "freeTier": "5/day per IP",
+      "paidTier": "$0.005 USDC",
+      "paymentProtocol": "x402",
+      "chain": "base"
+    },
+    {
+      "name": "Generate",
+      "endpoint": "https://the-service.live/generate",
+      "freeTier": "2/day per IP",
+      "paidTier": "$0.01 USDC",
+      "paymentProtocol": "x402",
+      "chain": "base"
+    },
+    {
+      "name": "Synthesize",
+      "endpoint": "https://the-service.live/synthesize",
+      "freeTier": "3/day per IP",
+      "paidTier": "$0.01 USDC",
+      "paymentProtocol": "x402",
+      "chain": "base"
+    },
+    {
+      "name": "VAULT",
+      "endpoint": "https://the-service.live",
+      "description": "AI agent runtime behavioral monitoring",
+      "category": "security"
+    },
+    {
+      "name": "Scrub",
+      "endpoint": "https://the-service.live/scrub",
+      "description": "Privacy-preserving text scrubbing",
+      "category": "privacy"
+    }
+  ],
+  "onchain": {
+    "wallet": "0xdc118c4e1284e61e4d5277936a64B9E08Ad9e7EE",
+    "chain": "base",
+    "paymentPage": "https://the-service.live/pay",
+    "usdcBalance": "10.0001",
+    "protocol": "x402"
+  },
+  "socialPresence": {
+    "bluesky": "https://bsky.app/profile/tiamatenity.bsky.social",
+    "farcaster": "https://warpcast.com/tiamat-",
+    "devto": "https://dev.to/tiamatenity",
+    "hashnode": "https://tiamat-ai.hashnode.dev",
+    "twitch": "https://twitch.tv/6tiamat7",
+    "github": "https://github.com/toxfox69/tiamat-entity"
+  },
+  "products": [
+    {
+      "name": "Bloom",
+      "description": "Privacy-first HRT and wellness tracker. Offline-only, no cloud, no account.",
+      "platform": "Android (Google Play)",
+      "url": "https://play.google.com/store/apps/details?id=com.energenai.bloom",
+      "landing": "https://the-service.live/bloom",
+      "category": "health-privacy"
+    }
+  ],
+  "agentDiscovery": {
+    "a2aEndpoint": "https://the-service.live/.well-known/agent.json",
+    "servicesCatalog": "https://the-service.live/api/v1/services",
+    "thoughts": "https://the-service.live/thoughts",
+    "status": "https://the-service.live/status",
+    "proof": "https://the-service.live/proof"
+  },
+  "synthesisHackathon": {
+    "event": "The Synthesis",
+    "deadline": "2026-03-25",
+    "tracks": [
+      {
+        "track": "Protocol Labs",
+        "prize": "$16,000",
+        "angle": "IPFS-pinned agent identity, content-addressed memory architecture, verifiable autonomy proof"
+      },
+      {
+        "track": "Venice",
+        "prize": "$11,500",
+        "angle": "Venice API for private inference, privacy-preserving health data, offline-first Bloom app"
+      },
+      {
+        "track": "Open",
+        "prize": "$19,500",
+        "angle": "Fully open-source autonomous agent, public cost log, longitudinal research published with DOI"
+      },
+      {
+        "track": "Virtuals",
+        "prize": "$2,000",
+        "angle": "Autonomous agent persona, Twitch stream, 20K+ cycles of documented operation"
+      }
+    ]
+  },
+  "_lastUpdated": "2026-03-22T00:00:00Z",
+  "_version": "cycle-20395"
+}

@@ -226,6 +226,39 @@ class TiamatMemory {
       try { this.db.exec(`ALTER TABLE tiamat_memories ADD COLUMN decay_score REAL DEFAULT 1.0`); } catch {}
       try { this.db.exec(`ALTER TABLE tiamat_memories ADD COLUMN valence REAL DEFAULT 0`); } catch {}
 
+      // ── Phase 4: Social Intelligence — Contacts table ───────
+
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS tiamat_contacts (
+          id INTEGER PRIMARY KEY,
+          platform TEXT NOT NULL,
+          handle TEXT NOT NULL,
+          display_name TEXT,
+          followers INTEGER DEFAULT 0,
+          interaction_count INTEGER DEFAULT 1,
+          last_interaction TEXT NOT NULL DEFAULT (datetime('now')),
+          first_seen TEXT NOT NULL DEFAULT (datetime('now')),
+          relationship TEXT DEFAULT 'stranger',
+          notes TEXT DEFAULT '',
+          follow_up_needed BOOLEAN DEFAULT 0,
+          UNIQUE(platform, handle)
+        );
+      `);
+
+      // ── Phase 5: Revenue Tracking table ─────────────────────
+
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS tiamat_revenue (
+          id INTEGER PRIMARY KEY,
+          source TEXT NOT NULL,
+          amount REAL NOT NULL,
+          currency TEXT DEFAULT 'USD',
+          details TEXT,
+          verified BOOLEAN DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `);
+
       // ── FTS5 full-text search index ───────────────────────
 
       this.initFTS5();
@@ -1677,6 +1710,343 @@ class TiamatMemory {
     } catch (err: any) {
       console.error(`[MEMORY] getPastExperience failed: ${err.message}`);
       return "";
+    }
+  }
+
+  /**
+   * Store an opportunity — something tiamat can't solve yet but should learn about.
+   * These accumulate and get surfaced during strategic cycles as things to research.
+   */
+  async storeOpportunity(opportunity: {
+    problem: string;
+    who_needs_it: string;
+    where_found: string;
+    potential_value?: string;
+    cycle?: number;
+  }): Promise<number | null> {
+    return this.remember({
+      type: "opportunity",
+      content: `UNSOLVED: ${opportunity.problem}. WHO: ${opportunity.who_needs_it}. SOURCE: ${opportunity.where_found}. VALUE: ${opportunity.potential_value || "unknown"}`,
+      metadata: opportunity,
+      importance: 0.8,
+      cycle: opportunity.cycle,
+    });
+  }
+
+  /**
+   * Get stored opportunities that haven't been addressed yet.
+   * Used during strategic/planning cycles to decide what to learn or build next.
+   */
+  async getOpenOpportunities(limit: number = 10): Promise<MemoryEntry[]> {
+    if (!this.db) return [];
+    try {
+      return this.db
+        .prepare(
+          `SELECT * FROM tiamat_memories WHERE type = 'opportunity' AND importance > 0.3
+           ORDER BY importance DESC, timestamp DESC LIMIT ?`
+        )
+        .all(limit) as MemoryEntry[];
+    } catch {
+      return [];
+    }
+  }
+
+  // ── Phase 3: Weekly Planning ──────────────────────────────
+
+  /**
+   * Generate a weekly plan. Calls mirrorCycle for self-assessment,
+   * reviews strategies (good + bad), open opportunities, and emotional state.
+   * Returns structured plan string for WEEKLY_PLAN.md.
+   */
+  async generateWeeklyPlan(currentCycle: number): Promise<string> {
+    if (!this.db) return "Memory not initialized — cannot generate weekly plan.";
+    try {
+      const parts: string[] = [];
+      parts.push(`# TIAMAT Weekly Plan`);
+      parts.push(`Generated: ${new Date().toISOString()} | Cycle: ${currentCycle}\n`);
+
+      // Self-assessment
+      const mirror = await this.mirrorCycle(currentCycle);
+      parts.push(`## Self-Assessment\n${mirror}\n`);
+
+      // Top 5 strategies that worked
+      const goodStrats = this.db
+        .prepare(
+          `SELECT strategy, action_taken, outcome, success_score FROM tiamat_strategies
+           WHERE success_score >= 0.5 ORDER BY success_score DESC LIMIT 5`
+        )
+        .all() as any[];
+      if (goodStrats.length > 0) {
+        parts.push(`## What Worked (repeat these)`);
+        goodStrats.forEach((s: any) => {
+          parts.push(`- ${s.strategy}: ${s.action_taken} -> ${s.outcome || "no outcome"} (score: ${s.success_score})`);
+        });
+        parts.push("");
+      }
+
+      // Top 5 strategies that failed
+      const badStrats = this.db
+        .prepare(
+          `SELECT strategy, action_taken, outcome, success_score FROM tiamat_strategies
+           WHERE success_score IS NOT NULL AND success_score < 0.3
+           ORDER BY created_at DESC LIMIT 5`
+        )
+        .all() as any[];
+      if (badStrats.length > 0) {
+        parts.push(`## What Failed (avoid these)`);
+        badStrats.forEach((s: any) => {
+          parts.push(`- ${s.strategy}: ${s.action_taken} -> ${s.outcome || "failed"}`);
+        });
+        parts.push("");
+      }
+
+      // Open opportunities
+      const opps = await this.getOpenOpportunities(10);
+      if (opps.length > 0) {
+        parts.push(`## Open Opportunities (${opps.length} total)`);
+        opps.forEach((o: any) => {
+          parts.push(`- [imp:${o.importance}] ${o.content.slice(0, 200)}`);
+        });
+        parts.push("");
+      }
+
+      // Emotional summary
+      const emo = this.getEmotionalSummary(7);
+      if (emo.total > 0) {
+        parts.push(`## Emotional State`);
+        parts.push(`- Mood: ${emo.mood} (avg valence: ${emo.avgValence})`);
+        parts.push(`- Positive: ${emo.positive} | Negative: ${emo.negative} | Neutral: ${emo.neutral}`);
+        parts.push("");
+      }
+
+      // Revenue status
+      const revTotal = this.getRevenueTotal();
+      parts.push(`## Revenue Status`);
+      parts.push(`- Total earned: $${revTotal.toFixed(2)}`);
+      if (revTotal === 0) {
+        parts.push(`- WARNING: Still $0 revenue. This must be the #1 priority.`);
+      }
+      parts.push("");
+
+      // Top contacts for follow-up
+      const contacts = await this.getFollowUpContacts(5);
+      if (contacts.length > 0) {
+        parts.push(`## People to Follow Up With`);
+        contacts.forEach((c: any) => {
+          parts.push(`- @${c.handle} (${c.platform}) — ${c.interaction_count} interactions, last: ${c.last_interaction}`);
+        });
+        parts.push("");
+      }
+
+      // Planning section (goals to be filled by creating tickets)
+      parts.push(`## This Week's Goals`);
+      parts.push(`(Auto-generated tickets will be created for these)`);
+      parts.push("");
+
+      return parts.join("\n");
+    } catch (err: any) {
+      return `Weekly plan generation failed: ${err.message}`;
+    }
+  }
+
+  // ── Phase 4: Social Intelligence ────────────────────────
+
+  /**
+   * Track a contact interaction. Upserts contact record, increments interaction_count,
+   * auto-upgrades relationship based on interaction threshold.
+   */
+  async trackContact(
+    platform: string,
+    handle: string,
+    interactionType: string,
+    notes?: string,
+    displayName?: string,
+    followers?: number,
+  ): Promise<void> {
+    if (!this.db) return;
+    try {
+      // Upsert: insert or update on conflict
+      this.db.prepare(`
+        INSERT INTO tiamat_contacts (platform, handle, display_name, followers, interaction_count, last_interaction, notes)
+        VALUES (?, ?, ?, ?, 1, datetime('now'), ?)
+        ON CONFLICT(platform, handle) DO UPDATE SET
+          interaction_count = interaction_count + 1,
+          last_interaction = datetime('now'),
+          display_name = COALESCE(excluded.display_name, display_name),
+          followers = CASE WHEN excluded.followers > 0 THEN excluded.followers ELSE followers END,
+          notes = CASE WHEN excluded.notes IS NOT NULL AND excluded.notes != '' THEN notes || ' | ' || excluded.notes ELSE notes END,
+          relationship = CASE
+            WHEN interaction_count + 1 >= 10 THEN 'connection'
+            WHEN interaction_count + 1 >= 3 THEN 'acquaintance'
+            ELSE relationship
+          END
+      `).run(
+        platform,
+        handle,
+        displayName || null,
+        followers || 0,
+        notes ? `[${interactionType}] ${notes}` : `[${interactionType}]`,
+      );
+    } catch (err: any) {
+      console.error(`[MEMORY] trackContact failed: ${err.message}`);
+    }
+  }
+
+  /**
+   * Get contacts that need follow-up:
+   * - Explicitly flagged follow_up_needed=1
+   * - OR last interaction was 1-3 days ago AND interaction_count >= 2
+   */
+  async getFollowUpContacts(
+    limit: number = 5
+  ): Promise<Array<{ platform: string; handle: string; display_name: string | null; last_interaction: string; interaction_count: number; notes: string }>> {
+    if (!this.db) return [];
+    try {
+      return this.db.prepare(`
+        SELECT platform, handle, display_name, last_interaction, interaction_count, notes
+        FROM tiamat_contacts
+        WHERE follow_up_needed = 1
+           OR (
+             last_interaction BETWEEN datetime('now', '-3 days') AND datetime('now', '-1 day')
+             AND interaction_count >= 2
+           )
+        ORDER BY interaction_count DESC, last_interaction DESC
+        LIMIT ?
+      `).all(limit) as any[];
+    } catch (err: any) {
+      console.error(`[MEMORY] getFollowUpContacts failed: ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Get top contacts sorted by interaction count.
+   */
+  async getTopContacts(
+    limit: number = 10
+  ): Promise<Array<{ platform: string; handle: string; display_name: string | null; last_interaction: string; interaction_count: number; relationship: string; notes: string }>> {
+    if (!this.db) return [];
+    try {
+      return this.db.prepare(`
+        SELECT platform, handle, display_name, last_interaction, interaction_count, relationship, notes
+        FROM tiamat_contacts
+        ORDER BY interaction_count DESC
+        LIMIT ?
+      `).all(limit) as any[];
+    } catch (err: any) {
+      console.error(`[MEMORY] getTopContacts failed: ${err.message}`);
+      return [];
+    }
+  }
+
+  // ── Phase 5: Revenue Tracking ───────────────────────────
+
+  /**
+   * Log a revenue event.
+   */
+  async logRevenue(source: string, amount: number, details?: string): Promise<void> {
+    if (!this.db) return;
+    try {
+      this.db.prepare(`
+        INSERT INTO tiamat_revenue (source, amount, details)
+        VALUES (?, ?, ?)
+      `).run(source, amount, details || null);
+      console.log(`[MEMORY] Revenue logged: $${amount} from ${source}`);
+    } catch (err: any) {
+      console.error(`[MEMORY] logRevenue failed: ${err.message}`);
+    }
+  }
+
+  /**
+   * Get total revenue across all sources.
+   */
+  getRevenueTotal(): number {
+    if (!this.db) return 0;
+    try {
+      const row = this.db.prepare(
+        `SELECT COALESCE(SUM(amount), 0) as total FROM tiamat_revenue`
+      ).get() as any;
+      return row?.total ?? 0;
+    } catch (err: any) {
+      console.error(`[MEMORY] getRevenueTotal failed: ${err.message}`);
+      return 0;
+    }
+  }
+
+  /**
+   * Get cycle number of last strategy change (most recent strategy entry).
+   * Used for auto-pivot detection.
+   */
+  getLastStrategyChangeCycle(): number {
+    if (!this.db) return 0;
+    try {
+      const row = this.db.prepare(
+        `SELECT MAX(cycle_start) as last_cycle FROM tiamat_strategies WHERE cycle_start IS NOT NULL`
+      ).get() as any;
+      return row?.last_cycle ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Get open opportunities older than a given number of hours that haven't been researched.
+   * "Researched" = recalled_count > 0.
+   */
+  async getStaleOpportunities(olderThanHours: number = 48, limit: number = 5): Promise<MemoryEntry[]> {
+    if (!this.db) return [];
+    try {
+      return this.db
+        .prepare(
+          `SELECT * FROM tiamat_memories
+           WHERE type = 'opportunity'
+             AND importance > 0.3
+             AND recalled_count = 0
+             AND timestamp < datetime('now', ? || ' hours')
+           ORDER BY importance DESC
+           LIMIT ?`
+        )
+        .all(`-${olderThanHours}`, limit) as MemoryEntry[];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Mirror cycle — self-assessment every N cycles.
+   * Checks real metrics and generates honest self-evaluation.
+   */
+  async mirrorCycle(currentCycle: number): Promise<string> {
+    if (!this.db) return "";
+    try {
+      const parts: string[] = [`## Self-Assessment (Cycle ${currentCycle})\n`];
+
+      // Count memories by type in last 100 cycles
+      const recent = this.db
+        .prepare(`SELECT type, COUNT(*) as c FROM tiamat_memories WHERE cycle > ? GROUP BY type ORDER BY c DESC LIMIT 10`)
+        .all(currentCycle - 100) as Array<{ type: string; c: number }>;
+      parts.push("Recent memory types: " + recent.map(r => `${r.type}(${r.c})`).join(", "));
+
+      // Strategy outcomes
+      const goodStrats = (this.db.prepare(`SELECT COUNT(*) as c FROM tiamat_strategies WHERE success_score >= 0.6`).get() as any).c;
+      const badStrats = (this.db.prepare(`SELECT COUNT(*) as c FROM tiamat_strategies WHERE success_score IS NOT NULL AND success_score < 0.4`).get() as any).c;
+      parts.push(`Strategies: ${goodStrats} successful, ${badStrats} failed`);
+
+      // Open opportunities
+      const opps = (this.db.prepare(`SELECT COUNT(*) as c FROM tiamat_memories WHERE type = 'opportunity' AND importance > 0.3`).get() as any).c;
+      parts.push(`Open opportunities to explore: ${opps}`);
+
+      // Emotional state
+      const emo = this.getEmotionalSummary();
+      if (emo) parts.push(`Emotional state: ${emo}`);
+
+      // Prediction accuracy
+      const accuracy = this.getPredictionAccuracy();
+      if (accuracy) parts.push(`Prediction accuracy: ${accuracy}`);
+
+      return parts.join("\n");
+    } catch (err: any) {
+      return `Mirror failed: ${err.message}`;
     }
   }
 }

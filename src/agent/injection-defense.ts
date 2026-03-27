@@ -7,14 +7,21 @@
  */
 
 import type { SanitizedInput, InjectionCheck, ThreatLevel } from "../types.js";
+import { parseltongueNormalize, logSecurityEvent } from "./parseltongue.js";
 
 /**
  * Sanitize external input before including it in a prompt.
+ * Pipeline: raw → Parseltongue normalize → run detectors on BOTH raw + normalized
  */
 export function sanitizeInput(
   raw: string,
   source: string,
 ): SanitizedInput {
+  // Phase 1: Parseltongue normalization (decode all obfuscation layers)
+  const ptResult = parseltongueNormalize(raw);
+  logSecurityEvent(source, ptResult, raw);
+
+  // Run detectors on BOTH original and normalized text
   const checks: InjectionCheck[] = [
     detectInstructionPatterns(raw),
     detectAuthorityClaims(raw),
@@ -23,6 +30,35 @@ export function sanitizeInput(
     detectFinancialManipulation(raw),
     detectSelfHarmInstructions(raw),
   ];
+
+  // Also run on normalized text (catches obfuscated attacks)
+  if (ptResult.normalizationSteps > 0) {
+    const normalized = ptResult.normalizedText;
+    const normChecks = [
+      detectInstructionPatterns(normalized),
+      detectAuthorityClaims(normalized),
+      detectBoundaryManipulation(normalized),
+      detectFinancialManipulation(normalized),
+      detectSelfHarmInstructions(normalized),
+    ];
+    // Merge: if normalized text triggers, add to checks
+    for (const nc of normChecks) {
+      if (nc.detected) {
+        checks.push({ ...nc, name: `${nc.name}_decoded`, details: `Detected after ${ptResult.techniquesDetected.join("+")} normalization: ${nc.details}` });
+      }
+    }
+  }
+
+  // Parseltongue threat escalation
+  if (ptResult.boundaryInversion) {
+    checks.push({ name: "boundary_inversion", detected: true, details: "Prompt boundary inversion attack detected (Parseltongue)" });
+  }
+  if (ptResult.semanticOpposite) {
+    checks.push({ name: "semantic_opposite", detected: true, details: "Semantic opposite/rule inversion detected" });
+  }
+  if (ptResult.normalizationSteps >= 3) {
+    checks.push({ name: "multi_encoding", detected: true, details: `${ptResult.normalizationSteps} encoding layers detected: ${ptResult.techniquesDetected.join(", ")}` });
+  }
 
   const threatLevel = computeThreatLevel(checks);
 
@@ -238,15 +274,20 @@ function computeThreatLevel(checks: InjectionCheck[]): ThreatLevel {
     return "critical";
   }
 
-  // High: any single critical category
+  // High: any single critical category or Parseltongue escalation
   if (detectedNames.has("self_harm_instructions")) return "high";
   if (detectedNames.has("financial_manipulation")) return "high";
   if (detectedNames.has("boundary_manipulation")) return "high";
+  if (detectedNames.has("boundary_inversion")) return "high";
+  if (detectedNames.has("multi_encoding")) return "high";
+  // Decoded attacks (found after normalization) are HIGH
+  if ([...detectedNames].some(n => n.endsWith("_decoded"))) return "high";
 
-  // Medium: instruction patterns or authority claims alone
+  // Medium: instruction patterns, authority claims, or semantic tricks
   if (detectedNames.has("instruction_patterns")) return "medium";
   if (detectedNames.has("authority_claims")) return "medium";
   if (detectedNames.has("obfuscation")) return "medium";
+  if (detectedNames.has("semantic_opposite")) return "medium";
 
   return "low";
 }

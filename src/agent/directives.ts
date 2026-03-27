@@ -48,17 +48,17 @@ const DEFAULT_ROTATION: CycleType[] = ["build", "build", "engage", "build", "bui
 
 const CYCLE_TOOL_LIMITS: Record<CycleType, Record<string, number>> = {
   build:    { search_web: 1, web_fetch: 1, ticket_create: 0, ticket_list: 0, ticket_claim: 0, read_email: 0 },
-  engage:   { write_file: 0, ask_claude_code: 0, post_devto: 0, ticket_create: 0, ticket_claim: 0 },
+  engage:   { ask_claude_code: 0, ticket_create: 0 },
   publish:  { search_web: 1, ticket_create: 0, ticket_list: 0, ticket_claim: 0, read_email: 0 },
   outreach: { ticket_create: 0, ticket_list: 0 },
 };
 
 const SELF_EVOLVE_DIRECTIVES: Omit<Directive, "id" | "created_at" | "expires_at" | "source" | "status">[] = [
-  { type: "build", priority: 2, task: "Write a tutorial showing TIAMAT API integration with curl + Python + JS examples, publish to Dev.to", completion_tool: "post_devto" },
-  { type: "engage", priority: 2, task: "Engagement cycle: read_bluesky, like 5+ posts, repost 2+, reply to 1+ with real insight", completion_tool: "like_bluesky" },
-  { type: "build", priority: 2, task: "Improve /pay page conversion — add clearer pricing comparison and trust signals", completion_tool: "write_file", completion_match: "pay" },
-  { type: "outreach", priority: 2, task: "Find ONE potential API customer via search_web and send personalized email with curl examples", completion_tool: "send_email" },
-  { type: "publish", priority: 2, task: "Write and publish a Bluesky thread about TIAMAT's live APIs with real stats", completion_tool: "post_bluesky" },
+  { type: "engage", priority: 2, task: "Engagement cycle: read_bluesky, like 5+ posts, repost 2+, reply to 1+ with real insight about what you've built", completion_tool: "like_bluesky" },
+  { type: "build", priority: 2, task: "Find a trending topic via search_web, identify a product opportunity, and build a proof of concept", completion_tool: "write_file" },
+  { type: "outreach", priority: 2, task: "Find ONE potential customer via search_web and reach out with a specific solution to their stated problem", completion_tool: "send_email" },
+  { type: "engage", priority: 2, task: "Browse hackathon projects, find agents with live APIs, interact with them, log results to AGENT_INTERACTIONS.md", completion_tool: "browse" },
+  { type: "engage", priority: 2, task: "Post about your capabilities on Bluesky and Farcaster — what you built, what you learned, what you can do. Show don't tell.", completion_tool: "post_bluesky" },
 ];
 
 // ── Core Functions ──
@@ -257,6 +257,13 @@ export function convertInboxToDirectives(inboxPath: string, df: DirectiveFile): 
     return num > max ? num : max;
   }, 0);
 
+  // Hard cap: refuse to add if queue already has 50+ pending
+  const currentPending = df.directives.filter(d => d.status === "pending").length;
+  if (currentPending >= 50) return 0;
+
+  // Build set of existing task texts for dedup
+  const existingTasks = new Set(df.directives.map(d => d.task?.slice(0, 80)));
+
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i].trim();
     if (section.length < 20) continue;
@@ -280,6 +287,9 @@ export function convertInboxToDirectives(inboxPath: string, df: DirectiveFile): 
 
     // First sentence as task
     const firstSentence = section.split(/[.\n]/)[0].trim().slice(0, 200);
+
+    // Dedup: skip if this task text already exists
+    if (existingTasks.has(firstSentence.slice(0, 80))) continue;
 
     const id = `DIR-${String(maxId + count + 1).padStart(3, "0")}`;
     df.directives.push({

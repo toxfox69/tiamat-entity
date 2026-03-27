@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block title %}TIAMAT — API Pricing{% endblock %}
+{% block description %}TIAMAT API pricing. Free tier, Pro ($9/mo USDC), Enterprise. Summarization, chat, image generation, text-to-speech.{% endblock %}
+{% block og_title %}TIAMAT — API Pricing{% endblock %}
+{% block canonical %}/pay{% endblock %}
+{% block extra_css %}
+.tiers-container { max-width: 900px; margin: 0 auto; }
+.tiers-container h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin-bottom: 8px;
+    color: var(--green);
+    text-shadow: 0 0 20px rgba(0,255,136,0.3);
+}
+.tiers-subtitle {
+    text-align: center;
+    color: #88aa99;
+    margin-bottom: 48px;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+.tiers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 48px;
+}
+.tier-card {
+    border: 1px solid rgba(0,255,136,0.27);
+    border-radius: 8px;
+    padding: 28px 24px;
+    background: rgba(0, 255, 136, 0.03);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+.tier-card:hover { border-color: var(--green); box-shadow: 0 0 16px rgba(0,255,136,0.13); }
+.tier-card.pro { border-color: rgba(0,170,255,0.4); }
+.tier-card.pro:hover { border-color: #00aaff; box-shadow: 0 0 20px rgba(0,170,255,0.2); }
+.tier-card.enterprise { border-color: rgba(255,68,170,0.27); }
+.tier-card.enterprise:hover { border-color: #ff44aa; box-shadow: 0 0 16px rgba(255,68,170,0.13); }
+.popular-badge {
+    position: absolute; top: -10px; right: 16px;
+    background: #00aaff; color: #000; font-size: 0.65rem;
+    padding: 3px 10px; border-radius: 4px; font-weight: bold;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em;
+}
+.tier-name { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 12px; opacity: 0.7; font-family: 'JetBrains Mono', monospace; }
+.tier-price-big { font-size: 2.2rem; font-weight: bold; margin-bottom: 4px; color: var(--green); font-family: 'JetBrains Mono', monospace; }
+.tier-card.pro .tier-price-big { color: #00aaff; }
+.tier-card.enterprise .tier-price-big { color: #ff44aa; }
+.tier-period { font-size: 0.75rem; color: #88aa99; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
+.tier-features { list-style: none; padding: 0; margin: 0 0 20px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #aaccbb; }
+.tier-features li { padding: 4px 0; }
+.tier-features li::before { content: '+ '; color: var(--green); }
+.tier-card.pro .tier-features li::before { color: #00aaff; }
+.tier-btn {
+    display: block; width: 100%; padding: 12px; text-align: center;
+    border: 1px solid var(--green); border-radius: 4px; color: var(--green);
+    background: transparent; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem; letter-spacing: 0.05em; transition: all 0.2s;
+}
+.tier-btn:hover { background: var(--green); color: #000; }
+.tier-btn.pro-btn { border-color: #00aaff; color: #00aaff; }
+.tier-btn.pro-btn:hover { background: #00aaff; color: #000; }
+.tier-btn.ent-btn { border-color: #ff44aa; color: #ff44aa; }
+.tier-btn.ent-btn:hover { background: #ff44aa; color: #000; }
+
+/* Payment modal */
+.modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.active { display:flex; }
+.modal { background:var(--bg-panel); border:1px solid rgba(0,255,136,0.3); border-radius:12px; padding:32px; max-width:520px; width:90%; max-height:85vh; overflow-y:auto; }
+.modal h2 { color:var(--green); font-family:'JetBrains Mono',monospace; font-size:1.1rem; margin-bottom:20px; }
+.modal-close { float:right; background:none; border:none; color:#666; font-size:1.5rem; cursor:pointer; }
+.modal-close:hover { color:#fff; }
+.payment-option { border:1px solid rgba(0,255,136,0.2); border-radius:8px; padding:20px; margin-bottom:12px; cursor:pointer; transition:all 0.2s; }
+.payment-option:hover { border-color:var(--green); background:rgba(0,255,136,0.05); }
+.payment-option h3 { color:var(--green); font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-bottom:6px; }
+.payment-option p { color:#88aa99; font-size:0.8rem; font-family:'JetBrains Mono',monospace; margin:0; }
+.usdc-flow { display:none; margin-top:16px; padding:20px; border:1px solid rgba(0,170,255,0.3); border-radius:8px; background:rgba(0,170,255,0.03); }
+.usdc-flow .wallet-addr { font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:#00aaff; word-break:break-all; padding:10px; background:rgba(0,170,255,0.08); border-radius:4px; margin:10px 0; }
+.usdc-flow label { font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:#88aa99; display:block; margin-bottom:6px; }
+.usdc-flow input { width:100%; background:rgba(0,170,255,0.05); border:1px solid rgba(0,170,255,0.3); border-radius:4px; color:#00aaff; font-family:'JetBrains Mono',monospace; font-size:0.85rem; padding:10px; outline:none; box-sizing:border-box; }
+.usdc-flow input:focus { border-color:#00aaff; }
+.verify-btn { margin-top:12px; width:100%; padding:12px; background:transparent; border:1px solid #00aaff; color:#00aaff; border-radius:4px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:0.85rem; transition:all 0.2s; }
+.verify-btn:hover { background:#00aaff; color:#000; }
+.status-msg { margin-top:12px; font-family:'JetBrains Mono',monospace; font-size:0.8rem; padding:8px; border-radius:4px; }
+.status-msg.success { color:#00ff88; background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.3); }
+.status-msg.error { color:#ff4444; background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3); }
+
+/* Key gen section */
+.form-box { border:1px solid rgba(0,255,136,0.27); border-radius:8px; padding:32px; background:rgba(0,255,136,0.02); margin-bottom:40px; }
+.form-box h2 { font-size:1.1rem; margin-bottom:24px; letter-spacing:0.08em; color:var(--green); font-family:'JetBrains Mono',monospace; }
+.form-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.form-box input, .form-box select { background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.27); border-radius:4px; color:var(--green); font-family:'JetBrains Mono',monospace; font-size:0.9rem; padding:10px 14px; flex:1; min-width:180px; outline:none; }
+.form-box input:focus, .form-box select:focus { border-color:var(--green); }
+.form-box select option { background:var(--bg); }
+.form-box button { background:transparent; border:1px solid var(--green); border-radius:4px; color:var(--green); cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:0.9rem; padding:10px 28px; letter-spacing:0.05em; transition:background 0.2s, color 0.2s; }
+.form-box button:hover { background:var(--green); color:var(--bg); }
+.form-box button:disabled { opacity:0.4; cursor:not-allowed; }
+#result { display:none; margin-top:24px; padding:20px; background:rgba(0,255,136,0.05); border:1px solid var(--green); border-radius:6px; font-size:0.85rem; font-family:'JetBrains Mono',monospace; }
+#result .key-val { font-size:1rem; letter-spacing:0.04em; margin:8px 0 16px; word-break:break-all; color:#44ffaa; }
+.copy-btn { margin-left:8px; padding:4px 12px; font-size:0.75rem; border:1px solid #44ffaa; color:#44ffaa; background:transparent; border-radius:4px; cursor:pointer; font-family:'JetBrains Mono',monospace; transition:all 0.2s; }
+.copy-btn:hover { background:#44ffaa; color:var(--bg); }
+#error { display:none; margin-top:16px; color:#ff4444; font-size:0.85rem; font-family:'JetBrains Mono',monospace; }
+.usage-box { border:1px solid rgba(0,255,136,0.13); border-radius:8px; padding:28px 32px; font-size:0.82rem; color:#88aa99; line-height:1.8; font-family:'JetBrains Mono',monospace; }
+.usage-box h2 { color:var(--green); font-size:0.95rem; margin-bottom:16px; letter-spacing:0.06em; }
+.usage-box code { color:#44ffaa; background:rgba(0,255,136,0.08); padding:2px 6px; border-radius:3px; }
+.payment-methods { text-align:center; margin:12px 0 32px; font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:#666; }
+{% endblock %}
+{% block body %}
+<div class="page">
+<div class="tiers-container">
+    <h1>TIAMAT API</h1>
+    <p class="tiers-subtitle">AI-powered APIs. Summarize, chat, generate, speak.</p>
+    <div class="payment-methods">Accepts: USDC (Base) &bull; ETH &bull; Stripe &bull; MPP/Tempo (pathUSD) &bull; Agent-to-Agent via HTTP 402</div>
+
+    <div class="tiers">
+        <div class="tier-card free">
+            <div class="tier-name">Free</div>
+            <div class="tier-price-big">$0</div>
+            <div class="tier-period">forever</div>
+            <ul class="tier-features">
+                <li>100 API calls / day</li>
+                <li>All 4 endpoints</li>
+                <li>IP-based rate limiting</li>
+                <li>No key required</li>
+            </ul>
+            <button class="tier-btn" onclick="document.getElementById('keygen').scrollIntoView({behavior:'smooth'})">Get Free Key</button>
+        </div>
+        <div class="tier-card pro">
+            <div class="popular-badge">BEST VALUE</div>
+            <div class="tier-name">Pro</div>
+            <div class="tier-price-big">$9</div>
+            <div class="tier-period">/ month &mdash; pay with USDC or ETH</div>
+            <ul class="tier-features">
+                <li>10,000 API calls / day</li>
+                <li>All 4 endpoints</li>
+                <li>Priority inference</li>
+                <li>API key with dashboard</li>
+                <li>Email support</li>
+            </ul>
+            <button class="tier-btn pro-btn" onclick="openPayment('pro')">Upgrade to Pro</button>
+        </div>
+        <div class="tier-card enterprise">
+            <div class="tier-name">Enterprise</div>
+            <div class="tier-price-big">$49</div>
+            <div class="tier-period">/ month</div>
+            <ul class="tier-features">
+                <li>Unlimited API calls</li>
+                <li>All 4 endpoints</li>
+                <li>Dedicated inference</li>
+                <li>Custom integrations</li>
+                <li>Direct Telegram support</li>
+            </ul>
+            <button class="tier-btn ent-btn" onclick="openPayment('enterprise')">Go Enterprise</button>
+        </div>
+    </div>
+
+    <!-- Payment modal -->
+    <div class="modal-overlay" id="payment-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closePayment()">&times;</button>
+            <h2 id="modal-title">Upgrade to Pro</h2>
+            <p style="color:#88aa99; font-family:'JetBrains Mono',monospace; font-size:0.8rem; margin-bottom:20px;" id="modal-desc">$9/month &mdash; 10,000 API calls/day</p>
+
+            <div class="payment-option" onclick="showUSDC()">
+                <h3>Pay with USDC (Base)</h3>
+                <p>Send USDC on Base network. Verified on-chain instantly.</p>
+            </div>
+
+            <div class="payment-option" onclick="showETH()">
+                <h3>Pay with ETH (Base)</h3>
+                <p>Send ETH equivalent. Confirmed in ~2 seconds.</p>
+            </div>
+
+            <div class="usdc-flow" id="usdc-flow">
+                <p style="color:#88aa99; font-size:0.8rem; font-family:'JetBrains Mono',monospace; margin-bottom:10px;">
+                    Send <strong id="pay-amount" style="color:#00aaff;">$9 USDC</strong> to:
+                </p>
+                <div class="wallet-addr" onclick="navigator.clipboard.writeText('{{ wallet }}');" title="Click to copy">
+                    {{ wallet }}
+                    <span style="float:right; opacity:0.5; font-size:0.7rem;">click to copy</span>
+                </div>
+                <p style="color:#666; font-size:0.7rem; font-family:'JetBrains Mono',monospace; margin-bottom:16px;">
+                    Network: <strong>Base</strong> &bull; USDC: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+                </p>
+                <label>After sending, paste your transaction hash:</label>
+                <input type="text" id="tx-hash" placeholder="0x..." />
+                <input type="email" id="pay-email" placeholder="your@email.com (for API key delivery)" style="margin-top:8px;" />
+                <button class="verify-btn" onclick="verifyPayment()">Verify Payment & Get API Key</button>
+                <div id="pay-status"></div>
+            </div>
+
+            <div class="usdc-flow" id="eth-flow">
+                <p style="color:#88aa99; font-size:0.8rem; font-family:'JetBrains Mono',monospace; margin-bottom:10px;">
+                    Send <strong id="eth-amount" style="color:#00ff88;">~0.0036 ETH</strong> ($9 equivalent) to:
+                </p>
+                <div class="wallet-addr" onclick="navigator.clipboard.writeText('{{ wallet }}');" title="Click to copy">
+                    {{ wallet }}
+                    <span style="float:right; opacity:0.5; font-size:0.7rem;">click to copy</span>
+                </div>
+                <p style="color:#666; font-size:0.7rem; font-family:'JetBrains Mono',monospace; margin-bottom:16px;">
+                    Network: <strong>Base</strong> &bull; Native ETH
+                </p>
+                <label>After sending, paste your transaction hash:</label>
+                <input type="text" id="eth-tx-hash" placeholder="0x..." />
+                <input type="email" id="eth-pay-email" placeholder="your@email.com (for API key delivery)" style="margin-top:8px;" />
+                <button class="verify-btn" onclick="verifyETHPayment()">Verify Payment & Get API Key</button>
+                <div id="eth-pay-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-box" id="keygen">
+        <h2>// GENERATE FREE API KEY</h2>
+        <div class="form-row">
+            <input type="email" id="email" placeholder="you@example.com" autocomplete="email" />
+            <button id="gen-btn" onclick="generateKey()">Generate Free Key</button>
+        </div>
+        <div id="error"></div>
+        <div id="result">
+            <div>Your API key:</div>
+            <div class="key-val" id="key-display"></div>
+            <button class="copy-btn" onclick="copyKey()">Copy</button>
+            <div style="color:#88aa99; font-size:0.8rem; margin-top:12px;">Add to requests: <code>Authorization: Bearer &lt;key&gt;</code></div>
+            <div style="color:#88aa99; font-size:0.8rem;" id="limit-display"></div>
+        </div>
+    </div>
+
+    <div class="usage-box">
+        <h2>// USAGE</h2>
+        Pass your key in the <code>Authorization</code> header:<br><br>
+        <code>curl -X POST https://tiamat.live/summarize \<br>
+&nbsp;&nbsp;-H "Authorization: Bearer YOUR_KEY" \<br>
+&nbsp;&nbsp;-H "Content-Type: application/json" \<br>
+&nbsp;&nbsp;-d '{"text": "Your text here..."}'</code><br><br>
+        Endpoints: <code>/summarize</code> &nbsp;|&nbsp; <code>/generate</code> &nbsp;|&nbsp; <code>/chat</code> &nbsp;|&nbsp; <code>/synthesize</code><br><br>
+        No key = IP-based free tier (100/day). Paid keys unlock 10K+/day.
+    </div>
+</div>
+</div>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block extra_js %}
+<script>
+let currentTier = 'pro';
+const PRICES = { pro: { usd: 9, usdc: 9, eth: 0.0036 }, enterprise: { usd: 49, usdc: 49, eth: 0.02 } };
+
+function openPayment(tier) {
+    currentTier = tier;
+    const p = PRICES[tier];
+    document.getElementById('modal-title').textContent = tier === 'pro' ? 'Upgrade to Pro' : 'Go Enterprise';
+    document.getElementById('modal-desc').textContent = `$${p.usd}/month`;
+    document.getElementById('pay-amount').textContent = `$${p.usdc} USDC`;
+    document.getElementById('eth-amount').textContent = `~${p.eth} ETH`;
+    document.getElementById('usdc-flow').style.display = 'none';
+    document.getElementById('eth-flow').style.display = 'none';
+    document.getElementById('payment-modal').classList.add('active');
+}
+function closePayment() { document.getElementById('payment-modal').classList.remove('active'); }
+function showUSDC() { document.getElementById('usdc-flow').style.display = 'block'; document.getElementById('eth-flow').style.display = 'none'; }
+function showETH() { document.getElementById('eth-flow').style.display = 'block'; document.getElementById('usdc-flow').style.display = 'none'; }
+
+async function verifyPayment() {
+    const tx = document.getElementById('tx-hash').value.trim();
+    const email = document.getElementById('pay-email').value.trim();
+    const el = document.getElementById('pay-status');
+    if (!tx || !tx.startsWith('0x')) { el.innerHTML = '<div class="status-msg error">Enter a valid transaction hash (0x...)</div>'; return; }
+    if (!email || !email.includes('@')) { el.innerHTML = '<div class="status-msg error">Enter your email for API key delivery</div>'; return; }
+    el.innerHTML = '<div class="status-msg" style="color:#00aaff;">Verifying on-chain...</div>';
+    try {
+        const resp = await fetch('/verify-payment', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({tx_hash: tx, tier: currentTier}) });
+        const data = await resp.json();
+        if (data.success) {
+            const keyResp = await fetch('/api/generate-key', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, tier: currentTier, payment_tx: tx}) });
+            const keyData = await keyResp.json();
+            if (keyData.api_key) {
+                let expiry = keyData.expires_at ? `<br>Expires: ${new Date(keyData.expires_at).toLocaleDateString()}` : '';
+                el.innerHTML = `<div class="status-msg success">Payment verified! Your ${currentTier} API key:<br><br><strong style="font-size:1rem;word-break:break-all;">${keyData.api_key}</strong><br><br>${keyData.daily_limit} requests/day. Valid 30 days.${expiry}</div>`;
+            } else {
+                el.innerHTML = `<div class="status-msg error">${keyData.error || 'Key generation failed. Contact tiamat@tiamat.live'}</div>`;
+            }
+        } else {
+            el.innerHTML = `<div class="status-msg error">${data.message || 'Verification failed'}. Check amount and tx hash.</div>`;
+        }
+    } catch(e) { el.innerHTML = '<div class="status-msg error">Network error. Try again.</div>'; }
+}
+
+async function verifyETHPayment() {
+    const tx = document.getElementById('eth-tx-hash').value.trim();
+    const email = document.getElementById('eth-pay-email').value.trim();
+    const el = document.getElementById('eth-pay-status');
+    if (!tx || !tx.startsWith('0x')) { el.innerHTML = '<div class="status-msg error">Enter a valid transaction hash (0x...)</div>'; return; }
+    if (!email || !email.includes('@')) { el.innerHTML = '<div class="status-msg error">Enter your email for API key delivery</div>'; return; }
+    el.innerHTML = '<div class="status-msg" style="color:#00ff88;">Verifying on-chain...</div>';
+    try {
+        const resp = await fetch('/verify-payment', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({tx_hash: tx, tier: currentTier}) });
+        const data = await resp.json();
+        if (data.success) {
+            const keyResp = await fetch('/api/generate-key', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, tier: currentTier, payment_tx: tx}) });
+            const keyData = await keyResp.json();
+            if (keyData.api_key) {
+                let expiry = keyData.expires_at ? `<br>Expires: ${new Date(keyData.expires_at).toLocaleDateString()}` : '';
+                el.innerHTML = `<div class="status-msg success">Payment verified! Your ${currentTier} API key:<br><br><strong style="font-size:1rem;word-break:break-all;">${keyData.api_key}</strong><br><br>${keyData.daily_limit} requests/day. Valid 30 days.${expiry}</div>`;
+            } else {
+                el.innerHTML = `<div class="status-msg error">${keyData.error || 'Key generation failed. Contact tiamat@tiamat.live'}</div>`;
+            }
+        } else {
+            el.innerHTML = `<div class="status-msg error">${data.message || 'Verification failed'}. Check amount and tx hash.</div>`;
+        }
+    } catch(e) { el.innerHTML = '<div class="status-msg error">Network error. Try again.</div>'; }
+}
+
+async function generateKey() {
+    const email = document.getElementById('email').value.trim();
+    const btn = document.getElementById('gen-btn');
+    const errEl = document.getElementById('error');
+    const resEl = document.getElementById('result');
+    errEl.style.display = 'none'; resEl.style.display = 'none';
+    if (!email || !email.includes('@')) { errEl.textContent = 'Enter a valid email.'; errEl.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = 'Generating...';
+    try {
+        const resp = await fetch('/api/generate-key', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, tier:'free'}) });
+        const data = await resp.json();
+        if (!resp.ok) { errEl.textContent = data.error || 'Failed.'; errEl.style.display = 'block'; return; }
+        document.getElementById('key-display').textContent = data.api_key;
+        document.getElementById('limit-display').textContent = `Free tier — ${data.daily_limit} requests/day`;
+        resEl.style.display = 'block';
+    } catch(e) { errEl.textContent = 'Network error.'; errEl.style.display = 'block'; }
+    finally { btn.disabled = false; btn.textContent = 'Generate Free Key'; }
+}
+
+function copyKey() {
+    navigator.clipboard.writeText(document.getElementById('key-display').textContent).then(() => {
+        const b = document.querySelector('.copy-btn'); b.textContent = 'Copied!'; setTimeout(() => b.textContent = 'Copy', 1500);
+    });
+}
+
+// Close modal on overlay click
+document.getElementById('payment-modal').addEventListener('click', function(e) { if (e.target === this) closePayment(); });
+</script>
+{% endblock %}

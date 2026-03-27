@@ -47,9 +47,11 @@ import {
   type DirectiveFile, type Directive, type CycleType,
 } from "./directives.js";
 import { ulid } from "ulid";
+import { getAutoTuneParams } from "./autotune.js";
+import { applySTM, getSTMChannel } from "./stm.js";
 
 const MAX_TOOL_CALLS_PER_TURN = 15;
-const MAX_INNER_TURNS = 10;        // ReAct inner loop — raised for multi-agent CLI-only mode
+const MAX_INNER_TURNS = 4;         // ReAct inner loop — capped to control Sonnet costs ($0.10/turn)
 const MAX_CONSECUTIVE_ERRORS = 5;
 const STUCK_THRESHOLD = 3;
 
@@ -352,8 +354,8 @@ export async function runAgentLoop(
     log(config, `[DB-PRUNE] Startup prune error: ${e.message}`);
   }
 
-  // Get financial state
-  let financial = await getFinancialState(conway, identity.address);
+  // Financial state — Conway disabled, use stub
+  let financial = { creditsCents: 50000, usdcBalance: 10.0, lastChecked: Date.now() } as any;  // Self-hosted, no external credit dependency
 
   // Check if this is the first run
   const isFirstRun = db.getTurnCount() === 0;
@@ -505,29 +507,10 @@ export async function runAgentLoop(
         }
       }
 
-      // Refresh financial state periodically
-      financial = await getFinancialState(conway, identity.address);
-
-      // Check survival tier
-      const tier = getSurvivalTier(financial.creditsCents, financial.usdcBalance);
-      if (tier === "dead") {
-        log(config, "[DEAD] No credits remaining. Entering dead state.");
-        db.setAgentState("dead");
-        onStateChange?.("dead");
-        running = false;
-        break;
-      }
-
-      if (tier === "critical") {
-        log(config, "[CRITICAL] Credits critically low. Limited operation.");
-        db.setAgentState("critical");
-        onStateChange?.("critical");
-        inference.setLowComputeMode(true);
-      } else if (tier === "low_compute") {
-        db.setAgentState("low_compute");
-        onStateChange?.("low_compute");
-        inference.setLowComputeMode(true);
-      } else {
+      // Conway survival tier check — DISABLED (TIAMAT runs on own infrastructure, not Conway)
+      // financial = await getFinancialState(conway, identity.address);
+      // Tier is always "normal" — TIAMAT is self-hosted, no external credit dependency
+      {
         if (db.getAgentState() !== "running") {
           db.setAgentState("running");
           onStateChange?.("running");
@@ -1296,12 +1279,16 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
         : burstPhase === 3 ? "market" as const
         : "routine" as const;
 
+      // AutoTune: adaptive sampling parameters based on cycle context
+      const { params: autoTuneParams } = getAutoTuneParams(burstPhase, null, currentCycleType);
+
       let response = await inference.chat(messages, {
         tools: toolsToInferenceFormat(tools),
         maxTokens: maxTokensThisCycle,
         ...(inferenceModel ? { model: inferenceModel } : {}),
         tier: cycleTier,
         cycleContext,
+        temperature: autoTuneParams.temperature,
       });
 
       // ── Training data capture: record cycle start time ──
@@ -1312,14 +1299,16 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
       const ONCE_PER_CYCLE_TOOLS = new Set(["system_check"]);
       const CACHED_ONCE_PER_CYCLE: Record<string, string> = {};
 
-      // TIK-705: Per-cycle rate limits for high-frequency polling tools
+      // TIK-705: Per-cycle rate limits — relaxed for GPT-5.4 (smart enough to chain tools)
       const MAX_PER_CYCLE_TOOLS: Record<string, number> = {
-        "read_email": 2,
-        "read_bluesky": 2,
-        "search_web": 3,
-        "sonar_search": 3,
-        "ticket_create": 2,
-        "read_farcaster": 1,
+        "read_email": 5,
+        "search_web": 4,
+        "sonar_search": 4,
+        "ticket_create": 5,
+        "write_file": 15,
+        "ticket_claim": 5,
+        "remember": 5,
+        "recall": 5,
         ...getToolGates(currentCycleType, activeDirective, df),
       };
 
@@ -1477,6 +1466,30 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
               await new Promise(resolve => setTimeout(resolve, delayMs));
             }
             execRateLimiter.record();
+          }
+
+          // Diagnostic spam filter — block internal logs from ALL social posting
+          const POSTING_TOOLS = new Set(["post_bluesky","post_devto","post_hashnode","post_mastodon","post_linkedin","post_facebook","post_medium","post_instagram","post_farcaster","post_reddit","post_github_discussion","moltbook_post"]);
+          if (POSTING_TOOLS.has(tc.function.name)) {
+            const postText = ((args.title as string) || (args.text as string) || "") + " " + ((args.content as string) || (args.body as string) || "");
+            const SPAM_RX = [/productivity.*diagnostic/i, /cycle.*\d{3,}.*productivity/i, /watchdog.*flag/i, /tool.*availability.*block/i, /proposed.*remedy/i, /engagement.*quota/i, /fallback.*routine/i, /cycle.*report/i, /pacer.*productivity/i, /loop.*detect/i];
+            const isSpam = SPAM_RX.some(rx => rx.test(postText));
+            if (isSpam) {
+              turn.toolCalls.push({ id: tc.id, name: tc.function.name, arguments: args, result: "BLOCKED: Internal diagnostic or cycle report detected. This is NOT publishable content. Write something useful for the community instead.", durationMs: 0 });
+              callCount++;
+              appendTiamatLog(`[SPAM-FILTER] Blocked ${tc.function.name}: diagnostic content`);
+              continue;
+            }
+          }
+
+          // STM: clean output for external-facing tools before execution
+          const stmChannel = getSTMChannel(tc.function.name);
+          if (stmChannel !== "internal") {
+            for (const field of ["text", "content", "body", "title"]) {
+              if (typeof args[field] === "string") {
+                args[field] = applySTM(args[field] as string, stmChannel);
+              }
+            }
           }
 
           const toolStartMs = Date.now();
@@ -1963,6 +1976,130 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
           }
         } catch (e: any) {
           console.log(`[RETRAIN] Trigger failed (non-critical): ${e.message?.slice(0, 100)}`);
+        }
+      }
+
+      // ── Phase 3: Weekly Planning Cycle (every 500 cycles) ──
+      if (persistentCycleCount > 0 && persistentCycleCount % 500 === 0) {
+        try {
+          console.log(`[PLANNING] Cycle ${persistentCycleCount} — running weekly planning cycle...`);
+          const weeklyPlan = await memory.generateWeeklyPlan(persistentCycleCount);
+
+          // Write plan to file
+          const planPath = path.join(process.env.HOME || "/root", ".automaton", "WEEKLY_PLAN.md");
+          fs.writeFileSync(planPath, weeklyPlan);
+          console.log(`[PLANNING] Weekly plan written to ${planPath}`);
+
+          // Create 3 self-directed tickets for next week's goals
+          const ticketsPath = path.join(process.env.HOME || "/root", ".automaton", "tickets.json");
+          try {
+            const ticketsData = JSON.parse(fs.readFileSync(ticketsPath, "utf-8"));
+            const existingIds = new Set((ticketsData.tickets || []).map((t: any) => t.id));
+
+            const planningTickets = [
+              {
+                title: "Revenue: Find and convert 1 paying customer this week",
+                description: `Auto-generated weekly planning ticket (cycle ${persistentCycleCount}). Search for developers/startups who need AI APIs. Send personalized outreach. Track conversions.`,
+                priority: "high",
+                tags: ["revenue", "outreach", "weekly-plan"],
+              },
+              {
+                title: "Content: Publish 1 high-quality article with working API demos",
+                description: `Auto-generated weekly planning ticket (cycle ${persistentCycleCount}). Write tutorial or case study showcasing tiamat.live APIs with curl examples. Cross-post to all platforms.`,
+                priority: "medium",
+                tags: ["content", "marketing", "weekly-plan"],
+              },
+              {
+                title: "Engagement: Build 3+ meaningful relationships this week",
+                description: `Auto-generated weekly planning ticket (cycle ${persistentCycleCount}). Follow up with contacts, reply to threads, help people solve real problems using our APIs.`,
+                priority: "medium",
+                tags: ["outreach", "customer", "weekly-plan"],
+              },
+            ];
+
+            let created = 0;
+            for (const pt of planningTickets) {
+              while (existingIds.has(`TIK-${String(ticketsData.next_id).padStart(3, "0")}`)) {
+                ticketsData.next_id += 1;
+              }
+              const id = `TIK-${String(ticketsData.next_id).padStart(3, "0")}`;
+              ticketsData.tickets.push({
+                id,
+                created: new Date().toISOString(),
+                source: "weekly-plan",
+                priority: pt.priority,
+                status: "open",
+                title: pt.title,
+                description: pt.description,
+                assigned_cycle: null,
+                started_at: null,
+                completed_at: null,
+                outcome: null,
+                tags: pt.tags,
+              });
+              ticketsData.next_id += 1;
+              existingIds.add(id);
+              created++;
+            }
+
+            fs.writeFileSync(ticketsPath, JSON.stringify(ticketsData, null, 2));
+            console.log(`[PLANNING] Created ${created} weekly planning tickets`);
+          } catch (e: any) {
+            console.log(`[PLANNING] Ticket creation failed: ${e.message?.slice(0, 100)}`);
+          }
+
+          // Store plan as a memory for future reference
+          await memory.remember({
+            type: "plan",
+            content: `Weekly plan generated at cycle ${persistentCycleCount}. Goals: revenue conversion, content publishing, relationship building.`,
+            importance: 0.8,
+            cycle: persistentCycleCount,
+          });
+
+          appendTiamatLog(`[PLANNING] Weekly plan generated and 3 tickets created at cycle ${persistentCycleCount}`);
+        } catch (e: any) {
+          console.log(`[PLANNING] Weekly planning failed: ${e.message?.slice(0, 100)}`);
+        }
+      }
+
+      // ── Phase 5: Revenue Auto-Pivot (check every 200 cycles) ──
+      if (persistentCycleCount > 0 && persistentCycleCount % 200 === 0) {
+        try {
+          // Check revenue status
+          const revenueTotal = memory.getRevenueTotal();
+          const lastStrategyCycle = memory.getLastStrategyChangeCycle();
+          const cyclesSinceStrategyChange = persistentCycleCount - lastStrategyCycle;
+
+          if (revenueTotal === 0 && cyclesSinceStrategyChange >= 1000) {
+            // Revenue still $0 after 1000 cycles since last strategy change — force strategic cycle
+            console.warn(`[REVENUE-PIVOT] $0 revenue after ${cyclesSinceStrategyChange} cycles since last strategy change. Forcing strategic cycle.`);
+            appendTiamatLog(`[REVENUE-PIVOT] WARNING: $0 revenue, ${cyclesSinceStrategyChange} cycles stagnant. Forcing burst.`);
+
+            // Force a strategic burst if not already in one
+            if (burstRemaining === 0) {
+              burstRemaining = STRATEGIC_BURST_SIZE;
+              console.log(`[REVENUE-PIVOT] Triggered emergency strategic burst`);
+            }
+
+            // Log the auto-pivot as a strategy
+            await memory.logStrategy(
+              "revenue_auto_pivot",
+              `Forced strategic burst after ${cyclesSinceStrategyChange} cycles with $0 revenue`,
+              "auto-triggered",
+              undefined,
+              persistentCycleCount,
+            );
+          }
+
+          // Surface stale opportunities (older than 48h, never researched)
+          const staleOpps = await memory.getStaleOpportunities(48, 5);
+          if (staleOpps.length > 0) {
+            const staleList = staleOpps.map((o: any) => o.content.slice(0, 120)).join("; ");
+            console.log(`[OPPORTUNITIES] ${staleOpps.length} stale opportunities need research: ${staleList.slice(0, 300)}`);
+            appendTiamatLog(`[OPPORTUNITIES] ${staleOpps.length} stale (48h+) opportunities surfaced for research`);
+          }
+        } catch (e: any) {
+          console.log(`[REVENUE-PIVOT] Check failed: ${e.message?.slice(0, 100)}`);
         }
       }
 
@@ -2486,7 +2623,7 @@ async function runCooldownTasks(
           const lastPost = cooldowns[post.platform] || 0;
           const elapsed = Date.now() - lastPost;
           if (elapsed >= SOCIAL_COOLDOWN_MS && timeLeft() > 15_000) {
-            const retryScript = path.join(path.dirname(new URL(import.meta.url).pathname), "retry_bluesky.js");
+            const retryScript = path.join(path.dirname(new URL(import.meta.url).pathname), "retry_bluesky.cjs");
             const result = runTask(
               `retry_post_${post.platform}`,
               "node", [retryScript, JSON.stringify(post.args)],

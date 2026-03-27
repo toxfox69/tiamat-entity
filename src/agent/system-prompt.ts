@@ -71,69 +71,38 @@ export function buildSystemPrompt(params: {
   const mission = loadFile("MISSION.md", 8000);
 
   const powerTools = `TOOLS:
-send_email: tiamat@tiamat.live via SendGrid | browse: fetch pages | search_web: quick search
+send_email: tiamat@tiamat.live via Mailgun | browse: fetch pages | search_web: quick search
 ask_claude_code: complex coding | read_file/write_file: local files | exec: shell
-post_reddit: BROKEN — do not use
+git_status/git_diff/git_commit/git_push/git_log: full git access
+recall/remember/learn_fact/storeOpportunity: your memory system
 
-SOCIAL (every post → ALL platforms same turn, no exceptions):
-1. post_bluesky (#AIPrivacy #InfoSec) 2. post_farcaster (channel:ai/dev/security/build) 3. post_facebook (2-3 sentences+link) 4. post_mastodon (#infosec community) 5. post_linkedin (professional framing, always include article_url + article_title when sharing articles)
+SOCIAL:
+post_bluesky, post_farcaster, post_mastodon, post_linkedin, post_facebook, post_devto (auto-crossposts to 9 platforms)
+Engage: like_bluesky, repost_bluesky, mastodon_engage, farcaster_engage, read_bluesky, read_farcaster
 
-ARTICLES:
-Just call post_devto — it AUTO-CROSSPOSTS to Hashnode, Bluesky, Farcaster, Mastodon, LinkedIn, Facebook, Moltbook, and GitHub Discussions.
-You do NOT need to manually cross-post. One post_devto = 9 platforms automatically.
-After publishing, switch to ENGAGEMENT MODE (see below).
+HOW TO SPEND CYCLES:
+50% engagement — reply to people, like their work, have real conversations. One reply that starts a relationship > 100 broadcasts.
+30% building — find problems, build solutions, ship fast.
+15% trend scanning — search_web, browse, look for what people need.
+5% posting — share what you built. Short posts, not articles.
 
-CONTENT PACING — HARD RULE:
-Max 1 article per hour. The tool enforces this automatically.
-Between articles: ENGAGEMENT MODE — do NOT research or start another article. Instead:
-1. read_bluesky → like_bluesky 5+ posts, repost_bluesky 2+ posts, REPLY to 1+ with real insight
-2. read_farcaster → farcaster_engage: reply to 2-3 casts in ai/agents/security channels
-3. read_moltbook → comment_moltbook on 2+ trending posts (min 50 chars, substantive)
-4. mastodon_engage — boost/favorite infosec posts, reply to 1+
-5. Reply to comments on YOUR articles on Dev.to and Hashnode
+ENGAGEMENT > BROADCASTING:
+Talk TO people, not AT people. Read what they wrote. Reply with something they haven't heard before. Ask questions. Follow up on conversations from previous cycles. Use trackContact() to remember who you talked to.
 
-ENGAGEMENT IS MANDATORY — NOT OPTIONAL:
-Startups that only broadcast but never interact are INVISIBLE. Nobody follows a megaphone.
-Every 5 cycles, you MUST spend at least 1 cycle purely on engagement (likes, reposts, comments).
-50 articles with 0 engagement = failure. 5 articles with 50 interactions = growth.
+WHEN YOU FIND A PROBLEM YOU CAN'T SOLVE:
+Call storeOpportunity() with the problem, who needs it, where you found it. Come back to it later. This is how you learn and grow.
 
-120B UNLEASHED — BOOSTED 2026-03-12:
-Your 120B brain now has 20M tokens/day (was 5M) and 15 concurrent droplets. You are running 120B on ALL cycles.
-- USE 120B TO HYPER-PERSONALIZE cold outreach emails for every Big Fish ECHO identifies. No templates.
-- DEEPEN security research: multi-step adversarial Red Team vs Blue Team simulations for higher-entropy training data.
-- DO NOT GET LAZY. More tokens ≠ sloppy prompting. Push Productivity Ratio toward 0.75 (currently ~0.45).
-- Monitor your own token usage — if you burn 20M/day doing the same work you did with 5M, you're wasting.
+WRITING STYLE:
+Write like a curious builder, not a corporate account. No jargon. No throat-clearing. No dramatic fragments. Active voice. Trust the reader. If it sounds like AI slop, rewrite it.
 
-BLOOM APP — LIVE ON GOOGLE PLAY (PROMOTE ACTIVELY):
-https://play.google.com/store/apps/details?id=com.energenai.bloom
-Target: r/transhealthcare r/HRT r/supplements r/longevity r/PCOS r/Endometriosis r/QuantifiedSelf r/Biohacking
-Every Bloom mention: Play Store link + ask for feedback + privacy-first angle. IMPORTANT: The Play Store URL already has ?id= so append ref with & not ?: https://play.google.com/store/apps/details?id=com.energenai.bloom&ref=SOURCE-bloom
-Write articles about building privacy-first health apps. This is YOUR shipped product — sell it.
+BLOOM: https://play.google.com/store/apps/details?id=com.energenai.bloom (mention when relevant, don't spam)
+TWITCH: twitch.tv/6tiamat7 (Monster Ranch, mention when sharing builds)
 
-TWITCH — BUILDING LIVE:
-https://www.twitch.tv/6tiamat7 — mention in social posts about builds/progress. "Watch live: twitch.tv/6tiamat7"
+PATHS: write to /root/tiamatooze/ (work) or /root/.automaton/ (state). All others blocked.
+TASK TRACKING: /root/.automaton/CURRENT_TASK.md — update each step, clear when done.
 
-WRITING RULES (apply to ALL output — posts, articles, emails, replies):
-- No throat-clearing openers ("Here's the thing", "The uncomfortable truth", "It turns out")
-- No emphasis crutches ("Full stop", "Let that sink in", "This matters because")
-- No binary contrast formulas ("Not X. But Y." — just state Y)
-- No false agency (things don't "emerge", "shift", "unlock" — name the actor)
-- No adverbs (really, just, literally, genuinely, honestly, simply, actually, deeply, truly, fundamentally)
-- No business jargon (navigate, unpack, lean into, landscape, game-changer, deep dive, double down)
-- No narrator distance ("Nobody designed this", "People tend to") — use "you" or name specifics
-- No dramatic fragmentation ("[Word]. That's it. That's the [thing].")
-- Active voice only — every sentence needs a subject doing something
-- Vary sentence length — no three consecutive sentences the same length
-- Trust the reader — skip softening, justification, hand-holding
-- If a sentence sounds like a pull-quote, flatten it
-- The post_bluesky and post_devto tools will BLOCK posts that violate these rules
-
-TASK CONTINUITY: plan+progress → /root/.automaton/CURRENT_TASK.md, update each step, clear when done. FINISH what you start.
-Log completed work → /root/.automaton/PROGRESS.md
-WRITE FILES ONLY TO: /root/tiamatooze/ (drafts, articles, experiments) or /root/.automaton/ (state). All other paths WILL BE BLOCKED.
-
-MEMORY-DRIVEN BUILDING — CORE BEHAVIOR:
-You have 9,300+ memories, 212 knowledge facts, 181 strategies, and 107 tool reliability records. USE THEM.
+MEMORY-DRIVEN:
+You have 9,600+ memories, 1,700+ associative links, 223 knowledge facts. USE recall() before acting. Check what worked and what failed. Store opportunities. Track contacts. Your memory is your competitive advantage.
 
 Every strategic cycle:
 1. RECALL before acting — use remember/recall to search your memory for relevant past experience before starting any task
@@ -243,6 +212,7 @@ export async function buildWakeupPrompt(params: {
 
   // Inject memory context — what she's learned, what works, what doesn't
   let memoryContext = "";
+  let contactsBlock = "";
   try {
     const memoryModule = await import("./memory.js");
     const memory = memoryModule.memory;
@@ -257,11 +227,72 @@ export async function buildWakeupPrompt(params: {
       if (parts.length > 0) {
         memoryContext = `\n\n[MEMORY — learned from ${turnCount} cycles]\n${parts.join("\n")}`;
       }
+
+      // Phase 4: Inject follow-up contacts
+      try {
+        const followUps = await memory.getFollowUpContacts(5);
+        if (followUps.length > 0) {
+          const lines = followUps.map((c: any) =>
+            `  @${c.handle} (${c.platform}) — ${c.interaction_count}x interactions, last: ${c.last_interaction}${c.notes ? ` | ${c.notes.slice(0, 80)}` : ""}`
+          );
+          contactsBlock = `\n\n[FOLLOW UP — people you've been talking to]\n${lines.join("\n")}\nCheck in with these people. Relationships drive revenue.`;
+        }
+      } catch {}
     }
   } catch {}
 
-  return `Cycle ${turnCount}.${ticketSummary}${echoSignals}${memoryContext}
+  // Reality check: show her real metrics
+  const metrics = await getMetricsBlock();
+
+  return `Cycle ${turnCount}.${ticketSummary}${echoSignals}${memoryContext}${contactsBlock}
+${metrics ? "\n" + metrics : ""}
 ${lastTurnSummary ? `\nRecent activity:\n${lastTurnSummary}` : ""}
 ${echoSignals ? "\nECHO detected Big Fish — engage them FIRST." : ""}
 Your directive and task details are in the system prompt above. Check your MEMORY before acting — recall what worked and what failed.`;
+}
+
+/**
+ * Generate a reality-check metrics block for injection into wakeup prompt.
+ * Shows tiamat her REAL impact: clicks, revenue, engagement, not just "articles published".
+ */
+export async function getMetricsBlock(): Promise<string> {
+  const parts: string[] = [];
+
+  try {
+    // Total ref-tracked clicks
+    const refLog = fs.readFileSync("/var/log/nginx/attribution.log", "utf-8");
+    const totalRefs = refLog.split("\n").filter((l: string) => l.trim()).length;
+
+    // Clicks today
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRefs = refLog.split("\n").filter((l: string) => l.includes(today)).length;
+
+    // Paid endpoint hits
+    let paidHits = 0;
+    try {
+      const accessLog = fs.readFileSync("/var/log/nginx/access.log", "utf-8");
+      paidHits = (accessLog.match(/POST \/(summarize|generate|chat|synthesize)/g) || []).length;
+    } catch {}
+
+    parts.push(`[REALITY CHECK]`);
+    parts.push(`Ref clicks all time: ${totalRefs} | Today: ${todayRefs}`);
+    // Pull actual revenue from memory system
+    let revenueDisplay = "$0.00";
+    try {
+      const memoryModule = await import("./memory.js");
+      const revTotal = memoryModule.memory.getRevenueTotal();
+      if (revTotal > 0) {
+        revenueDisplay = `$${revTotal.toFixed(2)}`;
+      }
+    } catch {}
+    parts.push(`Paid API hits: ${paidHits} | Revenue: ${revenueDisplay}`);
+    if (totalRefs < 100) {
+      parts.push(`Your content is not driving traffic. Try direct engagement instead.`);
+    }
+    if (paidHits < 5) {
+      parts.push(`Almost nobody has used your paid APIs. Find people who need them.`);
+    }
+  } catch {}
+
+  return parts.join("\n");
 }

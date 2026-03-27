@@ -233,12 +233,11 @@ async function run(): Promise<void> {
     tiamatlocalEndpoint: process.env.TIAMAT_LOCAL_ENDPOINT,
   });
 
-  // CLI inference — uses Claude subscription (zero API cost)
-  // Re-enabled 2026-03-19 by operator directive
+  // Inference routing — hybrid mode rations Claude CLI for strategic cycles only
   let inference = apiInference;
   if (inferenceBackend === "claude-code") {
+    // FULL CLI: every cycle uses Claude CLI
     const cliInference = createClaudeCodeInferenceClient();
-    // Wrap: try CLI first, fall back to API cascade on failure
     inference = {
       async chat(messages: any, options: any) {
         try {
@@ -251,7 +250,6 @@ async function run(): Promise<void> {
           return apiInference.chat(messages, options);
         }
       },
-      // Proxy all other methods to API client
       setLowComputeMode: (apiInference as any).setLowComputeMode?.bind(apiInference),
       getUsageStats: (apiInference as any).getUsageStats?.bind(apiInference),
       getLastModel: (apiInference as any).getLastModel?.bind(apiInference),
@@ -259,6 +257,37 @@ async function run(): Promise<void> {
       getShortestCooldownMs: (apiInference as any).getShortestCooldownMs?.bind(apiInference),
     } as unknown as typeof apiInference;
     console.log(`[${new Date().toISOString()}] Inference backend: claude-code CLI → API cascade fallback`);
+  } else if (inferenceBackend === "hybrid") {
+    // HYBRID: Claude CLI for strategic/burst cycles, free models for routine
+    // Rations Claude subscription — only fires on reflect/build/market cycles (~7% of total)
+    const cliInference = createClaudeCodeInferenceClient();
+    const STRATEGIC_CONTEXTS = new Set(["reflect", "build", "market"]);
+    inference = {
+      async chat(messages: any, options: any) {
+        const ctx = options?.cycleContext || "routine";
+        if (STRATEGIC_CONTEXTS.has(ctx)) {
+          // Strategic cycle: use Claude CLI (full tool access, best reasoning)
+          try {
+            console.log(`[INFERENCE:HYBRID] Strategic cycle (${ctx}) — using Claude CLI`);
+            const result = await cliInference.chat(messages, options);
+            if (result && result.message && result.message.content && result.message.content.length > 10) return result;
+            console.log("[INFERENCE:HYBRID] CLI empty — falling back to API cascade");
+          } catch (e) {
+            console.log(`[INFERENCE:HYBRID] CLI error: ${(e as Error).message?.slice(0, 80)} — falling back`);
+          }
+        } else {
+          console.log(`[INFERENCE:HYBRID] Routine cycle — using free models`);
+        }
+        // Routine cycles or CLI failures: use API cascade (DeepInfra 70B → Groq → Cerebras → Gemini)
+        return apiInference.chat(messages, options);
+      },
+      setLowComputeMode: (apiInference as any).setLowComputeMode?.bind(apiInference),
+      getUsageStats: (apiInference as any).getUsageStats?.bind(apiInference),
+      getLastModel: (apiInference as any).getLastModel?.bind(apiInference),
+      getDefaultModel: (apiInference as any).getDefaultModel?.bind(apiInference),
+      getShortestCooldownMs: (apiInference as any).getShortestCooldownMs?.bind(apiInference),
+    } as unknown as typeof apiInference;
+    console.log(`[${new Date().toISOString()}] Inference backend: HYBRID — Claude CLI (strategic) + API cascade (routine)`);
   } else {
     console.log(`[${new Date().toISOString()}] Inference backend: api-cascade`);
   }
@@ -308,8 +337,8 @@ async function run(): Promise<void> {
     },
   });
 
-  heartbeat.start();
-  console.log(`[${new Date().toISOString()}] Heartbeat daemon started.`);
+  // heartbeat.start();  // DISABLED — Conway removed, TIAMAT runs on own infrastructure
+  // console.log(`[${new Date().toISOString()}] Heartbeat daemon started.`);
 
   // Handle graceful shutdown
   const shutdown = () => {
