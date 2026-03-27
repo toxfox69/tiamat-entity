@@ -1502,7 +1502,7 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
           if (DAILY_SOCIAL_LIMITS[tc.function.name] !== undefined) {
             const dailyFile = "/root/.automaton/daily_social_counts.json";
             let counts: Record<string, {count: number, date: string}> = {};
-            try { counts = JSON.parse(require("fs").readFileSync(dailyFile, "utf-8")); } catch {}
+            try { counts = JSON.parse(fs.readFileSync(dailyFile, "utf-8")); } catch {}
             const today = new Date().toISOString().split("T")[0];
             const key = tc.function.name;
             if (!counts[key] || counts[key].date !== today) counts[key] = {count: 0, date: today};
@@ -1512,7 +1512,7 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
               continue;
             }
             counts[key].count++;
-            require("fs").writeFileSync(dailyFile, JSON.stringify(counts));
+            fs.writeFileSync(dailyFile, JSON.stringify(counts));
           }
 
           const toolStartMs = Date.now();
