@@ -2492,13 +2492,14 @@ const COOLDOWN_TASKS = [
     timeout: 15_000,
     minWindow: 30_000,
   },
+  // farcaster_engage: REMOVED — cell-social handles engagement now
   {
-    name: "farcaster_engage",
-    command: ["python3", ["farcaster_engage.py", "run"]],
-    interval: 15,     // every 15 cycles (~15min)
-    offset: 5,
-    timeout: 45_000,
-    minWindow: 60_000,
+    name: "refresh_cell_reports",
+    command: ["bash", ["-c", "for f in /root/.automaton/cells/*/gen_report.py; do python3 $f 2>/dev/null; done; python3 /root/.automaton/hive/cell-syshealth/daemon.py --test 2>/dev/null | tail -1"]],
+    interval: 10,     // every 10 cycles — refresh all cell reports for check_hive
+    offset: 3,
+    timeout: 10_000,
+    minWindow: 30_000,
   },
   {
     name: "scene_trigger",
