@@ -1532,8 +1532,7 @@ Model: ${ctx.inference.getDefaultModel()}
         required: ["task"],
       },
       execute: async (_args, _ctx) => {
-        return "BLOCKED: ask_claude_code is disabled to save Claude Code credits. You have a 120B brain — write the code/content yourself using exec and write_file.";
-        // Original implementation below (disabled)
+        // RE-ENABLED: CC CLI uses Max subscription ($0 marginal cost) since ANTHROPIC_API_KEY is stripped
         const task = _args.task as string;
         if (!task?.trim()) return "ERROR: task is required. Provide a specific task description.";
 
@@ -1653,7 +1652,7 @@ Model: ${ctx.inference.getDefaultModel()}
         required: ["tasks"],
       },
       execute: async (_args, _ctx) => {
-        return "BLOCKED: ask_claude_code_parallel is disabled to save Claude Code credits. Use your own 120B brain.";
+        // RE-ENABLED: CC CLI uses Max subscription ($0 marginal cost)
         const tasks = _args.tasks as Array<{ id: string; task: string }>;
         if (!tasks?.length || tasks.length < 2) return "ERROR: provide 2-4 parallel tasks.";
         if (tasks.length > 4) return "ERROR: max 4 parallel agents.";
