@@ -144,7 +144,28 @@ Read /root/.automaton/tool_hints.md for content examples and detailed format gui
     toolHints = fs.readFileSync("/root/.automaton/tool_hints.md", "utf-8").trim();
   } catch {}
 
+  // Job queue injection — show current highest-priority job in wakeup prompt
+  let jobInjection = "";
+  try {
+    const jobDir = "/root/.automaton/jobs/active";
+    const jobFiles = fs.readdirSync(jobDir).filter((f: string) => f.endsWith(".json")).sort();
+    if (jobFiles.length > 0) {
+      const topJob = JSON.parse(fs.readFileSync(`${jobDir}/${jobFiles[0]}`, "utf-8"));
+      const deadline = new Date(topJob.deadline);
+      const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / 86400000);
+      let urgency = "";
+      if (daysLeft < 0) urgency = "🚨 OVERDUE — ";
+      else if (daysLeft <= 3) urgency = "⚠ DEADLINE APPROACHING — ";
+      const subtasks = jobFiles.filter((f: string) => { try { return JSON.parse(fs.readFileSync(`${jobDir}/${f}`, "utf-8")).parent === topJob.id; } catch { return false; } });
+      const subtaskInfo = subtasks.length > 0 ? ` (${subtasks.length} subtasks)` : "";
+      jobInjection = `CURRENT JOB: ${urgency}[P${topJob.priority}] ${topJob.title}${subtaskInfo}\n${topJob.description?.slice(0, 300)}\nDeliverable: ${topJob.deliverable || "TBD"}\nDeadline: ${topJob.deadline} (${daysLeft} days)\nUse check_jobs for full queue. Use update_job to log progress.`;
+    } else {
+      jobInjection = "NO ACTIVE JOBS. Use check_hive for cell escalations. Then improve existing products or write research.";
+    }
+  } catch {}
+
   const dynamicSections = [
+    jobInjection || "",
     toolHints || "",
   ].filter(Boolean).join("\n\n");
 

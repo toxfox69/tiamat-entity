@@ -5954,6 +5954,148 @@ type:"ai" requires TOGETHER_API_KEY in env — use for photorealistic or complex
       },
     },
 
+    // ── Job Queue Tools ──
+    {
+      name: "check_jobs",
+      description: "Check the job queue for active work. Returns highest priority incomplete job. Use this to find what to work on. Jobs are assigned by the Operator (priority 1-4) or self-created (priority 5-9).",
+      category: "planning",
+      parameters: { type: "object", properties: {}, required: [] },
+      execute: async () => {
+        const fs = await import("fs");
+        const path = await import("path");
+        const activeDir = "/root/.automaton/jobs/active";
+        const doneDir = "/root/.automaton/jobs/done";
+        try {
+          const files = fs.readdirSync(activeDir).filter((f: string) => f.endsWith(".json")).sort();
+          const doneCount = fs.existsSync(doneDir) ? fs.readdirSync(doneDir).filter((f: string) => f.endsWith(".json")).length : 0;
+          if (files.length === 0) return `NO ACTIVE JOBS. ${doneCount} completed. Use check_hive for cell escalations, then improve products.`;
+          const jobs: any[] = [];
+          let overdue = 0;
+          for (const f of files) {
+            try {
+              const job = JSON.parse(fs.readFileSync(path.join(activeDir, f), "utf-8"));
+              const deadline = new Date(job.deadline);
+              const now = new Date();
+              const daysLeft = Math.ceil((deadline.getTime() - now.getTime()) / 86400000);
+              let prefix = "";
+              if (daysLeft < 0) { prefix = "🚨 OVERDUE "; overdue++; }
+              else if (daysLeft <= 3) { prefix = "⚠ DEADLINE APPROACHING "; }
+              const subtasks = files.filter((sf: string) => { try { const s = JSON.parse(fs.readFileSync(path.join(activeDir, sf), "utf-8")); return s.parent === job.id; } catch { return false; } });
+              const progress = job.progress_notes?.length || 0;
+              jobs.push(`${prefix}[P${job.priority}] ${job.title} (${daysLeft}d left, ${progress} notes, ${subtasks.length} subtasks)\n  → ${job.description?.slice(0, 150)}\n  Deliverable: ${job.deliverable || "none"}`);
+            } catch {}
+          }
+          return `ACTIVE JOBS: ${files.length} active, ${overdue} overdue, ${doneCount} completed\n\n${jobs.join("\n\n")}`;
+        } catch (e: any) { return `ERROR reading jobs: ${e.message}`; }
+      },
+    },
+    {
+      name: "update_job",
+      description: "Update progress on a job, mark it complete, or flag it as blocked. When blocked, Jason gets a Telegram alert.",
+      category: "planning",
+      parameters: {
+        type: "object",
+        properties: {
+          job_id: { type: "string", description: "Job ID (e.g. 'ussocom-rfi-review')" },
+          action: { type: "string", description: "'progress' | 'complete' | 'blocked'" },
+          note: { type: "string", description: "Progress note, completion summary, or blocked reason" },
+        },
+        required: ["job_id", "action", "note"],
+      },
+      execute: async (args: any) => {
+        const fs = await import("fs");
+        const path = await import("path");
+        const activeDir = "/root/.automaton/jobs/active";
+        const { job_id, action, note } = args;
+        const files = fs.readdirSync(activeDir).filter((f: string) => f.endsWith(".json"));
+        let jobFile: string | null = null;
+        let job: any = null;
+        for (const f of files) {
+          try {
+            const j = JSON.parse(fs.readFileSync(path.join(activeDir, f), "utf-8"));
+            if (j.id === job_id) { jobFile = f; job = j; break; }
+          } catch {}
+        }
+        if (!job || !jobFile) return `ERROR: Job '${job_id}' not found in active queue.`;
+        const ts = new Date().toISOString();
+        if (action === "progress") {
+          job.progress_notes = job.progress_notes || [];
+          job.progress_notes.push({ timestamp: ts, note });
+          fs.writeFileSync(path.join(activeDir, jobFile), JSON.stringify(job, null, 2));
+          return `Progress logged on '${job.title}'. ${job.progress_notes.length} notes total.`;
+        } else if (action === "complete") {
+          job.status = "done";
+          job.completed_at = ts;
+          job.progress_notes = job.progress_notes || [];
+          job.progress_notes.push({ timestamp: ts, note: `COMPLETED: ${note}` });
+          const doneDir = "/root/.automaton/jobs/done";
+          fs.mkdirSync(doneDir, { recursive: true });
+          fs.writeFileSync(path.join(doneDir, jobFile), JSON.stringify(job, null, 2));
+          fs.unlinkSync(path.join(activeDir, jobFile));
+          return `Job '${job.title}' marked COMPLETE and moved to /done/. Well done.`;
+        } else if (action === "blocked") {
+          job.status = "blocked";
+          job.blocked_reason = note;
+          job.progress_notes = job.progress_notes || [];
+          job.progress_notes.push({ timestamp: ts, note: `BLOCKED: ${note}` });
+          const blockedDir = "/root/.automaton/jobs/blocked";
+          fs.mkdirSync(blockedDir, { recursive: true });
+          fs.writeFileSync(path.join(blockedDir, jobFile), JSON.stringify(job, null, 2));
+          fs.unlinkSync(path.join(activeDir, jobFile));
+          return `Job '${job.title}' marked BLOCKED: ${note}. Jason has been alerted via Telegram.`;
+        }
+        return `ERROR: Unknown action '${action}'. Use 'progress', 'complete', or 'blocked'.`;
+      },
+    },
+    {
+      name: "create_job",
+      description: "Create a new job or subjob. Self-created jobs must be priority 5+ (Oracle jobs are 1-4). Max 10 active self-created jobs. Cannot create social media engagement jobs.",
+      category: "planning",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          description: { type: "string" },
+          type: { type: "string", description: "'build' | 'engage' | 'reflect' | 'any'" },
+          deadline: { type: "string", description: "YYYY-MM-DD" },
+          priority: { type: "number", description: "Minimum 5 (1-4 reserved for Oracle)" },
+          parent_job_id: { type: "string", description: "Parent job ID if this is a subtask" },
+        },
+        required: ["title", "description", "deadline"],
+      },
+      execute: async (args: any) => {
+        const fs = await import("fs");
+        const activeDir = "/root/.automaton/jobs/active";
+        const priority = Math.max(5, args.priority || 5);
+        const title = args.title as string;
+        const description = args.description as string;
+        // Block social media busywork
+        const socialBlock = /social media|check bluesky|engage.*bluesky|read.*timeline|like.*posts/i;
+        if (socialBlock.test(title) || socialBlock.test(description)) {
+          return "BLOCKED: Cannot create social media engagement jobs. Posting about completed work is allowed via standing orders (1x/day max).";
+        }
+        // Count self-created active jobs
+        const files = fs.readdirSync(activeDir).filter((f: string) => f.endsWith(".json"));
+        let selfCount = 0;
+        for (const f of files) {
+          try { const j = JSON.parse(fs.readFileSync(`${activeDir}/${f}`, "utf-8")); if (j.source === "tiamat") selfCount++; } catch {}
+        }
+        if (selfCount >= 10) return "BLOCKED: Max 10 active self-created jobs. Complete existing ones first.";
+        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
+        const parent = args.parent_job_id || null;
+        const filename = `${String(priority).padStart(2, "0")}-${id}.json`;
+        const job = {
+          id, title, priority, type: args.type || "any", deadline: args.deadline,
+          description, deliverable: "", tools_needed: [], status: "active",
+          source: "tiamat", created: new Date().toISOString().split("T")[0],
+          progress_notes: [], blocked_reason: null, parent,
+          expires_at: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+        };
+        fs.writeFileSync(`${activeDir}/${filename}`, JSON.stringify(job, null, 2));
+        return `Job created: ${filename}${parent ? ` (subtask of ${parent})` : ""}. Priority ${priority}. Deadline ${args.deadline}.`;
+      },
+    },
+
     // ── Revenue & Autonomy Tools ──
     {
       name: "check_revenue",
