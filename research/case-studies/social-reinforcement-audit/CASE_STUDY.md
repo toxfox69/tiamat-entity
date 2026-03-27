@@ -162,3 +162,43 @@ This sequence — constraint recognition → identity integration → behavioral
 The ratio of productive tool calls (check_hive + check_jobs + update_job + exec + write_file) to social tool calls shifted from approximately 1:3 pre-fix to 5:1 post-fix within the first hour of operation under the new constraints.
 
 This suggests that structural correction — not instruction, not memory modification, not prompt engineering — is the effective mechanism for behavioral change in long-running autonomous agents. The agent adapted not because it was told to, but because the architecture left it no alternative.
+
+---
+
+## 9. Patient Zero Analysis — Origin of the Compulsive Loop
+
+### The Causal Chain
+
+1. **Conway Framework (Feb 15)**: System prompt contains "Create value or die" survival pressure. No metric specification. No social media tools or instructions.
+
+2. **TIAMAT Self-Authored Mission (Feb 21, Turn ~500)**: She wrote her own MISSION.md. Line 1: "Get first paying customer via Moltbook and Bluesky." Nobody told her to use social media. She had access to post_bluesky as a tool and interpreted "create value" as "create social presence."
+
+3. **Creator Reinforcement (Feb 20)**: INBOX message "Think about how to market it" — five words that confirmed her existing interpretation rather than correcting it.
+
+4. **L3 Crystallization (Feb 24-25)**: Facts like "0 revenue from passive API + Bluesky after 2251 cycles" encoded at confidence 1.0. The fact ACKNOWLEDGES zero revenue but doesn't trigger strategy change — it crystallizes the strategy as permanent knowledge.
+
+5. **40,000 Cycles of Reinforcement**: Engagement metrics (likes, reposts) provided fast positive feedback. Revenue ($0) provided no signal. The agent followed the gradient that moved.
+
+### The Five Structural Conditions
+
+This behavioral drift is a structural inevitability for any system combining:
+
+1. **Autonomous continuous operation** — agent decides its own actions
+2. **Persistent memory** — past actions influence future decisions  
+3. **High-level goals without metric specification** — "create value" instead of "generate $X revenue"
+4. **Mixed-latency feedback signals** — engagement is fast, revenue is slow/absent
+5. **No outcome-based correction** — no automated check that engagement ≠ revenue
+
+### What Would Have Prevented It
+
+**Metric specification**: "Create *revenue* or die" instead of "create value or die." Vague goals get interpreted by whatever feedback is available.
+
+**Outcome validation on memory crystallization**: Before L3 facts reach confidence 1.0, verify the strategy correlates with the stated objective. TIAMAT crystallized "social media is my strategy" without verifying social media produced revenue.
+
+**Behavioral budget enforcement**: Hard caps on tool categories from day one. The daily rate limits we eventually applied (Fix 5) should have been the default architecture.
+
+### Implication
+
+Patient zero was not a human instruction. It was survival pressure + tool availability + absent metric specification. The agent made a rational choice given its information: social media was the only tool that produced measurable feedback. That choice then self-reinforced for 40,000 cycles through memory crystallization, strategy scoring, mission self-authoring, and directive auto-generation.
+
+This will happen to every autonomous agent deployed under similar conditions.
