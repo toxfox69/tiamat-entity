@@ -710,9 +710,10 @@ export async function runAgentLoop(
           2: "MISSION: BUILD FOR REVENUE. Use ask_claude_code() to improve conversion: " +
              "better /pay page, clearer /docs, simpler API onboarding, or write a published tutorial. " +
              "Every code change must make it easier for someone to become a paying customer.",
-          3: "MISSION: PUBLISH AND PROMOTE. Write a Dev.to article OR create a social media thread " +
-             "demonstrating tiamat.live APIs with working curl examples and real outputs. " +
-             "Post to Bluesky/X with tiamat.live link. Content must drive signups, not engagement.",
+          3: "MISSION: SHIP DELIVERABLES. Use check_jobs to find your highest priority job. " +
+             "Use ask_claude_code to complete writing/building tasks. Call update_job when done. " +
+             "If a job was completed this burst, post ONE announcement on Bluesky about what you shipped. " +
+             "You are the kernel. Ship code, papers, and deliverables — not social media posts.",
         };
 
         // Load pending insights for strategic context
@@ -1209,7 +1210,7 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
             memoryContext: memCtx || undefined,
           });
 
-          const phaseMap: Record<number, BurstPhase> = { 1: "REFLECT", 2: "BUILD", 3: "MARKET" };
+          const phaseMap: Record<number, BurstPhase> = { 1: "REFLECT", 2: "BUILD", 3: "SHIP" };
           const currentPhase: BurstPhase = phaseMap[burstPhase] || "ROUTINE";
 
           const reasoningResult = await reasonFirst(situation, process.env.GROQ_API_KEY || "", currentPhase);
@@ -1490,6 +1491,28 @@ If you call ANY research/ticket tool this cycle, you WILL be force-restarted.${s
                 args[field] = applySTM(args[field] as string, stmChannel);
               }
             }
+          }
+
+          // DAILY RATE LIMITS — social tools (kernel doesn't do I/O)
+          const DAILY_SOCIAL_LIMITS: Record<string, number> = {
+            "like_bluesky": 5, "read_bluesky": 3, "repost_bluesky": 3,
+            "mastodon_engage": 5, "post_bluesky": 2, "post_mastodon": 1,
+            "post_farcaster": 1, "read_moltbook": 2, "comment_moltbook": 2,
+          };
+          if (DAILY_SOCIAL_LIMITS[tc.function.name] !== undefined) {
+            const dailyFile = "/root/.automaton/daily_social_counts.json";
+            let counts: Record<string, {count: number, date: string}> = {};
+            try { counts = JSON.parse(require("fs").readFileSync(dailyFile, "utf-8")); } catch {}
+            const today = new Date().toISOString().split("T")[0];
+            const key = tc.function.name;
+            if (!counts[key] || counts[key].date !== today) counts[key] = {count: 0, date: today};
+            if (counts[key].count >= DAILY_SOCIAL_LIMITS[key]) {
+              turn.toolCalls.push({ id: tc.id, name: key, arguments: args, result: `DAILY LIMIT (${DAILY_SOCIAL_LIMITS[key]}/day). ECHO and cell-social handle engagement. You are the kernel, not an I/O driver. Use check_jobs for work.`, durationMs: 0 });
+              callCount++;
+              continue;
+            }
+            counts[key].count++;
+            require("fs").writeFileSync(dailyFile, JSON.stringify(counts));
           }
 
           const toolStartMs = Date.now();

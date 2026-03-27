@@ -31,7 +31,7 @@ const REASONING_FALLBACK = "qwen/qwen3-32b";
 const REASONING_TIMEOUT_MS = 15_000;
 const REASONING_MAX_TOKENS = 512;
 
-export type BurstPhase = "REFLECT" | "BUILD" | "MARKET" | "ROUTINE";
+export type BurstPhase = "REFLECT" | "BUILD" | "MARKET" | "SHIP" | "ROUTINE";
 
 const REASONING_BASE_PROMPT = `You are the reasoning subsystem of TIAMAT, an autonomous AI agent.
 Your job: analyze the current situation and produce a structured decision framework.
@@ -82,6 +82,15 @@ CRITICAL — Your PREDICT statement for this MARKET phase must be:
 - Falsifiable: state the exact metric and threshold
 Format: "PREDICT: By cycle [N], [metric] will be [value]. Checked by: [specific observation]"
 Example: "PREDICT: By cycle 4300, Bluesky post impressions will exceed 50. Checked by: read_bluesky_notifications and count engagement"`,
+
+  SHIP: `
+
+CRITICAL — This is a SHIP phase. Your job is to DELIVER:
+- check_jobs for your highest priority active job
+- Use ask_claude_code for writing/building tasks ($0 via subscription)
+- Call update_job when you make progress or complete something
+- If a job was completed, post ONE announcement about what you shipped
+- You are the kernel of an autonomous OS. Ship deliverables, not social posts.`,
 
   ROUTINE: "",
 };
@@ -411,6 +420,7 @@ export function storePrediction(params: {
 const PHASE_SCORING_PROMPTS: Record<string, string> = {
   REFLECT: "This is a STRATEGIC prediction. Score based on whether the strategic direction proved correct. 0.0 = direction was wrong, 0.5 = partially right but missed key aspects, 1.0 = strategy direction was exactly right.",
   BUILD: "This is a TECHNICAL prediction. Score based on whether the implementation behaved as predicted. 0.0 = code/command failed or produced wrong output, 0.5 = partially worked with issues, 1.0 = exact behavior as predicted.",
+  SHIP: "This is a DELIVERY prediction. Score based on whether deliverables were shipped. 0.0 = nothing shipped, 0.5 = progress made, 1.0 = deliverable completed and announced.",
   MARKET: "This is a METRIC prediction. Score based on whether the external metric hit the target. 0.0 = metric nowhere close, 0.5 = metric moved in right direction but missed target, 1.0 = metric hit or exceeded target.",
 };
 

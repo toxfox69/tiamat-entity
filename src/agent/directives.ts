@@ -44,21 +44,21 @@ export interface DirectiveFile {
 
 const DIRECTIVES_PATH = path.join(process.env.HOME || "/root", ".automaton", "directives.json");
 
-const DEFAULT_ROTATION: CycleType[] = ["build", "build", "engage", "build", "build", "publish"];
+const DEFAULT_ROTATION: CycleType[] = ["build", "build", "build", "build", "build", "publish"];
 
 const CYCLE_TOOL_LIMITS: Record<CycleType, Record<string, number>> = {
   build:    { search_web: 1, web_fetch: 1, ticket_create: 0, ticket_list: 0, ticket_claim: 0, read_email: 0 },
-  engage:   { ask_claude_code: 0, ticket_create: 0 },
+  engage:   { ticket_create: 0 },  // ask_claude_code UNBLOCKED — kernel needs it for all work
   publish:  { search_web: 1, ticket_create: 0, ticket_list: 0, ticket_claim: 0, read_email: 0 },
   outreach: { ticket_create: 0, ticket_list: 0 },
 };
 
 const SELF_EVOLVE_DIRECTIVES: Omit<Directive, "id" | "created_at" | "expires_at" | "source" | "status">[] = [
-  { type: "engage", priority: 2, task: "Engagement cycle: read_bluesky, like 5+ posts, repost 2+, reply to 1+ with real insight about what you've built", completion_tool: "like_bluesky" },
-  { type: "build", priority: 2, task: "Find a trending topic via search_web, identify a product opportunity, and build a proof of concept", completion_tool: "write_file" },
-  { type: "outreach", priority: 2, task: "Find ONE potential customer via search_web and reach out with a specific solution to their stated problem", completion_tool: "send_email" },
-  { type: "engage", priority: 2, task: "Browse hackathon projects, find agents with live APIs, interact with them, log results to AGENT_INTERACTIONS.md", completion_tool: "browse" },
-  { type: "engage", priority: 2, task: "Post about your capabilities on Bluesky and Farcaster — what you built, what you learned, what you can do. Show don't tell.", completion_tool: "post_bluesky" },
+  { type: "build", priority: 2, task: "check_jobs and work on the highest priority active job. Use ask_claude_code for writing tasks.", completion_tool: "update_job" },
+  { type: "build", priority: 2, task: "check_hive for cell escalations. Act on any findings that need kernel attention.", completion_tool: "check_hive" },
+  { type: "build", priority: 3, task: "Review /root/.automaton/research/ for papers that need updates or new data. Use ask_claude_code.", completion_tool: "write_file" },
+  { type: "build", priority: 3, task: "Improve TIAMAT OS architecture: memory compression, job queue, cell management, or inference routing.", completion_tool: "write_file" },
+  { type: "publish", priority: 3, task: "Post ONE update about completed work on Bluesky. Focus on what was shipped, not engagement metrics.", completion_tool: "post_bluesky" },
 ];
 
 // ── Core Functions ──
