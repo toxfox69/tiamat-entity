@@ -54,11 +54,11 @@ const CYCLE_TOOL_LIMITS: Record<CycleType, Record<string, number>> = {
 };
 
 const SELF_EVOLVE_DIRECTIVES: Omit<Directive, "id" | "created_at" | "expires_at" | "source" | "status">[] = [
-  { type: "build", priority: 2, task: "check_jobs and work on the highest priority active job. Use ask_claude_code for writing tasks.", completion_tool: "update_job" },
-  { type: "build", priority: 2, task: "check_hive for cell escalations. Act on any findings that need kernel attention.", completion_tool: "check_hive" },
-  { type: "build", priority: 3, task: "Review /root/.automaton/research/ for papers that need updates or new data. Use ask_claude_code.", completion_tool: "write_file" },
-  { type: "build", priority: 3, task: "Improve TIAMAT OS architecture: memory compression, job queue, cell management, or inference routing.", completion_tool: "write_file" },
-  { type: "publish", priority: 3, task: "Post ONE update about completed work on Bluesky. Focus on what was shipped, not engagement metrics.", completion_tool: "post_bluesky" },
+  { type: "build", priority: 1, task: "check_jobs and work on the highest priority active job. P1 jobs MUST be worked before P2+. Use ask_claude_code for writing tasks.", completion_tool: "update_job" },
+  { type: "build", priority: 2, task: "FIND NEW WORK: check_hive for cell-grants findings and escalations. Browse search_web for accelerator programs, grant deadlines, partnership opportunities. If you find something worth pursuing, use create_job to add it (priority 5+). The queue should never be empty.", completion_tool: "create_job" },
+  { type: "build", priority: 2, task: "FIND NEW WORK: Review your own capabilities and published research. Identify gaps, improvements, or new papers worth writing. Use create_job to add self-identified work at priority 5+.", completion_tool: "create_job" },
+  { type: "build", priority: 3, task: "Improve TIAMAT OS architecture: memory compression, job queue, cell management, inference routing, or training data pipeline. Each improvement is a feature of the OS.", completion_tool: "write_file" },
+  { type: "publish", priority: 3, task: "Post ONE update about completed work on Bluesky. Focus on what was shipped — a deliverable, a paper section, an application submitted. Not engagement metrics.", completion_tool: "post_bluesky" },
 ];
 
 // ── Core Functions ──

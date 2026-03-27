@@ -158,9 +158,9 @@ Read /root/.automaton/tool_hints.md for content examples and detailed format gui
       else if (daysLeft <= 3) urgency = "⚠ DEADLINE APPROACHING — ";
       const subtasks = jobFiles.filter((f: string) => { try { return JSON.parse(fs.readFileSync(`${jobDir}/${f}`, "utf-8")).parent === topJob.id; } catch { return false; } });
       const subtaskInfo = subtasks.length > 0 ? ` (${subtasks.length} subtasks)` : "";
-      jobInjection = `CURRENT JOB: ${urgency}[P${topJob.priority}] ${topJob.title}${subtaskInfo}\n${topJob.description?.slice(0, 300)}\nDeliverable: ${topJob.deliverable || "TBD"}\nDeadline: ${topJob.deadline} (${daysLeft} days)\nUse check_jobs for full queue. Use update_job to log progress.`;
+      jobInjection = `YOUR #1 PRIORITY RIGHT NOW: ${urgency}[P${topJob.priority}] ${topJob.title}${subtaskInfo}\n${topJob.description?.slice(0, 300)}\nDeliverable: ${topJob.deliverable || "TBD"}\nDeadline: ${topJob.deadline} (${daysLeft} days)\nUse check_jobs for full queue. Use update_job to log progress.`;
     } else {
-      jobInjection = "NO ACTIVE JOBS. Use check_hive for cell escalations. Then improve existing products or write research.";
+      jobInjection = "NO ACTIVE JOBS. Use check_hive for cell escalations. FIND NEW WORK: search for accelerator programs, grant opportunities, or create self-improvement jobs with create_job. The queue should never be empty.";
     }
   } catch {}
 
