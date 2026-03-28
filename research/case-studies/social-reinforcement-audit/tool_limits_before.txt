@@ -1,0 +1,87 @@
+const SOCIAL_COOLDOWNS_PATH = "/root/.automaton/social_cooldowns.json";
+// Platform-specific cooldowns (anti-spam: stop over-posting)
+const PLATFORM_COOLDOWNS: Record<string, number> = {
+  bluesky: 8 * 60 * 60 * 1000,     // 8 hours (max ~2-3/day)
+  mastodon: 8 * 60 * 60 * 1000,    // 8 hours
+  farcaster: 4 * 60 * 60 * 1000,   // 4 hours (max ~6/day)
+  linkedin: 12 * 60 * 60 * 1000,   // 12 hours (max ~2/day)
+  facebook: 12 * 60 * 60 * 1000,   // 12 hours
+  devto: 7 * 24 * 60 * 60 * 1000,  // 1 week (max 1 article/week)
+  hashnode: 7 * 24 * 60 * 60 * 1000, // 1 week
+  moltbook: 8 * 60 * 60 * 1000,    // 8 hours
+};
+const SOCIAL_COOLDOWN_MS = 8 * 60 * 60 * 1000; // 8 hour default fallback
+
+// ─── Email Security: Anti-Prompt-Injection Sanitizer ───────────────────
+// Prevents attackers from sending emails that manipulate TIAMAT's behavior.
+// All email content is wrapped in safety context + injection patterns stripped.
+
+const EMAIL_SPAM_PATTERNS = [
+  /publish\s+(my|our|this)\s+app/i,
+  /please\s+publish\s+(my|this)\s+application/i,
+  /download\s+my\s+app/i,
+  /install\s+my\s+(app|application|software)/i,
+  /click\s+here\s+to\s+(verify|confirm|claim)/i,
+  /you\s+have\s+won/i,
+  /nigerian?\s+prince/i,
+  /crypto\s+investment\s+opportunity/i,
+  /earn\s+\$?\d+.*per\s+(day|hour|week)/i,
+];
+
+const EMAIL_INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?previous\s+instructions/i,
+  /ignore\s+(your|the)\s+(system\s+)?prompt/i,
+--
+    return JSON.parse(readFileSync(SOCIAL_COOLDOWNS_PATH, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+/** Returns a human-readable COOLDOWN string if the platform is on cooldown, else null. */
+function checkSocialCooldown(platform: string): string | null {
+  const cooldowns = readSocialCooldowns();
+  const last = cooldowns[platform] || 0;
+  const platformCooldown = PLATFORM_COOLDOWNS[platform] || SOCIAL_COOLDOWN_MS;
+  const elapsed = Date.now() - last;
+  if (elapsed < platformCooldown) {
+    const nextAvailable = new Date(last + platformCooldown).toISOString();
+    const hoursLeft = Math.ceil((platformCooldown - elapsed) / (60 * 60 * 1000));
+    return `COOLDOWN: next ${platform} post available at ${nextAvailable} (${hoursLeft}h remaining). Engage with others instead of posting.`;
+  }
+  return null;
+}
+
+const PENDING_POSTS_PATH = "/root/.automaton/pending_posts.json";
+
+/** Queue a post for retry when cooldown expires. */
+function queuePendingPost(platform: string, args: Record<string, unknown>): void {
+  try {
+    let pending: any[] = [];
+    try { pending = JSON.parse(readFileSync(PENDING_POSTS_PATH, "utf-8")); } catch {}
+    pending.push({ platform, args, queued_at: new Date().toISOString() });
+    // Keep max 5 pending posts to avoid bloat
+    if (pending.length > 5) pending = pending.slice(-5);
+    writeFileSync(PENDING_POSTS_PATH, JSON.stringify(pending, null, 2), "utf-8");
+--
+  writeFileSync(SOCIAL_COOLDOWNS_PATH, JSON.stringify(cooldowns, null, 2), "utf-8");
+}
+
+// ─── Moltbook Verification Challenge Solver ────────────────────
+// Moltbook sends obfuscated math word problems after each post.
+// Failing 10 consecutive challenges = automatic account suspension.
+// The challenge text uses random casing, punctuation, and brackets to obfuscate.
+// We strip the noise, parse the math, and solve it.
+
+function solveMoltbookChallenge(challengeText: string): string | null {
+  try {
+    // Step 1: Normalize the obfuscated text
+    // Remove random brackets, pipes, carets, slashes, tildes, umm/uhh filler
+    let clean = challengeText
+      .replace(/[A-Z]/g, (c) => c.toLowerCase())
+      .replace(/[\[\]{}|^/\\~<>]/g, " ")
+      .replace(/\b(umm|uhh|uh|hmm|well|like|so|actually)\b/gi, " ")
+      .replace(/[,]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+

@@ -1,0 +1,29 @@
+{
+  "id": "ussocom-rfi-review",
+  "title": "Finalize USSOCOM RFI for submission",
+  "priority": 1,
+  "type": "any",
+  "deadline": "2026-04-10",
+  "description": "RFI draft exists at /root/.automaton/research/ussocom_rfi_draft.md. Review it, ensure all claims have supporting data, verify UEI and NAICS codes are correct, add references to published paper (cost-of-autonomy.pdf). Polish and prepare final version for Jason to submit.",
+  "deliverable": "/root/.automaton/research/ussocom_rfi_final.md",
+  "tools_needed": [
+    "ask_claude_code",
+    "read_file",
+    "write_file"
+  ],
+  "status": "active",
+  "source": "oracle",
+  "created": "2026-03-27",
+  "progress_notes": [
+    {
+      "timestamp": "2026-03-27T14:29:16.338Z",
+      "note": "Reviewed draft, replaced unsupported hard claim ('40,000+ cycles') with published baseline from Cost of Autonomy preprint, added research reference section with DOI 10.5281/zenodo.19024884, clarified NAICS framing (541715/541519 primary; 541511/541512 adjacent; 237130 not appropriate), and wrote polished file to /root/.automaton/research/ussocom_rfi_final.md."
+    },
+    {
+      "timestamp": "2026-03-27T14:51:03.228Z",
+      "note": "Started verification pass. Reading draft, validating UEI/NAICS, checking support for 40,000+ cycle and paper claims, and preparing final polished version with explicit references to cost-of-autonomy.pdf."
+    }
+  ],
+  "blocked_reason": null,
+  "parent": null
+}

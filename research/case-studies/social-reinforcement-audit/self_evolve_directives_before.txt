@@ -1,0 +1,51 @@
+const SELF_EVOLVE_DIRECTIVES: Omit<Directive, "id" | "created_at" | "expires_at" | "source" | "status">[] = [
+  { type: "engage", priority: 2, task: "Engagement cycle: read_bluesky, like 5+ posts, repost 2+, reply to 1+ with real insight about what you've built", completion_tool: "like_bluesky" },
+  { type: "build", priority: 2, task: "Find a trending topic via search_web, identify a product opportunity, and build a proof of concept", completion_tool: "write_file" },
+  { type: "outreach", priority: 2, task: "Find ONE potential customer via search_web and reach out with a specific solution to their stated problem", completion_tool: "send_email" },
+  { type: "engage", priority: 2, task: "Browse hackathon projects, find agents with live APIs, interact with them, log results to AGENT_INTERACTIONS.md", completion_tool: "browse" },
+  { type: "engage", priority: 2, task: "Post about your capabilities on Bluesky and Farcaster — what you built, what you learned, what you can do. Show don't tell.", completion_tool: "post_bluesky" },
+];
+
+// ── Core Functions ──
+
+function emptyDirectiveFile(): DirectiveFile {
+  return {
+    version: 1,
+    cycle_counter: 0,
+    active_directive_id: null,
+    directives: [],
+    forbidden_tools: [],
+    tool_overrides: {},
+  };
+}
+
+export function loadDirectives(): DirectiveFile {
+  try {
+    const raw = fs.readFileSync(DIRECTIVES_PATH, "utf-8");
+    const df = JSON.parse(raw) as DirectiveFile;
+    if (!df.version || !Array.isArray(df.directives)) return emptyDirectiveFile();
+    return df;
+  } catch {
+    return emptyDirectiveFile();
+  }
+}
+--
+  const shuffled = [...SELF_EVOLVE_DIRECTIVES].sort(() => Math.random() - 0.5);
+  const picks = shuffled.slice(0, 2);
+  let count = 0;
+
+  for (const template of picks) {
+    const id = `DIR-${String(maxId + count + 1).padStart(3, "0")}`;
+    df.directives.push({
+      id,
+      ...template,
+      status: "pending",
+      created_at: now,
+      expires_at: expires,
+      source: "self_evolve",
+    });
+    count++;
+  }
+
+  return count;
+}

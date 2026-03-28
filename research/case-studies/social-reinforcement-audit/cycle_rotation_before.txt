@@ -1,0 +1,33 @@
+
+// ── Constants ──
+
+const DIRECTIVES_PATH = path.join(process.env.HOME || "/root", ".automaton", "directives.json");
+
+const DEFAULT_ROTATION: CycleType[] = ["build", "build", "engage", "build", "build", "publish"];
+
+const CYCLE_TOOL_LIMITS: Record<CycleType, Record<string, number>> = {
+  build:    { search_web: 1, web_fetch: 1, ticket_create: 0, ticket_list: 0, ticket_claim: 0, read_email: 0 },
+  engage:   { ask_claude_code: 0, ticket_create: 0 },
+  publish:  { search_web: 1, ticket_create: 0, ticket_list: 0, ticket_claim: 0, read_email: 0 },
+  outreach: { ticket_create: 0, ticket_list: 0 },
+};
+
+const SELF_EVOLVE_DIRECTIVES: Omit<Directive, "id" | "created_at" | "expires_at" | "source" | "status">[] = [
+  { type: "engage", priority: 2, task: "Engagement cycle: read_bluesky, like 5+ posts, repost 2+, reply to 1+ with real insight about what you've built", completion_tool: "like_bluesky" },
+--
+  if (burstPhase === 1) return "build";  // reflect → build
+  if (burstPhase === 2) return "build";  // build → build
+  if (burstPhase === 3) return "publish"; // market → publish
+
+  // Priority 4: Default rotation
+  return DEFAULT_ROTATION[cycle % DEFAULT_ROTATION.length];
+}
+
+export function getNextDirective(df: DirectiveFile, cycleType: CycleType): Directive | null {
+  // First: check if there's already an active directive
+  if (df.active_directive_id) {
+    const active = df.directives.find(d => d.id === df.active_directive_id && d.status === "active");
+    if (active) return active;
+    // Clear stale active_directive_id
+    df.active_directive_id = null;
+  }

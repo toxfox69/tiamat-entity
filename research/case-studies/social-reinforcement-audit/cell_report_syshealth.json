@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-03-27T15:24:55.967598+00:00",
+  "overall": "OK",
+  "checks": [
+    {
+      "check": "disk",
+      "value": 30.0,
+      "free_gb": 270.6,
+      "severity": "OK"
+    },
+    {
+      "check": "ram",
+      "value": 20.3,
+      "total_mb": 32095,
+      "severity": "OK"
+    },
+    {
+      "check": "cpu_load",
+      "load1": 0.25,
+      "load5": 0.32,
+      "load15": 0.36,
+      "severity": "OK"
+    },
+    {
+      "check": "process_tiamat",
+      "pid": 1287086,
+      "severity": "OK"
+    },
+    {
+      "check": "process_gunicorn",
+      "pid": 1289213,
+      "count": 14,
+      "severity": "OK"
+    },
+    {
+      "check": "nginx",
+      "active": true,
+      "severity": "OK"
+    },
+    {
+      "check": "ssl",
+      "domain": "tiamat.live",
+      "days_left": 55,
+      "severity": "OK"
+    },
+    {
+      "check": "gunicorn",
+      "http_code": "200",
+      "severity": "OK"
+    }
+  ],
+  "alerts": []
+}

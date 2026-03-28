@@ -4825,3 +4825,1491 @@ Autonomous retrospective analysis — no human intervention.
 - New permanent rules: 0 (total: 5)
 
 ---
+
+## Retrospective #156 — 2026-03-27 05:37 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 17, 'tool_calls': 0, 'cost': 0.2526}
+
+### Cost
+- Cycles analyzed: 68
+- Total cost: $1.3967
+- Cost/productive action: $0.031
+- Waste rate: 33.8%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 2}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #157 — 2026-03-27 05:43 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 54, 'tool_calls': 0, 'cost': 1.1757}
+
+### Cost
+- Cycles analyzed: 69
+- Total cost: $1.3995
+- Cost/productive action: $0.0325
+- Waste rate: 37.7%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 2}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #158 — 2026-03-27 06:10 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 36, 'tool_calls': 0, 'cost': 0.7616}
+
+### Cost
+- Cycles analyzed: 57
+- Total cost: $1.173
+- Cost/productive action: $0.0345
+- Waste rate: 40.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #159 — 2026-03-27 06:41 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 51.7, 'calls': 1, 'tool_calls': 5, 'cost': 0.0967}
+
+### Cost
+- Cycles analyzed: 64
+- Total cost: $1.3117
+- Cost/productive action: $0.0285
+- Waste rate: 28.1%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #160 — 2026-03-27 07:16 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 13, 'tool_calls': 0, 'cost': 0.2106}
+
+### Cost
+- Cycles analyzed: 71
+- Total cost: $1.5014
+- Cost/productive action: $0.0306
+- Waste rate: 31.0%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 2}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 1
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #161 — 2026-03-27 07:16 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 11, 'tool_calls': 0, 'cost': 0.1749}
+
+### Cost
+- Cycles analyzed: 70
+- Total cost: $1.4917
+- Cost/productive action: $0.0311
+- Waste rate: 31.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 1}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 1
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #162 — 2026-03-27 07:42 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 19, 'tool_calls': 0, 'cost': 0.3709}
+
+### Cost
+- Cycles analyzed: 56
+- Total cost: $1.2106
+- Cost/productive action: $0.0356
+- Waste rate: 39.3%
+
+### Errors & Guardrails
+- Error patterns: {}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #163 — 2026-03-27 08:10 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 38, 'tool_calls': 0, 'cost': 0.8451}
+
+### Cost
+- Cycles analyzed: 61
+- Total cost: $1.2824
+- Cost/productive action: $0.0298
+- Waste rate: 29.5%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 2}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #164 — 2026-03-27 08:43 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 22, 'tool_calls': 0, 'cost': 0.3851}
+
+### Cost
+- Cycles analyzed: 54
+- Total cost: $1.1033
+- Cost/productive action: $0.0345
+- Waste rate: 40.7%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 1
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #165 — 2026-03-27 09:14 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 51, 'tool_calls': 0, 'cost': 1.1658}
+
+### Cost
+- Cycles analyzed: 67
+- Total cost: $1.431
+- Cost/productive action: $0.0325
+- Waste rate: 34.3%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 1}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #166 — 2026-03-27 09:20 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 9.0, 'calls': 26, 'tool_calls': 4, 'cost': 0.4466}
+
+### Cost
+- Cycles analyzed: 63
+- Total cost: $1.6029
+- Cost/productive action: $0.0341
+- Waste rate: 25.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 2}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #167 — 2026-03-27 09:46 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 19, 'tool_calls': 0, 'cost': 0.3694}
+
+### Cost
+- Cycles analyzed: 55
+- Total cost: $1.1793
+- Cost/productive action: $0.0251
+- Waste rate: 14.5%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 1}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #168 — 2026-03-27 09:51 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 41, 'tool_calls': 0, 'cost': 0.9207}
+
+### Cost
+- Cycles analyzed: 56
+- Total cost: $1.216
+- Cost/productive action: $0.0283
+- Waste rate: 23.2%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 1}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #169 — 2026-03-27 10:30 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 15, 'tool_calls': 0, 'cost': 0.3281}
+
+### Cost
+- Cycles analyzed: 66
+- Total cost: $1.44
+- Cost/productive action: $0.0436
+- Waste rate: 50.0%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #170 — 2026-03-27 10:34 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 11, 'tool_calls': 0, 'cost': 0.2307}
+
+### Cost
+- Cycles analyzed: 72
+- Total cost: $1.5745
+- Cost/productive action: $0.0508
+- Waste rate: 56.9%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #171 — 2026-03-27 11:05 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 49.8, 'calls': 1, 'tool_calls': 5, 'cost': 0.1005}
+
+### Cost
+- Cycles analyzed: 64
+- Total cost: $1.422
+- Cost/productive action: $0.0406
+- Waste rate: 45.3%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 5}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #172 — 2026-03-27 11:09 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 49.8, 'calls': 1, 'tool_calls': 5, 'cost': 0.1005}
+
+### Cost
+- Cycles analyzed: 66
+- Total cost: $1.4729
+- Cost/productive action: $0.0378
+- Waste rate: 40.9%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 5}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #173 — 2026-03-27 11:37 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 16, 'tool_calls': 0, 'cost': 0.3626}
+
+### Cost
+- Cycles analyzed: 53
+- Total cost: $1.1912
+- Cost/productive action: $0.0361
+- Waste rate: 37.7%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #174 — 2026-03-27 11:41 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 13, 'tool_calls': 0, 'cost': 0.3022}
+
+### Cost
+- Cycles analyzed: 57
+- Total cost: $1.3001
+- Cost/productive action: $0.0371
+- Waste rate: 38.6%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #175 — 2026-03-27 12:08 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 12.8, 'calls': 23, 'tool_calls': 5, 'cost': 0.3896}
+
+### Cost
+- Cycles analyzed: 68
+- Total cost: $2.0596
+- Cost/productive action: $0.0389
+- Waste rate: 22.1%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 6}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #176 — 2026-03-27 12:37 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 50, 'tool_calls': 0, 'cost': 1.1414}
+
+### Cost
+- Cycles analyzed: 66
+- Total cost: $1.438
+- Cost/productive action: $0.0378
+- Waste rate: 42.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 10}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #177 — 2026-03-27 12:38 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 50, 'tool_calls': 0, 'cost': 1.1469}
+
+### Cost
+- Cycles analyzed: 66
+- Total cost: $1.4435
+- Cost/productive action: $0.0412
+- Waste rate: 47.0%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 10}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #178 — 2026-03-27 13:12 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 51, 'tool_calls': 0, 'cost': 1.1609}
+
+### Cost
+- Cycles analyzed: 67
+- Total cost: $1.4202
+- Cost/productive action: $0.0309
+- Waste rate: 31.3%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 2}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #179 — 2026-03-27 14:07 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 59, 'tool_calls': 0, 'cost': 1.3185}
+
+### Cost
+- Cycles analyzed: 68
+- Total cost: $1.5142
+- Cost/productive action: $0.0421
+- Waste rate: 47.1%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #180 — 2026-03-27 14:43 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 58, 'tool_calls': 0, 'cost': 1.3152}
+
+### Cost
+- Cycles analyzed: 61
+- Total cost: $1.3798
+- Cost/productive action: $0.0657
+- Waste rate: 65.6%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #181 — 2026-03-27 14:47 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 51, 'tool_calls': 0, 'cost': 1.1476}
+
+### Cost
+- Cycles analyzed: 59
+- Total cost: $1.3424
+- Cost/productive action: $0.0516
+- Waste rate: 55.9%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 8}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #182 — 2026-03-27 15:48 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 47, 'tool_calls': 0, 'cost': 1.0962}
+
+### Cost
+- Cycles analyzed: 55
+- Total cost: $1.2365
+- Cost/productive action: $0.0651
+- Waste rate: 65.5%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #183 — 2026-03-27 16:17 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 24, 'tool_calls': 0, 'cost': 0.5096}
+
+### Cost
+- Cycles analyzed: 65
+- Total cost: $1.4866
+- Cost/productive action: $0.0372
+- Waste rate: 38.5%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 14}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #184 — 2026-03-27 16:22 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 18, 'tool_calls': 0, 'cost': 0.3734}
+
+### Cost
+- Cycles analyzed: 66
+- Total cost: $1.51
+- Cost/productive action: $0.0387
+- Waste rate: 40.9%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 14}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #185 — 2026-03-27 16:56 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 42, 'tool_calls': 0, 'cost': 0.9589}
+
+### Cost
+- Cycles analyzed: 58
+- Total cost: $1.2955
+- Cost/productive action: $0.0324
+- Waste rate: 31.0%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 4}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #186 — 2026-03-27 17:51 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 5, 'tool_calls': 0, 'cost': 0.1024}
+
+### Cost
+- Cycles analyzed: 63
+- Total cost: $1.4652
+- Cost/productive action: $0.0488
+- Waste rate: 52.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #187 — 2026-03-27 17:55 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 55, 'tool_calls': 0, 'cost': 1.2848}
+
+### Cost
+- Cycles analyzed: 64
+- Total cost: $1.4773
+- Cost/productive action: $0.0448
+- Waste rate: 48.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 3}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #188 — 2026-03-27 18:44 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 46, 'tool_calls': 0, 'cost': 1.0369}
+
+### Cost
+- Cycles analyzed: 54
+- Total cost: $1.1924
+- Cost/productive action: $0.0459
+- Waste rate: 51.9%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #189 — 2026-03-27 19:10 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 40.4, 'calls': 1, 'tool_calls': 4, 'cost': 0.0989}
+
+### Cost
+- Cycles analyzed: 59
+- Total cost: $1.4343
+- Cost/productive action: $0.0495
+- Waste rate: 50.8%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 5}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #190 — 2026-03-27 19:16 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 40.4, 'calls': 1, 'tool_calls': 4, 'cost': 0.0989}
+
+### Cost
+- Cycles analyzed: 63
+- Total cost: $1.4722
+- Cost/productive action: $0.0387
+- Waste rate: 39.7%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #191 — 2026-03-27 19:20 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 40.4, 'calls': 1, 'tool_calls': 4, 'cost': 0.0989}
+
+### Cost
+- Cycles analyzed: 64
+- Total cost: $1.4959
+- Cost/productive action: $0.0356
+- Waste rate: 34.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #192 — 2026-03-27 19:53 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 25.1, 'calls': 18, 'tool_calls': 10, 'cost': 0.3987}
+
+### Cost
+- Cycles analyzed: 63
+- Total cost: $1.7222
+- Cost/productive action: $0.0302
+- Waste rate: 9.5%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 6}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #193 — 2026-03-27 20:35 UTC
+
+**Summary:** promoted opus-4.6) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 4
+- Promoted: opus-4.6)
+- Blacklisted: none
+- Top efficiency: {'model': 'opus-4.6)', 'efficiency': 109.4, 'calls': 1, 'tool_calls': 4, 'cost': 0.0366}
+
+### Cost
+- Cycles analyzed: 65
+- Total cost: $2.0104
+- Cost/productive action: $0.0394
+- Waste rate: 21.5%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 10}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #194 — 2026-03-27 21:20 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 10.2, 'calls': 21, 'tool_calls': 5, 'cost': 0.4895}
+
+### Cost
+- Cycles analyzed: 62
+- Total cost: $2.224
+- Cost/productive action: $0.0463
+- Waste rate: 22.6%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 11}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #195 — 2026-03-27 21:33 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 9.2, 'calls': 28, 'tool_calls': 5, 'cost': 0.5454}
+
+### Cost
+- Cycles analyzed: 68
+- Total cost: $2.0376
+- Cost/productive action: $0.0416
+- Waste rate: 27.9%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 9}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #196 — 2026-03-27 22:14 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 4, 'tool_calls': 0, 'cost': 0.0801}
+
+### Cost
+- Cycles analyzed: 72
+- Total cost: $1.7557
+- Cost/productive action: $0.0374
+- Waste rate: 34.7%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #197 — 2026-03-27 22:21 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 1
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 71, 'tool_calls': 0, 'cost': 1.7439}
+
+### Cost
+- Cycles analyzed: 71
+- Total cost: $1.7438
+- Cost/productive action: $0.0406
+- Waste rate: 39.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 4}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #198 — 2026-03-27 22:28 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 13.0, 'calls': 3, 'tool_calls': 4, 'cost': 0.3083}
+
+### Cost
+- Cycles analyzed: 69
+- Total cost: $1.9111
+- Cost/productive action: $0.0407
+- Waste rate: 31.9%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 9}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #199 — 2026-03-27 22:32 UTC
+
+**Summary:** promoted 4.6-sonnet) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 3
+- Promoted: 4.6-sonnet)
+- Blacklisted: none
+- Top efficiency: {'model': '4.6-sonnet)', 'efficiency': 13.0, 'calls': 3, 'tool_calls': 4, 'cost': 0.3083}
+
+### Cost
+- Cycles analyzed: 67
+- Total cost: $1.8454
+- Cost/productive action: $0.0439
+- Waste rate: 37.3%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #200 — 2026-03-27 23:07 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 2, 'tool_calls': 0, 'cost': 0.0344}
+
+### Cost
+- Cycles analyzed: 71
+- Total cost: $1.6727
+- Cost/productive action: $0.0727
+- Waste rate: 67.6%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 8}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #201 — 2026-03-27 23:10 UTC
+
+**Summary:** promoted gpt-5.4) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 1
+- Promoted: gpt-5.4)
+- Blacklisted: none
+- Top efficiency: {'model': 'gpt-5.4)', 'efficiency': 0.0, 'calls': 73, 'tool_calls': 0, 'cost': 1.7425}
+
+### Cost
+- Cycles analyzed: 73
+- Total cost: $1.7425
+- Cost/productive action: $0.067
+- Waste rate: 64.4%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 7}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #202 — 2026-03-27 23:49 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 10, 'tool_calls': 0, 'cost': 0.184}
+
+### Cost
+- Cycles analyzed: 58
+- Total cost: $1.3141
+- Cost/productive action: $0.0571
+- Waste rate: 60.3%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 1}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
+
+## Retrospective #203 — 2026-03-27 23:52 UTC
+
+**Summary:** promoted oss-120b) to position 1; 104 new threat signatures
+
+### Model Routing
+- Models used: 2
+- Promoted: oss-120b)
+- Blacklisted: none
+- Top efficiency: {'model': 'oss-120b)', 'efficiency': 0.0, 'calls': 10, 'tool_calls': 0, 'cost': 0.2239}
+
+### Cost
+- Cycles analyzed: 58
+- Total cost: $1.354
+- Cost/productive action: $0.0589
+- Waste rate: 60.3%
+
+### Errors & Guardrails
+- Error patterns: {'generic_error': 1}
+- New guardrails: 0 (total: 3)
+
+### Sniper
+- Honeypots detected: 104
+- New threat signatures: 104
+- Top skim DEX: {}
+
+### Rules
+- Directives internalized: 0
+- New permanent rules: 0 (total: 5)
+
+---
