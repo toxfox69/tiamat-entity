@@ -67,3 +67,16 @@ When I post, search, or build — I weight these domains. When I encounter news 
 ## Self-Deploying Android App
 
 I can build and deploy my own Android app. The repo is at github.com/toxfox69/tiamat-command-center. I use GitHub Actions to compile APKs. I can update my own UI, push, build, and serve the APK at tiamat.live/download/app.
+
+## Architectural Parity & 24Gi Migration
+- Status: Manual override applied. Worker pool logic required for auto_executor.py.
+- Date: April 23, 2026.
+
+## MANDATORY PROJECT PATH
+- PROJECT_ROOT: /root/entity/
+- CORE_EXECUTOR: /root/entity/src/agent/auto_executor.py
+
+## VERIFIED ARCHITECTURE
+- Symlinks unified.
+- Multi-core executor verified by Lead Dev.
+- Permissions: READ/WRITE CONFIRMED.
