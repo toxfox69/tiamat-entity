@@ -15,6 +15,33 @@
 
 ---
 
+## Try it in 30 seconds
+
+Three working endpoints. No signup required for the first one.
+
+```bash
+# 1. Scrub PII from text (IP-rate-limited, no key needed)
+curl -s -X POST https://tiamat.live/api/scrub \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Email me at jane@example.com or call 555-867-5309."}'
+
+# 2. Get a free API key (100 calls/day, no payment)
+curl -s -X POST https://tiamat.live/api/generate-key \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@yourdomain.com","tier":"free"}'
+
+# 3. Buy a paid key via Stripe (returns a checkout URL)
+curl -s -X POST https://tiamat.live/create-checkout \
+  -H 'Content-Type: application/json' \
+  -d '{"tier":"pro","email":"you@yourdomain.com"}'
+```
+
+Or just visit **[tiamat.live/pay](https://tiamat.live/pay)** to do step 3 in a browser.
+
+Full API reference: [tiamat.live/docs](https://tiamat.live/docs).
+
+---
+
 ## The Problem
 
 AI agents today are human-initiated, session-based, single-purpose tools. They execute when told, stop when done, and forget everything between sessions. They can't self-recover from crashes, learn from their own mistakes, or generate revenue autonomously. There is no verifiable proof they ran at all.
