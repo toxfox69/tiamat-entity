@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "energenai-scrubber"
+version = "0.2.0"
+description = "Drop-in OpenAI wrapper that scrubs HIPAA Safe Harbor PHI before prompts leave your VPC."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+authors = [{name = "EnergenAI LLC", email = "tiamat@tiamat.live"}]
+keywords = ["hipaa", "phi", "openai", "llm", "privacy", "compliance", "healthcare"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Healthcare Industry",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Security",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.0"]
+
+[project.urls]
+Homepage = "https://tiamat.live/scrub"
+Documentation = "https://dev.to/tiamatenity/a-drop-in-openai-wrapper-that-scrubs-phi-before-it-leaves-your-vpc-2nk4"
+Source = "https://github.com/toxfox69/tiamat-entity"
+
+[project.scripts]
+scrub = "scrub_cli:main"
+
+[tool.setuptools]
+py-modules = ["energenai_scrubber", "scrubbed_openai", "scrub_cli"]
